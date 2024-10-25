@@ -12,7 +12,7 @@ permissions:
   contents: write
 
 env:
-  BINARY_NAME: hello
+  BINARY_NAME: resin
 
 jobs:
   windows-build:

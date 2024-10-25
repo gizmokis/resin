@@ -10,7 +10,7 @@ on:
 
 
 env:
-  BINARY_NAME: hello
+  BINARY_NAME: resin
 
 jobs:
   ubuntu-build:

@@ -5,8 +5,8 @@ include(cmake/find_repo_version.cmake)
 find_repo_version(VERSION IS_STABLE)
 
 project(
-  cpp-opengl-template
-  DESCRIPTION "CPP Template"
+  resin
+  DESCRIPTION "SDF Modeler"
   LANGUAGES CXX C
   VERSION ${VERSION})
 
@@ -81,5 +81,5 @@ endif()
 
 add_subdirectory(cmake/dependencies)
 
-add_subdirectory(hello)
-add_subdirectory(libhello)
+add_subdirectory(resin)
+add_subdirectory(libresin)

@@ -3,15 +3,15 @@
 #include <imgui/imgui.h>
 
 #include <glm/glm.hpp>
-#include <libhello/hello.hpp>
+#include <libresin/resin.hpp>
 #include <print>
 #include <version/version.hpp>
 
 int main() {
-  hello::say_hello();
-  std::println("Project version: {0}.{1}.{2}({3})", HELLO_VERSION_MAJOR,
-               HELLO_VERSION_MINOR, HELLO_VERSION_PATCH,
-               HELLO_IS_STABLE ? "stable" : "unstable");
+  resin::say_resin();
+  std::println("Project version: {0}.{1}.{2}({3})", RESIN_VERSION_MAJOR,
+               RESIN_VERSION_MINOR, RESIN_VERSION_PATCH,
+               RESIN_IS_STABLE ? "stable" : "unstable");
 
   std::println("ImGui version: {0}", IMGUI_VERSION);
   std::println("GLFW version: {0}.{1}.{2}", GLFW_VERSION_MAJOR,
