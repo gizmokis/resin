@@ -7,7 +7,7 @@ The repository follows the [`Canonical Project Structure`](https://www.open-std.
 2. All headers are included with `<>` and should follow the project name as directory prefix,  e.g. `<libhello/hello.hpp>`. 
 3. The project's source directory can have subdirectories of its own to organize the code into components e.g. `<libhello/core/hello.hpp>`.
 4. Header and source files extensions are respectively `.hpp` and `.cpp`.
-5. No special characters other than `_` and `-`. In our project we follow the `snake_case` as specified in [Google's cpp guide](https://google.github.io/styleguide/cppguide.html#File_Names).
+5. No special characters other than `_` and `-` in the file and directories names. In our project we follow the `snake_case` as specified in [Google's cpp guide](https://google.github.io/styleguide/cppguide.html#File_Names).
 
 When adding new files remember to add them to the `CMake` into `add_(library|executable)` function. Without this step CMake will not recognize the files and the building process will fail. 
 
