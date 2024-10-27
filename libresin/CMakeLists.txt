@@ -6,7 +6,9 @@ message(STATUS "Configuring " ${PROJECT_NAME})
 
 set(CMAKE_CXX_STANDARD 23)
 
-add_library(${PROJECT_NAME} libresin/resin.cpp libresin/resin.hpp)
+add_library(${PROJECT_NAME} libresin/resin.cpp libresin/resin.hpp
+        libresin/core/transform.hpp
+        libresin/core/transform.cpp)
 
 # Prevent CMake from adding `lib` before `libresin`
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
