@@ -5,3 +5,8 @@ PointerAlignment: Left
 UseTab: "Never"
 ColumnLimit: 120
 MaxEmptyLinesToKeep: 1
+
+AlignConsecutiveAssignments:
+  Enabled: true
+  AcrossEmptyLines: false 
+  AcrossComments: false
