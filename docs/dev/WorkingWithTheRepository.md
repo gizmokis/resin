@@ -18,7 +18,7 @@ Each of these projects follows the
 
 ### Adding new files
 
-To add a new file place it in the correct folder and add the file to the `CMake` into 
+To add a new file place it in the correct folder and add the file to the `CMake` into
 `add_(library|executable)` function:
 
 ```cmake
@@ -60,6 +60,16 @@ After adding new tests to an existing test file refresh the tests with `CMake: R
 
 When adding new test file to the CMake you need to additionally reconfigure the project using `CMake: Configure`, which
 normally happens automatically.
+
+### CLion
+
+To run tests you can use test configuration
+
+<img src="media/clion_tests.png" width="300">
+
+or navigate to the test file in order to run single test
+
+<img src="media/clion_run_test.png" width="300">
 
 ## CMakePresets
 
