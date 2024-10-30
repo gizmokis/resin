@@ -1,11 +1,11 @@
-name: Run formatter 📝, linter 🧹, and tests 🧪
+name: Run formatter 📝, linter 🧹 and tests 🧪
 on:
   push:
     branches: [ master ]
   pull_request:
     branches: [ master ]
 jobs:
-  check-linter:
+  run-formatter-linter-tests:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout code
