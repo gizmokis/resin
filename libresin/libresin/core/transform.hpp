@@ -9,23 +9,21 @@
 
 namespace resin {
 
-struct transform {
+struct Transform final {
  public:
-  explicit transform(const glm::vec3 pos = glm::vec3(),
-                     const glm::quat rot = {1, 0, 0, 0},
+  explicit Transform(const glm::vec3 pos = glm::vec3(), const glm::quat rot = {1, 0, 0, 0},
                      const glm::vec3 scale = {1, 1, 1})
       : pos_(pos), rot_(rot), scale_(scale), dirty_(true), inv_dirty_(true) {}
-  ~transform();
+  ~Transform();
 
   bool has_parent() const { return parent_.has_value(); }
-  const transform& parent() const { return *parent_; }
-  void set_parent(std::optional<std::reference_wrapper<transform>> parent);
+  const Transform& parent() const { return *parent_; }
+  void set_parent(std::optional<std::reference_wrapper<Transform>> parent);
 
   void rotate(const glm::vec3& axis, float angle);
   void rotate(const glm::quat& rotation);
   void rotate_local(const glm::quat& rotation);
-  void look_at(const glm::vec3& point,
-               const glm::vec3& up = glm::vec3(0, 1, 0));
+  void look_at(const glm::vec3& point, const glm::vec3& up = glm::vec3(0, 1, 0));
   void fma(const glm::vec3& axis, float amount);
 
   const glm::vec3& local_pos() const { return pos_; }
@@ -55,30 +53,28 @@ struct transform {
   const glm::mat4& local_to_world_matrix() const;
   const glm::mat4& world_to_local_matrix() const;
 
-  transform(const transform&) = delete;
-  transform(transform&&) = delete;
-  transform& operator=(const transform&) = delete;
-  transform& operator=(transform&&) = delete;
+  Transform(const Transform&) = delete;
+  Transform(Transform&&) = delete;
+  Transform& operator=(const Transform&) = delete;
+  Transform& operator=(Transform&&) = delete;
 
- protected:
+ private:
+  void remove_from_parent();
   void mark_dirty() const;
 
  private:
-  void clear_parent();
+  std::optional<std::reference_wrapper<Transform>> parent_;
+  std::vector<std::reference_wrapper<Transform>> children_;
 
- protected:
-  std::optional<std::reference_wrapper<transform>> parent_;
-  std::vector<std::reference_wrapper<transform>> children_;
-
- private:
   glm::vec3 pos_;
   glm::quat rot_;
   glm::vec3 scale_;
 
   mutable bool dirty_ = false;
-  mutable glm::mat4 model_mat_ = glm::mat4(1.0f);
+  mutable glm::mat4 model_mat_ = glm::mat4(1.0F);
   mutable bool inv_dirty_ = false;
-  mutable glm::mat4 inv_model_mat_ = glm::mat4(1.0f);
-};  // class transform
+  mutable glm::mat4 inv_model_mat_ = glm::mat4(1.0F);
+};  // class Transform
+
 }  // namespace resin
 #endif  // TRANSFORM_HPP

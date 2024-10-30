@@ -7,8 +7,7 @@ message(STATUS "Configuring " ${PROJECT_NAME})
 set(CMAKE_CXX_STANDARD 23)
 
 add_library(${PROJECT_NAME} libresin/resin.cpp libresin/resin.hpp
-        libresin/core/transform.hpp
-        libresin/core/transform.cpp)
+        libresin/core/transform.hpp libresin/core/transform.cpp)
 
 # Prevent CMake from adding `lib` before `libresin`
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
@@ -32,9 +31,11 @@ if(BUILD_TESTING)
   add_executable(
     "${PROJECT_NAME}_tests"
     tests/example_test.cpp
+    tests/core/transform_test.cpp
   )
   target_link_libraries(
     "${PROJECT_NAME}_tests"
+    ${PROJECT_NAME}
     GTest::gtest_main
   )
 
