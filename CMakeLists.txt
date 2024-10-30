@@ -15,7 +15,7 @@ option(GENERATE_CLANGD_FILE
        "Generate the .clangd file for the host operating system" ON)
 option(BUILD_GLM "Fetch and build GLM" ON)
 option(BUILD_GLFW "Fetch and build GLFW" ON)
-option(BUILD_TESTING "Fetch GoogleTest and build tests" ON)
+option(BUILD_TESTING "Fetch GoogleTest and build tests" OFF)
 option(
   USE_IMPLICIT_INCLUDE_DIRECTORIES
   "Add the implicit include directories to standard include directories.
