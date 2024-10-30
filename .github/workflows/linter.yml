@@ -1,4 +1,4 @@
-name: Run Linter (clang-format, clang-tidy) 🧹
+name: Run formatter 📝, linter 🧹, and tests 🧪
 on:
   push:
     branches: [ master ]
@@ -22,8 +22,8 @@ jobs:
       - name: CMake Configure
         id: cmake-configure
         run: |
-          cmake --preset=ci-ubuntu-gcc
-          cmake --build --preset=ci-ubuntu-gcc
+          cmake --preset=ci-ubuntu-gcc-test
+          cmake --build --preset=ci-ubuntu-gcc-test
 
       - name: Run clang-format
         id: run-clang-format
@@ -34,3 +34,8 @@ jobs:
         id: run-clang-tidy
         run: |
           python3 run-clang-tidy.py -p build -warnings-as-errors *
+
+      - name: Run tests
+        id: run-tests 
+        run: |
+          cd ./build && ctest

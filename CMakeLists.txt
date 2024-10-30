@@ -13,8 +13,9 @@ project(
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 option(GENERATE_CLANGD_FILE
        "Generate the .clangd file for the host operating system" ON)
-option(FIND_GLM "Try to find glm on the host operating system" OFF)
-option(FIND_GLFW "Try to find glfw on the host operating system" OFF)
+option(BUILD_GLM "Fetch and build GLM" ON)
+option(BUILD_GLFW "Fetch and build GLFW" ON)
+option(BUILD_TESTING "Fetch GoogleTest and build tests" ON)
 option(
   USE_IMPLICIT_INCLUDE_DIRECTORIES
   "Add the implicit include directories to standard include directories.
@@ -53,8 +54,8 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-# Multi-config generators (e.g. Visual Studio) when CMAKE_CONFIGURATION_TYPES is
-# set to "Relase", by default put the output files in the
+# When CMAKE_CONFIGURATION_TYPES is set to "Relase", multi-config generators
+# (e.g. Visual Studio), by default put the output files in the
 # ${CMAKE_(ARCHIVE|LIBRARY|RUNTIME)_OUTPUT_DIRECTORY}/Release directory in order
 # to avoid collisions with the debug binaries. In our setup there is no need for
 # this, since the debug binary is put in the `build/debug/bin`.
@@ -62,21 +63,16 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
+# Include CTest in order to generate `DartConfiguration.tcl`
+include(CTest)
+
 # Prepare dependencies
-set(BUILD_GLM ON)
-if(FIND_GLM)
+if(NOT BUILD_GLM)
   find_package(GLM 1.0.1)
-  if(GLM_FOUND)
-    set(BUILD_GLM OFF)
-  endif()
 endif()
 
-set(BUILD_GLFW ON)
-if(FIND_GLFW)
+if(NOT BUILD_GLFW)
   find_package(GLFW 3.4)
-  if(GLFW_FOUND)
-    set(BUILD_GLFW OFF)
-  endif()
 endif()
 
 add_subdirectory(cmake/dependencies)

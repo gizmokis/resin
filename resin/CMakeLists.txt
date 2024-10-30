@@ -20,3 +20,20 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC GLFW_INCLUDE_NONE)
 target_compile_options(${PROJECT_NAME} PRIVATE ${PROJ_CXX_FLAGS})
 set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS
                                                  "${PROJ_EXE_LINKER_FLAGS}")
+
+if(BUILD_TESTING)
+  enable_testing()
+
+  add_executable(
+    "${PROJECT_NAME}_tests"
+    tests/example_test.cpp
+  )
+  target_link_libraries(
+    "${PROJECT_NAME}_tests"
+    GTest::gtest_main
+  )
+
+  include(CTest)
+  include(GoogleTest)
+  gtest_discover_tests("${PROJECT_NAME}_tests")
+endif()

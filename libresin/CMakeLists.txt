@@ -23,3 +23,19 @@ if(DEFINED CLANG_TIDY_COMMAND AND NOT CLANG_TIDY_COMMAND STREQUAL "")
   set_target_properties(libresin PROPERTIES CXX_CLANG_TIDY
                                             "${CLANG_TIDY_COMMAND}")
 endif()
+
+if(BUILD_TESTING)
+  enable_testing()
+
+  add_executable(
+    "${PROJECT_NAME}_tests"
+    tests/example_test.cpp
+  )
+  target_link_libraries(
+    "${PROJECT_NAME}_tests"
+    GTest::gtest_main
+  )
+
+  include(GoogleTest)
+  gtest_discover_tests("${PROJECT_NAME}_tests")
+endif()

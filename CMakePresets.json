@@ -24,6 +24,13 @@
       }
     },
     {
+      "name": "test",
+      "hidden": true,
+      "cacheVariables": {
+        "BUILD_TESTING": true
+      }
+    },
+    {
       "name": "ci-sanitize-ubuntu",
       "description": "Detects out-of-bounds accesses to heap, stack and globals, use after free and more",
       "binaryDir": "${sourceDir}/build/sanitize",
@@ -50,6 +57,16 @@
         "CMAKE_CXX_COMPILER": "/usr/bin/g++-14",
         "CMAKE_C_COMPILER": "/usr/bin/gcc-14"
       }
+    },
+    {
+      "name": "ci-ubuntu-gcc-test",
+      "description": "Builds the ubuntu release with tests pedantically",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build",
+      "inherits": [
+        "ci-ubuntu-gcc",
+        "test"
+      ]
     },
     {
       "name": "ci-ubuntu-clang",
@@ -83,7 +100,8 @@
       "binaryDir": "${sourceDir}/build/debug",
       "generator": "Ninja",
       "inherits": [
-        "linux-pedantic"
+        "linux-pedantic",
+        "test"
       ],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
@@ -101,7 +119,8 @@
       "binaryDir": "${sourceDir}/build/debug",
       "generator": "Ninja",
       "inherits": [
-        "windows-x64-pedantic"
+        "windows-x64-pedantic",
+        "test"
       ],
       "environment": {
         "UseMultiToolTask": "true",
@@ -132,6 +151,11 @@
     {
       "name": "ci-ubuntu-gcc",
       "configurePreset": "ci-ubuntu-gcc",
+      "configuration": "Release"
+    },
+    {
+      "name": "ci-ubuntu-gcc-test",
+      "configurePreset": "ci-ubuntu-gcc-test",
       "configuration": "Release"
     },
     {
