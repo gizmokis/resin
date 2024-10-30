@@ -5,7 +5,7 @@ function(generate_clangd_file COMPILER_FLAGS)
     set(CLANGD_COMPILER_STANDARD "/clang:-std=c++23")
   endif()
 
-  write_file(
+  file(WRITE
     ${CMAKE_CURRENT_SOURCE_DIR}/.clangd
     "CompileFlags:\n"
     "  CompilationDatabase: build/debug/\n"
