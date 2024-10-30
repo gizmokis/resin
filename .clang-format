@@ -3,5 +3,5 @@ BasedOnStyle: Google
 DerivePointerAlignment: false
 PointerAlignment: Left
 UseTab: "Never"
-ColumnLimit: 80
+ColumnLimit: 120
 MaxEmptyLinesToKeep: 1
