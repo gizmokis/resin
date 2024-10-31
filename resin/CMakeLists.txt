@@ -18,8 +18,9 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC GLFW_INCLUDE_NONE)
 
 # Set compile options and properties of the target
 target_compile_options(${PROJECT_NAME} PRIVATE ${PROJ_CXX_FLAGS})
-set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS
-                                                 "${PROJ_EXE_LINKER_FLAGS}")
+
+# This is required when resin is linked with shared libraries
+target_link_options(${PROJECT_NAME} PRIVATE ${PROJ_EXE_LINKER_FLAGS})
 
 if(BUILD_TESTING)
   enable_testing()
