@@ -2,22 +2,26 @@
 #include <glad/gl.h>
 #include <imgui/imgui.h>
 
+#include <format>
 #include <glm/glm.hpp>
 #include <libresin/resin.hpp>
+#include <libresin/utils/logger.hpp>
 #include <print>
 #include <version/version.hpp>
 
 int main() {
-  resin::say_resin();
-  std::println("Project version: {0}.{1}.{2}({3})", RESIN_VERSION_MAJOR, RESIN_VERSION_MINOR, RESIN_VERSION_PATCH,
-               RESIN_IS_STABLE ? "stable" : "unstable");
+  resin::Logger::init();
+
+  resin::Logger::info("Project version: {0}.{1}.{2}({3})", RESIN_VERSION_MAJOR, RESIN_VERSION_MINOR,
+                      RESIN_VERSION_PATCH, RESIN_IS_STABLE ? "stable" : "unstable");
 
   std::println("ImGui version: {0}", IMGUI_VERSION);
   std::println("GLFW version: {0}.{1}.{2}", GLFW_VERSION_MAJOR, GLFW_VERSION_MINOR, GLFW_VERSION_REVISION);
   std::println("GLM version: {0}.{1}.{2}", GLM_VERSION_MAJOR, GLM_VERSION_MINOR, GLM_VERSION_REVISION);
 
-  constexpr int kWidth = 800;
+  constexpr int kWidth  = 800;
   constexpr int kHeight = 600;
+
   glfwInit();
   GLFWwindow* window = glfwCreateWindow(kWidth, kHeight, "Test", nullptr, nullptr);
   glfwMakeContextCurrent(window);
