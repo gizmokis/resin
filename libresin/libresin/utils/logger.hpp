@@ -1,9 +1,9 @@
 #ifndef RESIN_UTIL_LOGGER_HPP
 #define RESIN_UTIL_LOGGER_HPP
 
+#include <cstdint>
 #include <format>
 #include <memory>
-#include <optional>
 #include <print>
 #include <source_location>
 #include <string_view>
@@ -11,18 +11,16 @@
 
 namespace resin {
 
-constexpr static std::array<std::string_view, 3> kLogPrefixes = {
-    "ERROR",
-    "WARNING",
-    "INFO",
-};
-
 enum class LogLevel : uint32_t {
   None = 0,
   Err  = 1,
   Warn = 2,
   Info = 3,
 };
+
+constexpr static std::array<std::string_view, 3> kLogPrefixes = {"ERROR", "WARN", "INFO"};
+constexpr static std::string_view kDebugLogPrefix             = "DEBUG";
+constexpr static uint32_t kMaxLogPrefixSize                   = 5;
 
 inline constexpr std::string_view get_log_prefix(LogLevel level) {
   return kLogPrefixes[static_cast<uint32_t>(level) - 1];
@@ -32,9 +30,9 @@ class LoggerScribe {
  public:
   explicit LoggerScribe(LogLevel max_level);
 
-  virtual ~LoggerScribe() = default;
+  virtual ~LoggerScribe()                                                             = default;
   virtual void vlog(std::string_view usr_fmt, std::format_args usr_args, const std::tm& date_time,
-                    const std::source_location& location, std::string_view location_file_name, LogLevel level) = 0;
+                    const std::source_location& location, LogLevel level, bool debug) = 0;
 
  protected:
   const LogLevel max_level_;
@@ -45,7 +43,7 @@ class TerminalLoggerScribe : public LoggerScribe {
   explicit TerminalLoggerScribe(LogLevel max_level = LogLevel::Info, bool use_stderr = false);
 
   void vlog(std::string_view usr_fmt, std::format_args usr_args, const std::tm& date_time,
-            const std::source_location& location, std::string_view location_file_name, LogLevel level) override;
+            const std::source_location& location, LogLevel level, bool debug) override;
 
  private:
   const bool use_stderr_;
@@ -54,17 +52,12 @@ class TerminalLoggerScribe : public LoggerScribe {
 // class FileLogger : public LoggerEntity {
 //  public:
 //   void vlog(std::string_view usr_fmt, std::format_args usr_args, const std::tm& date_time,
-//             const std::source_location& location, LogLevel level) override;
+//             const std::source_location& location, LogLevel level, bool debug) override;
 // };
 
 class Logger {
  public:
-  // Initialize the logger. This function is not thread-safe and should be
-  // called once at the beginning of the program execution. This
-  // singleton class is NOT lazily evaluated -- any log attempt will not result
-  // in any log message if this function is not invoked.
-  static void init();
-
+  Logger() = default;
   ~Logger();
 
   struct FormatWithLocation {
@@ -77,41 +70,48 @@ class Logger {
 
   template <typename... Args>
   inline static void err(FormatWithLocation fmt_loc, Args&&... args) {
-    log(LogLevel::Err, fmt_loc.loc, fmt_loc.value, args...);
+    get_instance().log(LogLevel::Err, false, fmt_loc.loc, fmt_loc.value, args...);
   }
 
   template <typename... Args>
   inline static void warn(FormatWithLocation fmt_loc, Args&&... args) {
-    log(LogLevel::Warn, fmt_loc.loc, fmt_loc.value, args...);
+    get_instance().log(LogLevel::Warn, false, fmt_loc.loc, fmt_loc.value, args...);
   }
 
   template <typename... Args>
   inline static void info(FormatWithLocation fmt_loc, Args&&... args) {
-    log(LogLevel::Info, fmt_loc.loc, fmt_loc.value, args...);
+    get_instance().log(LogLevel::Info, false, fmt_loc.loc, fmt_loc.value, args...);
   }
 
   template <typename... Args>
-  static void log(LogLevel level, const std::source_location& location, std::string_view fmt, Args&&... args) {
-    if (!s_instance_.has_value()) {
-      return;
-    }
+  inline static void debug(FormatWithLocation fmt_loc, Args&&... args) {
+#ifndef NDEBUG
+    get_instance().log(LogLevel::None, true, fmt_loc.loc, fmt_loc.value, args...);
+#endif
+  }
+
+  template <typename... Args>
+  void log(LogLevel level, bool debug, const std::source_location& location, std::string_view fmt, Args&&... args) {
+    std::lock_guard<std::mutex> lock(mutex_);
+
     std::time_t t = std::time(nullptr);
     std::tm now   = *std::localtime(&t);
 
-    auto full_file_name = std::string_view(location.file_name());
+    for (auto& scribe : scribes_) {
+      scribe->vlog(fmt, std::make_format_args(args...), now, location, level, debug);
+    }
+  }
 
-    size_t pos     = full_file_name.find("resin");
-    auto file_name = full_file_name.substr(pos);
+  void add_scribe(std::unique_ptr<LoggerScribe> scribe);
 
-    // TODO: implement scribes
-    // for (auto& scribe : scribes_) {
-    //   scribe->vlog(fmt, std::make_format_args(args...), now, location, file_name, level);
-    // }
+  static Logger& get_instance() {
+    static Logger instance;
+    return instance;
   }
 
  private:
-  static std::optional<Logger> s_instance_;
-  static std::vector<std::unique_ptr<LoggerScribe>> scribes_;
+  std::vector<std::unique_ptr<LoggerScribe>> scribes_;
+  std::mutex mutex_;
 };
 
 }  // namespace resin

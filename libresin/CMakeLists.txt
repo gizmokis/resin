@@ -14,6 +14,12 @@ set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
 target_include_directories(${PROJECT_NAME} PUBLIC .)
 target_link_libraries(${PROJECT_NAME} PUBLIC glm::glm)
 
+# The `-fmacro-prefix-map` flag is required for GCC and CLANG to ensure that `__FILE__` and `std::source_location` use 
+# relative paths instead of absolute ones.
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  list(APPEND PROJ_CXX_FLAGS "-fmacro-prefix-map=${CMAKE_CURRENT_SOURCE_DIR}/=")
+endif()
+
 # Set compile options and properties of the target
 target_compile_options(${PROJECT_NAME} PRIVATE ${PROJ_CXX_FLAGS})
 
