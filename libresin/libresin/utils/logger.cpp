@@ -6,6 +6,10 @@
 #define IS_UNIX
 #endif
 
+#ifndef IS_UNIX
+#include <windows.h>
+#endif
+
 namespace resin {
 
 // Adapted from the GCC `std::print` implementation that may be found here:
@@ -41,6 +45,22 @@ void TerminalLoggerScribe::vlog(std::string_view usr_fmt, std::format_args usr_a
   } else if (debug) {
     std::print("\033[34m");  // Blue
   }
+#else
+  HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+  CONSOLE_SCREEN_BUFFER_INFO consoleInfo;
+  WORD win_console_saved_attributes;
+
+  if (GetConsoleScreenBufferInfo(hConsole, &consoleInfo)) {
+    win_console_saved_attributes = consoleInfo.wAttributes;
+  }
+
+  if (level == LogLevel::Err) {
+    SetConsoleTextAttribute(hConsole, FOREGROUND_RED);
+  } else if (level == LogLevel::Warn) {
+    SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_GREEN);
+  } else if (debug) {
+    SetConsoleTextAttribute(hConsole, FOREGROUND_BLUE);
+  }
 #endif
 
   std::print("[{0:{4}} {1:02}:{2:02}:{3:02}] ", debug ? kDebugLogPrefix : get_log_prefix(level), date_time.tm_hour,
@@ -55,6 +75,8 @@ void TerminalLoggerScribe::vlog(std::string_view usr_fmt, std::format_args usr_a
 
 #ifdef IS_UNIX
   std::print("\033[0m\n");  // Restore default text style
+#else
+  SetConsoleTextAttribute(hConsole, win_console_saved_attributes);
 #endif
 }
 
