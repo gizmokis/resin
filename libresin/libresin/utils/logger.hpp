@@ -95,7 +95,8 @@ class Logger {
     const std::lock_guard lock(mutex_);
 
     const std::time_t t = std::time(nullptr);
-    const std::tm now   = *std::localtime(&t);
+    std::tm now{};
+    localtime_s( &now, &t);
 
     for (const auto& scribe : scribes_) {
       scribe->vlog(fmt, std::make_format_args(args...), now, location, level, debug);

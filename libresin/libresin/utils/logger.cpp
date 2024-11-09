@@ -23,20 +23,20 @@ static void begin_unix_terminal(std::string_view style) { std::print("\033{}", s
 static void end_unix_terminal() { std::print("\033[0m\n"); }
 #else
 static WORD begin_win_terminal(WORD attributes) {
-  HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-  CONSOLE_SCREEN_BUFFER_INFO consoleInfo;
-  WORD win_terminal_saved_attributes;
+  HANDLE h_console = GetStdHandle(STD_OUTPUT_HANDLE);
+  CONSOLE_SCREEN_BUFFER_INFO console_info;
+  WORD old_win_terminal_attributes = 0;
 
-  if (GetConsoleScreenBufferInfo(hConsole, &consoleInfo)) {
-    win_terminal_saved_attributes = consoleInfo.wAttributes;
+  if (GetConsoleScreenBufferInfo(h_console, &console_info)) {
+    old_win_terminal_attributes = console_info.wAttributes;
   }
 
-  SetConsoleTextAttribute(hConsole, FOREGROUND_BLUE);
-  return win_terminal_saved_attributes;
+  SetConsoleTextAttribute(h_console, attributes);
+  return old_win_terminal_attributes;
 }
 static void end_win_terminal(WORD old_attributes) {
-  HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-  SetConsoleTextAttribute(hConsole, old_attributes);
+  HANDLE h_console = GetStdHandle(STD_OUTPUT_HANDLE);
+  SetConsoleTextAttribute(h_console, old_attributes);
   std::print("\n");
 }
 #endif
@@ -68,7 +68,7 @@ void TerminalLoggerScribe::vlog(std::string_view usr_fmt, std::format_args usr_a
 #ifdef IS_UNIX
     begin_unix_terminal("[34m");  // Blue
 #else
-    WORD win_terminal_saved_attributes = begin_win_terminal(FOREGROUND_BLUE);
+    WORD old_win_terminal_attributes = begin_win_terminal(FOREGROUND_BLUE);
 #endif
 
     print_msg(kDebugLogPrefix, usr_fmt, usr_args, date_time, location, level);
@@ -76,7 +76,7 @@ void TerminalLoggerScribe::vlog(std::string_view usr_fmt, std::format_args usr_a
 #ifdef IS_UNIX
     end_unix_terminal();
 #else
-    end_win_terminal(win_terminal_saved_attributes);
+    end_win_terminal(old_win_terminal_attributes);
 #endif
     return;
   }
@@ -93,11 +93,13 @@ void TerminalLoggerScribe::vlog(std::string_view usr_fmt, std::format_args usr_a
     begin_unix_terminal("[1;33m");  // Yellow bold
   }
 #else
-  WORD win_terminal_saved_attributes;  // NOLINT
+  WORD old_win_terminal_attributes = 0;
   if (level == LogLevel::Err) {
-    win_terminal_saved_attributes = begin_win_terminal(FOREGROUND_RED);
+    old_win_terminal_attributes = begin_win_terminal(FOREGROUND_RED);
   } else if (level == LogLevel::Warn) {
-    win_terminal_saved_attributes = begin_win_terminal(FOREGROUND_RED | FOREGROUND_GREEN);
+    old_win_terminal_attributes = begin_win_terminal(FOREGROUND_RED | FOREGROUND_GREEN);
+  } else {
+    old_win_terminal_attributes = begin_win_terminal(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
   }
 #endif
 
@@ -106,7 +108,7 @@ void TerminalLoggerScribe::vlog(std::string_view usr_fmt, std::format_args usr_a
 #ifdef IS_UNIX
   end_unix_terminal();
 #else
-  end_windows_terminal(win_terminal_saved_attributes);
+  end_win_terminal(old_win_terminal_attributes);
 #endif
 }
 
