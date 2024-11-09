@@ -34,6 +34,7 @@ static WORD begin_win_terminal(WORD attributes) {
   SetConsoleTextAttribute(h_console, attributes);
   return old_win_terminal_attributes;
 }
+
 static void end_win_terminal(WORD old_attributes) {
   HANDLE h_console = GetStdHandle(STD_OUTPUT_HANDLE);
   SetConsoleTextAttribute(h_console, old_attributes);
@@ -42,26 +43,33 @@ static void end_win_terminal(WORD old_attributes) {
 #endif
 
 static void print_msg(std::string_view prefix, std::string_view usr_fmt, std::format_args usr_args,
-                      const std::tm& date_time, const std::source_location& location, LogLevel level) {
+                      const std::chrono::time_point<std::chrono::system_clock>& time_point,
+                      const std::source_location& location, LogLevel level, bool use_stderr) {
+  FILE* stream = stdout;
+  if (use_stderr) {
+    stream = stderr;
+  }
+
   // Print logger message prefix with date
-  std::print("[{0:{4}} {1:02}:{2:02}:{3:02}] ", prefix, date_time.tm_hour, date_time.tm_min, date_time.tm_sec,
-             kMaxLogPrefixSize);
+  auto local_time = std::chrono::zoned_time{std::chrono::current_zone(), time_point};
+  std::print(stream, "[{0:{2}} {1:%H:%M:%OS}] ", prefix, local_time, kMaxLogPrefixSize);
 
   // Print location
   if (level < LogLevel::Info) {
 #ifdef NDEBUG
-    std::print("`{0}`: ", location.function_name());
+    std::print(stream, "`{0}`: ", location.function_name());
 #else
-    std::print("{0}({1}:{2}) `{3}`: ", location.file_name(), location.line(), location.column(),
+    std::print(stream, "{0}({1}:{2}) `{3}`: ", location.file_name(), location.line(), location.column(),
                location.function_name());
 #endif
   }
 
   // Print message provided by the user
-  std::vprint_unicode(usr_fmt, usr_args);
+  std::vprint_unicode(stream, usr_fmt, usr_args);
 }
 
-void TerminalLoggerScribe::vlog(std::string_view usr_fmt, std::format_args usr_args, const std::tm& date_time,
+void TerminalLoggerScribe::vlog(std::string_view usr_fmt, std::format_args usr_args,
+                                const std::chrono::time_point<std::chrono::system_clock>& time_point,
                                 const std::source_location& location, LogLevel level, bool is_debug_msg) {  // NOLINT
 #ifndef NDEBUG
   if (is_debug_msg) {
@@ -71,7 +79,7 @@ void TerminalLoggerScribe::vlog(std::string_view usr_fmt, std::format_args usr_a
     WORD old_win_terminal_attributes = begin_win_terminal(FOREGROUND_BLUE);
 #endif
 
-    print_msg(kDebugLogPrefix, usr_fmt, usr_args, date_time, location, level);
+    print_msg(kDebugLogPrefix, usr_fmt, usr_args, time_point, location, level, use_stderr_);
 
 #ifdef IS_UNIX
     end_unix_terminal();
@@ -91,6 +99,8 @@ void TerminalLoggerScribe::vlog(std::string_view usr_fmt, std::format_args usr_a
     begin_unix_terminal("[1;31m");  // Red bold
   } else if (level == LogLevel::Warn) {
     begin_unix_terminal("[1;33m");  // Yellow bold
+  } else {
+    begin_unix_terminal("[;37m");  // White
   }
 #else
   WORD old_win_terminal_attributes = 0;
@@ -103,7 +113,7 @@ void TerminalLoggerScribe::vlog(std::string_view usr_fmt, std::format_args usr_a
   }
 #endif
 
-  print_msg(get_log_prefix(level), usr_fmt, usr_args, date_time, location, level);
+  print_msg(get_log_prefix(level), usr_fmt, usr_args, time_point, location, level, use_stderr_);
 
 #ifdef IS_UNIX
   end_unix_terminal();

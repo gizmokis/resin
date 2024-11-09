@@ -2,6 +2,7 @@
 #define RESIN_UTIL_LOGGER_HPP
 
 #include <array>
+#include <chrono>
 #include <cstdint>
 #include <format>
 #include <memory>
@@ -30,7 +31,8 @@ class LoggerScribe {
   explicit LoggerScribe(LogLevel max_level);
 
   virtual ~LoggerScribe()                                                                    = default;
-  virtual void vlog(std::string_view usr_fmt, std::format_args usr_args, const std::tm& date_time,
+  virtual void vlog(std::string_view usr_fmt, std::format_args usr_args,
+                    const std::chrono::time_point<std::chrono::system_clock>& time_point,
                     const std::source_location& location, LogLevel level, bool is_debug_msg) = 0;
 
  protected:
@@ -41,8 +43,9 @@ class TerminalLoggerScribe : public LoggerScribe {
  public:
   explicit TerminalLoggerScribe(LogLevel max_level = LogLevel::Info, bool use_stderr = false);
 
-  void vlog(std::string_view usr_fmt, std::format_args usr_args, const std::tm& date_time,
-            const std::source_location& location, LogLevel level, bool is_debug_msg) override;
+  void vlog(std::string_view usr_fmt, std::format_args usr_args,
+            const std::chrono::time_point<std::chrono::system_clock>& time_point, const std::source_location& location,
+            LogLevel level, bool is_debug_msg) override;
 
  private:
   const bool use_stderr_;
@@ -94,12 +97,14 @@ class Logger {
            Args&... args) {
     const std::lock_guard lock(mutex_);
 
-    const std::time_t t = std::time(nullptr);
-    std::tm now{};
-    localtime_s( &now, &t);
+    const std::chrono::zoned_time<std::chrono::seconds> local_time =
+        std::chrono::zoned_time{
+            std::chrono::current_zone(),
+        }
+            .get_sys_time();
 
     for (const auto& scribe : scribes_) {
-      scribe->vlog(fmt, std::make_format_args(args...), now, location, level, debug);
+      scribe->vlog(fmt, std::make_format_args(args...), std::chrono::system_clock::now(), location, level, debug);
     }
   }
 
