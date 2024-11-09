@@ -1,10 +1,11 @@
 #ifndef RESIN_UTIL_LOGGER_HPP
 #define RESIN_UTIL_LOGGER_HPP
 
+#include <array>
 #include <cstdint>
 #include <format>
 #include <memory>
-#include <print>
+#include <mutex>
 #include <source_location>
 #include <string_view>
 #include <vector>
@@ -18,21 +19,19 @@ enum class LogLevel : uint32_t {
   Info = 3,
 };
 
-constexpr static std::array<std::string_view, 3> kLogPrefixes = {"ERROR", "WARN", "INFO"};
-constexpr static std::string_view kDebugLogPrefix             = "DEBUG";
-constexpr static uint32_t kMaxLogPrefixSize                   = 5;
+static constexpr std::array<std::string_view, 3> kLogPrefixes = {"ERROR", "WARN", "INFO"};
+static constexpr std::string_view kDebugLogPrefix             = "DEBUG";
+static constexpr uint32_t kMaxLogPrefixSize                   = 5;
 
-inline constexpr std::string_view get_log_prefix(LogLevel level) {
-  return kLogPrefixes[static_cast<uint32_t>(level) - 1];
-}
+inline std::string_view get_log_prefix(LogLevel level) { return kLogPrefixes[static_cast<uint32_t>(level) - 1]; }
 
 class LoggerScribe {
  public:
   explicit LoggerScribe(LogLevel max_level);
 
-  virtual ~LoggerScribe()                                                             = default;
+  virtual ~LoggerScribe()                                                                    = default;
   virtual void vlog(std::string_view usr_fmt, std::format_args usr_args, const std::tm& date_time,
-                    const std::source_location& location, LogLevel level, bool debug) = 0;
+                    const std::source_location& location, LogLevel level, bool is_debug_msg) = 0;
 
  protected:
   const LogLevel max_level_;
@@ -43,7 +42,7 @@ class TerminalLoggerScribe : public LoggerScribe {
   explicit TerminalLoggerScribe(LogLevel max_level = LogLevel::Info, bool use_stderr = false);
 
   void vlog(std::string_view usr_fmt, std::format_args usr_args, const std::tm& date_time,
-            const std::source_location& location, LogLevel level, bool debug) override;
+            const std::source_location& location, LogLevel level, bool is_debug_msg) override;
 
  private:
   const bool use_stderr_;
@@ -69,35 +68,36 @@ class Logger {
   };
 
   template <typename... Args>
-  inline static void err(FormatWithLocation fmt_loc, Args&&... args) {
+  static inline void err(FormatWithLocation fmt_loc, Args&&... args) {
     get_instance().log(LogLevel::Err, false, fmt_loc.loc, fmt_loc.value, args...);
   }
 
   template <typename... Args>
-  inline static void warn(FormatWithLocation fmt_loc, Args&&... args) {
+  static inline void warn(FormatWithLocation fmt_loc, Args&&... args) {
     get_instance().log(LogLevel::Warn, false, fmt_loc.loc, fmt_loc.value, args...);
   }
 
   template <typename... Args>
-  inline static void info(FormatWithLocation fmt_loc, Args&&... args) {
+  static inline void info(FormatWithLocation fmt_loc, Args&&... args) {
     get_instance().log(LogLevel::Info, false, fmt_loc.loc, fmt_loc.value, args...);
   }
 
   template <typename... Args>
-  inline static void debug(FormatWithLocation fmt_loc, Args&&... args) {
+  static inline void debug(FormatWithLocation fmt_loc, Args&&... args) {
 #ifndef NDEBUG
     get_instance().log(LogLevel::None, true, fmt_loc.loc, fmt_loc.value, args...);
 #endif
   }
 
   template <typename... Args>
-  void log(LogLevel level, bool debug, const std::source_location& location, std::string_view fmt, Args&&... args) {
-    std::lock_guard<std::mutex> lock(mutex_);
+  void log(const LogLevel level, const bool debug, const std::source_location& location, const std::string_view fmt,
+           Args&... args) {
+    const std::lock_guard lock(mutex_);
 
-    std::time_t t = std::time(nullptr);
-    std::tm now   = *std::localtime(&t);
+    const std::time_t t = std::time(nullptr);
+    const std::tm now   = *std::localtime(&t);
 
-    for (auto& scribe : scribes_) {
+    for (const auto& scribe : scribes_) {
       scribe->vlog(fmt, std::make_format_args(args...), now, location, level, debug);
     }
   }

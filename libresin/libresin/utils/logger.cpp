@@ -1,6 +1,7 @@
 #include <libresin/utils/logger.hpp>
 #include <memory>
 #include <print>
+#include <string_view>
 
 #if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
 #define IS_UNIX
@@ -12,71 +13,100 @@
 
 namespace resin {
 
-// Adapted from the GCC `std::print` implementation that may be found here:
-// https://github.com/gcc-mirror/gcc/blob/7e1d9f58858153bee4bcbab45aa862442859d958/libstdc%2B%2B-v3/include/std/print#L104C1-L113C6
-// The vprint differs from the std::print implementation in that it's not being generic variadic function, which enables
-// its use it in `LoggerScribe`s. Sadly I haven't found the better workaround.
-static void vprint(FILE* stream, std::string_view fmt, std::format_args args) {
-  if constexpr (std::__unicode::__literal_encoding_is_utf8()) {
-    std::vprint_unicode(stream, fmt, args);
-  } else {
-    std::vprint_nonunicode(stream, fmt, args);
-  }
-}
-
-static void vprint(std::string_view fmt, std::format_args args) { vprint(stdout, fmt, args); }
-
 LoggerScribe::LoggerScribe(LogLevel max_level) : max_level_(max_level) {}
 
 TerminalLoggerScribe::TerminalLoggerScribe(LogLevel max_level, bool use_stderr)
     : LoggerScribe(max_level), use_stderr_(use_stderr) {}
 
+#ifdef IS_UNIX
+static void begin_unix_terminal(std::string_view style) { std::print("\033{}", style); }
+static void end_unix_terminal() { std::print("\033[0m\n"); }
+#else
+static WORD begin_win_terminal(WORD attributes) {
+  HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+  CONSOLE_SCREEN_BUFFER_INFO consoleInfo;
+  WORD win_terminal_saved_attributes;
+
+  if (GetConsoleScreenBufferInfo(hConsole, &consoleInfo)) {
+    win_terminal_saved_attributes = consoleInfo.wAttributes;
+  }
+
+  SetConsoleTextAttribute(hConsole, FOREGROUND_BLUE);
+  return win_terminal_saved_attributes;
+}
+static void end_win_terminal(WORD old_attributes) {
+  HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+  SetConsoleTextAttribute(hConsole, old_attributes);
+  std::print("\n");
+}
+#endif
+
+static void print_msg(std::string_view prefix, std::string_view usr_fmt, std::format_args usr_args,
+                      const std::tm& date_time, const std::source_location& location, LogLevel level) {
+  // Print logger message prefix with date
+  std::print("[{0:{4}} {1:02}:{2:02}:{3:02}] ", prefix, date_time.tm_hour, date_time.tm_min, date_time.tm_sec,
+             kMaxLogPrefixSize);
+
+  // Print location
+  if (level < LogLevel::Info) {
+#ifdef NDEBUG
+    std::print("`{0}`: ", location.function_name());
+#else
+    std::print("{0}({1}:{2}) `{3}`: ", location.file_name(), location.line(), location.column(),
+               location.function_name());
+#endif
+  }
+
+  // Print message provided by the user
+  std::vprint_unicode(usr_fmt, usr_args);
+}
+
 void TerminalLoggerScribe::vlog(std::string_view usr_fmt, std::format_args usr_args, const std::tm& date_time,
-                                const std::source_location& location, LogLevel level, bool debug) {
-  if (!debug && level > max_level_) {
+                                const std::source_location& location, LogLevel level, bool is_debug_msg) {  // NOLINT
+#ifndef NDEBUG
+  if (is_debug_msg) {
+#ifdef IS_UNIX
+    begin_unix_terminal("[34m");  // Blue
+#else
+    WORD win_terminal_saved_attributes = begin_win_terminal(FOREGROUND_BLUE);
+#endif
+
+    print_msg(kDebugLogPrefix, usr_fmt, usr_args, date_time, location, level);
+
+#ifdef IS_UNIX
+    end_unix_terminal();
+#else
+    end_win_terminal(win_terminal_saved_attributes);
+#endif
+    return;
+  }
+#endif
+
+  if (level > max_level_) {
     return;
   }
 
 #ifdef IS_UNIX
   if (level == LogLevel::Err) {
-    std::print("\033[1;31m");  // Red bold
+    begin_unix_terminal("[1;31m");  // Red bold
   } else if (level == LogLevel::Warn) {
-    std::print("\033[1;33m");  // Yellow bold
-  } else if (debug) {
-    std::print("\033[34m");  // Blue
+    begin_unix_terminal("[1;33m");  // Yellow bold
   }
 #else
-  HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-  CONSOLE_SCREEN_BUFFER_INFO consoleInfo;
-  WORD win_console_saved_attributes;
-
-  if (GetConsoleScreenBufferInfo(hConsole, &consoleInfo)) {
-    win_console_saved_attributes = consoleInfo.wAttributes;
-  }
-
+  WORD win_terminal_saved_attributes;  // NOLINT
   if (level == LogLevel::Err) {
-    SetConsoleTextAttribute(hConsole, FOREGROUND_RED);
+    win_terminal_saved_attributes = begin_win_terminal(FOREGROUND_RED);
   } else if (level == LogLevel::Warn) {
-    SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_GREEN);
-  } else if (debug) {
-    SetConsoleTextAttribute(hConsole, FOREGROUND_BLUE);
+    win_terminal_saved_attributes = begin_win_terminal(FOREGROUND_RED | FOREGROUND_GREEN);
   }
 #endif
 
-  std::print("[{0:{4}} {1:02}:{2:02}:{3:02}] ", debug ? kDebugLogPrefix : get_log_prefix(level), date_time.tm_hour,
-             date_time.tm_min, date_time.tm_sec, kMaxLogPrefixSize);
-
-  if (level < LogLevel::Info) {
-    std::print("{0}({1}:{2}) `{3}`: ", location.file_name(), location.line(), location.column(),
-               location.function_name());
-  }
-
-  vprint(usr_fmt, usr_args);
+  print_msg(get_log_prefix(level), usr_fmt, usr_args, date_time, location, level);
 
 #ifdef IS_UNIX
-  std::print("\033[0m\n");  // Restore default text style
+  end_unix_terminal();
 #else
-  SetConsoleTextAttribute(hConsole, win_console_saved_attributes);
+  end_windows_terminal(win_terminal_saved_attributes);
 #endif
 }
 
