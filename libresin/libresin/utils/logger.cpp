@@ -6,6 +6,7 @@
 #include <iterator>
 #include <libresin/utils/logger.hpp>
 #include <memory>
+#include <mutex>
 #include <print>
 #include <regex>
 #include <set>
@@ -224,9 +225,15 @@ Logger::Logger() : file_name_start_pos_(0) {}
 
 Logger::~Logger() {}
 
-void Logger::add_scribe(std::unique_ptr<LoggerScribe> scribe) { scribes_.push_back(std::move(scribe)); }
+void Logger::add_scribe(std::unique_ptr<LoggerScribe> scribe) {
+  const std::lock_guard lock(mutex_);
+
+  scribes_.push_back(std::move(scribe));
+}
 
 void Logger::set_abs_build_path(const std::filesystem::path& abs_build_path) {
+  const std::lock_guard lock(mutex_);
+
   auto logger_path =
       std::filesystem::path{std::source_location::current().file_name()}.lexically_normal().generic_string();
   auto proj_abs_path = abs_build_path.lexically_normal().generic_string();
