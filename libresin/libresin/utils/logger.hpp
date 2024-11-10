@@ -7,6 +7,7 @@
 #include <format>
 #include <memory>
 #include <mutex>
+#include <print>
 #include <source_location>
 #include <string_view>
 #include <vector>
@@ -32,7 +33,7 @@ class LoggerScribe {
 
   virtual ~LoggerScribe()                                                                    = default;
   virtual void vlog(std::string_view usr_fmt, std::format_args usr_args,
-                    const std::chrono::time_point<std::chrono::system_clock>& time_point,
+                    const std::chrono::time_point<std::chrono::system_clock>& time_point, std::string_view file_path,
                     const std::source_location& location, LogLevel level, bool is_debug_msg) = 0;
 
  protected:
@@ -44,11 +45,11 @@ class TerminalLoggerScribe : public LoggerScribe {
   explicit TerminalLoggerScribe(LogLevel max_level = LogLevel::Info, bool use_stderr = false);
 
   void vlog(std::string_view usr_fmt, std::format_args usr_args,
-            const std::chrono::time_point<std::chrono::system_clock>& time_point, const std::source_location& location,
-            LogLevel level, bool is_debug_msg) override;
+            const std::chrono::time_point<std::chrono::system_clock>& time_point, std::string_view file_path,
+            const std::source_location& location, LogLevel level, bool is_debug_msg) override;
 
  private:
-  const bool use_stderr_;
+  FILE* std_stream_;
 };
 
 // class FileLogger : public LoggerEntity {
@@ -59,7 +60,7 @@ class TerminalLoggerScribe : public LoggerScribe {
 
 class Logger {
  public:
-  Logger() = default;
+  Logger();
   ~Logger();
 
   struct FormatWithLocation {
@@ -96,15 +97,11 @@ class Logger {
   void log(const LogLevel level, const bool debug, const std::source_location& location, const std::string_view fmt,
            Args&... args) {
     const std::lock_guard lock(mutex_);
-
-    const std::chrono::zoned_time<std::chrono::seconds> local_time =
-        std::chrono::zoned_time{
-            std::chrono::current_zone(),
-        }
-            .get_sys_time();
+    auto file_path = std::string_view(location.file_name() + file_name_start_pos_);
 
     for (const auto& scribe : scribes_) {
-      scribe->vlog(fmt, std::make_format_args(args...), std::chrono::system_clock::now(), location, level, debug);
+      scribe->vlog(fmt, std::make_format_args(args...), std::chrono::system_clock::now(), file_path, location, level,
+                   debug);
     }
   }
 
@@ -118,6 +115,7 @@ class Logger {
  private:
   std::vector<std::unique_ptr<LoggerScribe>> scribes_;
   std::mutex mutex_;
+  size_t file_name_start_pos_;
 };
 
 }  // namespace resin
