@@ -16,6 +16,7 @@ int main() {
   logs_dir.append("logs");
   std::filesystem::create_directory(logs_dir);
 
+  resin::Logger::get_instance().set_abs_build_path(RESIN_BUILD_ABS_PATH);
   resin::Logger::get_instance().add_scribe(std::make_unique<resin::TerminalLoggerScribe>());
   resin::Logger::get_instance().add_scribe(
       std::make_unique<resin::RotatedFileLoggerScribe>(logs_dir, max_logs_backups));

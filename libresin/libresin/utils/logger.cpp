@@ -14,7 +14,6 @@
 #include <string_view>
 #include <tuple>
 #include <utility>
-#include <version/version.hpp>
 
 #if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
 #define IS_UNIX
@@ -221,21 +220,20 @@ void RotatedFileLoggerScribe::vlog(std::string_view usr_fmt, std::format_args us
 #endif
 }
 
-Logger::Logger() : file_name_start_pos_(0) {
-  auto logger_path   = std::string{std::source_location::current().file_name()};
-  auto proj_abs_path = std::string{RESIN_BUILD_ABS_PATH};
-
-  // Ensure that common path convention is used
-  std::replace(logger_path.begin(), logger_path.end(), '\\', '/');
-  std::replace(proj_abs_path.begin(), proj_abs_path.end(), '\\', '/');
-
-  if (logger_path.find(proj_abs_path, 0) == 0) {
-    file_name_start_pos_ = proj_abs_path.size() + 1;
-  }
-}
+Logger::Logger() : file_name_start_pos_(0) {}
 
 Logger::~Logger() {}
 
 void Logger::add_scribe(std::unique_ptr<LoggerScribe> scribe) { scribes_.push_back(std::move(scribe)); }
+
+void Logger::set_abs_build_path(const std::filesystem::path& abs_build_path) {
+  auto logger_path =
+      std::filesystem::path{std::source_location::current().file_name()}.lexically_normal().generic_string();
+  auto proj_abs_path = abs_build_path.lexically_normal().generic_string();
+
+  if (logger_path.starts_with(proj_abs_path)) {
+    file_name_start_pos_ = proj_abs_path.size() + 1;
+  }
+}
 
 }  // namespace resin

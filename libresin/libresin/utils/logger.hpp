@@ -125,6 +125,7 @@ class Logger {
   }
 
   void add_scribe(std::unique_ptr<LoggerScribe> scribe);
+  void set_abs_build_path(const std::filesystem::path& abs_build_path);
 
   static Logger& get_instance() {
     static Logger instance;
