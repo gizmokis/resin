@@ -6,7 +6,6 @@
 #include <glm/gtc/epsilon.hpp>
 #include <glm/gtx/string_cast.hpp>
 
-
 // Helper function to compare two glm vectors with a tolerance.
 template <glm::length_t L, typename T, glm::qualifier Q>
 ::testing::AssertionResult AreGLMVectorsNear(const char* expected_expr, const char* actual_expr,
