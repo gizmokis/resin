@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <chrono>
 #include <cstdio>
 #include <filesystem>
@@ -155,7 +154,7 @@ RotatedFileLoggerScribe::RotatedFileLoggerScribe(std::filesystem::path base_path
 
   using file_tp = std::tuple<fs::path, ch::system_clock::time_point>;
 
-  auto cmp = [](file_tp a, file_tp b) -> bool { return std::get<1>(a) > std::get<1>(b); };
+  auto cmp = [](const file_tp& a, const file_tp& b) -> bool { return std::get<1>(a) > std::get<1>(b); };
   std::set<file_tp, decltype(cmp)> curr_files;
 
   for (const auto& entry : fs::directory_iterator(base_path_)) {
@@ -180,7 +179,7 @@ RotatedFileLoggerScribe::RotatedFileLoggerScribe(std::filesystem::path base_path
 
     for (; it != curr_files.end(); ++it) {
       if (fs::remove(std::get<0>(*it))) {
-        Logger::info("Old log backup file \"{}\" has been deleted.", std::get<0>(*it).filename().string());
+        Logger::info("Deleted old log backup file \"{}\".", std::get<0>(*it).filename().string());
       } else {
         Logger::warn("Could not delete old log backup file \"{}\".", std::get<0>(*it).filename().string());
       }
@@ -222,8 +221,6 @@ void RotatedFileLoggerScribe::vlog(std::string_view usr_fmt, std::format_args us
 }
 
 Logger::Logger() : file_name_start_pos_(0) {}
-
-Logger::~Logger() {}
 
 void Logger::add_scribe(std::unique_ptr<LoggerScribe> scribe) {
   const std::lock_guard lock(mutex_);

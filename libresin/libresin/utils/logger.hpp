@@ -32,7 +32,10 @@ class LoggerScribe {
  public:
   explicit LoggerScribe(LogLevel max_level);
 
-  virtual ~LoggerScribe()                                                                    = default;
+  LoggerScribe(const LoggerScribe&)            = delete;
+  LoggerScribe& operator=(const LoggerScribe&) = delete;
+  virtual ~LoggerScribe()                      = default;
+
   virtual void vlog(std::string_view usr_fmt, std::format_args usr_args,
                     const std::chrono::time_point<std::chrono::system_clock>& time_point, std::string_view file_path,
                     const std::source_location& location, LogLevel level, bool is_debug_msg) = 0;
@@ -81,7 +84,7 @@ class RotatedFileLoggerScribe : public LoggerScribe {
 class Logger {
  public:
   Logger();
-  ~Logger();
+  ~Logger() = default;
 
   struct FormatWithLocation {
     const char* value;
@@ -117,8 +120,8 @@ class Logger {
   void log(const LogLevel level, const bool debug, const std::source_location& location, const std::string_view fmt,
            Args&... args) {
     const std::lock_guard lock(mutex_);
-    auto file_path = std::string_view(location.file_name() + file_name_start_pos_);
-    auto now       = std::chrono::system_clock::now();
+    const auto file_path = std::string_view(location.file_name() + file_name_start_pos_);
+    const auto now       = std::chrono::system_clock::now();
     for (const auto& scribe : scribes_) {
       scribe->vlog(fmt, std::make_format_args(args...), now, file_path, location, level, debug);
     }
