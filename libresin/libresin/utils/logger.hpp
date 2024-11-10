@@ -17,17 +17,16 @@
 namespace resin {
 
 enum class LogLevel : uint32_t {
-  None = 0,
-  Err  = 1,
-  Warn = 2,
-  Info = 3,
+  Err  = 0,
+  Warn = 1,
+  Info = 2,
 };
 
 static constexpr std::array<std::string_view, 3> kLogPrefixes = {"ERROR", "WARN", "INFO"};
 static constexpr std::string_view kDebugLogPrefix             = "DEBUG";
 static constexpr uint32_t kMaxLogPrefixSize                   = 5;
 
-inline std::string_view get_log_prefix(LogLevel level) { return kLogPrefixes[static_cast<uint32_t>(level) - 1]; }
+inline std::string_view get_log_prefix(LogLevel level) { return kLogPrefixes[static_cast<uint32_t>(level)]; }
 
 class LoggerScribe {
  public:
@@ -54,7 +53,7 @@ class TerminalLoggerScribe : public LoggerScribe {
             const std::source_location& location, LogLevel level, bool is_debug_msg) override;
 
  private:
-  FILE* std_stream_;
+  std::ostream* std_stream_;
 };
 
 /*
@@ -110,7 +109,7 @@ class Logger {
   template <typename... Args>
   static inline void debug(FormatWithLocation fmt_loc, Args&&... args) {
 #ifndef NDEBUG
-    get_instance().log(LogLevel::None, true, fmt_loc.loc, fmt_loc.value, args...);
+    get_instance().log(LogLevel::Info, true, fmt_loc.loc, fmt_loc.value, args...);
 #endif
   }
 

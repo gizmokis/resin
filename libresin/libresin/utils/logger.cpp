@@ -2,6 +2,7 @@
 #include <chrono>
 #include <cstdio>
 #include <filesystem>
+#include <iostream>
 #include <iterator>
 #include <libresin/utils/logger.hpp>
 #include <memory>
@@ -28,7 +29,7 @@ namespace resin {
 LoggerScribe::LoggerScribe(LogLevel max_level) : max_level_(max_level) {}
 
 TerminalLoggerScribe::TerminalLoggerScribe(bool use_stderr, LogLevel max_level)
-    : LoggerScribe(max_level), std_stream_(use_stderr ? stderr : stdout) {}
+    : LoggerScribe(max_level), std_stream_(use_stderr ? &std::cerr : &std::cout) {}
 
 #ifdef IS_UNIX
 static void begin_unix_terminal(std::string_view style) { std::print("\033{}", style); }
@@ -54,9 +55,9 @@ static void end_win_terminal(WORD old_attributes) {
 }
 #endif
 
-static void print_msg(FILE* stream, std::string_view prefix, std::string_view usr_fmt, std::format_args usr_args,
-                      const std::chrono::time_point<std::chrono::system_clock>& time_point, std::string_view file_name,
-                      const std::source_location& location, LogLevel level) {
+static void print_msg(std::ostream& stream, std::string_view prefix, std::string_view usr_fmt,
+                      std::format_args usr_args, const std::chrono::time_point<std::chrono::system_clock>& time_point,
+                      std::string_view file_name, const std::source_location& location, LogLevel level) {
   // Print logger message prefix with date
   auto local_time =
       std::chrono::zoned_time{std::chrono::current_zone(), std::chrono::floor<std::chrono::seconds>(time_point)};
@@ -78,7 +79,7 @@ static void print_msg(FILE* stream, std::string_view prefix, std::string_view us
 void TerminalLoggerScribe::vlog(std::string_view usr_fmt, std::format_args usr_args,
                                 const std::chrono::time_point<std::chrono::system_clock>& time_point,
                                 std::string_view file_path, const std::source_location& location, LogLevel level,
-                                bool is_debug_msg) {  // NOLINT
+                                bool is_debug_msg) {
 #ifndef NDEBUG
   if (is_debug_msg) {
 #ifdef IS_UNIX
@@ -87,7 +88,7 @@ void TerminalLoggerScribe::vlog(std::string_view usr_fmt, std::format_args usr_a
     WORD old_win_terminal_attributes = begin_win_terminal(FOREGROUND_BLUE);
 #endif
 
-    print_msg(std_stream_, kDebugLogPrefix, usr_fmt, usr_args, time_point, file_path, location, level);
+    print_msg(*std_stream_, kDebugLogPrefix, usr_fmt, usr_args, time_point, file_path, location, level);
 
 #ifdef IS_UNIX
     end_unix_terminal();
@@ -121,7 +122,7 @@ void TerminalLoggerScribe::vlog(std::string_view usr_fmt, std::format_args usr_a
   }
 #endif
 
-  print_msg(std_stream_, get_log_prefix(level), usr_fmt, usr_args, time_point, file_path, location, level);
+  print_msg(*std_stream_, get_log_prefix(level), usr_fmt, usr_args, time_point, file_path, location, level);
 
 #ifdef IS_UNIX
   end_unix_terminal();
@@ -179,9 +180,9 @@ RotatedFileLoggerScribe::RotatedFileLoggerScribe(std::filesystem::path base_path
 
     for (; it != curr_files.end(); ++it) {
       if (fs::remove(std::get<0>(*it))) {
-        Logger::info("Old logs backup file \"{}\" has been deleted.", std::get<0>(*it).filename().string());
+        Logger::info("Old log backup file \"{}\" has been deleted.", std::get<0>(*it).filename().string());
       } else {
-        Logger::warn("Could not delete old backup file \"{}\".", std::get<0>(*it).filename().string());
+        Logger::warn("Could not delete old log backup file \"{}\".", std::get<0>(*it).filename().string());
       }
     }
   }
@@ -200,7 +201,25 @@ RotatedFileLoggerScribe::RotatedFileLoggerScribe(std::filesystem::path base_path
 void RotatedFileLoggerScribe::vlog(std::string_view usr_fmt, std::format_args usr_args,
                                    const std::chrono::time_point<std::chrono::system_clock>& time_point,
                                    std::string_view file_path, const std::source_location& location, LogLevel level,
-                                   bool is_debug_msg) {}
+                                   bool is_debug_msg) {
+#ifdef NDEBUG
+  if (level <= max_level_) {
+    print_msg(file_stream_.value(), get_log_prefix(level), usr_fmt, usr_args, time_point, file_path, location, level);
+    std::print(file_stream_.value(), "\n");
+  }
+#else
+  if (is_debug_msg) {
+    print_msg(file_stream_.value(), kDebugLogPrefix, usr_fmt, usr_args, time_point, file_path, location, level);
+    std::print(file_stream_.value(), "\n");
+    return;
+  }
+
+  if (level <= max_level_) {
+    print_msg(file_stream_.value(), get_log_prefix(level), usr_fmt, usr_args, time_point, file_path, location, level);
+    std::print(file_stream_.value(), "\n");
+  }
+#endif
+}
 
 Logger::Logger() : file_name_start_pos_(0) {
   auto logger_path   = std::string{std::source_location::current().file_name()};
