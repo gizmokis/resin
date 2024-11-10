@@ -201,6 +201,10 @@ void RotatedFileLoggerScribe::vlog(std::string_view usr_fmt, std::format_args us
                                    const std::chrono::time_point<std::chrono::system_clock>& time_point,
                                    std::string_view file_path, const std::source_location& location, LogLevel level,
                                    bool is_debug_msg) {
+  if (!file_stream_.has_value() || !file_stream_->is_open()) {
+    return;
+  }
+
 #ifdef NDEBUG
   if (level <= max_level_) {
     print_msg(file_stream_.value(), get_log_prefix(level), usr_fmt, usr_args, time_point, file_path, location, level);
