@@ -1,3 +1,6 @@
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/geometric.hpp>
+#include <glm/gtx/transform.hpp>
 #include <libresin/core/transform.hpp>
 
 namespace resin {
@@ -43,19 +46,6 @@ void Transform::rotate_local(const glm::quat& rotation) {
   mark_dirty();
 }
 
-void Transform::look_at(const glm::vec3& point, const glm::vec3& up) {
-  const glm::vec3 local_point =
-      parent_.has_value() ? glm::vec3(parent().world_to_local_matrix() * glm::vec4(point, 1.0F)) : point;
-  glm::vec3 direction = local_point - pos_;
-  direction = glm::normalize(direction);
-  rot_ = glm::quatLookAt(direction, up);
-}
-
-void Transform::fma(const glm::vec3& axis, const float amount) {
-  pos_ += amount * axis;
-  mark_dirty();
-}
-
 glm::vec3 Transform::pos() const {
   return parent_.has_value() ? glm::vec3(parent().local_to_world_matrix() * glm::vec4(pos_, 1.0F)) : pos_;
 }
@@ -82,14 +72,33 @@ void Transform::set_local_scale(const float scale) {
   mark_dirty();
 }
 
+glm::mat3 Transform::local_orientation() const {
+  const glm::mat3 local = glm::toMat3(rot_);
+  return glm::mat3(local[0], local[1], -local[2]);
+}
+
+glm::mat3 Transform::orientation() const {
+  const glm::mat3 local = local_orientation();
+  if (!parent_) {
+    return local;
+  }
+  const glm::mat3 orientation = glm::mat3(parent().local_to_world_matrix()) * local;
+  return glm::mat3(glm::normalize(orientation[0]), glm::normalize(orientation[1]), glm::normalize(orientation[2]));
+}
+
 glm::vec3 Transform::front() const {
   const glm::vec3 local = local_front();
-  return parent_ ? parent().local_to_world_matrix() * glm::vec4(local, 0.0F) : local;
+  return parent_ ? glm::normalize(parent().local_to_world_matrix() * glm::vec4(local, 0.0F)) : local;
 }
 
 glm::vec3 Transform::right() const {
   const glm::vec3 local = local_right();
-  return parent_ ? parent().local_to_world_matrix() * glm::vec4(local, 0.0F) : local;
+  return parent_ ? glm::normalize(parent().local_to_world_matrix() * glm::vec4(local, 0.0F)) : local;
+}
+
+glm::vec3 Transform::up() const {
+  const glm::vec3 local = local_up();
+  return parent_ ? glm::normalize(parent().local_to_world_matrix() * glm::vec4(local, 0.0F)) : local;
 }
 
 glm::mat4 Transform::local_to_parent_matrix() const {
@@ -126,11 +135,6 @@ const glm::mat4& Transform::world_to_local_matrix() const {
 
   inv_dirty_ = false;
   return inv_model_mat_;
-}
-
-glm::vec3 Transform::up() const {
-  const glm::vec3 local = local_up();
-  return parent_ ? parent().local_to_world_matrix() * glm::vec4(local, 0.0F) : local;
 }
 
 void Transform::mark_dirty() const {

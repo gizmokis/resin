@@ -2,9 +2,8 @@
 #define TRANSFORM_HPP
 #define GLM_ENABLE_EXPERIMENTAL
 #include <functional>
-#include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
-#include <glm/gtx/transform.hpp>
+#include <glm/vec3.hpp>
 #include <optional>
 
 namespace resin {
@@ -23,8 +22,6 @@ struct Transform final {
   void rotate(const glm::vec3& axis, float angle);
   void rotate(const glm::quat& rotation);
   void rotate_local(const glm::quat& rotation);
-  void look_at(const glm::vec3& point, const glm::vec3& up = glm::vec3(0, 1, 0));
-  void fma(const glm::vec3& axis, float amount);
 
   const glm::vec3& local_pos() const { return pos_; }
   glm::vec3& local_pos() { return pos_; }
@@ -41,6 +38,8 @@ struct Transform final {
   void set_local_scale(const glm::vec3& scale);
   void set_local_scale(float scale);
 
+  glm::mat3 local_orientation() const;
+  glm::mat3 orientation() const;
   glm::vec3 local_front() const { return rot_ * glm::vec3(0, 0, -1); }
   glm::vec3 front() const;
   glm::vec3 local_right() const { return rot_ * glm::vec3(1, 0, 0); }
