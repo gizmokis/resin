@@ -52,9 +52,6 @@ if(BUILD_GLFW)
   set(GLFW_INSTALL
       OFF
       CACHE BOOL "Do not install the GLFW" FORCE)
-  set(BUILD_SHARED_LIBS
-      OFF
-      CACHE BOOL "Do not install the GLFW" FORCE)
 
   FetchContent_Declare(
     glfw
@@ -93,11 +90,6 @@ message(CHECK_PASS "fetched")
 if(BUILD_GLM)
   message(CHECK_START "Fetching GLM")
   list(APPEND CMAKE_MESSAGE_INDENT "  ")
-
-  set(BUILD_SHARED_LIBS
-      OFF
-      CACHE BOOL "Do not build glm as a shared
-library" FORCE)
 
   FetchContent_Declare(
     glm

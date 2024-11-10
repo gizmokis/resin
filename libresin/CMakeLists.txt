@@ -17,13 +17,9 @@ target_link_libraries(${PROJECT_NAME} PUBLIC glm::glm)
 
 # Set compile options and properties of the target
 target_compile_options(${PROJECT_NAME} PRIVATE ${PROJ_CXX_FLAGS})
-set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS
-                                                 "${PROJ_SHARED_LINKER_FLAGS}")
 
-if(DEFINED CLANG_TIDY_COMMAND AND NOT CLANG_TIDY_COMMAND STREQUAL "")
-  set_target_properties(libresin PROPERTIES CXX_CLANG_TIDY
-                                            "${CLANG_TIDY_COMMAND}")
-endif()
+# This is required when libresin is built as a shared library and is linked with shared libraries
+target_link_options(${PROJECT_NAME} PRIVATE ${PROJ_SHARED_LINKER_FLAGS})
 
 if(BUILD_TESTING)
   enable_testing()
