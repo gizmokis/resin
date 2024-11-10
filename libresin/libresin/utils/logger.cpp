@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <libresin/utils/logger.hpp>
 #include <memory>
 #include <print>
@@ -120,8 +121,12 @@ void TerminalLoggerScribe::vlog(std::string_view usr_fmt, std::format_args usr_a
 }
 
 Logger::Logger() : file_name_start_pos_(0) {
-  auto logger_path   = std::string_view{std::source_location::current().file_name()};
-  auto proj_abs_path = std::string_view{RESIN_BUILD_ABS_PATH};
+  auto logger_path   = std::string{std::source_location::current().file_name()};
+  auto proj_abs_path = std::string{RESIN_BUILD_ABS_PATH};
+
+  // Ensure that common path convention is used
+  std::replace(logger_path.begin() , logger_path.end(), '\\', '/');
+  std::replace(proj_abs_path.begin() , proj_abs_path.end(), '\\', '/');
 
   if (logger_path.find(proj_abs_path, 0) == 0) {
     file_name_start_pos_ = proj_abs_path.size() + 1;
