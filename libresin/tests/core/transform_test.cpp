@@ -2,7 +2,7 @@
 
 #include <libresin/core/transform.hpp>
 #include <print>
-#include <tests/core/glm_helper.hpp>
+#include <tests/glm_helper.hpp>
 
 constexpr float kPi = glm::pi<float>();
 
