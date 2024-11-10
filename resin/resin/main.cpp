@@ -2,6 +2,7 @@
 #include <glad/gl.h>
 #include <imgui/imgui.h>
 
+#include <filesystem>
 #include <glm/glm.hpp>
 #include <libresin/resin.hpp>
 #include <libresin/utils/logger.hpp>
@@ -10,7 +11,14 @@
 #include <version/version.hpp>
 
 int main() {
+  const size_t max_logs_backups = 4;
+  auto logs_dir                 = std::filesystem::current_path();
+  logs_dir.append("logs");
+  std::filesystem::create_directory(logs_dir);
+
   resin::Logger::get_instance().add_scribe(std::make_unique<resin::TerminalLoggerScribe>());
+  resin::Logger::get_instance().add_scribe(
+      std::make_unique<resin::RotatedFileLoggerScribe>(logs_dir, max_logs_backups));
 
   resin::Logger::info("Project version: {0}.{1}.{2}({3})", RESIN_VERSION_MAJOR, RESIN_VERSION_MINOR,
                       RESIN_VERSION_PATCH, RESIN_IS_STABLE ? "stable" : "unstable");

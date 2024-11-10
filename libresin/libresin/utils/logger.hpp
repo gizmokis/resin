@@ -4,7 +4,9 @@
 #include <array>
 #include <chrono>
 #include <cstdint>
+#include <filesystem>
 #include <format>
+#include <fstream>
 #include <memory>
 #include <mutex>
 #include <print>
@@ -40,9 +42,12 @@ class LoggerScribe {
   const LogLevel max_level_;
 };
 
+/*
+  Logs messages to stdout or stderr. Provides message coloring support for both unix and windows platforms.
+*/
 class TerminalLoggerScribe : public LoggerScribe {
  public:
-  explicit TerminalLoggerScribe(LogLevel max_level = LogLevel::Info, bool use_stderr = false);
+  explicit TerminalLoggerScribe(bool use_stderr = false, LogLevel max_level = LogLevel::Info);
 
   void vlog(std::string_view usr_fmt, std::format_args usr_args,
             const std::chrono::time_point<std::chrono::system_clock>& time_point, std::string_view file_path,
@@ -52,12 +57,28 @@ class TerminalLoggerScribe : public LoggerScribe {
   FILE* std_stream_;
 };
 
-// class FileLogger : public LoggerEntity {
-//  public:
-//   void vlog(std::string_view usr_fmt, std::format_args usr_args, const std::tm& date_time,
-//             const std::source_location& location, LogLevel level, bool debug) override;
-// };
+/*
+  Logs messages to files in the specified directory. If the number of log files exceeds the maximum number of backups
+  the older ones will be deleted.
+*/
+class RotatedFileLoggerScribe : public LoggerScribe {
+ public:
+  explicit RotatedFileLoggerScribe(std::filesystem::path base_path, size_t max_backups,
+                                   LogLevel max_level = LogLevel::Info);
 
+  void vlog(std::string_view usr_fmt, std::format_args usr_args,
+            const std::chrono::time_point<std::chrono::system_clock>& time_point, std::string_view file_path,
+            const std::source_location& location, LogLevel level, bool is_debug_msg) override;
+
+ private:
+  std::optional<std::ofstream> file_stream_;
+  std::filesystem::path base_path_;
+  size_t max_backups_;
+};
+
+/*
+  Singleton thread-safe class that forwards messages to the provided `LoggerScribe`s.
+*/
 class Logger {
  public:
   Logger();
@@ -98,10 +119,9 @@ class Logger {
            Args&... args) {
     const std::lock_guard lock(mutex_);
     auto file_path = std::string_view(location.file_name() + file_name_start_pos_);
-
+    auto now       = std::chrono::system_clock::now();
     for (const auto& scribe : scribes_) {
-      scribe->vlog(fmt, std::make_format_args(args...), std::chrono::system_clock::now(), file_path, location, level,
-                   debug);
+      scribe->vlog(fmt, std::make_format_args(args...), now, file_path, location, level, debug);
     }
   }
 
