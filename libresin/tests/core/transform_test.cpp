@@ -119,7 +119,6 @@ TEST_F(TransformTest, OrientationIsCalculatedProperly) {
   glm::vec3 up = transform_.up();
 
   // when
-  std::println("{}", glm::to_string(transform_.local_to_world_matrix()));
   glm::mat3 orientation = transform_.orientation();
 
   // then
