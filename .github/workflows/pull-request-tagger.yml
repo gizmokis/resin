@@ -1,0 +1,79 @@
+name: Create tag from Pull Request 🏷️
+
+on:
+  pull_request: 
+    types: 
+      - closed
+
+jobs:
+  tag:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    name: Create tag based on label
+    if: github.event.pull_request.merged == true
+    env:
+      MAJOR_LABEL: 'version/major 🏗️'
+      MINOR_LABEL: 'version/minor 🔨'
+      PATCH_LABEL: 'version/patch 🪶'
+    steps:
+      - name: Checkout code
+        id: checkout-code
+        uses: actions/checkout@v4 # I know this is a bad idea and I should do this prolly with GitHub api, this will be fixed later (i.e. never)
+        with:
+          # The binary versioning depends on the git annotated tags. 
+          # This line forces checkout action to fetch the tags, see
+          # https://github.com/actions/checkout/issues/701.
+          fetch-depth: 0
+      - name: Determine new tag
+        id: determine-tag
+        run: |
+          # Fetch the highest tag
+          current_tag=$((git tag --sort=-v:refname | grep '^v' || echo "v0.0.0") | head -n 1)
+          echo "The current tag is: $current_tag"
+
+          # Parse the current version into major, minor, patch parts
+          IFS='.' read -r major minor patch <<< "${current_tag//v/}"
+
+          # Calculate the next version
+          if [ ${{ contains(github.event.pull_request.labels.*.name, env.MAJOR_LABEL) }} = true ]; then
+            echo "Found major release label '$MAJOR_LABEL'."
+            major=$((major + 1))
+            minor=0
+            patch=0
+          elif [ ${{ contains(github.event.pull_request.labels.*.name, env.MINOR_LABEL) }} = true ]; then
+            echo "Found minor release label '$MINOR_LABEL'."
+            minor=$((minor + 1))
+            patch=0
+          elif [ ${{ contains(github.event.pull_request.labels.*.name, env.PATCH_LABEL) }} = true ]; then
+            echo "Found patch release label '$PATCH_LABEL'."
+            patch=$((patch + 1))
+          else
+            echo "Nothing to do! Neither of labels '$MAJOR_LABEL', '$MINOR_LABEL' nor '$PATCH_LABEL' found."
+            exit 0
+          fi
+
+          # Format the new tag
+          new_tag="v$major.$minor.$patch"
+          echo "The new tag is: $new_tag"
+          echo "tag=$new_tag" >> $GITHUB_OUTPUT
+      - name: Create tag
+        uses: actions/github-script@v5
+        if: steps.determine-tag.outputs.tag != ''
+        with:
+          github-token: ${{ secrets.TAG_PAT }}
+          script: |
+            github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: 'refs/tags/${{ steps.determine-tag.outputs.tag }}',
+              sha: context.sha
+            }).catch(err => {
+              if (err.status !== 422) throw err;
+              github.rest.git.updateRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: 'tags/${{ steps.determine-tag.outputs.tag }}',
+                sha: context.sha
+              });
+            })

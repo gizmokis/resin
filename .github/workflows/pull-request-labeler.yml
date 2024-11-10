@@ -1,0 +1,49 @@
+name: Apply labels to Pull Requests 📝🏷️
+
+on: [pull_request]
+
+jobs:
+  # TODO: add size labeling
+  label-pull-request-version:
+    permissions:
+      pull-requests: write
+      contents: read
+      issues: write
+    runs-on: ubuntu-latest
+    name: Label the PR with version label
+    env:
+      MAJOR_LABEL: 'version/major 🏗️'
+      MAJOR_PREFIXES: 'release'
+      MINOR_LABEL: 'version/minor 🔨'
+      MINOR_PREFIXES: 'feature'
+      PATCH_LABEL: 'version/patch 🪶'
+      PATCH_PREFIXES: 'bugfix task'
+    steps:
+      - name: Determine version label
+        id: extract-version-label
+        if: ${{ github.event.action == 'opened' }}
+        run: |
+          branch="${{github.head_ref}}"
+          prefix=${branch%%/*}
+          echo "The PR branch name is: ${{ github.head_ref }}, the prefix is: ${prefix}"
+
+          # Check if prefix matches any version prefix
+          if [[ "$MAJOR_PREFIXES" == *"$prefix"* ]]; then
+              echo "Found major prefix."
+              echo "label=$MAJOR_LABEL" >> $GITHUB_OUTPUT
+          elif [[ "$MINOR_PREFIXES" == *"$prefix"* ]]; then
+              echo "Found minor prefix."
+              echo "label=$MINOR_LABEL" >> $GITHUB_OUTPUT
+          elif [[ "$PATCH_PREFIXES" == *"$prefix"* ]]; then
+              echo "Found patch prefix."
+              echo "label=$PATCH_LABEL" >> $GITHUB_OUTPUT
+          else
+              echo "No matching prefix found!"
+          fi
+      - run: gh pr edit "$NUMBER" --add-label "$LABEL"
+        if: ${{ github.event.action == 'opened' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          NUMBER: ${{ github.event.pull_request.number }}
+          LABEL: ${{ steps.extract-version-label.outputs.label }}
