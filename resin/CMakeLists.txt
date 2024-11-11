@@ -5,7 +5,10 @@ message(STATUS "Configuring " ${PROJECT_NAME})
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 23)
 
-add_executable(${PROJECT_NAME} resin/main.cpp resin/event/event.hpp)
+add_executable(${PROJECT_NAME} resin/main.cpp 
+               resin/event/event.hpp resin/event/window_events.hpp
+               resin/core/graphics_context.hpp resin/core/graphics_context.cpp
+               resin/core/window.hpp resin/core/window.cpp)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC glfw libresin glm::glm imgui glad)
 target_include_directories(${PROJECT_NAME}

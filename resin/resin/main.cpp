@@ -8,7 +8,25 @@
 #include <libresin/utils/logger.hpp>
 #include <memory>
 #include <print>
+#include <resin/core/window.hpp>
+#include <resin/event/event.hpp>
+#include <resin/event/window_events.hpp>
 #include <version/version.hpp>
+
+bool running = true;  // NOLINT
+
+bool handle_close(resin::WindowCloseEvent& close) {
+  resin::Logger::info("Handling close: {}!", close);
+
+  running = false;
+
+  return true;
+}
+
+bool handle_resize(resin::WindowResizeEvent& resize) {
+  resin::Logger::info("Handling resize: {}!", resize);
+  return false;
+}
 
 int main() {
   const size_t max_logs_backups = 4;
@@ -32,22 +50,22 @@ int main() {
   resin::Logger::err("Paprica");
   resin::Logger::debug("Blueberry");
 
+  resin::EventDispatcher dispatcher;
+  dispatcher.subscribe<resin::WindowCloseEvent>(handle_close);
+  dispatcher.subscribe<resin::WindowResizeEvent>(handle_resize);
+
   constexpr int kWidth  = 800;
   constexpr int kHeight = 600;
 
-  glfwInit();
-  GLFWwindow* window = glfwCreateWindow(kWidth, kHeight, "Test", nullptr, nullptr);
-  glfwMakeContextCurrent(window);
+  resin::WindowProperties props("Resin", kWidth, kHeight);
+  props.eventDispatcher = dispatcher;
+  {
+    resin::Window window(props);
 
-  const int glad_version = gladLoadGL(glfwGetProcAddress);
-  if (glad_version == 0) {
-    resin::Logger::err("Failed to initialize OpenGL context");
-    return -1;
+    while (running) {
+      window.on_update();
+    }
   }
-
-  resin::Logger::info("GLAD version: {0}.{1}", GLAD_VERSION_MAJOR(glad_version), GLAD_VERSION_MINOR(glad_version));
-
-  glfwDestroyWindow(window);
 
   return 0;
 }
