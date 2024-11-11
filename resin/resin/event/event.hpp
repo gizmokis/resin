@@ -52,7 +52,7 @@ concept EventHandler = EventConcept<E> && requires(T t, E& e) {
 };
 
 template <EventConcept E>
-struct ::std::formatter<E> {  // NOLINT
+struct std::formatter<E> {  // NOLINT
   template <class ParseContext>
   constexpr auto parse(ParseContext& ctx) {
     return ctx.begin();
