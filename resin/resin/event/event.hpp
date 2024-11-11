@@ -1,6 +1,5 @@
 #ifndef EVENT_HPP
 #define EVENT_HPP
-#include <vcruntime_typeinfo.h>
 
 #include <concepts>
 #include <format>
