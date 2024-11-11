@@ -52,10 +52,10 @@ struct Transform final {
   const glm::mat4& local_to_world_matrix() const;
   const glm::mat4& world_to_local_matrix() const;
 
-  Transform(const Transform&) = delete;
-  Transform(Transform&&) = delete;
+  Transform(const Transform&)            = delete;
+  Transform(Transform&&)                 = delete;
   Transform& operator=(const Transform&) = delete;
-  Transform& operator=(Transform&&) = delete;
+  Transform& operator=(Transform&&)      = delete;
 
  private:
   void remove_from_parent();
@@ -69,9 +69,9 @@ struct Transform final {
   glm::quat rot_;
   glm::vec3 scale_;
 
-  mutable bool dirty_ = false;
-  mutable glm::mat4 model_mat_ = glm::mat4(1.0F);
-  mutable bool inv_dirty_ = false;
+  mutable bool dirty_              = false;
+  mutable glm::mat4 model_mat_     = glm::mat4(1.0F);
+  mutable bool inv_dirty_          = false;
   mutable glm::mat4 inv_model_mat_ = glm::mat4(1.0F);
 };  // class Transform
 

@@ -100,7 +100,7 @@ TEST_F(TransformTest, LocalOrientationIsCalculatedProperly) {
   transform_.set_local_rot(glm::vec3(kPi / 2, 0, 0));
   glm::vec3 front = transform_.local_front();
   glm::vec3 right = transform_.local_right();
-  glm::vec3 up = transform_.local_up();
+  glm::vec3 up    = transform_.local_up();
 
   // when
   glm::mat3 orientation = transform_.local_orientation();
@@ -116,7 +116,7 @@ TEST_F(TransformTest, OrientationIsCalculatedProperly) {
   transform_.set_local_rot(glm::vec3(kPi / 2, 0, 0));
   glm::vec3 front = transform_.front();
   glm::vec3 right = transform_.right();
-  glm::vec3 up = transform_.up();
+  glm::vec3 up    = transform_.up();
 
   // when
   glm::mat3 orientation = transform_.orientation();
@@ -148,7 +148,7 @@ TEST_F(TransformTest, RotIsTransformedProperly) {
   // rotation of 90deg around X axis
   const glm::quat rot(glm::vec3(kPi / 2, 0, 0));
   // rotation of 120deg around axis of (1,1,-1)
-  glm::vec3 axis = glm::normalize(glm::vec3(1, 1, -1));
+  glm::vec3 axis     = glm::normalize(glm::vec3(1, 1, -1));
   glm::quat expected = glm::angleAxis(2 * kPi / 3, axis);
 
   // when
