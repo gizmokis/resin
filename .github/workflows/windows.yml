@@ -40,6 +40,8 @@ jobs:
         python3 -m pip install --upgrade pip
         python3 -m pip install jinja2
 
+    - run: git fetch --tags --force origin # WA: https://github.com/actions/checkout/issues/882
+
     - name: MSVC Build x64
       id: msvc-build
       shell: pwsh

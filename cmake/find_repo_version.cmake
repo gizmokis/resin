@@ -3,6 +3,8 @@
 # the following pattern: `v?[0-9]+.[0-9]+(.[0-9]+)?`. If the branch is ahead of
 # the latest tag, the version is marked as unstable.
 #
+# Note: Lightweight tags are ignored.
+#
 # WARNING: `find_package(Git)` call might be necessary before calling this
 # function.
 function(find_repo_version VERSION IS_STABLE)
