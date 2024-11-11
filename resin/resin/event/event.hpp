@@ -51,19 +51,6 @@ concept EventHandler = EventConcept<E> && requires(T t, E& e) {
   { t(e) } -> std::same_as<bool>;
 };
 
-template <EventConcept E>
-struct std::formatter<E> {  // NOLINT
-  template <class ParseContext>
-  constexpr auto parse(ParseContext& ctx) {
-    return ctx.begin();
-  }
-
-  template <typename FormatContext>
-  auto format(const resin::BaseEvent& obj, FormatContext& ctx) const {
-    return std::format_to(ctx.out(), "{}", obj.to_string());
-  }
-};
-
 class EventDispatcher {  // TODO(kuzu): implement event bus and event section of app loop
  public:
   template <typename E>
@@ -115,5 +102,18 @@ class EventDispatcher {  // TODO(kuzu): implement event bus and event section of
 };
 
 }  // namespace resin
+
+template <resin::EventConcept E>
+struct std::formatter<E> {  // NOLINT
+  template <class ParseContext>
+  constexpr auto parse(ParseContext& ctx) {
+    return ctx.begin();
+  }
+
+  template <typename FormatContext>
+  auto format(const resin::BaseEvent& obj, FormatContext& ctx) const {
+    return std::format_to(ctx.out(), "{}", obj.to_string());
+  }
+};
 
 #endif  // EVENT_HPP

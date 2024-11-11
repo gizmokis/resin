@@ -37,11 +37,17 @@ jobs:
 
     - run: git fetch --tags --force origin # WA: https://github.com/actions/checkout/issues/882
 
-    - name: Clang Build
-      id: clang-build
-      run: |
-        cmake --preset=ci-ubuntu-clang
-        cmake --build --preset=ci-ubuntu-clang
+    # - name: Clang Build
+    #   id: clang-build
+    #   run: |
+    #     cmake --preset=ci-ubuntu-clang
+    #     cmake --build --preset=ci-ubuntu-clang
+
+    - name: Run CMake consuming CMakePreset.json and run vcpkg to build packages
+      uses: lukka/run-cmake@v10
+      with:
+        configurePreset: 'ci-ubuntu-clang'
+        buildPreset: 'ci-ubuntu-clang'
 
     - name: Clean up the build directory
       id: clean-up
