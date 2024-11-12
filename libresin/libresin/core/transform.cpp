@@ -1,4 +1,3 @@
-#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/geometric.hpp>
 #include <glm/gtx/transform.hpp>
 #include <libresin/core/transform.hpp>

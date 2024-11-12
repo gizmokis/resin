@@ -23,6 +23,8 @@ target_compile_options(${PROJECT_NAME} PRIVATE ${PROJ_CXX_FLAGS})
 # This is required when libresin is built as a shared library and is linked with shared libraries
 target_link_options(${PROJECT_NAME} PRIVATE ${PROJ_SHARED_LINKER_FLAGS})
 
+target_compile_definitions(${PROJECT_NAME} PUBLIC GLM_ENABLE_EXPERIMENTAL)
+
 if(BUILD_TESTING)
   enable_testing()
 

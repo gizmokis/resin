@@ -1,5 +1,5 @@
-#ifndef RESIN_UTIL_LOGGER_HPP
-#define RESIN_UTIL_LOGGER_HPP
+#ifndef RESIN_LOGGER_HPP
+#define RESIN_LOGGER_HPP
 
 #include <array>
 #include <chrono>
@@ -143,4 +143,4 @@ class Logger {
 
 }  // namespace resin
 
-#endif  // RESIN_HPP
+#endif  // RESIN_LOGGER_HPP

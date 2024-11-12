@@ -19,6 +19,7 @@ Checks: >
   -cppcoreguidelines-pro-bounds-pointer-arithmetic,
   -cppcoreguidelines-pro-type-reinterpret-cast,
   -cppcoreguidelines-non-private-member-variables-in-classes,
+  -readability-redundant-access-specifiers,
   -google-readability-braces-around-statements,
   -google-readability-namespace-comments,
   -google-runtime-references,

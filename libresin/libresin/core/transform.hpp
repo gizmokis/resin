@@ -1,6 +1,5 @@
 #ifndef RESIN_TRANSFORM_HPP
 #define RESIN_TRANSFORM_HPP
-#define GLM_ENABLE_EXPERIMENTAL
 #include <functional>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/vec3.hpp>
