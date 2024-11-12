@@ -2,14 +2,12 @@
 
 #include <libresin/utils/logger.hpp>
 #include <memory>
-#include <print>
 #include <resin/core/graphics_context.hpp>
 #include <resin/core/window.hpp>
+#include <resin/event/event.hpp>
 #include <resin/event/window_events.hpp>
 #include <stdexcept>
 #include <string_view>
-
-#include "resin/event/event.hpp"
 
 namespace resin {
 
@@ -35,7 +33,7 @@ void Window::api_terminate() {
 }
 
 Window::Window(WindowProperties properties) : properties_(std::move(properties)) {
-  std::println("Creating window {} ({} x {})", properties_.title, properties_.width, properties_.height);
+  Logger::info("Creating window {} ({} x {})", properties_.title, properties_.width, properties_.height);
 
   if (glfw_window_count_ == 0) {
     api_init();
@@ -45,6 +43,7 @@ Window::Window(WindowProperties properties) : properties_(std::move(properties))
 #endif
   glfwWindowHint(GLFW_SAMPLES, 4);
 
+  // TODO(SDF-72): proper window creation for fullscreen
   window_ptr_ = glfwCreateWindow(static_cast<int>(properties_.width), static_cast<int>(properties_.height),
                                  properties_.title.c_str(), nullptr, nullptr);
   ++glfw_window_count_;
@@ -54,6 +53,7 @@ Window::Window(WindowProperties properties) : properties_(std::move(properties))
 
   glfwSetWindowUserPointer(window_ptr_, &properties_);
   glfwGetWindowPos(window_ptr_, &(properties_.x), &(properties_.y));
+  glfwSwapInterval(properties_.vsync ? 1 : 0);
 
   if (properties_.eventDispatcher.has_value()) {
     set_glfw_callbacks();
@@ -123,7 +123,7 @@ void Window::set_vsync(bool vsync) {
 void Window::set_fullscreen(bool fullscreen) {
   properties_.fullscreen = fullscreen;
 
-  // TODO(kuzu): proper handling of properties, we have to remember old x,y,width,height somewhere
+  // TODO(SDF-72): proper handling of properties, we have to remember old x,y,width,height somewhere
   if (fullscreen) {
     GLFWmonitor* monitor    = glfwGetPrimaryMonitor();
     const GLFWvidmode* mode = glfwGetVideoMode(monitor);

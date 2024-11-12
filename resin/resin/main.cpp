@@ -4,29 +4,11 @@
 
 #include <filesystem>
 #include <glm/glm.hpp>
-#include <libresin/resin.hpp>
 #include <libresin/utils/logger.hpp>
 #include <memory>
 #include <print>
-#include <resin/core/window.hpp>
-#include <resin/event/event.hpp>
-#include <resin/event/window_events.hpp>
+#include <resin/resin.hpp>
 #include <version/version.hpp>
-
-bool running = true;  // NOLINT
-
-bool handle_close(resin::WindowCloseEvent& close) {
-  resin::Logger::info("Handling close: {}!", close);
-
-  running = false;
-
-  return true;
-}
-
-bool handle_resize(resin::WindowResizeEvent& resize) {
-  resin::Logger::info("Handling resize: {}!", resize);
-  return false;
-}
 
 int main() {
   const size_t max_logs_backups = 4;
@@ -50,22 +32,7 @@ int main() {
   resin::Logger::err("Paprica");
   resin::Logger::debug("Blueberry");
 
-  resin::EventDispatcher dispatcher;
-  dispatcher.subscribe<resin::WindowCloseEvent>(handle_close);
-  dispatcher.subscribe<resin::WindowResizeEvent>(handle_resize);
-
-  constexpr int kWidth  = 800;
-  constexpr int kHeight = 600;
-
-  resin::WindowProperties props("Resin", kWidth, kHeight);
-  props.eventDispatcher = dispatcher;
-  {
-    resin::Window window(props);
-
-    while (running) {
-      window.on_update();
-    }
-  }
+  resin::Resin::instance().run();
 
   return 0;
 }

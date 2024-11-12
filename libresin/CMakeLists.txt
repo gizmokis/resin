@@ -6,7 +6,7 @@ message(STATUS "Configuring " ${PROJECT_NAME})
 
 set(CMAKE_CXX_STANDARD 23)
 
-add_library(${PROJECT_NAME} libresin/resin.cpp libresin/resin.hpp 
+add_library(${PROJECT_NAME} 
         libresin/core/transform.hpp libresin/core/transform.cpp
         libresin/utils/logger.cpp libresin/utils/logger.hpp)
 

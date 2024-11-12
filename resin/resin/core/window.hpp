@@ -3,6 +3,7 @@
 
 #include <GLFW/glfw3.h>
 
+#include <cstdint>
 #include <functional>
 #include <glm/vec2.hpp>
 #include <memory>
@@ -17,14 +18,14 @@ struct WindowProperties {
   std::string title;
   int x, y;
   unsigned int width, height;
-  bool vsync, fullscreen;
+  bool vsync, fullscreen;  // TODO(SDF-72): proper fullscreen handling
 
   std::optional<std::reference_wrapper<EventDispatcher>> eventDispatcher;
 
   explicit WindowProperties(std::string_view title = "Resin", unsigned int width = 1280U,             // NOLINT
                             unsigned int height = 720U, bool vsync = false, bool fullscreen = false)  // NOLINT
       : title(std::move(title)), width(width), height(height), vsync(vsync), fullscreen(fullscreen) {}
-};  // struct WindowProperties
+};
 
 class Window {
  public:
@@ -64,7 +65,7 @@ class Window {
   GLFWwindow* window_ptr_;
 
   std::unique_ptr<GraphicsContext> context_;
-};  // class Window
+};
 
 }  // namespace resin
 
