@@ -51,7 +51,7 @@ concept EventHandler = EventConcept<E> && requires(T t, E& e) {
   { t(e) } -> std::same_as<bool>;
 };
 
-class EventDispatcher {  // TODO(kuzu): implement event bus and event section of app loop
+class EventDispatcher {  // TODO(SDF-73): implement event bus and event section of app loop
  public:
   template <typename E>
   using callback_t = std::function<bool(E&)>;
