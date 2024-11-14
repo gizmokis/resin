@@ -22,10 +22,10 @@ void GraphicsContext::init() {
   }
 
   resin::Logger::debug("GLAD version: {0}.{1}", GLAD_VERSION_MAJOR(glad_version), GLAD_VERSION_MINOR(glad_version));
-  resin::Logger::debug("OpenGL info:");
-  resin::Logger::debug("\tVendor: {}", reinterpret_cast<const char*>(glGetString(GL_VENDOR)));
-  resin::Logger::debug("\tRenderer: {}", reinterpret_cast<const char*>(glGetString(GL_RENDERER)));
-  resin::Logger::debug("\tVersion: {}", reinterpret_cast<const char*>(glGetString(GL_VERSION)));
+  resin::Logger::info("OpenGL info:");
+  resin::Logger::info("\tVendor: {}", reinterpret_cast<const char*>(glGetString(GL_VENDOR)));
+  resin::Logger::info("\tRenderer: {}", reinterpret_cast<const char*>(glGetString(GL_RENDERER)));
+  resin::Logger::info("\tVersion: {}", reinterpret_cast<const char*>(glGetString(GL_VERSION)));
 }
 
 void GraphicsContext::swap_buffers() { glfwSwapBuffers(window_ptr_); }

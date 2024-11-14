@@ -1,5 +1,5 @@
-#ifndef GRAPHICS_CONTEXT_HPP
-#define GRAPHICS_CONTEXT_HPP
+#ifndef RESIN_GRAPHICS_CONTEXT_HPP
+#define RESIN_GRAPHICS_CONTEXT_HPP
 
 #include <GLFW/glfw3.h>
 
@@ -24,4 +24,4 @@ class GraphicsContext {
 
 }  // namespace resin
 
-#endif  // GRAPHICS_CONTEXT_HPP
+#endif  // RESIN_GRAPHICS_CONTEXT_HPP

@@ -1,5 +1,5 @@
-#ifndef TRANSFORM_HPP
-#define TRANSFORM_HPP
+#ifndef RESIN_TRANSFORM_HPP
+#define RESIN_TRANSFORM_HPP
 #define GLM_ENABLE_EXPERIMENTAL
 #include <functional>
 #include <glm/gtx/quaternion.hpp>
@@ -76,4 +76,4 @@ struct Transform final {
 };  // class Transform
 
 }  // namespace resin
-#endif  // TRANSFORM_HPP
+#endif  // RESIN_TRANSFORM_HPP

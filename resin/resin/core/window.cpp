@@ -33,19 +33,23 @@ void Window::api_terminate() {
 }
 
 Window::Window(WindowProperties properties) : properties_(std::move(properties)) {
-  Logger::info("Creating window {} ({} x {})", properties_.title, properties_.width, properties_.height);
-
   if (glfw_window_count_ == 0) {
     api_init();
   }
+
 #ifndef NDEBUG
   glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 #endif
   glfwWindowHint(GLFW_SAMPLES, 4);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 
   // TODO(SDF-72): proper window creation for fullscreen
   window_ptr_ = glfwCreateWindow(static_cast<int>(properties_.width), static_cast<int>(properties_.height),
                                  properties_.title.c_str(), nullptr, nullptr);
+  if (window_ptr_ == nullptr) {  // MAYBE: semantic exception class (i.e. window_creation_error)?
+    throw std::runtime_error("Unable to create window");
+  }
   ++glfw_window_count_;
 
   context_ = std::make_unique<GraphicsContext>(window_ptr_);
@@ -60,6 +64,8 @@ Window::Window(WindowProperties properties) : properties_(std::move(properties))
   } else {
     Logger::warn("Window {} created without event dispatcher!", properties_.title);
   }
+
+  Logger::info("Created window {} ({} x {})", properties_.title, properties_.width, properties_.height);
 }
 
 void Window::set_glfw_callbacks() const {
@@ -100,19 +106,15 @@ void Window::set_title(std::string_view title) {
 }
 
 void Window::set_pos(glm::ivec2 pos) {
-  // NOLINTBEGIN(cppcoreguidelines-pro-type-union-access)
   glfwSetWindowPos(window_ptr_, pos.x, pos.y);
   properties_.x = pos.x;
   properties_.y = pos.y;
-  // NOLINTEND(cppcoreguidelines-pro-type-union-access)
 }
 
 void Window::set_dimensions(glm::uvec2 dimensions) {
-  // NOLINTBEGIN(cppcoreguidelines-pro-type-union-access)
   glfwSetWindowSize(window_ptr_, static_cast<int>(dimensions.x), static_cast<int>(dimensions.y));
   properties_.width  = dimensions.x;
   properties_.height = dimensions.y;
-  // NOLINTEND(cppcoreguidelines-pro-type-union-access)
 }
 
 void Window::set_vsync(bool vsync) {

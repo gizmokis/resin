@@ -1,5 +1,5 @@
-#ifndef WINDOW_HPP
-#define WINDOW_HPP
+#ifndef RESIN_WINDOW_HPP
+#define RESIN_WINDOW_HPP
 
 #include <GLFW/glfw3.h>
 
@@ -59,7 +59,7 @@ class Window {
 
   void set_glfw_callbacks() const;
 
- private:  // NOLINT
+ private:
   static uint8_t glfw_window_count_;
   WindowProperties properties_;
   GLFWwindow* window_ptr_;
@@ -69,4 +69,4 @@ class Window {
 
 }  // namespace resin
 
-#endif  // WINDOW_HPP
+#endif  // RESIN_WINDOW_HPP

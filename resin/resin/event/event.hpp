@@ -1,5 +1,5 @@
-#ifndef EVENT_HPP
-#define EVENT_HPP
+#ifndef RESIN_EVENT_HPP
+#define RESIN_EVENT_HPP
 
 #include <concepts>
 #include <format>
@@ -104,7 +104,7 @@ class EventDispatcher {  // TODO(SDF-73): implement event bus and event section 
 }  // namespace resin
 
 template <resin::EventConcept E>
-struct std::formatter<E> {  // NOLINT
+struct std::formatter<E> {
   template <class ParseContext>
   constexpr auto parse(ParseContext& ctx) {
     return ctx.begin();
@@ -116,4 +116,4 @@ struct std::formatter<E> {  // NOLINT
   }
 };
 
-#endif  // EVENT_HPP
+#endif  // RESIN_EVENT_HPP

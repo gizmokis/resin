@@ -1,5 +1,5 @@
-#ifndef WINDOW_EVENTS_HPP
-#define WINDOW_EVENTS_HPP
+#ifndef RESIN_WINDOW_EVENTS_HPP
+#define RESIN_WINDOW_EVENTS_HPP
 
 #include <resin/event/event.hpp>
 #include <sstream>
@@ -36,4 +36,4 @@ class WindowResizeEvent : public Event<EventType::WindowResizeEvent> {
 
 }  // namespace resin
 
-#endif  // WINDOW_EVENTS_HPP
+#endif  // RESIN_WINDOW_EVENTS_HPP

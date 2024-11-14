@@ -38,7 +38,9 @@ Checks: >
   -bugprone-easily-swappable-parameters,
   -bugprone-implicit-widening-of-multiplication-result,
   -bugprone-unchecked-optional-access,
-  -bugprone-exception-escape
+  -bugprone-exception-escape,
+  -readability-redundant-access-specifiers,
+  -cppcoreguidelines-pro-type-union-access
 
 HeaderFilterRegex: ""
 
