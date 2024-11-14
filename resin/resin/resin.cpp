@@ -18,8 +18,8 @@ Resin::Resin() {
   {
     WindowProperties properties;
     properties.eventDispatcher = *dispatcher_;
-    window_                    = std::make_unique<Window>(std::move(properties));
-    window_->set_vsync(false);
+
+    window_ = std::make_unique<Window>(std::move(properties));
   }
 }
 
@@ -58,11 +58,12 @@ void Resin::run() {
 
     if (second > 1s) {
       uint16_t seconds = static_cast<uint16_t>(std::chrono::duration_cast<std::chrono::seconds>(second).count());
-      fps_             = static_cast<uint16_t>(frames / seconds);
-      tps_             = static_cast<uint16_t>(ticks / seconds);
-      frames           = 0;
-      ticks            = 0;
-      second           = 0ns;
+
+      fps_   = static_cast<uint16_t>(frames / seconds);
+      tps_   = static_cast<uint16_t>(ticks / seconds);
+      frames = 0;
+      ticks  = 0;
+      second = 0ns;
     }
   }
 }

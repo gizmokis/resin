@@ -56,7 +56,16 @@ Window::Window(WindowProperties properties) : properties_(std::move(properties))
   context_->init();
 
   glfwSetWindowUserPointer(window_ptr_, &properties_);
-  glfwGetWindowPos(window_ptr_, &(properties_.x), &(properties_.y));
+
+  if (properties_.x && properties_.y) {
+    glfwSetWindowPos(window_ptr_, *properties_.x, *properties_.y);
+  } else {
+    int x, y;  // NOLINT
+    glfwGetWindowPos(window_ptr_, &x, &y);
+    properties_.x = x;
+    properties_.y = y;
+  }
+
   glfwSwapInterval(properties_.vsync ? 1 : 0);
 
   if (properties_.eventDispatcher.has_value()) {
@@ -132,7 +141,7 @@ void Window::set_fullscreen(bool fullscreen) {
 
     glfwSetWindowMonitor(window_ptr_, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
   } else {
-    glfwSetWindowMonitor(window_ptr_, nullptr, properties_.x, properties_.y, static_cast<int>(properties_.width),
+    glfwSetWindowMonitor(window_ptr_, nullptr, *properties_.x, *properties_.y, static_cast<int>(properties_.width),
                          static_cast<int>(properties_.height), 0);
   }
 }

@@ -15,16 +15,17 @@
 namespace resin {
 
 struct WindowProperties {
-  std::string title;
-  int x, y;
-  unsigned int width, height;
-  bool vsync, fullscreen;  // TODO(SDF-72): proper fullscreen handling
+  std::string title = "Resin";
+
+  std::optional<int> x;
+  std::optional<int> y;
+  unsigned int width  = 1280U;  // NOLINT
+  unsigned int height = 720U;   // NOLINT
+
+  bool vsync      = false;
+  bool fullscreen = false;  // TODO(SDF-72): proper fullscreen handling
 
   std::optional<std::reference_wrapper<EventDispatcher>> eventDispatcher;
-
-  explicit WindowProperties(std::string_view title = "Resin", unsigned int width = 1280U,             // NOLINT
-                            unsigned int height = 720U, bool vsync = false, bool fullscreen = false)  // NOLINT
-      : title(std::move(title)), width(width), height(height), vsync(vsync), fullscreen(fullscreen) {}
 };
 
 class Window {
@@ -35,7 +36,7 @@ class Window {
   void on_update();
 
   inline std::string_view title() const { return properties_.title; }
-  inline glm::ivec2 pos() const { return glm::ivec2(properties_.x, properties_.y); };
+  inline glm::ivec2 pos() const { return glm::ivec2(*properties_.x, *properties_.y); };
   inline glm::uvec2 dimensions() const { return glm::uvec2(properties_.width, properties_.height); }
   inline bool vsync() const { return properties_.vsync; }
   inline bool fullscreen() const { return properties_.fullscreen; }
