@@ -5,6 +5,7 @@ PointerAlignment: Left
 UseTab: "Never"
 ColumnLimit: 120
 MaxEmptyLinesToKeep: 1
+BreakBeforeBinaryOperators: true
 
 AlignConsecutiveAssignments:
   Enabled: true
