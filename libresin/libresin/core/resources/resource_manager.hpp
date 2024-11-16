@@ -19,6 +19,7 @@ class ResourceManager {
   virtual std::optional<std::shared_ptr<const Resource>> get_res(const std::filesystem::path& path) {
     auto elem = cache_.find(path);
     if (elem != cache_.end()) {
+      resin::Logger::info("Cache hit for path \"{}\".", path.string());
       return elem->second;
     }
 
@@ -28,7 +29,7 @@ class ResourceManager {
       return std::nullopt;
     }
 
-    auto res_ptr = std::make_shared<const Resource>(res);
+    auto res_ptr = std::make_shared<const Resource>(std::move(res.value()));
 
     cache_[path] = res_ptr;
 
@@ -44,4 +45,5 @@ class ResourceManager {
 };
 
 }  // namespace resin
+
 #endif  // RESIN_RESOURCE_MANAGER_HPP

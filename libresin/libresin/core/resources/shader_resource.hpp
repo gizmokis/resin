@@ -6,6 +6,8 @@
 #include <filesystem>
 #include <libresin/core/resources/resource_manager.hpp>
 #include <string_view>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace resin {
@@ -27,44 +29,41 @@ inline std::optional<ShaderType> extension_to_shader_type(std::string_view exten
   return std::nullopt;
 }
 
+class ShaderResourceManager;
+
 class ShaderResource {
  public:
   ShaderResource() = delete;
 
-  static std::optional<ShaderResource> create(std::string&& content, ShaderType type);
-  static std::optional<ShaderResource> from_path(const std::filesystem::path& path);
-
-  using ExternalDefinitionsIterator = std::vector<std::string>::const_iterator;
-  using DependenciesIterator        = std::vector<std::filesystem::path>::const_iterator;
-
-  std::pair<ExternalDefinitionsIterator, ExternalDefinitionsIterator> get_ext_defi_names() const {
-    return {ext_defi_names_.cbegin(), ext_defi_names_.cend()};
-  }
-
-  std::pair<DependenciesIterator, DependenciesIterator> get_deps_rel_paths() const {
-    return {deps_rel_paths_.cbegin(), deps_rel_paths_.cend()};
-  }
-
-  // TODO
-  // void insert_dep(const std::filesystem::path& dep_path, std::string_view dep_content);
-  // void set_ext_defi(std::string_view ext_defi_name, std::string_view defi_content);
-  // bool is_glsl_ready() const;
-  // const std::string& get_str() const;
+  const std::unordered_set<std::string>& get_ext_defi_names() const;
+  void set_ext_defi(std::string_view ext_defi_name, std::string&& defi_content);
+  bool is_glsl_ready() const;
+  const std::string& get_str() const;
 
  private:
-  explicit ShaderResource(std::string&& content, ShaderType type, std::vector<std::filesystem::path>&& deps_rel_paths,
-                          std::vector<std::string>&& ext_defi_names);
+  friend ShaderResourceManager;
 
- private:
-  std::vector<std::filesystem::path> deps_rel_paths_;
-  std::vector<std::string> ext_defi_names_;
+  explicit ShaderResource(std::filesystem::path path, std::string&& content, ShaderType type,
+                          std::unordered_set<std::string>&& ext_defi_names);
 
-  std::string content_;
+  std::filesystem::path path_;
+
+  std::unordered_set<std::string> ext_defi_names_;
+  std::unordered_map<std::string, std::string> ext_defi_contents_;
+
+  std::string raw_content_;
   ShaderType type_;
+
+  mutable bool is_dirty_;
+  mutable std::string content_;
 };
 
 class ShaderResourceManager : ResourceManager<ShaderResource> {
   std::optional<ShaderResource> load_res(const std::filesystem::path& path) override;
+
+ private:
+  std::vector<std::filesystem::path> visited_paths_;
+  int rec_level_;
 };
 
 }  // namespace resin

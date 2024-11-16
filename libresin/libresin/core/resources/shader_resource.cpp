@@ -1,33 +1,85 @@
-#include "libresin/core/resources/shader_resource.hpp"
-
+#include <array>
 #include <cctype>
 #include <filesystem>
 #include <fstream>
+#include <libresin/core/resources/shader_resource.hpp>
+#include <libresin/utils/logger.hpp>
 #include <optional>
 #include <ranges>
 #include <string_view>
+#include <unordered_set>
 #include <vector>
 
-#include "libresin/utils/logger.hpp"
 namespace resin {
 
 static constexpr const char* kShaderLoadingFailedMsg    = "Could not load shader resource with path \"{}\": {}";
-static constexpr const char* kShaderProcessingFailedMsg = "Shader preprocessing failed (line {}): {}";
+static constexpr const char* kShaderProcessingFailedMsg = "Shader resource preprocessing failed (line {}): {}";
 
 static constexpr const char* kIncludeMacro = "#include";
 static constexpr const char* kExtDefiMacro = "#external_definition";
 
-static std::string naive_load(const std::filesystem::path& path) {
-  std::ifstream file_stream(path);
-  if (!file_stream.is_open()) {
-    resin::Logger::err(kShaderLoadingFailedMsg, path, "File stream cannot be opened.");
-  }
-  std::stringstream buffer;
-  buffer << file_stream.rdbuf();
-  return buffer.str();
+static constexpr std::array<const char*, 2> kAllMacros = {
+    kIncludeMacro,
+    kExtDefiMacro,
+};
+
+static constexpr bool is_macro(std::string_view word) {
+  return std::ranges::find(kAllMacros, word) != kAllMacros.end();
 }
 
-std::optional<ShaderResource> ShaderResource::from_path(const std::filesystem::path& path) {
+ShaderResource::ShaderResource(std::filesystem::path path, std::string&& content, ShaderType type,
+                               std::unordered_set<std::string>&& ext_defi_names)
+    : path_(std::move(path)),
+      ext_defi_names_(std::move(ext_defi_names)),
+      raw_content_(std::move(content)),
+      type_(type),
+      is_dirty_(false) {}
+
+const std::unordered_set<std::string>& ShaderResource::get_ext_defi_names() const { return ext_defi_names_; }
+
+void ShaderResource::set_ext_defi(std::string_view ext_defi_name, std::string&& defi_content) {
+  auto it = std::ranges::find(ext_defi_names_, ext_defi_name);
+  if (it == ext_defi_names_.end()) {
+    resin::Logger::warn("Shader resource could not find external definition named \"{}\"", ext_defi_name);
+    return;
+  }
+
+  ext_defi_contents_[*it] = std::move(defi_content);
+  is_dirty_               = true;
+}
+
+bool ShaderResource::is_glsl_ready() const { return ext_defi_contents_.size() == ext_defi_names_.size(); }
+
+const std::string& ShaderResource::get_str() const {
+  if (!is_glsl_ready()) {
+    return raw_content_;
+  }
+
+  if (!is_dirty_) {
+    return content_;
+  }
+
+  content_.clear();
+  for (const auto& ext_defi : ext_defi_contents_) {
+    content_.append(std::format("#define {} {}\n", ext_defi.first, ext_defi.second));
+  }
+  content_.append(raw_content_);
+
+  is_dirty_ = false;
+  return content_;
+}
+
+static std::optional<ShaderType> get_sh_type(const std::filesystem::path& path) {
+  auto sh_type = extension_to_shader_type(path.extension().string());
+  if (!sh_type.has_value()) {
+    resin::Logger::err(kShaderLoadingFailedMsg, path, "File extension \"{}\" is not suported.", path.extension());
+    return std::nullopt;
+  }
+
+  return sh_type;
+}
+
+static std::optional<std::string> load_content(const std::filesystem::path& path) {
   namespace fs = std::filesystem;
 
   if (!fs::exists(path)) {
@@ -40,28 +92,48 @@ std::optional<ShaderResource> ShaderResource::from_path(const std::filesystem::p
     return std::nullopt;
   }
 
-  auto sh_type = extension_to_shader_type(path.extension().string());
-  if (!sh_type.has_value()) {
-    resin::Logger::err(kShaderLoadingFailedMsg, path, "File extension \"{}\" is not suported.", path.extension());
-    return std::nullopt;
+  std::ifstream file_stream(path.string());
+  if (!file_stream.is_open()) {
+    resin::Logger::err(kShaderLoadingFailedMsg, path, "File stream cannot be opened.");
   }
 
-  std::string raw_content = naive_load(path);
-
-  return create(std::move(raw_content), sh_type.value());
+  std::stringstream buffer;
+  buffer << file_stream.rdbuf();
+  return buffer.str();
 }
 
-static std::optional<std::string> process_include(std::string_view arg, size_t curr_line_num) {
-  if (!arg.starts_with("\"") || !arg.ends_with("\"")) {
+static std::optional<std::filesystem::path> process_include_macro(std::string_view arg, int64_t curr_line_num) {
+  if (!arg.starts_with("\"") || !arg.ends_with("\"") || arg.size() != 2) {
     resin::Logger::err(kShaderProcessingFailedMsg, curr_line_num,
-                       "The {} macro argument should begin and end with `\"`", kExtDefiMacro);
+                       "The {} macro argument should begin and end with `\"`", kIncludeMacro);
     return std::nullopt;
   }
 
-  return std::string(arg.substr(1, arg.size() - 2));
+  auto arg_val = std::string_view{arg.substr(1, arg.size() - 2)};
+  auto path    = std::filesystem::path{arg_val};
+  if (path.empty()) {
+    resin::Logger::err(kShaderProcessingFailedMsg, curr_line_num, "The {} macro argument cannot be empty.",
+                       kIncludeMacro, arg_val);
+    return std::nullopt;
+  }
+
+  if (path.is_absolute()) {
+    resin::Logger::err(kShaderProcessingFailedMsg, curr_line_num,
+                       "The {} macro argument \"{}\" cannot be an absolute path.", kIncludeMacro, arg_val);
+    return std::nullopt;
+  }
+  auto dep_ext = resin::extension_to_shader_type(path.extension().string());
+
+  if (dep_ext.has_value() && dep_ext.value() == ShaderType::Library) {
+    resin::Logger::err(kShaderProcessingFailedMsg, curr_line_num,
+                       "The {} macro argument \"{}\" must a library shader (.glsl extension).", kIncludeMacro, arg_val);
+    return std::nullopt;
+  }
+
+  return path;
 }
 
-static std::optional<std::string> process_external_defi(std::string_view arg, size_t curr_line_num) {
+static std::optional<std::string> process_ext_defi_macro(std::string_view arg, int64_t curr_line_num) {
   if (!std::all_of(arg.begin(), arg.end(), [](const char c) { return std::isalnum(c); })) {
     resin::Logger::err(kShaderProcessingFailedMsg, curr_line_num,
                        "The {} macro argument \"{}\" contains non-alphanumeric characters.", kExtDefiMacro, arg);
@@ -71,85 +143,88 @@ static std::optional<std::string> process_external_defi(std::string_view arg, si
   return std::string(arg);
 }
 
-std::optional<ShaderResource> ShaderResource::create(std::string&& content, ShaderType type) {
-  size_t line_number = 1;
-  auto delims        = [](auto x, auto y) { return not(x == ' ' or x == '\n' or y == ' ' or y == '\n'); };
+std::optional<ShaderResource> ShaderResourceManager::load_res(const std::filesystem::path& path) {
+  auto content = load_content(path);
+  if (!content.has_value()) {
+    return std::nullopt;
+  }
 
-  // clang-format off
-  auto words_with_line_nums = content | std::views::chunk_by(delims) 
-                                      | std::views::transform([&line_number](auto&& r) {
-                                          auto word = std::string_view(r);
-                                          if (word == "\n") {
-                                            line_number++;
-                                          }
-                                          return std::make_pair(word, line_number);
-                                        })
-                                      | std::views::filter([](auto chunk) {
-                                          return std::string_view(chunk.first) != " " 
-                                              && std::string_view(chunk.first) != "\n";
-                                        });
-  // clang-format on
+  auto sh_type = get_sh_type(path);
+  if (!sh_type.has_value()) {
+    return std::nullopt;
+  }
 
-  auto it  = words_with_line_nums.begin();
-  auto end = words_with_line_nums.end();
+  auto lines = content.value() | std::views::split('\n')
+               | std::views::transform([](auto&& r) { return std::string_view(r); }) | std::views::enumerate;
 
-  std::vector<std::filesystem::path> paths;
-  std::vector<std::string> defi_names;
+  std::unordered_set<std::string> defi_names;
 
-  while (it != end) {
-    const auto& [word, line] = *it;
+  std::string preprocessed_content;
+  for (auto const [line, line_str] : lines) {
+    auto words = line_str | std::views::split(' ') | std::views::transform([](auto&& r) { return std::string_view(r); })
+                 | std::views::filter([](auto chunk) { return !chunk.empty(); });
 
-    if (word != kIncludeMacro && word != kExtDefiMacro) {
-      ++it;
+    auto it  = words.begin();
+    auto end = words.end();
+
+    if (it == end) {
+      preprocessed_content.append(line_str);
+      continue;
+    }
+
+    auto macro = std::string_view{*it};
+    if (!is_macro(macro)) {
+      preprocessed_content.append(line_str);
       continue;
     }
 
     ++it;
-
     if (it == end) {
-      resin::Logger::err(kShaderProcessingFailedMsg, line, "{} macro argument is absent.", word);
+      resin::Logger::err(kShaderProcessingFailedMsg, line, "{} macro argument is absent.", macro);
+      return std::nullopt;
+    }
+    auto arg = std::string_view{*it};
+
+    ++it;
+    if (it != end) {
+      resin::Logger::err(kShaderProcessingFailedMsg, line, "{} macro expects only one argument", macro);
       return std::nullopt;
     }
 
-    const auto& [arg, arg_line] = *it;
-    if (line != arg_line) {
-      resin::Logger::err(kShaderProcessingFailedMsg, line, "{} macro argument is absent.", word);
-      return std::nullopt;
-    }
-
-    if (word == kIncludeMacro) {
-      auto rel_path = process_include(arg, arg_line);
+    if (macro == kIncludeMacro) {
+      auto rel_path = process_include_macro(arg, line);
 
       if (!rel_path.has_value()) {
         return std::nullopt;
       }
-      paths.emplace_back(rel_path.value());
 
+      auto abs_path = path / rel_path.value();
+      if (std::ranges::find(visited_paths_, abs_path) != visited_paths_.end()) {
+        resin::Logger::err(kShaderProcessingFailedMsg, line, "Detected dependency cycle: {} -> {}", visited_paths_,
+                           abs_path);
+        return std::nullopt;
+      }
+
+      visited_paths_.push_back(abs_path);
+      auto res = get_res(abs_path);
+      if (!res.has_value()) {
+        return std::nullopt;
+      }
+      visited_paths_.pop_back();
+
+      preprocessed_content.append(res.value()->get_str());
+      defi_names.insert(res.value()->get_ext_defi_names().begin(), res.value()->get_ext_defi_names().end());
     } else {
-      auto name = process_external_defi(arg, arg_line);
+      auto name = process_ext_defi_macro(arg, line);
 
       if (!name.has_value()) {
         return std::nullopt;
       }
-      defi_names.emplace_back(name.value());
+      defi_names.emplace(name.value());
     }
-
-    ++it;
   }
 
-  return ShaderResource(std::move(content), type, std::move(paths), std::move(defi_names));
-}
-
-ShaderResource::ShaderResource(std::string&& content, ShaderType type,
-                               std::vector<std::filesystem::path>&& deps_rel_paths,
-                               std::vector<std::string>&& ext_defi_names)
-    : deps_rel_paths_(std::move(deps_rel_paths)),
-      ext_defi_names_(std::move(ext_defi_names)),
-      content_(std::move(content)),
-      type_(type) {}
-
-std::optional<ShaderResource> ShaderResourceManager::load_res(const std::filesystem::path& path) {
-  return ShaderResource::from_path(path);
+  return ShaderResource(std::move(path), std::move(preprocessed_content), sh_type.value(), std::move(defi_names));
 }
 
 }  // namespace resin
