@@ -2,19 +2,15 @@
 #include <filesystem>
 #include <fstream>
 #include <libresin/core/resources/shader_resource.hpp>
+#include <libresin/helpers/logger_helpers.hpp>
+#include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/logger.hpp>
 #include <optional>
 #include <ranges>
 #include <string_view>
 #include <unordered_set>
-#include <vector>
-
-#include "libresin/exceptions.hpp"
 
 namespace resin {
-static constexpr const char* kShaderLoadingFailedMsg    = "Could not load shader resource with path";
-static constexpr const char* kShaderProcessingFailedMsg = "Shader resource preprocessing failed";
-
 ShaderResource::ShaderResource(std::string&& content, ShaderType type, std::unordered_set<std::string>&& ext_defi_names)
     : ext_defi_names_(std::move(ext_defi_names)), raw_content_(std::move(content)), type_(type), is_dirty_(true) {}
 
@@ -55,8 +51,8 @@ static ShaderType get_sh_type(const std::filesystem::path& path) {
   auto file_ext = path.extension().string();
   auto sh_type  = extension_to_shader_type(file_ext);
   if (!sh_type.has_value()) {
-    resin::Logger::err(R"({}, "{}": File extension "{}" is not suported.)", kShaderLoadingFailedMsg, path.string(),
-                       file_ext);
+    helpers::log_file_err(path, "File extension \"{}\" is not suported.", file_ext);
+
     throw FileExtensionNotSupportedException();
   }
 
@@ -67,19 +63,18 @@ static std::string load_content(const std::filesystem::path& path) {
   namespace fs = std::filesystem;
 
   if (!fs::exists(path)) {
-    resin::Logger::err("{}, \"{}\": {}", kShaderLoadingFailedMsg, path.string(), "File does not exist.");
+    helpers::log_file_err(path, "File does not exist.");
     throw FileDoesNotExistException();
   }
 
   if (!fs::is_regular_file(path) && !fs::is_symlink(path)) {
-    resin::Logger::err("{}, \"{}\": {}", kShaderLoadingFailedMsg, path.string(),
-                       "File must be a regular file or symlink.");
+    helpers::log_file_err(path, "File must be a regular file or symlink.");
     throw InvalidFileTypeException();
   }
 
   std::ifstream file_stream(path.string());
   if (!file_stream.is_open()) {
-    resin::Logger::err("{}, \"{}\": {}", kShaderLoadingFailedMsg, path.string(), "File stream cannot be opened.");
+    helpers::log_file_err(path, "File stream cannot be opened.");
     throw FileStreamNotAvailableException();
   }
 
@@ -90,31 +85,25 @@ static std::string load_content(const std::filesystem::path& path) {
 
 static std::optional<std::filesystem::path> process_include_macro(std::string_view arg, int64_t curr_line_num) {
   if (!arg.starts_with("\"") || !arg.ends_with("\"") || arg.size() < 2) {
-    resin::Logger::err("{}, (line \"{}\"): {}", kShaderProcessingFailedMsg, curr_line_num,
-                       "The include macro argument should begin and end with `\"`.");
+    helpers::log_sh_err(curr_line_num, "The include macro argument should begin and end with `\"`.");
     return std::nullopt;
   }
 
   auto arg_val = std::string_view{arg.substr(1, arg.size() - 2)};
   auto path    = std::filesystem::path{arg_val};
   if (path.empty()) {
-    resin::Logger::err("{}, (line \"{}\"): {}", kShaderProcessingFailedMsg, curr_line_num,
-                       "The include macro argument cannot be empty.");
+    helpers::log_sh_err(curr_line_num, "The include macro argument cannot be empty.");
     return std::nullopt;
   }
 
   if (path.is_absolute()) {
-    resin::Logger::err("{}, (line \"{}\"): {}", kShaderProcessingFailedMsg, curr_line_num,
-                       "The include macro argument cannot be an absolute path.");
-
+    helpers::log_sh_err(curr_line_num, "The include macro argument cannot be an absolute path.");
     return std::nullopt;
   }
   auto dep_ext = resin::extension_to_shader_type(path.extension().string());
 
   if (!dep_ext.has_value() || dep_ext.value() != ShaderType::Library) {
-    resin::Logger::err("{}, (line \"{}\"): {}", kShaderProcessingFailedMsg, curr_line_num,
-                       "The include macro argument must a library shader (.glsl extension).");
-
+    helpers::log_sh_err(curr_line_num, "The include macro argument must a library shader (.glsl extension).");
     return std::nullopt;
   }
 
@@ -123,9 +112,7 @@ static std::optional<std::filesystem::path> process_include_macro(std::string_vi
 
 static std::optional<std::string> process_ext_defi_macro(std::string_view arg, int64_t curr_line_num) {
   if (!std::all_of(arg.begin(), arg.end(), [](const char c) { return std::isalnum(c) != 0 || c == '_'; })) {
-    resin::Logger::err("{}, (line \"{}\"): {}", kShaderProcessingFailedMsg, curr_line_num,
-                       "The external definition macro argument contains non-alphanumeric characters.");
-
+    helpers::log_sh_err(curr_line_num, "The external definition macro argument contains non-alphanumeric characters.");
     return std::nullopt;
   }
 
@@ -167,15 +154,14 @@ ShaderResource ShaderResourceManager::load_res(const std::filesystem::path& path
 
     ++it;
     if (it == end) {
-      resin::Logger::err("{}, (line \"{}\"): {} macro argument is absent.", kShaderProcessingFailedMsg, line, macro);
+      helpers::log_sh_err(line, "Macro {} requires an argument.", macro);
       clear_and_throw<ShaderInvalidMacroArgumentsException>();
     }
     auto arg = std::string_view{*it};
 
     ++it;
     if (it != end) {
-      resin::Logger::err("{}, (line \"{}\"): {} macro expects only one argument", kShaderProcessingFailedMsg, line,
-                         macro);
+      helpers::log_sh_err(line, "Macro {} expects exactly one argument.", macro);
       clear_and_throw<ShaderInvalidMacroArgumentsException>();
     }
 
@@ -188,8 +174,7 @@ ShaderResource ShaderResourceManager::load_res(const std::filesystem::path& path
 
       auto abs_path = path.parent_path() / rel_path.value();
       if (std::ranges::find(visited_paths_, abs_path) != visited_paths_.end()) {
-        resin::Logger::err("{}, (line \"{}\"): Detected dependency cycle: {}", kShaderProcessingFailedMsg, line,
-                           abs_path.string());
+        helpers::log_sh_err(line, "Detected dependency cycle starting and ending in {}.", abs_path.string());
         clear_and_throw<ShaderDependencyCycleException>();
       }
 

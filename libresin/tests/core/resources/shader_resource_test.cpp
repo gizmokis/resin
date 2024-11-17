@@ -5,7 +5,7 @@
 #include <tests/files_helper.hpp>
 #include <tests/libresin/test_consts.hpp>
 
-#include "libresin/exceptions.hpp"
+#include "libresin/utils/exceptions.hpp"
 
 class ShaderResourceTest : public testing::Test {
  protected:

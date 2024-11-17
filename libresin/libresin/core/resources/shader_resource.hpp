@@ -5,12 +5,11 @@
 #include <cstdint>
 #include <filesystem>
 #include <libresin/core/resources/resource_manager.hpp>
+#include <libresin/utils/exceptions.hpp>
 #include <string_view>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-
-#include "libresin/exceptions.hpp"
 
 namespace resin {
 
@@ -47,8 +46,6 @@ inline std::optional<ShaderType> extension_to_shader_type(std::string_view exten
   return std::nullopt;
 }
 
-class ShaderResourceManager;
-
 class ShaderResource {
  public:
   ShaderResource() = delete;
@@ -66,6 +63,8 @@ class ShaderResource {
 
   // Returns glsl shader with dependencies included and with external defintions that were inserted.
   const std::string& get_glsl() const;
+
+  inline ShaderType get_type() const { return type_; }
 
  private:
   std::unordered_set<std::string> ext_defi_names_;
@@ -85,7 +84,7 @@ class ShaderResourceManager : public ResourceManager<ShaderResource> {
 
  private:
   template <ResinExceptionConcept Exception>
-  void clear_and_throw() {
+  inline void clear_and_throw() {
     visited_paths_.clear();
     throw Exception();
   }
