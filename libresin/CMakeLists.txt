@@ -51,7 +51,6 @@ if(BUILD_TESTING)
     GTest::gtest_main
   )
 
-
   include(GoogleTest)
   gtest_discover_tests("${PROJECT_NAME}_tests")
 endif()
