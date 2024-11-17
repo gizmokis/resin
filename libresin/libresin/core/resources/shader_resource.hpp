@@ -10,6 +10,8 @@
 #include <unordered_set>
 #include <vector>
 
+#include "libresin/exceptions.hpp"
+
 namespace resin {
 
 namespace shader_macros {
@@ -51,27 +53,21 @@ class ShaderResource {
  public:
   ShaderResource() = delete;
 
+  explicit ShaderResource(std::string&& content, ShaderType type, std::unordered_set<std::string>&& ext_defi_names);
+
   const std::unordered_set<std::string>& get_ext_defi_names() const;
   void set_ext_defi(std::string_view ext_defi_name, std::string&& defi_content);
 
-  // Checks if all external definitions has been defined. Does not guarantee that the shader code is correct.
+  // Checks if all external definitions has been defined.
   bool is_glsl_ready() const;
 
   // Returns raw glsl shader with dependencies included, without any external definitions.
   const std::string& get_raw() const;
 
   // Returns glsl shader with dependencies included and with external defintions that were inserted.
-  // Does not guarantee that the shader code is correct.
   const std::string& get_glsl() const;
 
  private:
-  friend ShaderResourceManager;
-
-  explicit ShaderResource(std::filesystem::path path, std::string&& content, ShaderType type,
-                          std::unordered_set<std::string>&& ext_defi_names);
-
-  std::filesystem::path path_;
-
   std::unordered_set<std::string> ext_defi_names_;
   std::unordered_map<std::string, std::string> ext_defi_contents_;
 
@@ -85,11 +81,15 @@ class ShaderResource {
 class ShaderResourceManager : public ResourceManager<ShaderResource> {
  public:
   ~ShaderResourceManager() override {}
-  std::optional<ShaderResource> load_res(const std::filesystem::path& path) override;
+  ShaderResource load_res(const std::filesystem::path& path) override;
 
  private:
+  template <ResinExceptionConcept Exception>
+  void clear_and_throw() {
+    visited_paths_.clear();
+    throw Exception();
+  }
   std::vector<std::filesystem::path> visited_paths_;
-  int rec_level_;
 };
 
 }  // namespace resin

@@ -3,7 +3,6 @@
 
 #include <filesystem>
 #include <libresin/utils/logger.hpp>
-#include <optional>
 #include <unordered_map>
 
 namespace resin {
@@ -16,20 +15,14 @@ class ResourceManager {
  public:
   virtual ~ResourceManager() = default;
 
-  std::optional<std::shared_ptr<const Resource>> get_res(const std::filesystem::path& path) {
+  std::shared_ptr<const Resource> get_res(const std::filesystem::path& path) {
     auto elem = cache_.find(path);
     if (elem != cache_.end()) {
       resin::Logger::info("Cache hit for path \"{}\".", path.string());
       return elem->second;
     }
 
-    auto res = load_res(path);
-    if (!res.has_value()) {
-      resin::Logger::err("Could not load resource with path \"{}\".", path.string());
-      return std::nullopt;
-    }
-
-    auto res_ptr = std::make_shared<const Resource>(std::move(res.value()));
+    auto res_ptr = std::make_shared<const Resource>(std::move(load_res(path)));
 
     cache_[path] = res_ptr;
 
@@ -38,7 +31,7 @@ class ResourceManager {
     return res_ptr;
   }
 
-  virtual std::optional<Resource> load_res(const std::filesystem::path&) = 0;
+  virtual Resource load_res(const std::filesystem::path&) = 0;
 
  protected:
   std::unordered_map<std::filesystem::path, std::shared_ptr<const Resource>> cache_;
