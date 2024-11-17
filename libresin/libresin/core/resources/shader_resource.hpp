@@ -37,8 +37,16 @@ class ShaderResource {
 
   const std::unordered_set<std::string>& get_ext_defi_names() const;
   void set_ext_defi(std::string_view ext_defi_name, std::string&& defi_content);
+
+  // Checks if all external definitions has been defined. Does not guarantee that the shader code is correct.
   bool is_glsl_ready() const;
-  const std::string& get_str() const;
+
+  // Returns raw glsl shader with dependencies included, without any external definitions.
+  const std::string& get_raw() const;
+
+  // Returns glsl shader with dependencies included and with external defintions that were inserted.
+  // Does not guarantee that the shader code is correct.
+  const std::string& get_glsl() const;
 
  private:
   friend ShaderResourceManager;
@@ -55,7 +63,7 @@ class ShaderResource {
   ShaderType type_;
 
   mutable bool is_dirty_;
-  mutable std::string content_;
+  mutable std::string glsl_;
 };
 
 class ShaderResourceManager : ResourceManager<ShaderResource> {

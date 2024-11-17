@@ -50,23 +50,21 @@ void ShaderResource::set_ext_defi(std::string_view ext_defi_name, std::string&& 
 
 bool ShaderResource::is_glsl_ready() const { return ext_defi_contents_.size() == ext_defi_names_.size(); }
 
-const std::string& ShaderResource::get_str() const {
-  if (!is_glsl_ready()) {
-    return raw_content_;
-  }
+const std::string& ShaderResource::get_raw() const { return raw_content_; }
 
+const std::string& ShaderResource::get_glsl() const {
   if (!is_dirty_) {
-    return content_;
+    return glsl_;
   }
 
-  content_.clear();
+  glsl_.clear();
   for (const auto& ext_defi : ext_defi_contents_) {
-    content_.append(std::format("#define {} {}\n", ext_defi.first, ext_defi.second));
+    glsl_.append(std::format("#define {} {}\n", ext_defi.first, ext_defi.second));
   }
-  content_.append(raw_content_);
+  glsl_.append(raw_content_);
 
   is_dirty_ = false;
-  return content_;
+  return glsl_;
 }
 
 static std::optional<ShaderType> get_sh_type(const std::filesystem::path& path) {
@@ -212,7 +210,7 @@ std::optional<ShaderResource> ShaderResourceManager::load_res(const std::filesys
       }
       visited_paths_.pop_back();
 
-      preprocessed_content.append(res.value()->get_str());
+      preprocessed_content.append(res.value()->get_raw());
       defi_names.insert(res.value()->get_ext_defi_names().begin(), res.value()->get_ext_defi_names().end());
     } else {
       auto name = process_ext_defi_macro(arg, line);
