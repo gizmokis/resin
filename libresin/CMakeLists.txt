@@ -7,11 +7,10 @@ message(STATUS "Configuring " ${PROJECT_NAME})
 set(CMAKE_CXX_STANDARD 23)
 
 add_library(${PROJECT_NAME} 
-        libresin/core/transform.hpp libresin/core/transform.cpp
-        libresin/utils/logger.cpp libresin/utils/logger.hpp
-        libresin/core/resources/resource_manager.hpp
-        libresin/core/resources/shader_resource.hpp libresin/core/resources/shader_resource.cpp
-        )
+      libresin/core/transform.cpp
+      libresin/utils/logger.cpp 
+      libresin/core/resources/shader_resource.cpp
+)
 
 # Prevent CMake from adding `lib` before `libresin`
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")

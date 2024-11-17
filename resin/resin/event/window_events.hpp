@@ -8,7 +8,7 @@ namespace resin {
 
 class WindowCloseEvent : public Event<EventType::WindowCloseEvent> {
  public:
-  EVENT_NAME(WindowCloseEvent);
+  EVENT_NAME(WindowCloseEvent)
 
   std::string to_string() const override { return name(); }
 
@@ -17,9 +17,9 @@ class WindowCloseEvent : public Event<EventType::WindowCloseEvent> {
 
 class WindowResizeEvent : public Event<EventType::WindowResizeEvent> {
  public:
-  EVENT_NAME(WindowResizeEvent);
+  EVENT_NAME(WindowResizeEvent)
 
-  WindowResizeEvent(unsigned int width, unsigned int height) : width_(width), height_(height){};
+  WindowResizeEvent(unsigned int width, unsigned int height) : width_(width), height_(height) {}
 
   unsigned int width() const { return width_; }
   unsigned int height() const { return height_; }
