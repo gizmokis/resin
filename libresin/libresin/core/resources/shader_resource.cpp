@@ -123,15 +123,16 @@ ShaderResource ShaderResourceManager::load_res(const std::filesystem::path& path
   auto sh_type = get_sh_type(path);
   auto content = load_content(path);
 
-  auto lines = content | std::views::split('\n') | std::views::transform([](auto&& r) { return std::string_view(r); })
-               | std::views::enumerate;
+  auto lines = content | std::views::split('\n') | std::views::transform([](auto&& r) { return std::string_view(r); }) |
+               std::views::enumerate;
 
   std::unordered_set<std::string> defi_names;
   std::string preprocessed_content;
 
   for (auto const [line, line_str] : lines) {
-    auto words = line_str | std::views::split(' ') | std::views::transform([](auto&& r) { return std::string_view(r); })
-                 | std::views::filter([](auto chunk) { return !chunk.empty(); });
+    auto words = line_str | std::views::split(' ') |
+                 std::views::transform([](auto&& r) { return std::string_view(r); }) |
+                 std::views::filter([](auto chunk) { return !chunk.empty(); });
 
     auto it  = words.begin();
     auto end = words.end();
