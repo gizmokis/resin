@@ -16,7 +16,7 @@ class ResourceManager {
  public:
   virtual ~ResourceManager() = default;
 
-  virtual std::optional<std::shared_ptr<const Resource>> get_res(const std::filesystem::path& path) {
+  std::optional<std::shared_ptr<const Resource>> get_res(const std::filesystem::path& path) {
     auto elem = cache_.find(path);
     if (elem != cache_.end()) {
       resin::Logger::info("Cache hit for path \"{}\".", path.string());

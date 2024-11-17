@@ -12,6 +12,22 @@
 
 namespace resin {
 
+namespace shader_macros {
+static constexpr const char* kSupportedShaderVersion = "#version 150\n";
+
+static constexpr const char* kIncludeMacro = "#include";
+static constexpr const char* kExtDefiMacro = "#external_definition";
+static constexpr const char* kVersionMacro = "#version";
+
+static constexpr std::array<const char*, 3> kAllMacros = {
+    kIncludeMacro,
+    kExtDefiMacro,
+    kVersionMacro,
+};
+
+inline bool is_macro(std::string_view word) { return std::ranges::find(kAllMacros, word) != kAllMacros.end(); }
+}  // namespace shader_macros
+
 enum class ShaderType : uint32_t {
   Vertex   = 0,
   Fragment = 1,
@@ -66,7 +82,9 @@ class ShaderResource {
   mutable std::string glsl_;
 };
 
-class ShaderResourceManager : ResourceManager<ShaderResource> {
+class ShaderResourceManager : public ResourceManager<ShaderResource> {
+ public:
+  ~ShaderResourceManager() override {}
   std::optional<ShaderResource> load_res(const std::filesystem::path& path) override;
 
  private:
