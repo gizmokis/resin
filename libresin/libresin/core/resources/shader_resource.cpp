@@ -120,14 +120,13 @@ static std::optional<std::string> process_ext_defi_macro(std::string_view arg, i
 }
 
 ShaderResource ShaderResourceManager::load_res(const std::filesystem::path& path) {
-  auto content = load_content(path);
   auto sh_type = get_sh_type(path);
+  auto content = load_content(path);
 
   auto lines = content | std::views::split('\n') | std::views::transform([](auto&& r) { return std::string_view(r); })
                | std::views::enumerate;
 
   std::unordered_set<std::string> defi_names;
-
   std::string preprocessed_content;
 
   for (auto const [line, line_str] : lines) {
@@ -179,7 +178,7 @@ ShaderResource ShaderResourceManager::load_res(const std::filesystem::path& path
       }
 
       visited_paths_.push_back(abs_path);
-      auto res = get_res(abs_path);
+      auto res = this->get_res(abs_path);
       visited_paths_.pop_back();
 
       preprocessed_content.append(res->get_raw());
