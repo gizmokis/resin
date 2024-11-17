@@ -1,6 +1,7 @@
+#ifndef RESIN_TESTS_GLM_HELPER
+#define RESIN_TESTS_GLM_HELPER
 #include <gtest/gtest.h>
 
-#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/detail/qualifier.hpp>
 #include <glm/ext/matrix_relational.hpp>
 #include <glm/gtc/epsilon.hpp>
@@ -62,3 +63,5 @@ template <typename T, glm::qualifier Q>
 // Macro for glm quaternion comparison.
 #define EXPECT_GLM_ROT_NEAR(expected, actual, epsilon) \
   EXPECT_PRED_FORMAT3(AreGLMQuaternionRotationsNear, expected, actual, epsilon)
+
+#endif

@@ -42,7 +42,7 @@ if(BUILD_TESTING)
     tests/core/resources/shader_resource_test.cpp
   )
 
-  target_include_directories("${PROJECT_NAME}_tests" PUBLIC . 
+  target_include_directories("${PROJECT_NAME}_tests" PUBLIC  
     "${CMAKE_BINARY_DIR}/generated/tests/${PROJECT_NAME}/test_consts.hpp"
   )
 
