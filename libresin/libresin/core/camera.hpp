@@ -8,32 +8,32 @@ class Camera {
  public:
   float width;
   float height;
-  float nearPlane;
-  float farPlane;
+  float near_plane;
+  float far_plane;
   Transform transform;
-  bool isOrthographic;
+  bool is_orthographic;
 
-  Camera(float width, float height, float nearPlane, float farPlane, bool isOrthographic);
+  Camera(float width, float height, float near_plane, float far_plane, bool is_orthographic);
   virtual ~Camera();
 
-  virtual glm::mat4 viewMatrix() const;
-  virtual glm::mat4 inverseViewMatrix() const;
+  virtual glm::mat4 view_matrix() const;
+  virtual glm::mat4 inverse_view_matrix() const;
 };
 
 class PerspectiveCamera : public Camera {
  public:
   float fov;
-  float aspectRatio;
+  float aspect_ratio;
 
-  PerspectiveCamera(float fov, float aspectRatio, float nearPlane, float farPlane);
+  PerspectiveCamera(float fov, float aspect_ratio, float near_plane, float far_plane);
 
  private:
-  void updateDimensions();
+  void update_dimensions();
 };
 
 class OrthographicCamera : public Camera {
  public:
-  OrthographicCamera(float width, float height, float nearPlane, float farPlane);
+  OrthographicCamera(float width, float height, float near_plane, float far_plane);
 };
 
 }  // namespace resin
