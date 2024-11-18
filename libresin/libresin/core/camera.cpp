@@ -7,12 +7,8 @@ Camera::Camera(float width, float height, float nearPlane, float farPlane, bool 
     : width(width), height(height), nearPlane(nearPlane), farPlane(farPlane), isOrthographic(isOrthographic) {}
 
 Camera::~Camera() {}
-glm::mat4 Camera::viewMatrix() const {
-  return transform.world_to_local_matrix();
-}
-glm::mat4 Camera::inverseViewMatrix() const {
-  return transform.local_to_world_matrix();
-}
+glm::mat4 Camera::viewMatrix() const { return transform.world_to_local_matrix(); }
+glm::mat4 Camera::inverseViewMatrix() const { return transform.local_to_world_matrix(); }
 
 // Perspective
 PerspectiveCamera::PerspectiveCamera(float fov, float aspectRatio, float nearPlane, float farPlane)
@@ -29,4 +25,4 @@ void PerspectiveCamera::updateDimensions() {
 OrthographicCamera::OrthographicCamera(float width, float height, float nearPlane, float farPlane)
     : Camera(width, height, nearPlane, farPlane, true) {}
 
-} // resin
+}  // namespace resin

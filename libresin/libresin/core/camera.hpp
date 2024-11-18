@@ -5,7 +5,7 @@
 namespace resin {
 
 class Camera {
-public:
+ public:
   float width;
   float height;
   float nearPlane;
@@ -21,22 +21,21 @@ public:
 };
 
 class PerspectiveCamera : public Camera {
-public:
+ public:
   float fov;
   float aspectRatio;
 
   PerspectiveCamera(float fov, float aspectRatio, float nearPlane, float farPlane);
 
-private:
+ private:
   void updateDimensions();
 };
 
 class OrthographicCamera : public Camera {
-public:
+ public:
   OrthographicCamera(float width, float height, float nearPlane, float farPlane);
-
 };
 
-} // resin
+}  // namespace resin
 
-#endif // RESIN_CAMERA_HPP
+#endif  // RESIN_CAMERA_HPP
