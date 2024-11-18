@@ -1,4 +1,4 @@
-#include "camera.hpp"
+#include <libresin/core/camera.hpp>
 
 namespace resin {
 

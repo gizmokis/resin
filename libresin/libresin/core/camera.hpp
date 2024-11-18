@@ -1,6 +1,6 @@
 #ifndef RESIN_CAMERA_HPP
 #define RESIN_CAMERA_HPP
-#include "transform.hpp"
+#include <libresin/core/transform.hpp>
 
 namespace resin {
 
