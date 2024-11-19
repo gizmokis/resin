@@ -104,7 +104,7 @@ void ShaderResourceManager::process_include_macro(const std::filesystem::path& s
   }
 
   auto abs_path = sh_path.parent_path() / rel_path;
-  if (std::ranges::find(visited_paths_, abs_path) != visited_paths_.end()) {
+  if (abs_path == sh_path || std::ranges::find(visited_paths_, abs_path) != visited_paths_.end()) {
     clear_log_throw(ShaderIncludeMacroDependencyCycleException(sh_path.string(), curr_line));
   }
 

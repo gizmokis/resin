@@ -119,7 +119,7 @@ void TerminalLoggerScribe::vlog(std::string_view usr_fmt, std::format_args usr_a
   } else if (level == LogLevel::Warn) {
     old_win_terminal_attributes = begin_win_terminal(FOREGROUND_RED | FOREGROUND_GREEN);
   } else if (level == LogLevel::Throw) {
-    old_win_terminal_attributes = begin_win_terminal(5);
+    old_win_terminal_attributes = begin_win_terminal(FOREGROUND_RED | FOREGROUND_BLUE);
   } else {
     old_win_terminal_attributes = begin_win_terminal(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
   }
