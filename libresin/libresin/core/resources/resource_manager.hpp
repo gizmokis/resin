@@ -31,9 +31,9 @@ class ResourceManager {
     return res_ptr;
   }
 
+ protected:
   virtual Resource load_res(const std::filesystem::path&) = 0;
 
- protected:
   std::unordered_map<std::filesystem::path, std::shared_ptr<const Resource>> cache_;
 };
 

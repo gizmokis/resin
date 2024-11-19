@@ -81,6 +81,8 @@ class ShaderResource {
 class ShaderResourceManager : public ResourceManager<ShaderResource> {
  public:
   ~ShaderResourceManager() override {}
+
+ protected:
   ShaderResource load_res(const std::filesystem::path& path) override;
 
  private:
