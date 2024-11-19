@@ -107,6 +107,8 @@ void TerminalLoggerScribe::vlog(std::string_view usr_fmt, std::format_args usr_a
     begin_unix_terminal("[1;31m");  // Red bold
   } else if (level == LogLevel::Warn) {
     begin_unix_terminal("[1;33m");  // Yellow bold
+  } else if (level == LogLevel::Throw) {
+    begin_unix_terminal("[;35m");  // Purple
   } else {
     begin_unix_terminal("[;37m");  // White
   }
@@ -116,6 +118,8 @@ void TerminalLoggerScribe::vlog(std::string_view usr_fmt, std::format_args usr_a
     old_win_terminal_attributes = begin_win_terminal(FOREGROUND_RED);
   } else if (level == LogLevel::Warn) {
     old_win_terminal_attributes = begin_win_terminal(FOREGROUND_RED | FOREGROUND_GREEN);
+  } else if (level == LogLevel::Throw) {
+    old_win_terminal_attributes = begin_win_terminal(5);
   } else {
     old_win_terminal_attributes = begin_win_terminal(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
   }

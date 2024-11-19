@@ -17,12 +17,13 @@
 namespace resin {
 
 enum class LogLevel : uint32_t {
-  Err  = 0,
-  Warn = 1,
-  Info = 2,
+  Err   = 0,
+  Warn  = 1,
+  Throw = 2,
+  Info  = 3,
 };
 
-static constexpr std::array<std::string_view, 3> kLogPrefixes = {"ERROR", "WARN", "INFO"};
+static constexpr std::array<std::string_view, 4> kLogPrefixes = {"ERROR", "WARN", "THROW", "INFO"};
 static constexpr std::string_view kDebugLogPrefix             = "DEBUG";
 static constexpr uint32_t kMaxLogPrefixSize                   = 5;
 
@@ -102,6 +103,11 @@ class Logger {
   template <typename... Args>
   static inline void warn(FormatWithLocation fmt_loc, Args&&... args) {
     get_instance().log(LogLevel::Warn, false, fmt_loc.loc, fmt_loc.value, args...);
+  }
+
+  template <typename... Args>
+  static inline void thrown(FormatWithLocation fmt_loc, Args&&... args) {
+    get_instance().log(LogLevel::Throw, false, fmt_loc.loc, fmt_loc.value, args...);
   }
 
   template <typename... Args>
