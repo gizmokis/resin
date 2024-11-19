@@ -84,11 +84,20 @@ class ShaderResourceManager : public ResourceManager<ShaderResource> {
   ShaderResource load_res(const std::filesystem::path& path) override;
 
  private:
-  template <ResinExceptionConcept Exception>
-  inline void clear_and_throw() {
+  template <ExceptionConcept Exception, typename... Args>
+  [[noreturn]] void inline clear_log_throw(Args&&... args)
+    requires std::constructible_from<Exception, Args...>
+  {
     visited_paths_.clear();
-    throw Exception();
+    log_throw<Exception>(std::forward<Args>(args)...);
   }
+
+  void process_include_macro(const std::filesystem::path& sh_path, std::string_view arg, size_t curr_line,
+                             std::string& content, std::unordered_set<std::string>& defi_names);
+  void process_ext_defi_macro(const std::filesystem::path& sh_path, std::string_view arg, size_t curr_line_num,
+                              std::unordered_set<std::string>& defi_names);
+
+ private:
   std::vector<std::filesystem::path> visited_paths_;
 };
 

@@ -2,10 +2,9 @@
 
 #include <filesystem>
 #include <libresin/core/resources/shader_resource.hpp>
+#include <libresin/utils/exceptions.hpp>
 #include <tests/files_helper.hpp>
 #include <tests/libresin/test_consts.hpp>
-
-#include "libresin/utils/exceptions.hpp"
 
 class ShaderResourceTest : public testing::Test {
  protected:
@@ -42,5 +41,5 @@ TEST_F(ShaderResourceTest, ShaderDepsCycleIsDetected) {
 
   EXPECT_THROW(
       { auto res = sh_resman.get_res(resources_path_ / "deps_cycle" / "main.vert"); },
-      resin::ShaderDependencyCycleException);
+      resin::ShaderIncludeMacroDependencyCycleException);
 }

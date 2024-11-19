@@ -2,7 +2,6 @@
 #include <filesystem>
 #include <fstream>
 #include <libresin/core/resources/shader_resource.hpp>
-#include <libresin/helpers/logger_helpers.hpp>
 #include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/logger.hpp>
 #include <optional>
@@ -51,9 +50,7 @@ static ShaderType get_sh_type(const std::filesystem::path& path) {
   auto file_ext = path.extension().string();
   auto sh_type  = extension_to_shader_type(file_ext);
   if (!sh_type.has_value()) {
-    helpers::log_file_err(path, "File extension \"{}\" is not suported.", file_ext);
-
-    throw FileExtensionNotSupportedException();
+    log_throw<FileExtensionNotSupportedException>(path.string(), file_ext);
   }
 
   return sh_type.value();
@@ -63,19 +60,16 @@ static std::string load_content(const std::filesystem::path& path) {
   namespace fs = std::filesystem;
 
   if (!fs::exists(path)) {
-    helpers::log_file_err(path, "File does not exist.");
-    throw FileDoesNotExistException();
+    log_throw<FileDoesNotExistException>(path.string());
   }
 
   if (!fs::is_regular_file(path) && !fs::is_symlink(path)) {
-    helpers::log_file_err(path, "File must be a regular file or symlink.");
-    throw InvalidFileTypeException();
+    log_throw<InvalidFileTypeException>(path.string(), "Expected regular or symlink file.");
   }
 
   std::ifstream file_stream(path.string());
   if (!file_stream.is_open()) {
-    helpers::log_file_err(path, "File stream cannot be opened.");
-    throw FileStreamNotAvailableException();
+    log_throw<FileStreamNotAvailableException>(path.string());
   }
 
   std::stringstream buffer;
@@ -83,40 +77,54 @@ static std::string load_content(const std::filesystem::path& path) {
   return buffer.str();
 }
 
-static std::optional<std::filesystem::path> process_include_macro(std::string_view arg, int64_t curr_line_num) {
+void ShaderResourceManager::process_include_macro(const std::filesystem::path& sh_path, std::string_view arg,
+                                                  size_t curr_line, std::string& content,
+                                                  std::unordered_set<std::string>& defi_names) {
   if (!arg.starts_with("\"") || !arg.ends_with("\"") || arg.size() < 2) {
-    helpers::log_sh_err(curr_line_num, "The include macro argument should begin and end with `\"`.");
-    return std::nullopt;
+    clear_log_throw<ShaderInvalidMacroArgumentException>(
+        sh_path.string(), "The include macro argument should begin and end with `\"`.", curr_line);
   }
 
-  auto arg_val = std::string_view{arg.substr(1, arg.size() - 2)};
-  auto path    = std::filesystem::path{arg_val};
-  if (path.empty()) {
-    helpers::log_sh_err(curr_line_num, "The include macro argument cannot be empty.");
-    return std::nullopt;
+  auto arg_val  = std::string_view{arg.substr(1, arg.size() - 2)};
+  auto rel_path = std::filesystem::path{arg_val};
+  if (rel_path.empty()) {
+    clear_log_throw<ShaderInvalidMacroArgumentException>(sh_path.string(),
+                                                         "The include macro argument cannot be empty.", curr_line);
   }
 
-  if (path.is_absolute()) {
-    helpers::log_sh_err(curr_line_num, "The include macro argument cannot be an absolute path.");
-    return std::nullopt;
+  if (rel_path.is_absolute()) {
+    clear_log_throw<ShaderInvalidMacroArgumentException>(
+        sh_path.string(), "The include macro argument cannot be an absolute path.", curr_line);
   }
-  auto dep_ext = resin::extension_to_shader_type(path.extension().string());
 
+  auto dep_ext = resin::extension_to_shader_type(rel_path.extension().string());
   if (!dep_ext.has_value() || dep_ext.value() != ShaderType::Library) {
-    helpers::log_sh_err(curr_line_num, "The include macro argument must a library shader (.glsl extension).");
-    return std::nullopt;
+    clear_log_throw<ShaderInvalidMacroArgumentException>(
+        sh_path.string(), "The include macro argument must be a library shader (.glsl extension).", curr_line);
   }
 
-  return path;
+  auto abs_path = sh_path.parent_path() / rel_path;
+  if (std::ranges::find(visited_paths_, abs_path) != visited_paths_.end()) {
+    clear_log_throw<ShaderIncludeMacroDependencyCycleException>(sh_path.string(), curr_line);
+  }
+
+  visited_paths_.push_back(abs_path);
+  auto res = this->get_res(abs_path);
+  visited_paths_.pop_back();
+
+  content.append(res->get_raw());
+  defi_names.insert(res->get_ext_defi_names().begin(), res->get_ext_defi_names().end());
 }
 
-static std::optional<std::string> process_ext_defi_macro(std::string_view arg, int64_t curr_line_num) {
+void ShaderResourceManager::process_ext_defi_macro(const std::filesystem::path& sh_path, std::string_view arg,
+                                                   size_t curr_line_num, std::unordered_set<std::string>& defi_names) {
   if (!std::all_of(arg.begin(), arg.end(), [](const char c) { return std::isalnum(c) != 0 || c == '_'; })) {
-    helpers::log_sh_err(curr_line_num, "The external definition macro argument contains non-alphanumeric characters.");
-    return std::nullopt;
+    clear_log_throw<ShaderInvalidMacroArgumentException>(
+        sh_path.string(), "The external definition macro argument contains non-alphanumeric characters.",
+        curr_line_num);
   }
 
-  return std::string(arg);
+  defi_names.emplace(arg);
 }
 
 ShaderResource ShaderResourceManager::load_res(const std::filesystem::path& path) {
@@ -129,7 +137,8 @@ ShaderResource ShaderResourceManager::load_res(const std::filesystem::path& path
   std::unordered_set<std::string> defi_names;
   std::string preprocessed_content;
 
-  for (auto const [line, line_str] : lines) {
+  for (auto const [l, line_str] : lines) {
+    auto line  = static_cast<size_t>(l);
     auto words = line_str | std::views::split(' ') |
                  std::views::transform([](auto&& r) { return std::string_view(r); }) |
                  std::views::filter([](auto chunk) { return !chunk.empty(); });
@@ -154,43 +163,19 @@ ShaderResource ShaderResourceManager::load_res(const std::filesystem::path& path
 
     ++it;
     if (it == end) {
-      helpers::log_sh_err(line, "Macro {} requires an argument.", macro);
-      clear_and_throw<ShaderInvalidMacroArgumentsException>();
+      clear_log_throw<ShaderMacroInvalidArgumentsCountException>(path.string(), std::string(macro), 0, 1, line);
     }
     auto arg = std::string_view{*it};
 
     ++it;
     if (it != end) {
-      helpers::log_sh_err(line, "Macro {} expects exactly one argument.", macro);
-      clear_and_throw<ShaderInvalidMacroArgumentsException>();
+      clear_log_throw<ShaderMacroInvalidArgumentsCountException>(path.string(), std::string(macro), 2, 1, line);
     }
 
     if (macro == shader_macros::kIncludeMacro) {
-      auto rel_path = process_include_macro(arg, line);
-
-      if (!rel_path.has_value()) {
-        clear_and_throw<ShaderInvalidMacroArgumentsException>();
-      }
-
-      auto abs_path = path.parent_path() / rel_path.value();
-      if (std::ranges::find(visited_paths_, abs_path) != visited_paths_.end()) {
-        helpers::log_sh_err(line, "Detected dependency cycle starting and ending in {}.", abs_path.string());
-        clear_and_throw<ShaderDependencyCycleException>();
-      }
-
-      visited_paths_.push_back(abs_path);
-      auto res = this->get_res(abs_path);
-      visited_paths_.pop_back();
-
-      preprocessed_content.append(res->get_raw());
-      defi_names.insert(res->get_ext_defi_names().begin(), res->get_ext_defi_names().end());
+      process_include_macro(path, arg, line, preprocessed_content, defi_names);
     } else {
-      auto name = process_ext_defi_macro(arg, line);
-
-      if (!name.has_value()) {
-        clear_and_throw<ShaderInvalidMacroArgumentsException>();
-      }
-      defi_names.emplace(name.value());
+      process_ext_defi_macro(path, arg, line, defi_names);
     }
     // all version macros are skipped
     // TODO(migoox): add multiple glsl versions support?
