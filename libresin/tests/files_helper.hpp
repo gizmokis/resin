@@ -4,6 +4,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <regex>
 #include <string>
 
 ::testing::AssertionResult IsFileContentEqual(const char* expected_expr, const char* actual_expr,
@@ -24,6 +25,7 @@
   }
 
   std::string file_content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+  file_content = std::regex_replace( file_content, std::regex( "\\r\\n" ), "\n" );
 
   if (file_content != content) {
     return ::testing::AssertionFailure() << "File content does not match.\n";
