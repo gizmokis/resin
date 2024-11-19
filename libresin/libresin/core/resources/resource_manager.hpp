@@ -18,7 +18,7 @@ class ResourceManager {
   std::shared_ptr<const Resource> get_res(const std::filesystem::path& path) {
     auto elem = cache_.find(path);
     if (elem != cache_.end()) {
-      resin::Logger::info("Cache hit for path \"{}\".", path.string());
+      Logger::info("Cache hit for path \"{}\".", path.string());
       return elem->second;
     }
 
@@ -26,7 +26,7 @@ class ResourceManager {
 
     cache_[path] = res_ptr;
 
-    resin::Logger::info("Loaded and cached resource with path \"{}\".", path.string());
+    Logger::info("Loaded and cached resource with path \"{}\".", path.string());
 
     return res_ptr;
   }
