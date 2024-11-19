@@ -7,8 +7,10 @@ message(STATUS "Configuring " ${PROJECT_NAME})
 set(CMAKE_CXX_STANDARD 23)
 
 add_library(${PROJECT_NAME} 
-        libresin/core/transform.hpp libresin/core/transform.cpp
-        libresin/utils/logger.cpp libresin/utils/logger.hpp)
+      libresin/core/transform.cpp
+      libresin/utils/logger.cpp 
+      libresin/core/resources/shader_resource.cpp
+)
 
 # Prevent CMake from adding `lib` before `libresin`
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
@@ -23,14 +25,26 @@ target_compile_options(${PROJECT_NAME} PRIVATE ${PROJ_CXX_FLAGS})
 # This is required when libresin is built as a shared library and is linked with shared libraries
 target_link_options(${PROJECT_NAME} PRIVATE ${PROJ_SHARED_LINKER_FLAGS})
 
+target_compile_definitions(${PROJECT_NAME} PUBLIC GLM_ENABLE_EXPERIMENTAL)
+
 if(BUILD_TESTING)
+  # Generate the tests constants 
+  set(TESTS_DATA_PATH "${CMAKE_CURRENT_SOURCE_DIR}/tests/data")
+  configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../cmake/test_consts.hpp.in"
+               "${CMAKE_BINARY_DIR}/generated/tests/${PROJECT_NAME}/test_consts.hpp")
+
   enable_testing()
 
   add_executable(
     "${PROJECT_NAME}_tests"
-    tests/example_test.cpp
     tests/core/transform_test.cpp
+    tests/core/resources/shader_resource_test.cpp
   )
+
+  target_include_directories("${PROJECT_NAME}_tests" PUBLIC  
+    "${CMAKE_BINARY_DIR}/generated/tests/${PROJECT_NAME}/test_consts.hpp"
+  )
+
   target_link_libraries(
     "${PROJECT_NAME}_tests"
     ${PROJECT_NAME}

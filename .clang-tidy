@@ -34,12 +34,12 @@ Checks: >
   -readability-named-parameter,
   -readability-redundant-declaration,
   -readability-function-cognitive-complexity,
+  -readability-redundant-access-specifiers,
   -bugprone-narrowing-conversions,
   -bugprone-easily-swappable-parameters,
   -bugprone-implicit-widening-of-multiplication-result,
   -bugprone-unchecked-optional-access,
   -bugprone-exception-escape,
-  -readability-redundant-access-specifiers,
   -cppcoreguidelines-pro-type-union-access
 
 HeaderFilterRegex: ""

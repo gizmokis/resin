@@ -1,5 +1,5 @@
-#ifndef RESIN_UTIL_LOGGER_HPP
-#define RESIN_UTIL_LOGGER_HPP
+#ifndef RESIN_LOGGER_HPP
+#define RESIN_LOGGER_HPP
 
 #include <array>
 #include <chrono>
@@ -17,12 +17,13 @@
 namespace resin {
 
 enum class LogLevel : uint32_t {
-  Err  = 0,
-  Warn = 1,
-  Info = 2,
+  Err   = 0,
+  Warn  = 1,
+  Throw = 2,
+  Info  = 3,
 };
 
-static constexpr std::array<std::string_view, 3> kLogPrefixes = {"ERROR", "WARN", "INFO"};
+static constexpr std::array<std::string_view, 4> kLogPrefixes = {"ERROR", "WARN", "THROW", "INFO"};
 static constexpr std::string_view kDebugLogPrefix             = "DEBUG";
 static constexpr uint32_t kMaxLogPrefixSize                   = 5;
 
@@ -118,7 +119,7 @@ class Logger {
 
   template <typename... Args>
   void log(const LogLevel level, const bool debug, const std::source_location& location, const std::string_view fmt,
-           Args&... args) {
+           Args&&... args) {
     const std::lock_guard lock(mutex_);
     const auto file_path = std::string_view(location.file_name() + file_name_start_pos_);
     const auto now       = std::chrono::system_clock::now();
@@ -143,4 +144,4 @@ class Logger {
 
 }  // namespace resin
 
-#endif  // RESIN_HPP
+#endif  // RESIN_LOGGER_HPP

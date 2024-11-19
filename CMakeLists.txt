@@ -39,7 +39,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/version.hpp.in
 if(USE_IMPLICIT_INCLUDE_DIRECTORIES)
   set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES
       ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
-  message("-- Using the
+  message(STATUS "Using the
 following implicit include directories to standard include directories: ")
   message(${CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES})
 endif()
