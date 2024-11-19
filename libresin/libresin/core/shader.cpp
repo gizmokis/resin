@@ -118,10 +118,6 @@ void ShaderProgram::set_uint_array(std::string_view name, std::span<uint32_t> va
   glProgramUniform1uiv(program_id_, location, static_cast<GLsizei>(values.size()), values.data());
 }
 
-void ShaderProgram::set_float(std::string_view name, float value) {
-  GLint location = get_uniform_location(name);
-  glProgramUniform1f(program_id_, location, value);
-}
 void ShaderProgram::set_float2(std::string_view name, const glm::vec2& value) {
   GLint location = get_uniform_location(name);
   glProgramUniform2f(program_id_, location, value.x, value.y);

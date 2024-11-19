@@ -45,6 +45,7 @@ class Resin {
   static constexpr duration_t kTickTime = 16666us;  // 60 TPS = 16.6(6) ms/t
 
  private:
+  unsigned int vertex_array_, vertex_buffer_, index_buffer_;
   EventDispatcher dispatcher_;
   ShaderResourceManager shader_resource_manager_;
 

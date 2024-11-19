@@ -25,6 +25,33 @@ Resin::Resin() {
   const std::filesystem::path path = std::filesystem::current_path() / "assets";
   shader_ = std::make_unique<RenderingShaderProgram>("default", *shader_resource_manager_.get_res(path / "test.vert"),
                                                      *shader_resource_manager_.get_res(path / "test.frag"));
+
+  float vertices[4 * (3 + 4)] = {
+      -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,
+      -0.5f, 0.5f,  0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.5f, 0.5f,  0.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+  };
+
+  unsigned int indices[6] = {0, 1, 2, 1, 3, 2};
+
+  // Generate VAO
+  glGenVertexArrays(1, &vertex_array_);
+  glBindVertexArray(vertex_array_);
+
+  // Generate VBO and load data into it
+  glGenBuffers(1, &vertex_buffer_);
+  glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_);
+  glBufferData(GL_ARRAY_BUFFER, sizeof vertices, vertices, GL_STATIC_DRAW);
+
+  // Set vertex attrib pointers
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), nullptr);
+  glEnableVertexAttribArray(1);
+  glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (const void*)(3 * sizeof(float)));
+
+  // Generate indices
+  glGenBuffers(1, &index_buffer_);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer_);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof indices, indices, GL_STATIC_DRAW);
 }
 
 void Resin::run() {
@@ -75,9 +102,23 @@ void Resin::run() {
 void Resin::update(duration_t) {
   window_->set_title(std::format("Resin [{} FPS {} TPS] running for: {}", fps_, tps_,
                                  std::chrono::duration_cast<std::chrono::seconds>(time_)));
+
+  shader_->set_float("iTime", std::chrono::duration<float>(time_).count());
 }
 
-void Resin::render() { window_->on_update(); }
+void Resin::render() {
+  glClearColor(0.1f, 0.1f, 0.1f, 1.f);
+  glClear(GL_COLOR_BUFFER_BIT);
+
+  {
+    glBindVertexArray(vertex_array_);
+    shader_->bind();
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+    shader_->unbind();
+  }
+
+  window_->on_update();
+}
 
 bool Resin::on_window_close(WindowCloseEvent&) {
   running_ = false;

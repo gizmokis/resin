@@ -28,7 +28,10 @@ class ShaderProgram {
   inline void set_uint(std::string_view name, uint32_t value);
   inline void set_uint_array(std::string_view name, std::span<uint32_t> values);
 
-  inline void set_float(std::string_view name, float value);
+  inline void set_float(std::string_view name, float value) {
+    GLint location = get_uniform_location(name);
+    glProgramUniform1f(program_id_, location, value);
+  }
   inline void set_float2(std::string_view name, const glm::vec2& value);
   inline void set_float3(std::string_view name, const glm::vec3& value);
   inline void set_float4(std::string_view name, const glm::vec4& value);
@@ -55,7 +58,7 @@ class ShaderProgram {
   }
 
  private:
-  inline GLint get_uniform_location(std::string_view name) const;
+  GLint get_uniform_location(std::string_view name) const;
 
  protected:
   std::string shader_name_;

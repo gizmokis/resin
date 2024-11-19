@@ -25,7 +25,7 @@ in vec3 v_Pos;
 
 uniform float iTime;
 uniform vec2 iMouse;
-uniform vec2 iResolution;
+vec2 iResolution = vec2(1280, 720);
 uniform int iFrame;
 
 float dot2( in vec2 v ) { return dot(v,v); }
@@ -664,7 +664,6 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 #endif
     
     fragColor = vec4( tot, 1.0 );
-    fragColor = fragColor + 1.0;
 }
 
 void main() {

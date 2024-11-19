@@ -7,5 +7,5 @@ out vec3 v_Pos;
 
 void main() {
     v_Pos = a_Position;
-    gl_Position = vec4(a_Position*2, 1.0);
+    gl_Position = vec4(2*a_Position, 1.0);
 }
