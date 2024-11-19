@@ -10,6 +10,7 @@ add_library(${PROJECT_NAME}
       libresin/core/transform.cpp
       libresin/utils/logger.cpp 
       libresin/core/resources/shader_resource.cpp
+      libresin/core/shader.cpp
 )
 
 # Prevent CMake from adding `lib` before `libresin`

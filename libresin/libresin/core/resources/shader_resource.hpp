@@ -15,7 +15,7 @@ namespace resin {
 
 namespace shader_macros {
 
-static constexpr std::string_view kSupportedShaderVersion = "#version 150\n";
+static constexpr std::string_view kSupportedShaderVersion = "#version 330 core\n";
 
 static constexpr std::string_view kIncludeMacro = "#include";
 static constexpr std::string_view kExtDefiMacro = "#external_definition";

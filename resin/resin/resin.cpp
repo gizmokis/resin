@@ -1,5 +1,6 @@
 #include <chrono>
 #include <cstdint>
+#include <filesystem>
 #include <format>
 #include <libresin/utils/logger.hpp>
 #include <memory>
@@ -11,16 +12,19 @@
 namespace resin {
 
 Resin::Resin() {
-  dispatcher_ = std::make_unique<EventDispatcher>();
-  dispatcher_->subscribe<WindowCloseEvent>(BIND_EVENT_METHOD(on_window_close));
-  dispatcher_->subscribe<WindowResizeEvent>(BIND_EVENT_METHOD(on_window_resize));
+  dispatcher_.subscribe<WindowCloseEvent>(BIND_EVENT_METHOD(on_window_close));
+  dispatcher_.subscribe<WindowResizeEvent>(BIND_EVENT_METHOD(on_window_resize));
 
   {
     WindowProperties properties;
-    properties.eventDispatcher = *dispatcher_;
+    properties.eventDispatcher = dispatcher_;
 
     window_ = std::make_unique<Window>(std::move(properties));
   }
+
+  const std::filesystem::path path = std::filesystem::current_path() / "assets";
+  shader_ = std::make_unique<RenderingShaderProgram>("default", *shader_resource_manager_.get_res(path / "test.vert"),
+                                                     *shader_resource_manager_.get_res(path / "test.frag"));
 }
 
 void Resin::run() {

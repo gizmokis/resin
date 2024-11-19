@@ -3,6 +3,8 @@
 
 #include <chrono>
 #include <cstdint>
+#include <libresin/core/resources/shader_resource.hpp>
+#include <libresin/core/shader.hpp>
 #include <memory>
 #include <resin/core/window.hpp>
 #include <resin/event/event.hpp>
@@ -43,8 +45,11 @@ class Resin {
   static constexpr duration_t kTickTime = 16666us;  // 60 TPS = 16.6(6) ms/t
 
  private:
+  EventDispatcher dispatcher_;
+  ShaderResourceManager shader_resource_manager_;
+
   std::unique_ptr<Window> window_;
-  std::unique_ptr<EventDispatcher> dispatcher_;
+  std::unique_ptr<RenderingShaderProgram> shader_;
 
   bool running_   = true;
   bool minimized_ = false;

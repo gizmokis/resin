@@ -168,7 +168,7 @@ ShaderResource ShaderResourceManager::load_res(const std::filesystem::path& path
     auto arg = std::string_view{*it};
 
     ++it;
-    if (it != end) {
+    if (it != end && macro != shader_macros::kVersionMacro) {
       clear_log_throw(ShaderMacroInvalidArgumentsCountException(path.string(), std::string(macro), 2, 1, line));
     }
 
