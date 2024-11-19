@@ -19,7 +19,7 @@ class FileDoesNotExistException : public std::runtime_error {
  public:
   EXCEPTION_NAME(FileDoesNotExistException)
 
-  explicit FileDoesNotExistException(std::string file_path)
+  explicit FileDoesNotExistException(std::string&& file_path)
       : std::runtime_error(std::format(R"(File "{}" does not exist.)", file_path)), file_path_(std::move(file_path)) {}
 
   inline const std::string& get_file_path() const { return file_path_; }
@@ -32,7 +32,7 @@ class InvalidFileTypeException : public std::runtime_error {
  public:
   EXCEPTION_NAME(InvalidFileTypeException)
 
-  explicit InvalidFileTypeException(std::string file_path, std::string msg)
+  explicit InvalidFileTypeException(std::string&& file_path, std::string&& msg)
       : std::runtime_error(std::format(R"(File "{}" has invalid type. {})", file_path, msg)),
         file_path_(std::move(file_path)),
         msg_(std::move(msg)) {}
@@ -49,7 +49,7 @@ class FileStreamNotAvailableException : public std::runtime_error {
  public:
   EXCEPTION_NAME(FileStreamNotAvailableException)
 
-  explicit FileStreamNotAvailableException(std::string file_path)
+  explicit FileStreamNotAvailableException(std::string&& file_path)
       : std::runtime_error(std::format(R"(File stream is not available for "{}")", file_path)),
         file_path_(std::move(file_path)) {}
 
@@ -64,7 +64,7 @@ class FileExtensionNotSupportedException : public std::runtime_error {
  public:
   EXCEPTION_NAME(FileExtensionNotSupportedException)
 
-  explicit FileExtensionNotSupportedException(std::string file_path, std::string extension)
+  explicit FileExtensionNotSupportedException(std::string&& file_path, std::string&& extension)
       : std::runtime_error(std::format(R"(File extension "{}" is not supported for "{}".)", extension, file_path)),
         file_path_(std::move(file_path)),
         extension_(std::move(extension)) {}
@@ -81,13 +81,13 @@ class ShaderMacroInvalidArgumentsCountException : public std::runtime_error {
  public:
   EXCEPTION_NAME(ShaderMacroInvalidArgumentsCountException)
 
-  explicit ShaderMacroInvalidArgumentsCountException(std::string sh_path, std::string macro_name, size_t expected_args,
-                                                     size_t actual_args, size_t line)
+  explicit ShaderMacroInvalidArgumentsCountException(std::string&& sh_path, std::string&& macro_name,
+                                                     size_t expected_args, size_t actual_args, size_t line)
       : std::runtime_error(std::format(
             R"(Shader with path "{}" contains macro "{}" with invalid arguments count at line {}. Expected {}. Actual: {}.)",
             sh_path, macro_name, line, expected_args, actual_args)),
-        sh_path_(sh_path),
-        macro_name_(macro_name),
+        sh_path_(std::move(sh_path)),
+        macro_name_(std::move(macro_name)),
         expected_args_(expected_args),
         actual_args_(actual_args),
         line_(line) {}
@@ -109,11 +109,11 @@ class ShaderInvalidMacroArgumentException : public std::runtime_error {
  public:
   EXCEPTION_NAME(ShaderInvalidMacroArgumentException)
 
-  explicit ShaderInvalidMacroArgumentException(std::string sh_path, std::string msg, size_t line)
+  explicit ShaderInvalidMacroArgumentException(std::string&& sh_path, std::string&& msg, size_t line)
       : std::runtime_error(std::format(R"(Shader with path "{}" contains macro at line {} with invalid argument. {})",
                                        sh_path, line, msg)),
-        sh_path_(sh_path),
-        msg_(msg),
+        sh_path_(std::move(sh_path)),
+        msg_(std::move(msg)),
         line_(line) {}
 
   inline const std::string& get_sh_path() const { return sh_path_; }
@@ -130,7 +130,7 @@ class ShaderIncludeMacroDependencyCycleException : public std::runtime_error {
  public:
   EXCEPTION_NAME(ShaderIncludeMacroDependencyCycleException)
 
-  explicit ShaderIncludeMacroDependencyCycleException(std::string sh_path, size_t line)
+  explicit ShaderIncludeMacroDependencyCycleException(std::string&& sh_path, size_t line)
       : std::runtime_error(
             std::format(R"(Detected dependency cycle in shader with path "{}" at line {}.)", sh_path, line)),
         sh_path_(std::move(sh_path)),

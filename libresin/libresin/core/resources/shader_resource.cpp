@@ -50,7 +50,7 @@ static ShaderType get_sh_type(const std::filesystem::path& path) {
   auto file_ext = path.extension().string();
   auto sh_type  = extension_to_shader_type(file_ext);
   if (!sh_type.has_value()) {
-    log_throw(FileExtensionNotSupportedException(path.string(), file_ext));
+    log_throw(FileExtensionNotSupportedException(path.string(), std::string(file_ext)));
   }
 
   return sh_type.value();
