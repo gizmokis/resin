@@ -106,11 +106,6 @@ class Logger {
   }
 
   template <typename... Args>
-  static inline void thrown(FormatWithLocation fmt_loc, Args&&... args) {
-    get_instance().log(LogLevel::Throw, false, fmt_loc.loc, fmt_loc.value, args...);
-  }
-
-  template <typename... Args>
   static inline void info(FormatWithLocation fmt_loc, Args&&... args) {
     get_instance().log(LogLevel::Info, false, fmt_loc.loc, fmt_loc.value, args...);
   }
@@ -124,7 +119,7 @@ class Logger {
 
   template <typename... Args>
   void log(const LogLevel level, const bool debug, const std::source_location& location, const std::string_view fmt,
-           Args&... args) {
+           Args&&... args) {
     const std::lock_guard lock(mutex_);
     const auto file_path = std::string_view(location.file_name() + file_name_start_pos_);
     const auto now       = std::chrono::system_clock::now();

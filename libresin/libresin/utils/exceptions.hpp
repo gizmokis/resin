@@ -1,7 +1,9 @@
 #ifndef RESIN_EXCEPTIONS_HPP
 #define RESIN_EXCEPTIONS_HPP
 #include <libresin/utils/logger.hpp>
+#include <source_location>
 #include <stdexcept>
+#include <type_traits>
 
 #define EXCEPTION_NAME(TypeName) \
   static constexpr std::string_view name() { return #TypeName; }
@@ -142,13 +144,10 @@ class ShaderIncludeMacroDependencyCycleException : public std::runtime_error {
   size_t line_;
 };
 
-template <ExceptionConcept Exception, typename... Args>
-[[noreturn]] void inline log_throw(Args&&... args)
-  requires std::constructible_from<Exception, Args...>
-{
-  auto e = Exception(std::forward<Args>(args)...);
-  resin::Logger::thrown("{}: {}.", Exception::name(), e.what());
-  throw std::move(e);
+template <ExceptionConcept Exception>
+void log_throw(Exception&& e, const std::source_location& loc = std::source_location::current()) {
+  resin::Logger::get_instance().log(LogLevel::Throw, false, loc, "{}: {}", Exception::name(), e.what());
+  throw std::forward<Exception>(e);
 }
 
 }  // namespace resin

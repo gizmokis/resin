@@ -84,12 +84,10 @@ class ShaderResourceManager : public ResourceManager<ShaderResource> {
   ShaderResource load_res(const std::filesystem::path& path) override;
 
  private:
-  template <ExceptionConcept Exception, typename... Args>
-  [[noreturn]] void inline clear_log_throw(Args&&... args)
-    requires std::constructible_from<Exception, Args...>
-  {
+  template <ExceptionConcept Exception>
+  [[noreturn]] void inline clear_log_throw(Exception&& e) {
     visited_paths_.clear();
-    log_throw<Exception>(std::forward<Args>(args)...);
+    log_throw<Exception>(std::forward<Exception>(e));
   }
 
   void process_include_macro(const std::filesystem::path& sh_path, std::string_view arg, size_t curr_line,
