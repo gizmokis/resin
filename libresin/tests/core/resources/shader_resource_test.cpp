@@ -11,6 +11,7 @@ class ShaderResourceTest : public testing::Test {
   const std::filesystem::path data_path_      = RESIN_TESTS_DATA_PATH;
   const std::filesystem::path resources_path_ = data_path_ / "core" / "resources";
 };
+
 TEST_F(ShaderResourceTest, ShaderFilesAreValidated) {
   resin::ShaderResourceManager sh_resman;
 

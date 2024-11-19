@@ -31,7 +31,7 @@ inline bool is_macro(std::string_view word) { return std::ranges::find(kAllMacro
 
 }  // namespace shader_macros
 
-enum class ShaderType : uint32_t {
+enum class ShaderType : uint8_t {
   Vertex   = 0,
   Fragment = 1,
   Library  = 2,
