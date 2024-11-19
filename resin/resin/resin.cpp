@@ -103,7 +103,7 @@ void Resin::update(duration_t) {
   window_->set_title(std::format("Resin [{} FPS {} TPS] running for: {}", fps_, tps_,
                                  std::chrono::duration_cast<std::chrono::seconds>(time_)));
 
-  shader_->set_float("iTime", std::chrono::duration<float>(time_).count());
+  shader_->set_uniform("iTime", std::chrono::duration<float>(time_).count());
 }
 
 void Resin::render() {

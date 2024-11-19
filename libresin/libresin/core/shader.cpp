@@ -1,8 +1,6 @@
 #include <glad/gl.h>
 
 #include <chrono>
-#include <glm/glm.hpp>
-#include <glm/gtc/type_ptr.hpp>
 #include <libresin/core/shader.hpp>
 #include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/logger.hpp>
@@ -91,56 +89,6 @@ GLuint ShaderProgram::create_shader(const ShaderResource& resource, GLenum type)
   }
 
   return shader;
-}
-
-void ShaderProgram::set_bool(std::string_view name, bool value) {
-  GLint location = get_uniform_location(name);
-  glProgramUniform1i(program_id_, location, value ? 1 : 0);
-}
-
-void ShaderProgram::set_int(std::string_view name, int value) {
-  GLint location = get_uniform_location(name);
-  glProgramUniform1i(program_id_, location, value);
-}
-
-void ShaderProgram::set_int_array(std::string_view name, std::span<int> values) {
-  GLint location = get_uniform_location(name);
-  glProgramUniform1iv(program_id_, location, static_cast<GLsizei>(values.size()), values.data());
-}
-
-void ShaderProgram::set_uint(std::string_view name, uint32_t value) {
-  GLint location = get_uniform_location(name);
-  glProgramUniform1ui(program_id_, location, value);
-}
-
-void ShaderProgram::set_uint_array(std::string_view name, std::span<uint32_t> values) {
-  GLint location = get_uniform_location(name);
-  glProgramUniform1uiv(program_id_, location, static_cast<GLsizei>(values.size()), values.data());
-}
-
-void ShaderProgram::set_float2(std::string_view name, const glm::vec2& value) {
-  GLint location = get_uniform_location(name);
-  glProgramUniform2f(program_id_, location, value.x, value.y);
-}
-
-void ShaderProgram::set_float3(std::string_view name, const glm::vec3& value) {
-  GLint location = get_uniform_location(name);
-  glProgramUniform3f(program_id_, location, value.x, value.y, value.z);
-}
-
-void ShaderProgram::set_float4(std::string_view name, const glm::vec4& value) {
-  GLint location = get_uniform_location(name);
-  glProgramUniform4f(program_id_, location, value.x, value.y, value.z, value.w);
-}
-
-void ShaderProgram::set_mat3(std::string_view name, const glm::mat3& value) {
-  GLint location = get_uniform_location(name);
-  glProgramUniformMatrix3fv(program_id_, location, 1, GL_FALSE, glm::value_ptr(value));
-}
-
-void ShaderProgram::set_mat4(std::string_view name, const glm::mat4& value) {
-  GLint location = get_uniform_location(name);
-  glProgramUniformMatrix4fv(program_id_, location, 1, GL_FALSE, glm::value_ptr(value));
 }
 
 RenderingShaderProgram::RenderingShaderProgram(std::string_view name, ShaderResource vertex_resource,

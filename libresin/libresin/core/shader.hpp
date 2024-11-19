@@ -4,7 +4,8 @@
 #include <glad/gl.h>
 
 #include <functional>
-#include <glm/fwd.hpp>
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <libresin/core/resources/shader_resource.hpp>
 #include <libresin/utils/string_hash.hpp>
 #include <span>
@@ -21,23 +22,43 @@ class ShaderProgram {
   void bind() const;
   void unbind() const;
 
-  inline void set_bool(std::string_view name, bool value);
-  inline void set_int(std::string_view name, int value);
-  inline void set_int_array(std::string_view name, std::span<int> values);
-
-  inline void set_uint(std::string_view name, uint32_t value);
-  inline void set_uint_array(std::string_view name, std::span<uint32_t> values);
-
-  inline void set_float(std::string_view name, float value) {
+  template <typename T>
+  inline void set_uniform(std::string_view name, const T& value) {
     GLint location = get_uniform_location(name);
-    glProgramUniform1f(program_id_, location, value);
+    if constexpr (std::is_same_v<T, bool>) {
+      glProgramUniform1i(program_id_, location, value ? 1 : 0);
+    } else if constexpr (std::is_same_v<T, int>) {
+      glProgramUniform1i(program_id_, location, value);
+    } else if constexpr (std::is_same_v<T, uint32_t>) {
+      glProgramUniform1ui(program_id_, location, value);
+    } else if constexpr (std::is_same_v<T, float>) {
+      glProgramUniform1f(program_id_, location, value);
+    } else if constexpr (std::is_same_v<T, glm::vec2>) {
+      glProgramUniform2f(program_id_, location, value.x, value.y);
+    } else if constexpr (std::is_same_v<T, glm::vec3>) {
+      glProgramUniform3f(program_id_, location, value.x, value.y, value.z);
+    } else if constexpr (std::is_same_v<T, glm::vec4>) {
+      glProgramUniform4f(program_id_, location, value.x, value.y, value.z, value.w);
+    } else if constexpr (std::is_same_v<T, glm::mat3>) {
+      glProgramUniformMatrix3fv(program_id_, location, 1, GL_FALSE, glm::value_ptr(value));
+    } else if constexpr (std::is_same_v<T, glm::mat4>) {
+      glProgramUniformMatrix4fv(program_id_, location, 1, GL_FALSE, glm::value_ptr(value));
+    } else {
+      static_assert(false, "Unsupported uniform type");
+    }
   }
-  inline void set_float2(std::string_view name, const glm::vec2& value);
-  inline void set_float3(std::string_view name, const glm::vec3& value);
-  inline void set_float4(std::string_view name, const glm::vec4& value);
 
-  inline void set_mat3(std::string_view name, const glm::mat3& value);
-  inline void set_mat4(std::string_view name, const glm::mat4& value);
+  template <typename T>
+  inline void set_uniform_array(std::string_view name, std::span<T> values) {
+    GLint location = get_uniform_location(name);
+    if constexpr (std::is_same_v<T, int>) {
+      glProgramUniform1iv(program_id_, get_uniform_location(name), static_cast<GLsizei>(values.size()), values.data());
+    } else if constexpr (std::is_same_v<T, uint32_t>) {
+      glProgramUniform1uiv(program_id_, get_uniform_location(name), static_cast<GLsizei>(values.size()), values.data());
+    } else {
+      static_assert(false, "Unsupported uniform array type");
+    }
+  }
 
  protected:
   virtual void create_program() = 0;
