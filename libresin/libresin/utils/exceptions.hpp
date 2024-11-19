@@ -145,7 +145,7 @@ class ShaderIncludeMacroDependencyCycleException : public std::runtime_error {
 };
 
 template <ExceptionConcept Exception>
-void log_throw(Exception&& e, const std::source_location& loc = std::source_location::current()) {
+[[noreturn]] void inline log_throw(Exception&& e, const std::source_location& loc = std::source_location::current()) {
   resin::Logger::get_instance().log(LogLevel::Throw, false, loc, "{}: {}", Exception::name(), e.what());
   throw std::forward<Exception>(e);
 }
