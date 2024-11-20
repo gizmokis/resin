@@ -87,11 +87,10 @@ Resin::Resin() {
 
   glDeleteProgram(compute_sh);
 
-  glUniform1i(glGetUniformLocation(comp_prog_ID, "imgOutput"), 0);
-
   auto stop     = clock::now();
   auto duration = duration_cast<std::chrono::milliseconds>(stop - start);
   resin::Logger::info("Compute shader creation time: {}", duration);
+  glUniform1i(glGetUniformLocation(comp_prog_ID, "imgOutput"), 0);
 
   //>>>>>>>>>>>>>>>>>> TEXTURE <<<<<<<<<<<<<<<<<<<<<<
   glGenTextures(1, &texture);
@@ -109,19 +108,53 @@ Resin::Resin() {
 }
 
 void Resin::run() {
+  using clock = std::chrono::high_resolution_clock;
+
+  duration_t lag(0ns);
+  duration_t second(0ns);
+  auto previous_time = clock::now();
+
+  uint16_t frames = 0U;
+  uint16_t ticks  = 0U;
+
   while (running_) {
+    auto current_time = clock::now();
+    auto delta        = current_time - previous_time;
+    previous_time     = current_time;
+
+    lag += std::chrono::duration_cast<duration_t>(delta);
+    second += std::chrono::duration_cast<duration_t>(delta);
+
+    // TODO(SDF-73): handle events when event bus present
+
+    while (lag >= kTickTime) {
+      update(kTickTime);
+
+      lag -= kTickTime;
+      time_ += kTickTime;
+      ++ticks;
+    }
+
     glUseProgram(comp_prog_ID);
+    glUniform1f(glGetUniformLocation(comp_prog_ID, "iTime"), std::chrono::duration<float>(time_).count());
+    glUniform1i(glGetUniformLocation(comp_prog_ID, "iFrame"), frames);
     glDispatchCompute((unsigned int)window_->dimensions().x, (unsigned int)window_->dimensions().y, 1);
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    shader_->bind();
-    glBindVertexArray(vertex_array_);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    glBindVertexArray(0);
-    shader_->unbind();
+    ++frames;
+    if (!minimized_) {
+      render();
+    }
 
-    window_->on_update();
+    if (second > 1s) {
+      uint16_t seconds = static_cast<uint16_t>(std::chrono::duration_cast<std::chrono::seconds>(second).count());
+
+      fps_   = static_cast<uint16_t>(frames / seconds);
+      tps_   = static_cast<uint16_t>(ticks / seconds);
+      frames = 0;
+      ticks  = 0;
+      second = 0ns;
+    }
   }
 }
 
@@ -129,19 +162,16 @@ void Resin::update(duration_t) {
   window_->set_title(std::format("Resin [{} FPS {} TPS] running for: {}", fps_, tps_,
                                  std::chrono::duration_cast<std::chrono::seconds>(time_)));
 
-  shader_->set_uniform("iTime", std::chrono::duration<float>(time_).count());
+  // shader_->set_uniform("iTime", std::chrono::duration<float>(time_).count());
 }
 
 void Resin::render() {
-  glClearColor(0.1f, 0.1f, 0.1f, 1.f);
-  glClear(GL_COLOR_BUFFER_BIT);
-
-  {
-    glBindVertexArray(vertex_array_);
-    shader_->bind();
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-    shader_->unbind();
-  }
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  shader_->bind();
+  glBindVertexArray(vertex_array_);
+  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+  glBindVertexArray(0);
+  shader_->unbind();
 
   window_->on_update();
 }
