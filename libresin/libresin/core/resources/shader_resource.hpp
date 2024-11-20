@@ -15,7 +15,7 @@ namespace resin {
 
 namespace shader_macros {
 
-static constexpr std::string_view kSupportedShaderVersion = "#version 330 core\n";
+static constexpr std::string_view kSupportedShaderVersion = "#version 430 core\n";
 
 static constexpr std::string_view kIncludeMacro = "#include";
 static constexpr std::string_view kExtDefiMacro = "#external_definition";
@@ -34,10 +34,11 @@ inline bool is_macro(std::string_view word) { return std::ranges::find(kAllMacro
 enum class ShaderType : uint8_t {
   Vertex   = 0,
   Fragment = 1,
-  Library  = 2,
+  Compute  = 2,
+  Library  = 3,
 };
 
-static constexpr std::array<std::string_view, 3> kShaderTypeToExtensionMap = {".vert", ".frag", ".glsl"};
+static constexpr std::array<std::string_view, 4> kShaderTypeToExtensionMap = {".vert", ".frag", ".comp", ".glsl"};
 
 inline std::optional<ShaderType> extension_to_shader_type(std::string_view extension) {
   for (size_t i = 0; i < kShaderTypeToExtensionMap.size(); ++i) {

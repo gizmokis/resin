@@ -1,7 +1,9 @@
+#include <glad/gl.h>
+
 #include <chrono>
-#include <cstdint>
 #include <filesystem>
 #include <format>
+#include <iostream>
 #include <libresin/utils/logger.hpp>
 #include <memory>
 #include <resin/core/window.hpp>
@@ -10,6 +12,29 @@
 #include <resin/resin.hpp>
 
 namespace resin {
+
+unsigned int compute_sh;
+unsigned int comp_prog_ID;
+unsigned int texture;
+static void checkCompileErrors(GLuint shader, std::string type) {
+  GLint success;
+  GLchar infoLog[1024];
+  if (type != "PROGRAM") {
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+      glGetShaderInfoLog(shader, 1024, NULL, infoLog);
+      std::cout << "ERROR::SHADER_COMPILATION_ERROR of type: " << type << "\n"
+                << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
+    }
+  } else {
+    glGetProgramiv(shader, GL_LINK_STATUS, &success);
+    if (!success) {
+      glGetProgramInfoLog(shader, 1024, NULL, infoLog);
+      std::cout << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << "\n"
+                << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
+    }
+  }
+}
 
 Resin::Resin() {
   dispatcher_.subscribe<WindowCloseEvent>(BIND_EVENT_METHOD(on_window_close));
@@ -25,77 +50,78 @@ Resin::Resin() {
   const std::filesystem::path path = std::filesystem::current_path() / "assets";
   shader_ = std::make_unique<RenderingShaderProgram>("default", *shader_resource_manager_.get_res(path / "test.vert"),
                                                      *shader_resource_manager_.get_res(path / "test.frag"));
-
-  float vertices[4 * (3 + 4)] = {
-      -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,
-      -0.5f, 0.5f,  0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.5f, 0.5f,  0.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+  float quadVertices[] = {
+      // positions        // texture Coords
+      -1.0f, 1.0f, 0.0f, 0.0f, 1.0f, -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+      1.0f,  1.0f, 0.0f, 1.0f, 1.0f, 1.0f,  -1.0f, 0.0f, 1.0f, 0.0f,
   };
-
-  unsigned int indices[6] = {0, 1, 2, 1, 3, 2};
-
-  // Generate VAO
+  // setup plane VAO
   glGenVertexArrays(1, &vertex_array_);
-  glBindVertexArray(vertex_array_);
-
-  // Generate VBO and load data into it
   glGenBuffers(1, &vertex_buffer_);
+  glBindVertexArray(vertex_array_);
   glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_);
-  glBufferData(GL_ARRAY_BUFFER, sizeof vertices, vertices, GL_STATIC_DRAW);
-
-  // Set vertex attrib pointers
+  glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), nullptr);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
   glEnableVertexAttribArray(1);
-  glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (const void*)(3 * sizeof(float)));
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 
-  // Generate indices
-  glGenBuffers(1, &index_buffer_);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer_);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof indices, indices, GL_STATIC_DRAW);
+  shader_->set_uniform<int>("tex", 0);
+
+  //>>>>>>>>>>>>>>>>>> COMPUTE SHADER <<<<<<<<<<<<<<<<<<<<<<
+  auto comp     = ShaderResource(*shader_resource_manager_.get_res(path / "test.comp"));
+  const auto* c = comp.get_glsl().c_str();
+
+  using clock = std::chrono::high_resolution_clock;
+  auto start  = clock::now();
+
+  compute_sh = glCreateShader(GL_COMPUTE_SHADER);
+  glShaderSource(compute_sh, 1, &c, nullptr);
+  glCompileShader(compute_sh);
+  checkCompileErrors(compute_sh, "COMPUTE");
+
+  comp_prog_ID = glCreateProgram();
+  glAttachShader(comp_prog_ID, compute_sh);
+  glLinkProgram(comp_prog_ID);
+  checkCompileErrors(comp_prog_ID, "PROGRAM");
+
+  glDeleteProgram(compute_sh);
+
+  glUniform1i(glGetUniformLocation(comp_prog_ID, "imgOutput"), 0);
+
+  auto stop     = clock::now();
+  auto duration = duration_cast<std::chrono::milliseconds>(stop - start);
+  resin::Logger::info("Compute shader creation time: {}", duration);
+
+  //>>>>>>>>>>>>>>>>>> TEXTURE <<<<<<<<<<<<<<<<<<<<<<
+  glGenTextures(1, &texture);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, texture);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, window_->dimensions().x, window_->dimensions().y, 0, GL_RGBA, GL_FLOAT,
+               nullptr);
+  glBindImageTexture(0, texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, texture);
 }
 
 void Resin::run() {
-  using clock = std::chrono::high_resolution_clock;
-
-  duration_t lag(0ns);
-  duration_t second(0ns);
-  auto previous_time = clock::now();
-
-  uint16_t frames = 0U;
-  uint16_t ticks  = 0U;
-
   while (running_) {
-    auto current_time = clock::now();
-    auto delta        = current_time - previous_time;
-    previous_time     = current_time;
+    glUseProgram(comp_prog_ID);
+    glDispatchCompute((unsigned int)window_->dimensions().x, (unsigned int)window_->dimensions().y, 1);
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
-    lag += std::chrono::duration_cast<duration_t>(delta);
-    second += std::chrono::duration_cast<duration_t>(delta);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    shader_->bind();
+    glBindVertexArray(vertex_array_);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glBindVertexArray(0);
+    shader_->unbind();
 
-    // TODO(SDF-73): handle events when event bus present
-
-    while (lag >= kTickTime) {
-      update(kTickTime);
-
-      lag -= kTickTime;
-      time_ += kTickTime;
-      ++ticks;
-    }
-
-    ++frames;
-    if (!minimized_) {
-      render();
-    }
-
-    if (second > 1s) {
-      uint16_t seconds = static_cast<uint16_t>(std::chrono::duration_cast<std::chrono::seconds>(second).count());
-
-      fps_   = static_cast<uint16_t>(frames / seconds);
-      tps_   = static_cast<uint16_t>(ticks / seconds);
-      frames = 0;
-      ticks  = 0;
-      second = 0ns;
-    }
+    window_->on_update();
   }
 }
 

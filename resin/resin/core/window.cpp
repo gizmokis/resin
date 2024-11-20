@@ -1,5 +1,7 @@
 #include <GLFW/glfw3.h>
+#include <glad/gl.h>
 
+#include <iostream>
 #include <libresin/utils/logger.hpp>
 #include <memory>
 #include <resin/core/graphics_context.hpp>
@@ -43,6 +45,7 @@ Window::Window(WindowProperties properties) : properties_(std::move(properties))
   glfwWindowHint(GLFW_SAMPLES, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
   // TODO(SDF-72): proper window creation for fullscreen
   window_ptr_ = glfwCreateWindow(static_cast<int>(properties_.width), static_cast<int>(properties_.height),
