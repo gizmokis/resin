@@ -6,34 +6,35 @@ namespace resin {
 
 class Camera {
  public:
-  float width;
-  float height;
-  float near_plane;
-  float far_plane;
   Transform transform;
   bool is_orthographic;
 
-  Camera(float width, float height, float near_plane, float far_plane, bool is_orthographic);
-  virtual ~Camera();
+  Camera(bool orthographic, float fov, float aspect_ratio, float near_plane, float far_plane);
 
-  virtual glm::mat4 view_matrix() const;
-  virtual glm::mat4 inverse_view_matrix() const;
-};
+  float fov() const { return fov_; }
+  float aspect_ratio() const { return aspect_ratio_; }
+  float near_plane() const { return near_plane_; }
+  float far_plane() const { return far_plane_; }
+  float width() const { return width_; }
+  float height() const { return height_; }
 
-class PerspectiveCamera : public Camera {
- public:
-  float fov;
-  float aspect_ratio;
+  void set_fov(float fov);
+  void set_aspect_ratio(float aspect_ratio);
+  void set_near_plane(float near_plane);
+  void set_far_plane(float far_plane);
 
-  PerspectiveCamera(float fov, float aspect_ratio, float near_plane, float far_plane);
+  glm::mat4 view_matrix() const;
+  glm::mat4 inverse_view_matrix() const;
 
  private:
-  void update_dimensions();
-};
+  float fov_;  // only apparent if orthographic
+  float aspect_ratio_;
+  float near_plane_;
+  float far_plane_;
+  float width_;
+  float height_;
 
-class OrthographicCamera : public Camera {
- public:
-  OrthographicCamera(float width, float height, float near_plane, float far_plane);
+  void update_dimensions();
 };
 
 }  // namespace resin

@@ -4,7 +4,7 @@
 
 namespace resin {
 
-TEST(PerspectiveCameraTest, UpdateDimensions) {
+TEST(CameraTest, UpdateDimensions) {
   // given
   const float fov             = 45.0f;
   const float aspect_ratio    = 16.0f / 9.0f;
@@ -14,11 +14,11 @@ TEST(PerspectiveCameraTest, UpdateDimensions) {
   const float expected_width  = 0.14727594;
 
   // when
-  const resin::PerspectiveCamera camera(fov, aspect_ratio, near_plane, far_plane);
+  const resin::Camera camera(false, fov, aspect_ratio, near_plane, far_plane);
 
   // then
-  EXPECT_NEAR(camera.height, expected_height, 1e-5);
-  EXPECT_NEAR(camera.width, expected_width, 1e-5);
+  EXPECT_NEAR(camera.height(), expected_height, 1e-5);
+  EXPECT_NEAR(camera.width(), expected_width, 1e-5);
 }
 
 }  // namespace resin

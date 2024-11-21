@@ -9,8 +9,7 @@ set(CMAKE_CXX_STANDARD 23)
 add_library(${PROJECT_NAME} 
         libresin/core/transform.hpp libresin/core/transform.cpp
         libresin/utils/logger.cpp libresin/utils/logger.hpp
-        libresin/core/camera.cpp
-        libresin/core/camera.hpp)
+        libresin/core/camera.cpp)
 
 # Prevent CMake from adding `lib` before `libresin`
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
