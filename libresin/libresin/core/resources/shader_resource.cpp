@@ -131,8 +131,13 @@ ShaderResource ShaderResourceManager::load_res(const std::filesystem::path& path
   auto sh_type = get_sh_type(path);
   auto content = load_content(path);
 
-  auto lines = content | std::views::split('\n') | std::views::transform([](auto&& r) { return std::string_view(r); }) |
-               std::views::enumerate;
+  auto lines = content | std::views::split('\n') | std::views::transform([](auto&& r) { 
+    auto line_str = std::string_view(r);
+    if (line_str.ends_with('\r')) {
+      line_str = line_str.substr(0, line_str.size() - 1);
+    } 
+    return line_str; 
+  }) | std::views::enumerate;
 
   std::unordered_set<std::string> defi_names;
   std::string preprocessed_content;
