@@ -1,7 +1,6 @@
 ---
 Checks: >
   -*,
-  abseil-*,
   bugprone-*,
   google-*,
   misc-*,
@@ -19,10 +18,10 @@ Checks: >
   -cppcoreguidelines-pro-bounds-pointer-arithmetic,
   -cppcoreguidelines-pro-type-reinterpret-cast,
   -cppcoreguidelines-non-private-member-variables-in-classes,
+  -cppcoreguidelines-pro-type-union-access
   -google-readability-braces-around-statements,
   -google-readability-namespace-comments,
   -google-runtime-references,
-  -misc-non-private-member-variables-in-classes,
   -modernize-return-braced-init-list,
   -modernize-use-trailing-return-type,
   -modernize-concat-nested-namespaces,
@@ -40,7 +39,6 @@ Checks: >
   -bugprone-implicit-widening-of-multiplication-result,
   -bugprone-unchecked-optional-access,
   -bugprone-exception-escape,
-  -cppcoreguidelines-pro-type-union-access
 
 HeaderFilterRegex: ""
 
