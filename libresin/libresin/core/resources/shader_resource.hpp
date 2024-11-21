@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <libresin/core/resources/resource_manager.hpp>
 #include <libresin/utils/exceptions.hpp>
+#include <libresin/utils/string_views.hpp>
 #include <string_view>
 #include <unordered_map>
 #include <unordered_set>
@@ -14,8 +15,6 @@
 namespace resin {
 
 namespace shader_macros {
-
-static constexpr std::string_view kSupportedShaderVersion = "#version 330 core\n";
 
 static constexpr std::string_view kIncludeMacro = "#include";
 static constexpr std::string_view kExtDefiMacro = "#external_definition";
@@ -52,7 +51,8 @@ inline std::optional<ShaderType> extension_to_shader_type(std::string_view exten
 class ShaderResource {
  public:
   ShaderResource() = delete;
-  explicit ShaderResource(std::string&& content, ShaderType type, std::unordered_set<std::string>&& ext_defi_names);
+  explicit ShaderResource(std::string&& content, ShaderType type, std::unordered_set<std::string>&& ext_defi_names,
+                          std::optional<std::string>&& version);
 
   const std::unordered_set<std::string>& get_ext_defi_names() const;
   void set_ext_defi(std::string_view ext_defi_name, std::string&& defi_content);
@@ -72,6 +72,7 @@ class ShaderResource {
   std::unordered_set<std::string> ext_defi_names_;
   std::unordered_map<std::string, std::string> ext_defi_contents_;
 
+  std::optional<std::string> version_;
   std::string raw_content_;
   ShaderType type_;
 
@@ -93,10 +94,15 @@ class ShaderResourceManager : public ResourceManager<ShaderResource> {
     log_throw<Exception>(std::forward<Exception>(e));
   }
 
-  void process_include_macro(const std::filesystem::path& sh_path, std::string_view arg, size_t curr_line,
-                             std::string& content, std::unordered_set<std::string>& defi_names);
-  void process_ext_defi_macro(const std::filesystem::path& sh_path, std::string_view arg, size_t curr_line_num,
+  void process_include_macro(const std::filesystem::path& sh_path, WordsStringViewIterator& it,
+                             const WordsStringViewIterator& end, size_t curr_line, std::string& content,
+                             std::unordered_set<std::string>& defi_names);
+  void process_ext_defi_macro(const std::filesystem::path& sh_path, WordsStringViewIterator& it,
+                              const WordsStringViewIterator& end, size_t curr_line,
                               std::unordered_set<std::string>& defi_names);
+  std::optional<std::string> process_version_macro(const std::filesystem::path& sh_path, ShaderType sh_type,
+                                                   WordsStringViewIterator& it, const WordsStringViewIterator& end,
+                                                   size_t curr_line);
 
  private:
   std::vector<std::filesystem::path> visited_paths_;
