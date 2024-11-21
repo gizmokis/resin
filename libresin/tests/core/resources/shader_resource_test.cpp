@@ -39,9 +39,6 @@ TEST_F(ShaderResourceTest, ShaderWithDepsIsCorrectlyGenerated) {
   EXPECT_FALSE(glsl.find("#define EXTERNAL_MAIN int func() { return 5; }") == std::string_view::npos);
   EXPECT_FALSE(glsl.find("#define EXTERNAL_A 100") == std::string_view::npos);
   EXPECT_FALSE(glsl.find("#define EXTERNAL_B 50") == std::string_view::npos);
-
-  std::ofstream test(resources_path_ / "regular_load" / "testtt.frag");
-  test << glsl;
 }
 
 TEST_F(ShaderResourceTest, ShaderDepsCycleIsDetected) {
