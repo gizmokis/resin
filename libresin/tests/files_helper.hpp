@@ -4,6 +4,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <print>
 #include <regex>
 #include <string>
 
@@ -28,6 +29,8 @@
   file_content = std::regex_replace(file_content, std::regex("\r\n"), "\n");
 
   if (file_content != content) {
+    std::println("|{}|", file_content);
+    std::println("|{}|", content);
     return ::testing::AssertionFailure() << "File content does not match.\n";
   }
 
