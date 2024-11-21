@@ -12,6 +12,13 @@
 
 int main();
 
+
+struct node {
+  int type;
+  int id; 
+  int a,b;
+};
+
 namespace resin {
 
 using namespace std::chrono_literals;
@@ -46,16 +53,17 @@ class Resin {
   static constexpr duration_t kTickTime = 16666us;  // 60 TPS = 16.6(6) ms/t
 
  private:
-  unsigned int vertex_array_, vertex_buffer_, index_buffer_;
+  unsigned int vertex_array_, vertex_buffer_, index_buffer_, uniform_buffer_;
   EventDispatcher dispatcher_;
   ShaderResourceManager shader_resource_manager_;
 
   std::unique_ptr<Window> window_;
   std::unique_ptr<RenderingShaderProgram> shader_;
 
-  std::string shader_code_;
-  int count_ = 1;
+  int count_ = 0;
+  int count2_ = 0;
   std::vector<glm::vec3> positions_;
+  std::vector<node> nodes_;
 
   bool running_   = true;
   bool minimized_ = false;

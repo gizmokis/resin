@@ -102,6 +102,8 @@ class RenderingShaderProgram : public ShaderProgram {
   const ShaderResource& fragment_shader() const { return fragment_shader_; }
   ShaderResource& fragment_shader() { return fragment_shader_; }
 
+  GLuint id() const {return program_id_;}
+
  private:
   void create_program() override;
 

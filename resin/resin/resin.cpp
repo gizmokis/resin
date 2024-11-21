@@ -42,14 +42,11 @@ Resin::Resin() {
 
   const std::filesystem::path path = std::filesystem::current_path() / "assets";
 
-  ShaderResource fragment = *shader_resource_manager_.get_res(path / "test.frag");
-
-  shader_code_ = "vec2(sdSphere(pos-u_pos[0], 0.25), 0)";
-  fragment.set_ext_defi("EXTERNAL_MAP",
-                        std::format("vec2 map(in vec3 pos){{vec2 res = {}; return res; }}", shader_code_));
   shader_ = std::make_unique<RenderingShaderProgram>("default", *shader_resource_manager_.get_res(path / "test.vert"),
-                                                     fragment);
+                                                     *shader_resource_manager_.get_res(path / "test.frag"));
   positions_.emplace_back(generateRandomVec3(-2, 2));
+  nodes_.emplace_back(node(-1, count_++));
+  ++count2_;
   shader_->set_uniform_array("u_pos", std::span(positions_));
 
   float vertices[4 * (3 + 4)] = {-0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f, -0.5f, 0.5f, 0.0f, 0.5f, 0.5f, 0.0f};
@@ -73,6 +70,19 @@ Resin::Resin() {
   glGenBuffers(1, &index_buffer_);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer_);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof indices, indices, GL_STATIC_DRAW);
+
+  glGenBuffers(1, &uniform_buffer_);
+  GLuint blockIndex = glGetUniformBlockIndex(shader_->id(), "NodesBlock");
+  glUniformBlockBinding(shader_->id(), blockIndex, 0);  // Bind to binding point 0
+  glBindBuffer(GL_UNIFORM_BUFFER, uniform_buffer_);
+  glBufferData(GL_UNIFORM_BUFFER, sizeof(node) * 200 + sizeof(int), NULL,
+               GL_STATIC_DRAW);  // Allocate space for 3 mat4s (model, view, projection)
+  glBindBufferBase(GL_UNIFORM_BUFFER, 0, uniform_buffer_);
+
+  // Upload to UBO
+  glBindBuffer(GL_UNIFORM_BUFFER, uniform_buffer_);
+  glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(node) * nodes_.size(), nodes_.data());
+  glBufferSubData(GL_UNIFORM_BUFFER, sizeof(node) * 200, sizeof(int), &count2_);
 }
 
 void Resin::run() {
@@ -84,6 +94,9 @@ void Resin::run() {
 
   uint16_t frames = 0U;
   uint16_t ticks  = 0U;
+
+  uint8_t ctr = 0U;
+  uint16_t big_frames = 0U;
 
   while (running_) {
     auto current_time = clock::now();
@@ -113,9 +126,20 @@ void Resin::run() {
 
       fps_   = static_cast<uint16_t>(frames / seconds);
       tps_   = static_cast<uint16_t>(ticks / seconds);
+      big_frames += frames;
       frames = 0;
       ticks  = 0;
       second = 0ns;
+      ctr++;
+    }
+
+    if (ctr == 5U) {
+      std::println("{},{}", count_, big_frames);
+      big_frames = 0;
+      ctr = 0;
+
+      WindowTestEvent e;
+      on_test(e);
     }
   }
 }
@@ -147,13 +171,17 @@ bool Resin::on_window_close(WindowCloseEvent&) {
 }
 
 bool Resin::on_test(WindowTestEvent&) {
-  shader_code_ = std::format("opU({0}, vec2(sdSphere(pos-u_pos[{1}], 0.25), {1}))", shader_code_, count_++);
-  shader_->fragment_shader().set_ext_defi("EXTERNAL_MAP",
-                        std::format("vec2 map(in vec3 pos){{vec2 res = {}; return res; }}", shader_code_));
-  shader_->recompile();
-
   positions_.emplace_back(generateRandomVec3(-2, 2));
+
+  nodes_.emplace_back(node{-1, count_++});
+  ++count2_;
+  nodes_.emplace_back(node{0, 0});
+  ++count2_;
+
   shader_->set_uniform_array("u_pos", std::span(positions_));
+  glBindBuffer(GL_UNIFORM_BUFFER, uniform_buffer_);
+  glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(node) * nodes_.size(), nodes_.data());
+  glBufferSubData(GL_UNIFORM_BUFFER, sizeof(node) * 200, sizeof(int), &count2_);
   return true;
 }
 

@@ -17,7 +17,6 @@
 // and
 //    https://iquilezles.org/articles/distfunctions
 
-#external_definition EXTERNAL_MAP
 #define AA 1
 
 layout(location = 0) out vec4 color;
@@ -29,6 +28,16 @@ uniform vec2 iMouse;
 vec2 iResolution = vec2(1280, 720);
 uniform int iFrame;
 uniform vec3 u_pos[100];
+
+struct node {
+    int type;
+    int id;
+};
+
+layout (std140) uniform NodesBlock {
+  node nodes[200];
+  int actualSize;
+};
 
 float dot2( in vec2 v ) { return dot(v,v); }
 float dot2( in vec3 v ) { return dot(v,v); }
@@ -343,7 +352,40 @@ vec2 opU( vec2 d1, vec2 d2 )
 	return (d1.x<d2.x) ? d1 : d2;
 }
 
-EXTERNAL_MAP
+vec2 map(in vec3 pos) {
+    vec2 stack[20]; // Stack for RPN evaluation
+    int sp = 0;   // Stack pointer
+
+    for(int i = 0; i < actualSize; i++) {
+        node current = nodes[i];
+
+        if(current.type >= 0) { // operation node
+            vec2 right = stack[--sp];
+            vec2 left = stack[--sp];
+            vec2 result;
+            if(current.type == 0) { // add
+                result = opU(left, right);
+            } else if (current.type == 1) { // something temporary
+                result = vec2(1,0);
+            } else {
+                result = vec2(1e6, -1);
+            }
+            stack[sp++] = result;
+        } else {
+            int id = current.id;
+            vec3 p = pos - u_pos[id];
+            vec2 result;
+            if(current.type == -1) { // sphere
+                result = vec2(sdSphere(p, 0.25), id);
+            } else if (current.type == -2) { // cube
+                result = vec2(sdBox(p, vec3(0.25)), id);
+            }
+            stack[sp++] = result;
+        }
+    }
+
+    return sp > 0 ? stack[0] : vec2(1e6, -1);
+}
 
 vec2 iBox( in vec3 ro, in vec3 rd, in vec3 rad ) 
 {
