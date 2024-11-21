@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <format>
+#include <libresin/core/resources/shader_resource.hpp>
 #include <libresin/utils/logger.hpp>
 #include <memory>
 #include <resin/core/window.hpp>
@@ -11,7 +12,7 @@
 
 namespace resin {
 
-Resin::Resin() {
+Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
   dispatcher_.subscribe<WindowCloseEvent>(BIND_EVENT_METHOD(on_window_close));
   dispatcher_.subscribe<WindowResizeEvent>(BIND_EVENT_METHOD(on_window_resize));
 
@@ -23,14 +24,11 @@ Resin::Resin() {
   }
 
   const std::filesystem::path path = std::filesystem::current_path() / "assets";
+
   shader_ = std::make_unique<RenderingShaderProgram>("default", *shader_resource_manager_.get_res(path / "test.vert"),
                                                      *shader_resource_manager_.get_res(path / "test.frag"));
 
-  float vertices[4 * (3 + 4)] = {
-      -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,
-      -0.5f, 0.5f,  0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.5f, 0.5f,  0.0f, 0.0f, 0.0f, 1.0f, 1.0f,
-  };
-
+  float vertices[4 * 3]   = {-1.F, -1.F, 0.F, 1.F, -1.F, 0.F, -1.F, 1.F, 0.F, 1.F, 1.F, 0.F};
   unsigned int indices[6] = {0, 1, 2, 1, 3, 2};
 
   // Generate VAO
@@ -44,9 +42,7 @@ Resin::Resin() {
 
   // Set vertex attrib pointers
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), nullptr);
-  glEnableVertexAttribArray(1);
-  glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (const void*)(3 * sizeof(float)));
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
 
   // Generate indices
   glGenBuffers(1, &index_buffer_);
@@ -103,11 +99,11 @@ void Resin::update(duration_t) {
   window_->set_title(std::format("Resin [{} FPS {} TPS] running for: {}", fps_, tps_,
                                  std::chrono::duration_cast<std::chrono::seconds>(time_)));
 
-  shader_->set_uniform("iTime", std::chrono::duration<float>(time_).count());
+  shader_->set_uniform("u_time", std::chrono::duration<float>(time_).count());
 }
 
 void Resin::render() {
-  glClearColor(0.1f, 0.1f, 0.1f, 1.f);
+  glClearColor(0.1F, 0.1F, 0.1F, 1.F);
   glClear(GL_COLOR_BUFFER_BIT);
 
   {

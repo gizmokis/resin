@@ -13,9 +13,24 @@ ShaderProgram::ShaderProgram(std::string_view name) : shader_name_(name), progra
   }
 }
 
+ShaderProgram::~ShaderProgram() { glDeleteProgram(program_id_); }
+
 void ShaderProgram::bind() const { glUseProgram(program_id_); }
 
 void ShaderProgram::unbind() const { glUseProgram(0); }  // NOLINT
+
+void ShaderProgram::recompile() {
+  using clock = std::chrono::high_resolution_clock;
+  auto start  = clock::now();
+
+  glDeleteProgram(program_id_);
+  program_id_ = glCreateProgram();
+  create_program();
+
+  auto stop     = clock::now();
+  auto duration = duration_cast<std::chrono::milliseconds>(stop - start);
+  Logger::debug("Shader {} recompilation took {}", shader_name_, duration);
+}
 
 void ShaderProgram::link_program() {
   glLinkProgram(program_id_);
@@ -103,8 +118,6 @@ RenderingShaderProgram::RenderingShaderProgram(std::string_view name, ShaderReso
   auto duration = duration_cast<std::chrono::milliseconds>(stop - start);
   Logger::info("Shader {} creation took {}", name, duration);
 }
-
-RenderingShaderProgram::~RenderingShaderProgram() { glDeleteProgram(program_id_); }
 
 void RenderingShaderProgram::create_program() {
   GLuint vertex_shader   = create_shader(vertex_shader_, GL_VERTEX_SHADER);
