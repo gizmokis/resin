@@ -10,6 +10,8 @@
 #include <resin/resin.hpp>
 #include <version/version.hpp>
 
+#include "libresin/utils/exceptions.hpp"
+
 int main() {
   const size_t max_logs_backups = 4;
   auto logs_dir                 = std::filesystem::current_path();
@@ -27,6 +29,11 @@ int main() {
 
   resin::Logger::info("GLFW version: {0}.{1}.{2}", GLFW_VERSION_MAJOR, GLFW_VERSION_MINOR, GLFW_VERSION_REVISION);
   resin::Logger::info("GLM version: {0}.{1}.{2}", GLM_VERSION_MAJOR, GLM_VERSION_MINOR, GLM_VERSION_REVISION);
+
+  try {
+    resin::log_throw(resin::FileDoesNotExistException("test"));
+  } catch (...) {
+  }
 
   resin::Logger::warn("Potato");
   resin::Logger::err("Paprica");

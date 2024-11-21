@@ -36,7 +36,7 @@ class Window {
   void on_update();
 
   inline std::string_view title() const { return properties_.title; }
-  inline glm::ivec2 pos() const { return glm::ivec2(*properties_.x, *properties_.y); };
+  inline glm::ivec2 pos() const { return glm::ivec2(*properties_.x, *properties_.y); }
   inline glm::uvec2 dimensions() const { return glm::uvec2(properties_.width, properties_.height); }
   inline bool vsync() const { return properties_.vsync; }
   inline bool fullscreen() const { return properties_.fullscreen; }
