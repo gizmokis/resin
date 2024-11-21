@@ -132,6 +132,7 @@ ShaderResource ShaderResourceManager::load_res(const std::filesystem::path& path
   auto content = load_content(path);
 
   auto lines = content | std::views::split('\n') | std::views::transform([](auto&& r) {
+                 // Handle CR LF to store \n newlines only
                  auto line_str = std::string_view(r);
                  if (line_str.ends_with('\r')) {
                    line_str = line_str.substr(0, line_str.size() - 1);
