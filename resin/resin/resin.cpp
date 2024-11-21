@@ -4,16 +4,34 @@
 #include <format>
 #include <libresin/utils/logger.hpp>
 #include <memory>
+#include <random>
 #include <resin/core/window.hpp>
 #include <resin/event/event.hpp>
 #include <resin/event/window_events.hpp>
 #include <resin/resin.hpp>
+
+#include "libresin/core/resources/shader_resource.hpp"
+
+glm::vec3 generateRandomVec3(float min, float max) {
+  // Create a random number generator
+  std::random_device rd;   // Seed
+  std::mt19937 gen(rd());  // Mersenne Twister generator
+  std::uniform_real_distribution<float> dis(min, max);
+
+  // Generate random x, y, z components
+  float x = dis(gen);
+  float y = dis(gen);
+  float z = dis(gen);
+
+  return glm::vec3(x, y, z);
+}
 
 namespace resin {
 
 Resin::Resin() {
   dispatcher_.subscribe<WindowCloseEvent>(BIND_EVENT_METHOD(on_window_close));
   dispatcher_.subscribe<WindowResizeEvent>(BIND_EVENT_METHOD(on_window_resize));
+  dispatcher_.subscribe<WindowTestEvent>(BIND_EVENT_METHOD(on_test));
 
   {
     WindowProperties properties;
@@ -23,13 +41,18 @@ Resin::Resin() {
   }
 
   const std::filesystem::path path = std::filesystem::current_path() / "assets";
-  shader_ = std::make_unique<RenderingShaderProgram>("default", *shader_resource_manager_.get_res(path / "test.vert"),
-                                                     *shader_resource_manager_.get_res(path / "test.frag"));
 
-  float vertices[4 * (3 + 4)] = {
-      -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,
-      -0.5f, 0.5f,  0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.5f, 0.5f,  0.0f, 0.0f, 0.0f, 1.0f, 1.0f,
-  };
+  ShaderResource fragment = *shader_resource_manager_.get_res(path / "test.frag");
+
+  shader_code_ = "vec2(sdSphere(pos-u_pos[0], 0.25), 0)";
+  fragment.set_ext_defi("EXTERNAL_MAP",
+                        std::format("vec2 map(in vec3 pos){{vec2 res = {}; return res; }}", shader_code_));
+  shader_ = std::make_unique<RenderingShaderProgram>("default", *shader_resource_manager_.get_res(path / "test.vert"),
+                                                     fragment);
+  positions_.emplace_back(generateRandomVec3(-2, 2));
+  shader_->set_uniform_array("u_pos", std::span(positions_));
+
+  float vertices[4 * (3 + 4)] = {-0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f, -0.5f, 0.5f, 0.0f, 0.5f, 0.5f, 0.0f};
 
   unsigned int indices[6] = {0, 1, 2, 1, 3, 2};
 
@@ -44,9 +67,7 @@ Resin::Resin() {
 
   // Set vertex attrib pointers
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), nullptr);
-  glEnableVertexAttribArray(1);
-  glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (const void*)(3 * sizeof(float)));
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
 
   // Generate indices
   glGenBuffers(1, &index_buffer_);
@@ -103,7 +124,7 @@ void Resin::update(duration_t) {
   window_->set_title(std::format("Resin [{} FPS {} TPS] running for: {}", fps_, tps_,
                                  std::chrono::duration_cast<std::chrono::seconds>(time_)));
 
-  shader_->set_uniform("iTime", std::chrono::duration<float>(time_).count());
+  // shader_->set_uniform("iTime", std::chrono::duration<float>(time_).count());
 }
 
 void Resin::render() {
@@ -122,6 +143,17 @@ void Resin::render() {
 
 bool Resin::on_window_close(WindowCloseEvent&) {
   running_ = false;
+  return true;
+}
+
+bool Resin::on_test(WindowTestEvent&) {
+  shader_code_ = std::format("opU({0}, vec2(sdSphere(pos-u_pos[{1}], 0.25), {1}))", shader_code_, count_++);
+  shader_->fragment_shader().set_ext_defi("EXTERNAL_MAP",
+                        std::format("vec2 map(in vec3 pos){{vec2 res = {}; return res; }}", shader_code_));
+  shader_->recompile();
+
+  positions_.emplace_back(generateRandomVec3(-2, 2));
+  shader_->set_uniform_array("u_pos", std::span(positions_));
   return true;
 }
 

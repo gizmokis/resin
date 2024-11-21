@@ -40,6 +40,7 @@ class Resin {
 
   bool on_window_close(WindowCloseEvent& e);
   bool on_window_resize(WindowResizeEvent& e);
+  bool on_test(WindowTestEvent& e);
 
  public:
   static constexpr duration_t kTickTime = 16666us;  // 60 TPS = 16.6(6) ms/t
@@ -51,6 +52,10 @@ class Resin {
 
   std::unique_ptr<Window> window_;
   std::unique_ptr<RenderingShaderProgram> shader_;
+
+  std::string shader_code_;
+  int count_ = 1;
+  std::vector<glm::vec3> positions_;
 
   bool running_   = true;
   bool minimized_ = false;

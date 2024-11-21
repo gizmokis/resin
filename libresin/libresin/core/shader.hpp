@@ -17,10 +17,12 @@ namespace resin {
 class ShaderProgram {
  public:
   explicit ShaderProgram(std::string_view name);
-  virtual ~ShaderProgram() = default;
+  virtual ~ShaderProgram();
 
   void bind() const;
   void unbind() const;
+
+  void recompile();
 
   template <typename T>
   inline void set_uniform(std::string_view name, const T& value) {
@@ -55,6 +57,8 @@ class ShaderProgram {
       glProgramUniform1iv(program_id_, get_uniform_location(name), static_cast<GLsizei>(values.size()), values.data());
     } else if constexpr (std::is_same_v<T, uint32_t>) {
       glProgramUniform1uiv(program_id_, get_uniform_location(name), static_cast<GLsizei>(values.size()), values.data());
+    } else if constexpr (std::is_same_v<T, glm::vec3>) {
+      glProgramUniform3fv(program_id_, get_uniform_location(name), static_cast<GLsizei>(values.size()), glm::value_ptr(values[0]));
     } else {
       static_assert(false, "Unsupported uniform array type");
     }
@@ -92,7 +96,6 @@ class ShaderProgram {
 class RenderingShaderProgram : public ShaderProgram {
  public:
   RenderingShaderProgram(std::string_view name, ShaderResource vertex_resource, ShaderResource fragment_resource);
-  ~RenderingShaderProgram() override;
 
   const ShaderResource& vertex_shader() const { return vertex_shader_; }
   ShaderResource& vertex_shader() { return vertex_shader_; }
