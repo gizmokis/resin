@@ -14,7 +14,7 @@ namespace resin {
 ShaderResource::ShaderResource(std::string&& content, ShaderType type, std::unordered_set<std::string>&& ext_defi_names,
                                std::optional<std::string>&& version)
     : ext_defi_names_(std::move(ext_defi_names)),
-      version_(version),
+      version_(std::move(version)),
       raw_content_(std::move(content)),
       type_(type),
       is_dirty_(true) {}
