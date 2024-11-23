@@ -1,3 +1,4 @@
+#version 330 core
 #external_definition EXTERNAL_MAIN
 
 #include "shader_a.glsl"

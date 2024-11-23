@@ -151,6 +151,20 @@ class ShaderIncludeMacroDependencyCycleException : public std::runtime_error {
   size_t line_;
 };
 
+class ShaderAbsentVersionException : public std::runtime_error {
+ public:
+  EXCEPTION_NAME(ShaderAbsentVersionException)
+
+  explicit ShaderAbsentVersionException(std::string&& sh_path)
+      : std::runtime_error(std::format(R"(Could not find version macro for a shader with path "{}".)", sh_path)),
+        sh_path_(std::move(sh_path)) {}
+
+  inline const std::string& get_sh_path() const { return sh_path_; }
+
+ private:
+  std::string sh_path_;
+};
+
 class ShaderProgramLinkingException : public std::runtime_error {
  public:
   EXCEPTION_NAME(ShaderProgramLinkingException)
