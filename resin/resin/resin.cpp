@@ -33,7 +33,7 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
   glm::vec3 pos = glm::vec3(0, 3, 2);
   camera_->transform.set_local_pos(pos);
   glm::vec3 direction = glm::normalize(-pos);
-  camera_->transform.set_local_rot(sglm::quatLookAt(direction, glm::vec3(0, 1, 0)));
+  camera_->transform.set_local_rot(glm::quatLookAt(direction, glm::vec3(0, 1, 0)));
   camera_->transform.set_parent(camera_rig_);
   shader_ = std::make_unique<RenderingShaderProgram>("default", *shader_resource_manager_.get_res(path / "test.vert"),
                                                      *shader_resource_manager_.get_res(path / "test.frag"));
