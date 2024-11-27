@@ -1,15 +1,14 @@
 #include <GLFW/glfw3.h>
 #include <imgui/imgui.h>
+#include <imgui/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_opengl3.h>
 #include <imgui/imgui_impl_opengl3_loader.h>
-#include <imgui/imgui_impl_glfw.h>
 
 #include <libresin/utils/logger.hpp>
 #include <resin/core/graphics_context.hpp>
 #include <resin/core/window.hpp>
 #include <resin/event/event.hpp>
 #include <resin/event/window_events.hpp>
-
 
 namespace resin {
 
