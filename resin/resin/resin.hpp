@@ -3,13 +3,13 @@
 
 #include <chrono>
 #include <cstdint>
+#include <libresin/core/camera.hpp>
 #include <libresin/core/resources/shader_resource.hpp>
 #include <libresin/core/shader.hpp>
 #include <memory>
 #include <resin/core/window.hpp>
 #include <resin/event/event.hpp>
 #include <resin/event/window_events.hpp>
-#include "libresin/core/camera.hpp"
 
 int main();
 
