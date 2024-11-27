@@ -10,6 +10,7 @@ add_library(${PROJECT_NAME}
       libresin/core/transform.cpp
       libresin/utils/logger.cpp 
       libresin/core/resources/shader_resource.cpp
+      libresin/core/camera.cpp
       libresin/core/shader.cpp
 )
 
@@ -39,6 +40,7 @@ if(BUILD_TESTING)
   add_executable(
     "${PROJECT_NAME}_tests"
     tests/core/transform_test.cpp
+    tests/core/camera_test.cpp
     tests/core/resources/shader_resource_test.cpp
   )
 
