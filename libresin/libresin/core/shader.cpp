@@ -33,7 +33,7 @@ void ShaderProgram::recompile() {
   Logger::debug("Shader {} recompilation took {}", shader_name_, duration);
 }
 
-std::optional<std::string> ShaderProgram::get_shader_status(GLuint shader, GLint type) {
+std::optional<std::string> ShaderProgram::get_shader_status(GLuint shader, GLenum type) {
   GLint status = 0;
   glGetShaderiv(shader, type, &status);
   if (status == GL_FALSE) {
@@ -48,7 +48,7 @@ std::optional<std::string> ShaderProgram::get_shader_status(GLuint shader, GLint
   return std::nullopt;
 }
 
-std::optional<std::string> ShaderProgram::get_program_status(GLuint program, GLint type) {
+std::optional<std::string> ShaderProgram::get_program_status(GLuint program, GLenum type) {
   GLint status = 0;
   glGetProgramiv(program, type, &status);
   if (status == GL_FALSE) {

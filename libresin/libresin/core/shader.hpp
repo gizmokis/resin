@@ -65,8 +65,8 @@ class ShaderProgram {
   }
 
  protected:
-  static std::optional<std::string> get_shader_status(GLuint shader, GLint type);
-  static std::optional<std::string> get_program_status(GLuint program, GLint type);
+  static std::optional<std::string> get_shader_status(GLuint shader, GLenum type);
+  static std::optional<std::string> get_program_status(GLuint program, GLenum type);
 
   virtual void create_program() = 0;
   GLuint create_shader(const ShaderResource& resource, GLenum type);

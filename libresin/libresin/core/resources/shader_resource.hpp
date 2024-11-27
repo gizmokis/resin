@@ -68,7 +68,7 @@ class ShaderResource {
 
   inline ShaderType get_type() const { return type_; }
 
-  inline std::string_view get_extension() const { return kShaderTypeToExtensionMap[static_cast<uint8_t>(type_)];}
+  inline std::string_view get_extension() const { return kShaderTypeToExtensionMap[static_cast<uint8_t>(type_)]; }
 
  private:
   std::unordered_set<std::string> ext_defi_names_;
