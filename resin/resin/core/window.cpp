@@ -93,6 +93,15 @@ void Window::set_glfw_callbacks() const {
     WindowResizeEvent window_resize_event(properties.width, properties.height);
     properties.eventDispatcher->get().dispatch(window_resize_event);
   });
+
+  glfwSetKeyCallback(window_ptr_, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
+    const WindowProperties& properties = *static_cast<WindowProperties*>(glfwGetWindowUserPointer(window));
+
+    if (key == GLFW_KEY_V && action == GLFW_PRESS) {
+      WindowTestEvent window_test_event;
+      properties.eventDispatcher->get().dispatch(window_test_event);
+    }
+  });
 }
 
 Window::~Window() {

@@ -110,6 +110,20 @@ class RenderingShaderProgram : public ShaderProgram {
   ShaderResource fragment_shader_;
 };
 
+class ComputeShaderProgram : public ShaderProgram {
+ public:
+  ComputeShaderProgram(std::string_view name, ShaderResource compute_shader);
+
+  const ShaderResource& compute_shader() const { return compute_shader_; }
+  ShaderResource& compute_shader() { return compute_shader_; }
+
+ private:
+  void create_program() override;
+
+ private:
+  ShaderResource compute_shader_;
+};
+
 }  // namespace resin
 
 #endif  // RESIN_SHADER_HPP

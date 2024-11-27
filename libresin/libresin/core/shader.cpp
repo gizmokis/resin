@@ -135,4 +135,26 @@ void RenderingShaderProgram::create_program() {
   glDeleteShader(fragment_shader);
 }
 
+ComputeShaderProgram::ComputeShaderProgram(std::string_view name, ShaderResource compute_shader)
+    : ShaderProgram(name), compute_shader_(std::move(compute_shader)) {
+  using clock = std::chrono::high_resolution_clock;
+  auto start  = clock::now();
+
+  create_program();
+
+  auto stop     = clock::now();
+  auto duration = duration_cast<std::chrono::milliseconds>(stop - start);
+  Logger::info("Shader {} creation took {}", name, duration);
+}
+
+void ComputeShaderProgram::create_program() {
+  GLuint compute_shader = create_shader(compute_shader_, GL_COMPUTE_SHADER);
+  glAttachShader(program_id_, compute_shader);
+
+  link_program();
+
+  glDetachShader(program_id_, compute_shader);
+  glDeleteShader(compute_shader);
+}
+
 }  // namespace resin

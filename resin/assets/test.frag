@@ -4,8 +4,14 @@ layout(location = 0) out vec4 color;
 				
 in vec3 v_Pos;
 uniform float u_time;
+uniform mat4 u_iV;
+uniform bool u_ortho;
 
-const vec2 u_resolution = vec2(1280, 720);
+uniform vec2 u_resolution;
+uniform float u_focal;
+
+uniform mat4 u_iM;
+uniform float u_camSize;
 
 float sdSphere( vec3 pos, float radius )
 {
@@ -39,8 +45,8 @@ vec2 raycast( vec3 ray_origin, vec3 ray_direction )
     float t = tmin;
     for( int i=0; i<70 && t<tmax; i++ )
     {
-        vec3 pos = ray_origin + t*ray_direction;
-        vec2 dist = opSmoothUnion(vec2(sdCube(pos-vec3(1,1,1), 0.5), 0), vec2(sdSphere(pos, 1), 1), 0.5);
+        vec3 pos = (u_iV * vec4(ray_origin + t*ray_direction, 1)).xyz;
+        vec2 dist = opSmoothUnion(vec2(sdCube((u_iM*vec4(pos,1)).xyz, 0.5), 0), vec2(sdSphere(pos, 1), 1), 0.5);
         if( abs(dist.x)<(0.0001*t) )
         { 
             result = vec2(t,dist.y); 
@@ -55,37 +61,37 @@ vec2 raycast( vec3 ray_origin, vec3 ray_direction )
 vec3 render( vec3 ray_origin, vec3 ray_direction )
 { 
     vec3 col = vec3(0.2, 0.1, 0.0);
-    
+
     vec2 res = raycast(ray_origin, ray_direction);
     float t = res.x;
 	float m = res.y;
     if( m>-0.5 )
     {
-        vec3 pos = ray_origin + t*ray_direction;
-        
-		col = mix(vec3(1,0,0), vec3(0,0,1), m);
+        vec3 pos = (u_iV * vec4(ray_origin + t*ray_direction, 1)).xyz;
+
+		col = 0.76 * mix(vec3(1,0,0), vec3(0,0,1), m) + 0.4*pos;
     }
 
 	return col;
 }
 
-mat3 setCamera( in vec3 ro, float cr )
-{
-	vec3 cw = normalize(-ro);
-	vec3 cp = vec3(sin(cr), cos(cr),0.0);
-	vec3 cu = normalize( cross(cw,cp) );
-	vec3 cv =          ( cross(cu,cw) );
-    return mat3( cu, cv, cw );
-}
-
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
-    vec3 ray_origin = vec3(5*cos(u_time), 2.5, 5*sin(u_time));
-    mat3 camera = setCamera( ray_origin, 0.0 );
-
     vec2 pos = (2.0*fragCoord-u_resolution)/u_resolution.y;
-    const float focal_length = 2.5;
-    vec3 ray_direction = camera * normalize( vec3(pos, focal_length) );
+    if(u_ortho) {
+        pos = u_camSize * pos;
+    }
+    vec3 ray_direction;
+    vec3 ray_origin;
+
+    if (u_ortho) {
+        ray_origin = vec3(pos, -u_focal);
+        ray_direction = vec3(0,0,-1);
+    } else {
+        ray_origin = vec3(0,0,0); 
+        ray_direction = normalize( vec3(pos, -u_focal) );
+    }
+   
     fragColor = vec4( render( ray_origin, ray_direction), 1.0 );
 }
 

@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <format>
+#include <glm/ext/quaternion_trigonometric.hpp>
 #include <libresin/core/resources/shader_resource.hpp>
 #include <libresin/utils/logger.hpp>
 #include <memory>
@@ -15,6 +16,7 @@ namespace resin {
 Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
   dispatcher_.subscribe<WindowCloseEvent>(BIND_EVENT_METHOD(on_window_close));
   dispatcher_.subscribe<WindowResizeEvent>(BIND_EVENT_METHOD(on_window_resize));
+  dispatcher_.subscribe<WindowTestEvent>(BIND_EVENT_METHOD(on_test));
 
   {
     WindowProperties properties;
@@ -25,9 +27,18 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
 
   const std::filesystem::path path = std::filesystem::current_path() / "assets";
 
+  // transform_ = std::make_unique<Transform>();
+  cube_transform_.set_local_pos(glm::vec3(1, 1, 0));
+  camera_       = std::make_unique<Camera>(true, 90.F, 16.F / 9.F, 0.75F, 100.F);
+  glm::vec3 pos = glm::vec3(0, 3, 2);
+  camera_->transform.set_local_pos(pos);
+  glm::vec3 direction = glm::normalize(-pos);
+  camera_->transform.set_local_rot(sglm::quatLookAt(direction, glm::vec3(0, 1, 0)));
+  camera_->transform.set_parent(camera_rig_);
   shader_ = std::make_unique<RenderingShaderProgram>("default", *shader_resource_manager_.get_res(path / "test.vert"),
                                                      *shader_resource_manager_.get_res(path / "test.frag"));
 
+  // TODO(anyone): temporary? at least error-check
   float vertices[4 * 3]   = {-1.F, -1.F, 0.F, 1.F, -1.F, 0.F, -1.F, 1.F, 0.F, 1.F, 1.F, 0.F};
   unsigned int indices[6] = {0, 1, 2, 1, 3, 2};
 
@@ -95,11 +106,20 @@ void Resin::run() {
   }
 }
 
-void Resin::update(duration_t) {
+void Resin::update(duration_t delta) {
   window_->set_title(std::format("Resin [{} FPS {} TPS] running for: {}", fps_, tps_,
                                  std::chrono::duration_cast<std::chrono::seconds>(time_)));
 
+  cube_transform_.rotate(glm::angleAxis(2 * std::chrono::duration<float>(delta).count(), glm::vec3(0, 1, 0)));
+  camera_rig_.rotate(glm::angleAxis(std::chrono::duration<float>(delta).count(), glm::vec3(0, 1, 0)));
+
   shader_->set_uniform("u_time", std::chrono::duration<float>(time_).count());
+  shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
+  shader_->set_uniform("u_resolution", glm::vec2(window_->dimensions()));
+  shader_->set_uniform("u_focal", camera_->near_plane());
+  shader_->set_uniform("u_iM", cube_transform_.world_to_local_matrix());
+  shader_->set_uniform("u_ortho", camera_->is_orthographic);
+  shader_->set_uniform("u_camSize", camera_->height());
 }
 
 void Resin::render() {
@@ -129,7 +149,14 @@ bool Resin::on_window_resize(WindowResizeEvent& e) {
   }
 
   minimized_ = false;
-  // TODO(SDF-28): set viewport
+  glViewport(0, 0, static_cast<GLint>(e.width()), static_cast<GLint>(e.height()));
+  camera_->set_aspect_ratio(static_cast<float>(e.width()) / static_cast<float>(e.height()));
+  return false;
+}
+
+bool Resin::on_test(WindowTestEvent& e) {
+  camera_->is_orthographic = !camera_->is_orthographic;
+
   return false;
 }
 

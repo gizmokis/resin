@@ -15,6 +15,15 @@ class WindowCloseEvent : public Event<EventType::WindowCloseEvent> {
   WindowCloseEvent() = default;
 };
 
+class WindowTestEvent : public Event<EventType::WindowTestEvent> {
+ public:
+  EVENT_NAME(WindowTestEvent)
+
+  std::string to_string() const override { return std::string(name()); }
+
+  WindowTestEvent() = default;
+};
+
 class WindowResizeEvent : public Event<EventType::WindowResizeEvent> {
  public:
   EVENT_NAME(WindowResizeEvent)
