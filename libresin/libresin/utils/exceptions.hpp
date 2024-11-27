@@ -165,6 +165,26 @@ class ShaderAbsentVersionException : public std::runtime_error {
   std::string sh_path_;
 };
 
+class ShaderTypeMismatchException : public std::runtime_error {
+ public:
+  EXCEPTION_NAME(ShaderTypeMismatchException)
+
+  explicit ShaderTypeMismatchException(std::string_view type, std::string shader_name, std::string_view actual)
+      : std::runtime_error(std::format(R"({} "{}" creation failed! Actual type: {})", type, shader_name, actual)),
+        shader_type_(type),
+        shader_name_(std::move(shader_name)),
+        actual_(actual) {}
+
+  inline const std::string& get_shader_type() const { return shader_type_; }
+  inline const std::string& get_shader_name() const { return shader_name_; }
+  inline const std::string& get_actual() const { return actual_; }
+
+ private:
+  std::string shader_type_;
+  std::string shader_name_;
+  std::string actual_;
+};
+
 class ShaderProgramLinkingException : public std::runtime_error {
  public:
   EXCEPTION_NAME(ShaderProgramLinkingException)

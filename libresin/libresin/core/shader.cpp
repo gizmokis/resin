@@ -1,6 +1,7 @@
 #include <glad/gl.h>
 
 #include <chrono>
+#include <libresin/core/resources/shader_resource.hpp>
 #include <libresin/core/shader.hpp>
 #include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/logger.hpp>
@@ -32,33 +33,49 @@ void ShaderProgram::recompile() {
   Logger::debug("Shader {} recompilation took {}", shader_name_, duration);
 }
 
+std::optional<std::string> ShaderProgram::get_shader_status(GLuint shader, GLint type) {
+  GLint status = 0;
+  glGetShaderiv(shader, type, &status);
+  if (status == GL_FALSE) {
+    GLint length = 0;
+    glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
+
+    std::string info(static_cast<GLuint>(length), '\0');
+    glGetShaderInfoLog(shader, length, &length, info.data());
+    return info;
+  }
+
+  return std::nullopt;
+}
+
+std::optional<std::string> ShaderProgram::get_program_status(GLuint program, GLint type) {
+  GLint status = 0;
+  glGetProgramiv(program, type, &status);
+  if (status == GL_FALSE) {
+    GLint length = 0;
+    glGetProgramiv(program, GL_INFO_LOG_LENGTH, &length);
+
+    std::string info(static_cast<GLuint>(length), '\0');
+    glGetProgramInfoLog(program, length, &length, info.data());
+    return info;
+  }
+
+  return std::nullopt;
+}
+
 void ShaderProgram::link_program() {
   glLinkProgram(program_id_);
 
-  GLint status = 0;
-  glGetProgramiv(program_id_, GL_LINK_STATUS, &status);
-  if (status == GL_FALSE) {
-    GLint length = 0;
-    glGetProgramiv(program_id_, GL_INFO_LOG_LENGTH, &length);
-
-    std::string info(static_cast<GLuint>(length), '\0');
-    glGetProgramInfoLog(program_id_, length, &length, info.data());
-
-    log_throw(ShaderProgramLinkingException(shader_name_, std::move(info)));
+  auto link_status = get_program_status(program_id_, GL_LINK_STATUS);
+  if (link_status.has_value()) {
+    log_throw(ShaderProgramLinkingException(shader_name_, std::move(link_status.value())));
   }
 
   glValidateProgram(program_id_);
 
-  status = 0;
-  glGetProgramiv(program_id_, GL_VALIDATE_STATUS, &status);
-  if (status == GL_FALSE) {
-    GLint length = 0;
-    glGetProgramiv(program_id_, GL_INFO_LOG_LENGTH, &length);
-
-    std::string info(static_cast<GLuint>(length), '\0');
-    glGetProgramInfoLog(program_id_, length, &length, info.data());
-
-    log_throw(ShaderProgramValidationException(shader_name_, std::move(info)));
+  auto validate_status = get_program_status(program_id_, GL_VALIDATE_STATUS);
+  if (validate_status.has_value()) {
+    log_throw(ShaderProgramValidationException(shader_name_, std::move(validate_status.value())));
   }
 }
 
@@ -90,17 +107,9 @@ GLuint ShaderProgram::create_shader(const ShaderResource& resource, GLenum type)
   const GLchar* source = resource.get_glsl().c_str();
   glShaderSource(shader, 1, &source, nullptr);
   glCompileShader(shader);
-
-  GLint status = 0;
-  glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
-  if (status == GL_FALSE) {
-    GLint length = 0;
-    glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
-
-    std::string info(static_cast<GLuint>(length), '\0');
-    glGetShaderInfoLog(shader, length, &length, info.data());
-
-    log_throw(ShaderCreationException(get_shader_type_name(type), shader_name_, std::move(info)));
+  auto compile_status = get_shader_status(shader, GL_COMPILE_STATUS);
+  if (compile_status.has_value()) {
+    log_throw(ShaderCreationException(get_shader_type_name(type), shader_name_, std::move(compile_status.value())));
   }
 
   return shader;
@@ -109,6 +118,14 @@ GLuint ShaderProgram::create_shader(const ShaderResource& resource, GLenum type)
 RenderingShaderProgram::RenderingShaderProgram(std::string_view name, ShaderResource vertex_resource,
                                                ShaderResource fragment_resource)
     : ShaderProgram(name), vertex_shader_(std::move(vertex_resource)), fragment_shader_(std::move(fragment_resource)) {
+  if (vertex_shader_.get_type() != ShaderType::Vertex) {
+    log_throw(ShaderTypeMismatchException(get_shader_type_name(GL_VERTEX_SHADER), shader_name_,
+                                          vertex_shader_.get_extension()));
+  }
+  if (fragment_shader_.get_type() != ShaderType::Fragment) {
+    log_throw(ShaderTypeMismatchException(get_shader_type_name(GL_FRAGMENT_SHADER), shader_name_,
+                                          fragment_shader_.get_extension()));
+  }
   using clock = std::chrono::high_resolution_clock;
   auto start  = clock::now();
 
@@ -137,6 +154,11 @@ void RenderingShaderProgram::create_program() {
 
 ComputeShaderProgram::ComputeShaderProgram(std::string_view name, ShaderResource compute_shader)
     : ShaderProgram(name), compute_shader_(std::move(compute_shader)) {
+  if (compute_shader_.get_type() != ShaderType::Compute) {
+    log_throw(ShaderTypeMismatchException(get_shader_type_name(GL_COMPUTE_SHADER), shader_name_,
+                                          compute_shader_.get_extension()));
+  }
+
   using clock = std::chrono::high_resolution_clock;
   auto start  = clock::now();
 

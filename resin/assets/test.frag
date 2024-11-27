@@ -35,6 +35,11 @@ vec2 opSmoothUnion( vec2 d1, vec2 d2, float k )
     return mix( d2, d1, h )- vec2(k*h*(1.0-h), 0);
 }
 
+vec2 map( vec3 pos )
+{
+    return opSmoothUnion(vec2(sdCube((u_iM*vec4(pos,1)).xyz, 0.5), 0), vec2(sdSphere(pos, 1), 1), 0.5);
+}
+
 vec2 raycast( vec3 ray_origin, vec3 ray_direction )
 {
     vec2 result = vec2(-1.0,-1.0);
@@ -46,7 +51,7 @@ vec2 raycast( vec3 ray_origin, vec3 ray_direction )
     for( int i=0; i<70 && t<tmax; i++ )
     {
         vec3 pos = (u_iV * vec4(ray_origin + t*ray_direction, 1)).xyz;
-        vec2 dist = opSmoothUnion(vec2(sdCube((u_iM*vec4(pos,1)).xyz, 0.5), 0), vec2(sdSphere(pos, 1), 1), 0.5);
+        vec2 dist = map(pos);
         if( abs(dist.x)<(0.0001*t) )
         { 
             result = vec2(t,dist.y); 
@@ -56,6 +61,20 @@ vec2 raycast( vec3 ray_origin, vec3 ray_direction )
     }
     
     return result;
+}
+
+// https://iquilezles.org/articles/normalsSDF
+vec3 calcNormal( in vec3 pos )
+{
+    // inspired by tdhooper and klems - a way to prevent the compiler from inlining map() 4 times
+    vec3 n = vec3(0.0);
+    for( int i=0; i<4; i++ )
+    {
+        vec3 e = 0.5773*(2.0*vec3((((i+3)>>1)&1),((i>>1)&1),(i&1))-1.0);
+        n += e*map(pos+0.0005*e).x;
+      //if( n.x+n.y+n.z>100.0 ) break;
+    }
+    return normalize(n); 
 }
 
 vec3 render( vec3 ray_origin, vec3 ray_direction )
@@ -68,8 +87,9 @@ vec3 render( vec3 ray_origin, vec3 ray_direction )
     if( m>-0.5 )
     {
         vec3 pos = (u_iV * vec4(ray_origin + t*ray_direction, 1)).xyz;
+        vec3 nor = calcNormal( pos );
 
-		col = 0.76 * mix(vec3(1,0,0), vec3(0,0,1), m) + 0.4*pos;
+		col = mix(vec3(1,0,0), vec3(0,0,1), m) * (nor+1.0)/2.0;
     }
 
 	return col;

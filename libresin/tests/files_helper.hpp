@@ -26,11 +26,8 @@
   }
 
   std::string file_content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-  file_content = std::regex_replace(file_content, std::regex("\r\n"), "\n");
 
   if (file_content != content) {
-    std::println("|{}|", file_content);
-    std::println("|{}|", content);
     return ::testing::AssertionFailure() << "File content does not match.\n";
   }
 

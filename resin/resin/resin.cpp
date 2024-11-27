@@ -30,7 +30,7 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
   // transform_ = std::make_unique<Transform>();
   cube_transform_.set_local_pos(glm::vec3(1, 1, 0));
   camera_       = std::make_unique<Camera>(true, 90.F, 16.F / 9.F, 0.75F, 100.F);
-  glm::vec3 pos = glm::vec3(0, 3, 2);
+  glm::vec3 pos = glm::vec3(0, 2, 3);
   camera_->transform.set_local_pos(pos);
   glm::vec3 direction = glm::normalize(-pos);
   camera_->transform.set_local_rot(glm::quatLookAt(direction, glm::vec3(0, 1, 0)));
