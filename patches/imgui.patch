@@ -3,7 +3,7 @@ new file mode 100644
 index 00000000..5e32a907
 --- /dev/null
 +++ b/CMakeLists.txt
-@@ -0,0 +1,13 @@
+@@ -0,0 +1,14 @@
 +cmake_minimum_required(VERSION 3.20)
 +
 +project(imgui)
@@ -16,6 +16,7 @@ index 00000000..5e32a907
 +  "src/imgui/*.cpp")
 +
 +add_library(${PROJECT_NAME} STATIC ${IMGUI_SOURCE_FILES})
++target_link_libraries(${PROJECT_NAME} PUBLIC glfw)
 +target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC src)
 diff --git a/imconfig.h b/src/imgui/imconfig.h
 similarity index 100%

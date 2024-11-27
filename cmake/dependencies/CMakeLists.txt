@@ -67,7 +67,7 @@ if(BUILD_GLFW)
 endif()
 
 # ##############################################################################
-# IMGUI
+# IMGUI (depends on GLFW)
 # ##############################################################################
 message(CHECK_START "Fetching ImGui")
 list(APPEND CMAKE_MESSAGE_INDENT "  ")
