@@ -239,6 +239,29 @@ class ShaderCreationException : public std::runtime_error {
   std::string reason_;
 };
 
+class SDFTreeEmptyGroupException : public std::runtime_error {
+ public:
+  EXCEPTION_NAME(SDFTreeEmptyGroupException)
+
+  // TODO(migoox): more informative
+  explicit SDFTreeEmptyGroupException() : std::runtime_error(std::format(R"(Could not generate shader.)")) {}
+};
+
+class SDFTreeInvalidOperationException : public std::runtime_error {
+ public:
+  EXCEPTION_NAME(SDFTreeInvalidOperationException)
+
+  // TODO(migoox): more informative
+  explicit SDFTreeInvalidOperationException() : std::runtime_error(std::format(R"(Could not generate shader.)")) {}
+};
+
+class NotImplementedException : public std::runtime_error {
+ public:
+  EXCEPTION_NAME(NotImplementedException)
+
+  explicit NotImplementedException() : std::runtime_error(std::format(R"(Not implemented yet.)")) {}
+};
+
 }  // namespace resin
 
 #endif  // RESIN_EXCEPTIONS_HPP
