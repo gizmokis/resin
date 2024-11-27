@@ -11,6 +11,7 @@ add_library(${PROJECT_NAME}
       libresin/utils/logger.cpp 
       libresin/core/resources/shader_resource.cpp
       libresin/core/camera.cpp
+      libresin/core/shader.cpp
 )
 
 # Prevent CMake from adding `lib` before `libresin`
@@ -18,7 +19,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
 
 target_include_directories(${PROJECT_NAME}
                            PUBLIC . "${CMAKE_BINARY_DIR}/generated")
-target_link_libraries(${PROJECT_NAME} PUBLIC glm::glm)
+target_link_libraries(${PROJECT_NAME} PUBLIC glm::glm glad)
 
 # Set compile options and properties of the target
 target_compile_options(${PROJECT_NAME} PRIVATE ${PROJ_CXX_FLAGS})

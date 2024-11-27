@@ -3,6 +3,9 @@
 
 #include <chrono>
 #include <cstdint>
+#include <libresin/core/camera.hpp>
+#include <libresin/core/resources/shader_resource.hpp>
+#include <libresin/core/shader.hpp>
 #include <memory>
 #include <resin/core/window.hpp>
 #include <resin/event/event.hpp>
@@ -38,13 +41,21 @@ class Resin {
 
   bool on_window_close(WindowCloseEvent& e);
   bool on_window_resize(WindowResizeEvent& e);
+  bool on_test(WindowTestEvent& e);
 
  public:
   static constexpr duration_t kTickTime = 16666us;  // 60 TPS = 16.6(6) ms/t
 
  private:
+  unsigned int vertex_array_, vertex_buffer_, index_buffer_;
+  EventDispatcher dispatcher_;
+  ShaderResourceManager shader_resource_manager_;
+
   std::unique_ptr<Window> window_;
-  std::unique_ptr<EventDispatcher> dispatcher_;
+  std::unique_ptr<RenderingShaderProgram> shader_;
+
+  std::unique_ptr<Camera> camera_;
+  Transform cube_transform_, camera_rig_;
 
   bool running_   = true;
   bool minimized_ = false;

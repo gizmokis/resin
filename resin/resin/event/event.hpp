@@ -5,17 +5,18 @@
 #include <format>
 #include <functional>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 
 #define EVENT_NAME(eventType) \
-  static constexpr const char* name() { return #eventType; }
+  static constexpr std::string_view name() { return #eventType; }
 
 #define BIND_EVENT_METHOD(fn) \
   [this](auto&&... args) -> decltype(auto) { return this->fn(std::forward<decltype(args)>(args)...); }
 
 namespace resin {
 
-enum class EventType { None = 0, WindowCloseEvent, WindowResizeEvent };
+enum class EventType { None = 0, WindowCloseEvent, WindowResizeEvent, WindowTestEvent };
 
 class BaseEvent {
  public:
@@ -42,7 +43,7 @@ class Event : public BaseEvent {
 
 template <typename E>
 concept EventConcept = std::derived_from<E, BaseEvent> && requires(E a) {
-  { E::name() } -> std::same_as<const char*>;
+  { E::name() } -> std::same_as<std::string_view>;
   { E::type() } -> std::same_as<EventType>;
 };
 

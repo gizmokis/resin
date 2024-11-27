@@ -15,6 +15,12 @@ concept ExceptionConcept = std::is_base_of_v<std::runtime_error, T> && requires 
   { T::name() } -> std::convertible_to<std::string_view>;
 };
 
+template <ExceptionConcept Exception>
+[[noreturn]] void inline log_throw(Exception&& e, const std::source_location& loc = std::source_location::current()) {
+  resin::Logger::get_instance().log(LogLevel::Throw, false, loc, "{}: {}", Exception::name(), e.what());
+  throw std::forward<Exception>(e);
+}
+
 class FileDoesNotExistException : public std::runtime_error {
  public:
   EXCEPTION_NAME(FileDoesNotExistException)
@@ -105,6 +111,7 @@ class ShaderMacroInvalidArgumentsCountException : public std::runtime_error {
   size_t actual_args_;
   size_t line_;
 };
+
 class ShaderInvalidMacroArgumentException : public std::runtime_error {
  public:
   EXCEPTION_NAME(ShaderInvalidMacroArgumentException)
@@ -144,11 +151,93 @@ class ShaderIncludeMacroDependencyCycleException : public std::runtime_error {
   size_t line_;
 };
 
-template <ExceptionConcept Exception>
-[[noreturn]] void inline log_throw(Exception&& e, const std::source_location& loc = std::source_location::current()) {
-  resin::Logger::get_instance().log(LogLevel::Throw, false, loc, "{}: {}", Exception::name(), e.what());
-  throw std::forward<Exception>(e);
-}
+class ShaderAbsentVersionException : public std::runtime_error {
+ public:
+  EXCEPTION_NAME(ShaderAbsentVersionException)
+
+  explicit ShaderAbsentVersionException(std::string&& sh_path)
+      : std::runtime_error(std::format(R"(Could not find version macro for a shader with path "{}".)", sh_path)),
+        sh_path_(std::move(sh_path)) {}
+
+  inline const std::string& get_sh_path() const { return sh_path_; }
+
+ private:
+  std::string sh_path_;
+};
+
+class ShaderTypeMismatchException : public std::runtime_error {
+ public:
+  EXCEPTION_NAME(ShaderTypeMismatchException)
+
+  explicit ShaderTypeMismatchException(std::string_view type, std::string shader_name, std::string_view actual)
+      : std::runtime_error(std::format(R"({} "{}" creation failed! Actual type: {})", type, shader_name, actual)),
+        shader_type_(type),
+        shader_name_(std::move(shader_name)),
+        actual_(actual) {}
+
+  inline const std::string& get_shader_type() const { return shader_type_; }
+  inline const std::string& get_shader_name() const { return shader_name_; }
+  inline const std::string& get_actual() const { return actual_; }
+
+ private:
+  std::string shader_type_;
+  std::string shader_name_;
+  std::string actual_;
+};
+
+class ShaderProgramLinkingException : public std::runtime_error {
+ public:
+  EXCEPTION_NAME(ShaderProgramLinkingException)
+
+  explicit ShaderProgramLinkingException(std::string shader_name, std::string&& reason)
+      : std::runtime_error(std::format(R"(Shader program "{}" linking failed! Reason: {})", shader_name, reason)),
+        shader_name_(std::move(shader_name)),
+        reason_(std::move(reason)) {}
+
+  inline const std::string& get_shader_name() const { return shader_name_; }
+  inline const std::string& get_reason() const { return reason_; }
+
+ private:
+  std::string shader_name_;
+  std::string reason_;
+};
+
+class ShaderProgramValidationException : public std::runtime_error {
+ public:
+  EXCEPTION_NAME(ShaderProgramValidationException)
+
+  explicit ShaderProgramValidationException(std::string shader_name, std::string&& reason)
+      : std::runtime_error(std::format(R"(Shader program "{}" validation failed! Reason: {})", shader_name, reason)),
+        shader_name_(std::move(shader_name)),
+        reason_(std::move(reason)) {}
+
+  inline const std::string& get_shader_name() const { return shader_name_; }
+  inline const std::string& get_reason() const { return reason_; }
+
+ private:
+  std::string shader_name_;
+  std::string reason_;
+};
+
+class ShaderCreationException : public std::runtime_error {
+ public:
+  EXCEPTION_NAME(ShaderCreationException)
+
+  explicit ShaderCreationException(std::string_view type, std::string shader_name, std::string&& reason)
+      : std::runtime_error(std::format(R"({} "{}" creation failed! Reason: {})", type, shader_name, reason)),
+        shader_type_(type),
+        shader_name_(std::move(shader_name)),
+        reason_(std::move(reason)) {}
+
+  inline const std::string& get_shader_type() const { return shader_type_; }
+  inline const std::string& get_shader_name() const { return shader_name_; }
+  inline const std::string& get_reason() const { return reason_; }
+
+ private:
+  std::string shader_type_;
+  std::string shader_name_;
+  std::string reason_;
+};
 
 }  // namespace resin
 

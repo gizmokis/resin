@@ -1,7 +1,7 @@
-#version 150
-#define EXTERNAL_B 50
-#define EXTERNAL_A 100
+#version 330 core
 #define EXTERNAL_MAIN int func() { return 5; }
+#define EXTERNAL_A 100
+#define EXTERNAL_B 50
 #ifndef SHADER_A
 #define SHADER_A
 #ifndef SHADER_B

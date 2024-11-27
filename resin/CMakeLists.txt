@@ -27,6 +27,14 @@ target_compile_options(${PROJECT_NAME} PRIVATE ${PROJ_CXX_FLAGS})
 # This is required when resin is linked with shared libraries
 target_link_options(${PROJECT_NAME} PRIVATE ${PROJ_EXE_LINKER_FLAGS})
 
+# Copy assets folder to build directory
+add_custom_target(copy_assets
+  COMMAND ${CMAKE_COMMAND} -DASSETS_SOURCE_DIR=${PROJECT_SOURCE_DIR}/assets
+                           -DASSETS_DEST_DIR=$<TARGET_FILE_DIR:${PROJECT_NAME}>
+                           -P ${PROJECT_SOURCE_DIR}/../cmake/copy_assets.cmake
+)
+add_dependencies(${PROJECT_NAME} copy_assets)
+
 if(BUILD_TESTING)
   enable_testing()
 

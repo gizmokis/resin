@@ -4,6 +4,8 @@
 
 #include <filesystem>
 #include <fstream>
+#include <print>
+#include <regex>
 #include <string>
 
 ::testing::AssertionResult IsFileContentEqual(const char* expected_expr, const char* actual_expr,

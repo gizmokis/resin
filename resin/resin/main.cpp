@@ -4,13 +4,12 @@
 
 #include <filesystem>
 #include <glm/glm.hpp>
+#include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/logger.hpp>
 #include <memory>
 #include <print>
 #include <resin/resin.hpp>
 #include <version/version.hpp>
-
-#include "libresin/utils/exceptions.hpp"
 
 int main() {
   const size_t max_logs_backups = 4;
