@@ -113,7 +113,6 @@ void Resin::update(duration_t delta) {
   cube_transform_.rotate(glm::angleAxis(2 * std::chrono::duration<float>(delta).count(), glm::vec3(0, 1, 0)));
   camera_rig_.rotate(glm::angleAxis(std::chrono::duration<float>(delta).count(), glm::vec3(0, 1, 0)));
 
-  shader_->set_uniform("u_time", std::chrono::duration<float>(time_).count());
   shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
   shader_->set_uniform("u_resolution", glm::vec2(window_->dimensions()));
   shader_->set_uniform("u_focal", camera_->near_plane());
