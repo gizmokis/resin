@@ -3,7 +3,7 @@ new file mode 100644
 index 00000000..5e32a907
 --- /dev/null
 +++ b/CMakeLists.txt
-@@ -0,0 +1,14 @@
+@@ -0,0 +1,13 @@
 +cmake_minimum_required(VERSION 3.20)
 +
 +project(imgui)
@@ -14,7 +14,6 @@ index 00000000..5e32a907
 +
 +file(GLOB IMGUI_SOURCE_FILES
 +  "src/imgui/*.cpp")
-+message(${IMGUI_SOURCE_FILES})
 +
 +add_library(${PROJECT_NAME} STATIC ${IMGUI_SOURCE_FILES})
 +target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC src)
