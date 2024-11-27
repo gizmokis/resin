@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 #include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/logger.hpp>
+#include <mutex>
 #include <stack>
 
 namespace resin {
@@ -32,11 +33,15 @@ class IdRegistry {
   static const size_t kMaxObjects = 8000;
 
   static IdRegistry<Obj>& get_instance() {
+    // thread-safe according to
+    // https://stackoverflow.com/questions/1661529/is-meyers-implementation-of-the-singleton-pattern-thread-safe
     static IdRegistry<Obj> instance;
     return instance;
   }
 
   TypedId<Obj> register_id() {
+    mutex_.lock();
+
     if (freed_.empty()) {
       log_throw(ObjectsOverflowException());
     }
@@ -49,6 +54,8 @@ class IdRegistry {
   }
 
   bool is_registered(TypedId<Obj> id) {
+    mutex_.lock();
+
     if (id.get_raw() >= kMaxObjects) {
       return false;
     }
@@ -57,6 +64,8 @@ class IdRegistry {
   }
 
   void unregister_id(TypedId<Obj> id) {
+    mutex_.lock();
+
     if (id.get_raw() >= kMaxObjects) {
       Logger::warn("Detected an attempt to unregister a non-existent id [{}].", id.get_raw());
       return;
@@ -79,6 +88,7 @@ class IdRegistry {
 
   std::stack<size_t> freed_;
   std::array<bool, kMaxObjects> is_registered_{};
+  std::mutex mutex_;
 };
 
 }  // namespace resin
