@@ -26,9 +26,6 @@ class GroupNode : public ISDFTreeNode {
   inline void accept_visitor(IMutableSDFTreeNodeVisitor& visitor) override { visitor.visit_group(*this); }
   inline void accept_visitor(IImmutableSDFTreeNodeVisitor& visitor) override { visitor.visit_group(*this); }
 
-  Transform transform_;
-  std::string name;
-
  private:
   void remove_expired() const;
 
