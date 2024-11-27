@@ -1,13 +1,15 @@
 #include <GLFW/glfw3.h>
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_opengl3.h>
+#include <imgui/imgui_impl_opengl3_loader.h>
+#include <imgui/imgui_impl_glfw.h>
 
 #include <libresin/utils/logger.hpp>
-#include <memory>
 #include <resin/core/graphics_context.hpp>
 #include <resin/core/window.hpp>
 #include <resin/event/event.hpp>
 #include <resin/event/window_events.hpp>
-#include <stdexcept>
-#include <string_view>
+
 
 namespace resin {
 
@@ -75,6 +77,16 @@ Window::Window(WindowProperties properties) : properties_(std::move(properties))
   }
 
   Logger::info("Created window {} ({} x {})", properties_.title, properties_.width, properties_.height);
+
+  ImGui::CreateContext();
+  ImGuiIO& io = ImGui::GetIO();
+  (void)io;
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
+  ImGui::StyleColorsDark();
+
+  ImGui_ImplGlfw_InitForOpenGL(window_ptr_, true);
+  ImGui_ImplOpenGL3_Init("#version 150");
 }
 
 void Window::set_glfw_callbacks() const {
