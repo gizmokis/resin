@@ -255,6 +255,14 @@ class SDFTreeInvalidOperationException : public std::runtime_error {
   explicit SDFTreeInvalidOperationException() : std::runtime_error(std::format(R"(Could not generate shader.)")) {}
 };
 
+class ObjectsOverflowException : public std::runtime_error {
+ public:
+  EXCEPTION_NAME(ObjectsOverflowException)
+
+  // TODO(migoox): more informative
+  explicit ObjectsOverflowException() : std::runtime_error(std::format(R"(No more free IDs available)")) {}
+};
+
 class NotImplementedException : public std::runtime_error {
  public:
   EXCEPTION_NAME(NotImplementedException)

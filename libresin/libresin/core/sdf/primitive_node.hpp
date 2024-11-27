@@ -8,21 +8,16 @@
 
 namespace resin {
 
-class PrimitiveNode : public ISDFTreeNode {
+class PrimitiveNode : public SDFTreeNode {
  public:
   std::string gen_shader_code() const override = 0;
 
   void accept_visitor(IMutableSDFTreeNodeVisitor& visitor) override   = 0;
   void accept_visitor(IImmutableSDFTreeNodeVisitor& visitor) override = 0;
 
-  PrimitiveNode() : transform_id_(IdRegistry<Transform>::get_instance().register_id()) {}
   ~PrimitiveNode() override = default;
 
-  inline TypedId<Transform> get_transform_id() const { return transform_id_; }
-  inline Transform& get_transform() { return transform_; }
-
  protected:
-  TypedId<Transform> transform_id_;
   Transform transform_;
 
  protected:

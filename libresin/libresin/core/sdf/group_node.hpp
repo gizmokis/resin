@@ -10,16 +10,16 @@ namespace resin {
 
 using SDFBinaryOperation = sdf_shader_consts::SDFShaderBinOp;
 
-class GroupNode : public ISDFTreeNode {
+class GroupNode : public SDFTreeNode {
  public:
   std::string gen_shader_code() const override;
 
   ~GroupNode() override = default;
 
-  void push_node(SDFBinaryOperation op, std::weak_ptr<const ISDFTreeNode> node);
+  void push_node(SDFBinaryOperation op, std::weak_ptr<const SDFTreeNode> node);
 
   void set_op(int node_id, SDFBinaryOperation op);
-  void set_obj(int node_id, std::weak_ptr<const ISDFTreeNode>);
+  void set_obj(int node_id, std::weak_ptr<const SDFTreeNode>);
   void reorder(std::vector<int> id_order);
   void remove_node(int node_id);
 
@@ -30,7 +30,7 @@ class GroupNode : public ISDFTreeNode {
   void remove_expired() const;
 
  private:
-  mutable std::vector<std::pair<SDFBinaryOperation, std::weak_ptr<const ISDFTreeNode>>> nodes_;
+  mutable std::vector<std::pair<SDFBinaryOperation, std::weak_ptr<const SDFTreeNode>>> nodes_;
 };
 
 }  // namespace resin

@@ -34,7 +34,7 @@ std::string GroupNode::gen_shader_code() const {
 }
 
 void GroupNode::set_op(int node_id, SDFBinaryOperation op) { log_throw(NotImplementedException()); }
-void GroupNode::set_obj(int node_id, std::weak_ptr<const ISDFTreeNode>) { log_throw(NotImplementedException()); }
-void GroupNode::remove_expired() const { log_throw(NotImplementedException()); }
+void GroupNode::set_obj(int node_id, std::weak_ptr<const SDFTreeNode>) { log_throw(NotImplementedException()); }
+void GroupNode::remove_expired() const {}
 
 }  // namespace resin
