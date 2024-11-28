@@ -6,13 +6,11 @@ message(STATUS "Configuring " ${PROJECT_NAME})
 
 set(CMAKE_CXX_STANDARD 23)
 
-add_library(${PROJECT_NAME} 
-      libresin/core/transform.cpp
-      libresin/utils/logger.cpp 
-      libresin/core/resources/shader_resource.cpp
-      libresin/core/camera.cpp
-      libresin/core/shader.cpp
+file(GLOB_RECURSE SOURCES 
+    "${CMAKE_CURRENT_SOURCE_DIR}/libresin/*.cpp"
 )
+
+add_library(${PROJECT_NAME} ${SOURCES})
 
 # Prevent CMake from adding `lib` before `libresin`
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
@@ -37,11 +35,13 @@ if(BUILD_TESTING)
 
   enable_testing()
 
+  file(GLOB_RECURSE TESTS_SOURCES 
+      "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp"
+  )
+
   add_executable(
     "${PROJECT_NAME}_tests"
-    tests/core/transform_test.cpp
-    tests/core/camera_test.cpp
-    tests/core/resources/shader_resource_test.cpp
+    ${TESTS_SOURCES}
   )
 
   target_include_directories("${PROJECT_NAME}_tests" PUBLIC  

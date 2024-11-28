@@ -5,12 +5,11 @@ message(STATUS "Configuring " ${PROJECT_NAME})
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 23)
 
-add_executable(${PROJECT_NAME} 
-      resin/main.cpp 
-      resin/resin.cpp  
-      resin/core/graphics_context.cpp
-      resin/core/window.cpp
+file(GLOB_RECURSE SOURCES 
+    "${CMAKE_CURRENT_SOURCE_DIR}/resin/*.cpp"
 )
+
+add_executable(${PROJECT_NAME} ${SOURCES})
 
 target_link_libraries(${PROJECT_NAME} PUBLIC glfw libresin glm::glm imgui glad)
 target_include_directories(${PROJECT_NAME}
@@ -38,9 +37,13 @@ add_dependencies(${PROJECT_NAME} copy_assets)
 if(BUILD_TESTING)
   enable_testing()
 
+  file(GLOB_RECURSE TESTS_SOURCES 
+      "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp"
+  )
+
   add_executable(
     "${PROJECT_NAME}_tests"
-    tests/example_test.cpp
+    ${TESTS_SOURCES} 
   )
   target_link_libraries(
     "${PROJECT_NAME}_tests"
