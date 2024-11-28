@@ -55,7 +55,7 @@ class SphereNode : public PrimitiveNode {
 
   inline IdView<SphereNode> component_id() const { return sphere_id_.view(); }
 
-  explicit SphereNode(float _radius = 1.F) : radius(_radius) {}
+  explicit SphereNode(float _radius = 1.F) : radius(_radius), name_(std::format("Cube {}", sphere_id_.raw())) {}
 
  public:
   float radius;

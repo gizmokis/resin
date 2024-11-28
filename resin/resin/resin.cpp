@@ -1,15 +1,18 @@
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_opengl3.h>
+#include <imgui/imgui_internal.h>
 
 #include <chrono>
 #include <cstdint>
 #include <filesystem>
 #include <format>
-#include <glm/ext/quaternion_trigonometric.hpp>
 #include <libresin/core/resources/shader_resource.hpp>
+#include <libresin/core/sdf/group_node.hpp>
+#include <libresin/core/sdf/primitive_node.hpp>
 #include <libresin/utils/logger.hpp>
 #include <memory>
+#include <resin/components/sdf_tree.hpp>
 #include <resin/core/window.hpp>
 #include <resin/event/event.hpp>
 #include <resin/event/window_events.hpp>
@@ -63,6 +66,10 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
   glGenBuffers(1, &index_buffer_);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer_);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof indices, indices, GL_STATIC_DRAW);
+
+  sdf_tree_root_.push_node<resin::SphereNode>(SDFBinaryOperation::Inter);
+  sdf_tree_root_.push_node<resin::GroupNode>(SDFBinaryOperation::Union);
+  sdf_tree_root_.push_node<resin::CubeNode>(SDFBinaryOperation::Union);
 }
 
 void Resin::run() {
@@ -128,14 +135,16 @@ void Resin::update(duration_t delta) {
 void Resin::render() {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
-  ImGui::NewFrame();
+  ::ImGui::NewFrame();
 
   glClearColor(0.1F, 0.1F, 0.1F, 1.F);
   glClear(GL_COLOR_BUFFER_BIT);
 
-  ImGui::ShowDemoWindow();
-
-  ImGui::Render();
+  if (::ImGui::Begin("SDF Tree")) {
+    resin::ImGui::SDFTree(sdf_tree_root_);
+  }
+  ::ImGui::End();
+  ::ImGui::Render();
 
   {
     glBindVertexArray(vertex_array_);
@@ -144,7 +153,7 @@ void Resin::render() {
     shader_->unbind();
   }
 
-  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+  ImGui_ImplOpenGL3_RenderDrawData(::ImGui::GetDrawData());
 
   window_->on_update();
 }
