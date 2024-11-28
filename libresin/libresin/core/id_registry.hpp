@@ -15,7 +15,7 @@ class IdRegistry {
  public:
   static const size_t kMaxObjects = 10000;
 
-  static IdRegistry<Obj>& get_instance() {
+  static IdRegistry<Obj>& instance() {
     // thread-safe according to
     // https://stackoverflow.com/questions/1661529/is-meyers-implementation-of-the-singleton-pattern-thread-safe
     static IdRegistry<Obj> instance;
@@ -80,8 +80,8 @@ struct IdView;
 template <typename Obj>
 struct Id {
  public:
-  Id() : raw_id_(resin::IdRegistry<Obj>::get_instance().register_id()) {}
-  ~Id() { resin::IdRegistry<Obj>::get_instance().unregister_id(raw_id_); }
+  Id() : raw_id_(resin::IdRegistry<Obj>::instance().register_id()) {}
+  ~Id() { resin::IdRegistry<Obj>::instance().unregister_id(raw_id_); }
 
   Id(const Id<Obj>& other)                 = delete;
   Id<Obj>& operator=(const Id<Obj>& other) = delete;
@@ -113,7 +113,8 @@ struct IdView {
   bool operator!=(const Id<Obj>& other) const { return raw_id_ != other.raw_id_; }
 
   inline size_t raw() const { return raw_id_; }
-  inline bool expired() const { return resin::IdRegistry<Obj>::get_instance().is_registered(raw_id_); }
+
+  inline bool expired() const { return resin::IdRegistry<Obj>::instance().is_registered(raw_id_); }
 
  private:
   size_t raw_id_;

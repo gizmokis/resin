@@ -43,7 +43,7 @@ class SphereNode : public PrimitiveNode {
                                   sdf_shader_consts::SDFShaderComponents::Spheres, sphere_id_.raw());
   }
 
-  inline IdView<SphereNode> get_component_id() const { return sphere_id_.view(); }
+  inline IdView<SphereNode> component_id() const { return sphere_id_.view(); }
 
   explicit SphereNode(float radius = 1.F) : radius(radius) {}
 
@@ -66,7 +66,7 @@ class CubeNode : public PrimitiveNode {
 
   explicit CubeNode(float size = 1.F) : size(size) {}
 
-  inline IdView<CubeNode> get_component_id() const { return cube_id_.view(); }
+  inline IdView<CubeNode> component_id() const { return cube_id_.view(); }
 
  public:
   float size;

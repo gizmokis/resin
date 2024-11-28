@@ -37,10 +37,9 @@ class SDFTreeNode {
 
   virtual ~SDFTreeNode() = default;
 
-  inline IdView<SDFTreeNode> get_node_id() const { return node_id_.view(); }
-  inline IdView<Transform> get_transform_id() const { return transform_id_.view(); }
-
-  inline Transform& get_transform() { return transform_; }
+  inline IdView<SDFTreeNode> node_id() const { return node_id_.view(); }
+  inline IdView<Transform> transform_id() const { return transform_id_.view(); }
+  inline Transform& transform() { return transform_; }
 
   // TODO(migoox): add material
 
@@ -48,8 +47,6 @@ class SDFTreeNode {
   Id<SDFTreeNode> node_id_;
   Id<Transform> transform_id_;
   Transform transform_;
-
-  std::string unique_name_;
 };
 
 template <typename T>
