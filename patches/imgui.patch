@@ -1,9 +1,9 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
 new file mode 100644
-index 00000000..2f6dfad2
+index 00000000..5e32a907
 --- /dev/null
 +++ b/CMakeLists.txt
-@@ -0,0 +1,21 @@
+@@ -0,0 +1,14 @@
 +cmake_minimum_required(VERSION 3.20)
 +
 +project(imgui)
@@ -12,187 +12,12 @@ index 00000000..2f6dfad2
 +set(CMAKE_CXX_STANDARD 11)
 +set(CMAKE_DISABLE_IN_SOURCE_BUILD TRUE)
 +
-+file(
-+  GLOB
-+  IMGUI_SOURCE_FILES
-+  "src/imgui/*.h"
-+  "src/imgui/*.cpp"
-+  "src/imgui/backend/imgui_impl_opengl3.h"
-+  "src/imgui/backend/imgui_impl_opengl3_loader.h"
-+  "src/imgui/backend/imgui_impl_opengl3.cpp"
-+  "src/imgui/backend/imgui_impl_glfw.h"
-+  "src/imgui/backend/imgui_impl_glfw.cpp")
++file(GLOB IMGUI_SOURCE_FILES
++  "src/imgui/*.cpp")
 +
 +add_library(${PROJECT_NAME} STATIC ${IMGUI_SOURCE_FILES})
++target_link_libraries(${PROJECT_NAME} PUBLIC glfw)
 +target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC src)
-diff --git a/backends/imgui_impl_allegro5.cpp b/src/imgui/backends/imgui_impl_allegro5.cpp
-similarity index 100%
-rename from backends/imgui_impl_allegro5.cpp
-rename to src/imgui/backends/imgui_impl_allegro5.cpp
-diff --git a/backends/imgui_impl_allegro5.h b/src/imgui/backends/imgui_impl_allegro5.h
-similarity index 100%
-rename from backends/imgui_impl_allegro5.h
-rename to src/imgui/backends/imgui_impl_allegro5.h
-diff --git a/backends/imgui_impl_android.cpp b/src/imgui/backends/imgui_impl_android.cpp
-similarity index 100%
-rename from backends/imgui_impl_android.cpp
-rename to src/imgui/backends/imgui_impl_android.cpp
-diff --git a/backends/imgui_impl_android.h b/src/imgui/backends/imgui_impl_android.h
-similarity index 100%
-rename from backends/imgui_impl_android.h
-rename to src/imgui/backends/imgui_impl_android.h
-diff --git a/backends/imgui_impl_dx10.cpp b/src/imgui/backends/imgui_impl_dx10.cpp
-similarity index 100%
-rename from backends/imgui_impl_dx10.cpp
-rename to src/imgui/backends/imgui_impl_dx10.cpp
-diff --git a/backends/imgui_impl_dx10.h b/src/imgui/backends/imgui_impl_dx10.h
-similarity index 100%
-rename from backends/imgui_impl_dx10.h
-rename to src/imgui/backends/imgui_impl_dx10.h
-diff --git a/backends/imgui_impl_dx11.cpp b/src/imgui/backends/imgui_impl_dx11.cpp
-similarity index 100%
-rename from backends/imgui_impl_dx11.cpp
-rename to src/imgui/backends/imgui_impl_dx11.cpp
-diff --git a/backends/imgui_impl_dx11.h b/src/imgui/backends/imgui_impl_dx11.h
-similarity index 100%
-rename from backends/imgui_impl_dx11.h
-rename to src/imgui/backends/imgui_impl_dx11.h
-diff --git a/backends/imgui_impl_dx12.cpp b/src/imgui/backends/imgui_impl_dx12.cpp
-similarity index 100%
-rename from backends/imgui_impl_dx12.cpp
-rename to src/imgui/backends/imgui_impl_dx12.cpp
-diff --git a/backends/imgui_impl_dx12.h b/src/imgui/backends/imgui_impl_dx12.h
-similarity index 100%
-rename from backends/imgui_impl_dx12.h
-rename to src/imgui/backends/imgui_impl_dx12.h
-diff --git a/backends/imgui_impl_dx9.cpp b/src/imgui/backends/imgui_impl_dx9.cpp
-similarity index 100%
-rename from backends/imgui_impl_dx9.cpp
-rename to src/imgui/backends/imgui_impl_dx9.cpp
-diff --git a/backends/imgui_impl_dx9.h b/src/imgui/backends/imgui_impl_dx9.h
-similarity index 100%
-rename from backends/imgui_impl_dx9.h
-rename to src/imgui/backends/imgui_impl_dx9.h
-diff --git a/backends/imgui_impl_glfw.cpp b/src/imgui/backends/imgui_impl_glfw.cpp
-similarity index 100%
-rename from backends/imgui_impl_glfw.cpp
-rename to src/imgui/backends/imgui_impl_glfw.cpp
-diff --git a/backends/imgui_impl_glfw.h b/src/imgui/backends/imgui_impl_glfw.h
-similarity index 100%
-rename from backends/imgui_impl_glfw.h
-rename to src/imgui/backends/imgui_impl_glfw.h
-diff --git a/backends/imgui_impl_glut.cpp b/src/imgui/backends/imgui_impl_glut.cpp
-similarity index 100%
-rename from backends/imgui_impl_glut.cpp
-rename to src/imgui/backends/imgui_impl_glut.cpp
-diff --git a/backends/imgui_impl_glut.h b/src/imgui/backends/imgui_impl_glut.h
-similarity index 100%
-rename from backends/imgui_impl_glut.h
-rename to src/imgui/backends/imgui_impl_glut.h
-diff --git a/backends/imgui_impl_metal.h b/src/imgui/backends/imgui_impl_metal.h
-similarity index 100%
-rename from backends/imgui_impl_metal.h
-rename to src/imgui/backends/imgui_impl_metal.h
-diff --git a/backends/imgui_impl_metal.mm b/src/imgui/backends/imgui_impl_metal.mm
-similarity index 100%
-rename from backends/imgui_impl_metal.mm
-rename to src/imgui/backends/imgui_impl_metal.mm
-diff --git a/backends/imgui_impl_opengl2.cpp b/src/imgui/backends/imgui_impl_opengl2.cpp
-similarity index 100%
-rename from backends/imgui_impl_opengl2.cpp
-rename to src/imgui/backends/imgui_impl_opengl2.cpp
-diff --git a/backends/imgui_impl_opengl2.h b/src/imgui/backends/imgui_impl_opengl2.h
-similarity index 100%
-rename from backends/imgui_impl_opengl2.h
-rename to src/imgui/backends/imgui_impl_opengl2.h
-diff --git a/backends/imgui_impl_opengl3.cpp b/src/imgui/backends/imgui_impl_opengl3.cpp
-similarity index 100%
-rename from backends/imgui_impl_opengl3.cpp
-rename to src/imgui/backends/imgui_impl_opengl3.cpp
-diff --git a/backends/imgui_impl_opengl3.h b/src/imgui/backends/imgui_impl_opengl3.h
-similarity index 100%
-rename from backends/imgui_impl_opengl3.h
-rename to src/imgui/backends/imgui_impl_opengl3.h
-diff --git a/backends/imgui_impl_opengl3_loader.h b/src/imgui/backends/imgui_impl_opengl3_loader.h
-similarity index 100%
-rename from backends/imgui_impl_opengl3_loader.h
-rename to src/imgui/backends/imgui_impl_opengl3_loader.h
-diff --git a/backends/imgui_impl_osx.h b/src/imgui/backends/imgui_impl_osx.h
-similarity index 100%
-rename from backends/imgui_impl_osx.h
-rename to src/imgui/backends/imgui_impl_osx.h
-diff --git a/backends/imgui_impl_osx.mm b/src/imgui/backends/imgui_impl_osx.mm
-similarity index 100%
-rename from backends/imgui_impl_osx.mm
-rename to src/imgui/backends/imgui_impl_osx.mm
-diff --git a/backends/imgui_impl_sdl2.cpp b/src/imgui/backends/imgui_impl_sdl2.cpp
-similarity index 100%
-rename from backends/imgui_impl_sdl2.cpp
-rename to src/imgui/backends/imgui_impl_sdl2.cpp
-diff --git a/backends/imgui_impl_sdl2.h b/src/imgui/backends/imgui_impl_sdl2.h
-similarity index 100%
-rename from backends/imgui_impl_sdl2.h
-rename to src/imgui/backends/imgui_impl_sdl2.h
-diff --git a/backends/imgui_impl_sdl3.cpp b/src/imgui/backends/imgui_impl_sdl3.cpp
-similarity index 100%
-rename from backends/imgui_impl_sdl3.cpp
-rename to src/imgui/backends/imgui_impl_sdl3.cpp
-diff --git a/backends/imgui_impl_sdl3.h b/src/imgui/backends/imgui_impl_sdl3.h
-similarity index 100%
-rename from backends/imgui_impl_sdl3.h
-rename to src/imgui/backends/imgui_impl_sdl3.h
-diff --git a/backends/imgui_impl_sdlrenderer2.cpp b/src/imgui/backends/imgui_impl_sdlrenderer2.cpp
-similarity index 100%
-rename from backends/imgui_impl_sdlrenderer2.cpp
-rename to src/imgui/backends/imgui_impl_sdlrenderer2.cpp
-diff --git a/backends/imgui_impl_sdlrenderer2.h b/src/imgui/backends/imgui_impl_sdlrenderer2.h
-similarity index 100%
-rename from backends/imgui_impl_sdlrenderer2.h
-rename to src/imgui/backends/imgui_impl_sdlrenderer2.h
-diff --git a/backends/imgui_impl_sdlrenderer3.cpp b/src/imgui/backends/imgui_impl_sdlrenderer3.cpp
-similarity index 100%
-rename from backends/imgui_impl_sdlrenderer3.cpp
-rename to src/imgui/backends/imgui_impl_sdlrenderer3.cpp
-diff --git a/backends/imgui_impl_sdlrenderer3.h b/src/imgui/backends/imgui_impl_sdlrenderer3.h
-similarity index 100%
-rename from backends/imgui_impl_sdlrenderer3.h
-rename to src/imgui/backends/imgui_impl_sdlrenderer3.h
-diff --git a/backends/imgui_impl_vulkan.cpp b/src/imgui/backends/imgui_impl_vulkan.cpp
-similarity index 100%
-rename from backends/imgui_impl_vulkan.cpp
-rename to src/imgui/backends/imgui_impl_vulkan.cpp
-diff --git a/backends/imgui_impl_vulkan.h b/src/imgui/backends/imgui_impl_vulkan.h
-similarity index 100%
-rename from backends/imgui_impl_vulkan.h
-rename to src/imgui/backends/imgui_impl_vulkan.h
-diff --git a/backends/imgui_impl_wgpu.cpp b/src/imgui/backends/imgui_impl_wgpu.cpp
-similarity index 100%
-rename from backends/imgui_impl_wgpu.cpp
-rename to src/imgui/backends/imgui_impl_wgpu.cpp
-diff --git a/backends/imgui_impl_wgpu.h b/src/imgui/backends/imgui_impl_wgpu.h
-similarity index 100%
-rename from backends/imgui_impl_wgpu.h
-rename to src/imgui/backends/imgui_impl_wgpu.h
-diff --git a/backends/imgui_impl_win32.cpp b/src/imgui/backends/imgui_impl_win32.cpp
-similarity index 100%
-rename from backends/imgui_impl_win32.cpp
-rename to src/imgui/backends/imgui_impl_win32.cpp
-diff --git a/backends/imgui_impl_win32.h b/src/imgui/backends/imgui_impl_win32.h
-similarity index 100%
-rename from backends/imgui_impl_win32.h
-rename to src/imgui/backends/imgui_impl_win32.h
-diff --git a/backends/vulkan/generate_spv.sh b/src/imgui/backends/vulkan/generate_spv.sh
-similarity index 100%
-rename from backends/vulkan/generate_spv.sh
-rename to src/imgui/backends/vulkan/generate_spv.sh
-diff --git a/backends/vulkan/glsl_shader.frag b/src/imgui/backends/vulkan/glsl_shader.frag
-similarity index 100%
-rename from backends/vulkan/glsl_shader.frag
-rename to src/imgui/backends/vulkan/glsl_shader.frag
-diff --git a/backends/vulkan/glsl_shader.vert b/src/imgui/backends/vulkan/glsl_shader.vert
-similarity index 100%
-rename from backends/vulkan/glsl_shader.vert
-rename to src/imgui/backends/vulkan/glsl_shader.vert
 diff --git a/imconfig.h b/src/imgui/imconfig.h
 similarity index 100%
 rename from imconfig.h
@@ -213,6 +38,26 @@ diff --git a/imgui_draw.cpp b/src/imgui/imgui_draw.cpp
 similarity index 100%
 rename from imgui_draw.cpp
 rename to src/imgui/imgui_draw.cpp
+diff --git a/backends/imgui_impl_glfw.cpp b/src/imgui/imgui_impl_glfw.cpp
+similarity index 100%
+rename from backends/imgui_impl_glfw.cpp
+rename to src/imgui/imgui_impl_glfw.cpp
+diff --git a/backends/imgui_impl_glfw.h b/src/imgui/imgui_impl_glfw.h
+similarity index 100%
+rename from backends/imgui_impl_glfw.h
+rename to src/imgui/imgui_impl_glfw.h
+diff --git a/backends/imgui_impl_opengl3.cpp b/src/imgui/imgui_impl_opengl3.cpp
+similarity index 100%
+rename from backends/imgui_impl_opengl3.cpp
+rename to src/imgui/imgui_impl_opengl3.cpp
+diff --git a/backends/imgui_impl_opengl3.h b/src/imgui/imgui_impl_opengl3.h
+similarity index 100%
+rename from backends/imgui_impl_opengl3.h
+rename to src/imgui/imgui_impl_opengl3.h
+diff --git a/backends/imgui_impl_opengl3_loader.h b/src/imgui/imgui_impl_opengl3_loader.h
+similarity index 100%
+rename from backends/imgui_impl_opengl3_loader.h
+rename to src/imgui/imgui_impl_opengl3_loader.h
 diff --git a/imgui_internal.h b/src/imgui/imgui_internal.h
 similarity index 100%
 rename from imgui_internal.h
@@ -237,3 +82,15 @@ diff --git a/imstb_truetype.h b/src/imgui/imstb_truetype.h
 similarity index 100%
 rename from imstb_truetype.h
 rename to src/imgui/imstb_truetype.h
+diff --git a/backends/vulkan/generate_spv.sh b/src/imgui/vulkan/generate_spv.sh
+similarity index 100%
+rename from backends/vulkan/generate_spv.sh
+rename to src/imgui/vulkan/generate_spv.sh
+diff --git a/backends/vulkan/glsl_shader.frag b/src/imgui/vulkan/glsl_shader.frag
+similarity index 100%
+rename from backends/vulkan/glsl_shader.frag
+rename to src/imgui/vulkan/glsl_shader.frag
+diff --git a/backends/vulkan/glsl_shader.vert b/src/imgui/vulkan/glsl_shader.vert
+similarity index 100%
+rename from backends/vulkan/glsl_shader.vert
+rename to src/imgui/vulkan/glsl_shader.vert

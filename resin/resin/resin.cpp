@@ -1,3 +1,7 @@
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_glfw.h>
+#include <imgui/imgui_impl_opengl3.h>
+
 #include <chrono>
 #include <cstdint>
 #include <filesystem>
@@ -122,8 +126,16 @@ void Resin::update(duration_t delta) {
 }
 
 void Resin::render() {
+  ImGui_ImplOpenGL3_NewFrame();
+  ImGui_ImplGlfw_NewFrame();
+  ImGui::NewFrame();
+
   glClearColor(0.1F, 0.1F, 0.1F, 1.F);
   glClear(GL_COLOR_BUFFER_BIT);
+
+  ImGui::ShowDemoWindow();
+
+  ImGui::Render();
 
   {
     glBindVertexArray(vertex_array_);
@@ -131,6 +143,8 @@ void Resin::render() {
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
     shader_->unbind();
   }
+
+  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
   window_->on_update();
 }
