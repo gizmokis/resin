@@ -18,9 +18,6 @@ class PrimitiveNode : public SDFTreeNode {
   ~PrimitiveNode() override = default;
 
  protected:
-  Transform transform_;
-
- protected:
   inline std::string get_function_call_code(sdf_shader_consts::SDFShaderPrim primitive,
                                             sdf_shader_consts::SDFShaderComponents component,
                                             size_t component_id) const {
@@ -28,7 +25,7 @@ class PrimitiveNode : public SDFTreeNode {
         "{}({}[{}]*{}, {}[{}])", sdf_shader_consts::kSDFShaderPrimFunctionNames.get_name(primitive),
         sdf_shader_consts::kSDFShaderComponentArrayNames.get_name(
             sdf_shader_consts::SDFShaderComponents::Transforms),                                              //
-        transform_id_.get_raw(),                                                                              //
+        transform_id_.raw(),                                                                                  //
         sdf_shader_consts::kSDFShaderVariableNames.get_name(sdf_shader_consts::SDFShaderVariable::Position),  //
         sdf_shader_consts::kSDFShaderComponentArrayNames.get_name(component),                                 //
         component_id                                                                                          //
@@ -43,19 +40,18 @@ class SphereNode : public PrimitiveNode {
 
   inline std::string gen_shader_code() const override {
     return get_function_call_code(sdf_shader_consts::SDFShaderPrim::Sphere,
-                                  sdf_shader_consts::SDFShaderComponents::Spheres, sphere_id_.get_raw());
+                                  sdf_shader_consts::SDFShaderComponents::Spheres, sphere_id_.raw());
   }
 
-  inline TypedId<SphereNode> get_component_id() const { return sphere_id_; }
+  inline IdView<SphereNode> get_component_id() const { return sphere_id_.view(); }
 
-  explicit SphereNode(float radius = 1.F)
-      : radius(radius), sphere_id_(IdRegistry<SphereNode>::get_instance().register_id()) {}
+  explicit SphereNode(float radius = 1.F) : radius(radius) {}
 
  public:
   float radius;
 
  private:
-  TypedId<SphereNode> sphere_id_;
+  Id<SphereNode> sphere_id_;
 };
 
 class CubeNode : public PrimitiveNode {
@@ -65,18 +61,18 @@ class CubeNode : public PrimitiveNode {
 
   inline std::string gen_shader_code() const override {
     return get_function_call_code(sdf_shader_consts::SDFShaderPrim::Cube, sdf_shader_consts::SDFShaderComponents::Cubes,
-                                  cube_id_.get_raw());
+                                  cube_id_.raw());
   }
 
-  explicit CubeNode(float size = 1.F) : size(size), cube_id_(IdRegistry<CubeNode>::get_instance().register_id()) {}
+  explicit CubeNode(float size = 1.F) : size(size) {}
 
-  inline TypedId<CubeNode> get_component_id() const { return cube_id_; }
+  inline IdView<CubeNode> get_component_id() const { return cube_id_.view(); }
 
  public:
   float size;
 
  private:
-  TypedId<CubeNode> cube_id_;
+  Id<CubeNode> cube_id_;
 };
 
 }  // namespace resin

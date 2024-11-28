@@ -11,26 +11,9 @@
 namespace resin {
 
 template <typename Obj>
-class IdRegistry;
-
-template <typename Obj>
-struct TypedId {
-  bool operator==(const TypedId<Obj>& other) const { return raw_id_ == other.raw_id_; }
-  bool operator!=(const TypedId<Obj>& other) const { return raw_id_ != other.raw_id_; }
-
-  inline size_t get_raw() const { return raw_id_; }
-
- private:
-  friend IdRegistry<Obj>;
-
-  explicit TypedId(size_t value) : raw_id_(value) {}
-  size_t raw_id_;
-};
-
-template <typename Obj>
 class IdRegistry {
  public:
-  static const size_t kMaxObjects = 8000;
+  static const size_t kMaxObjects = 10000;
 
   static IdRegistry<Obj>& get_instance() {
     // thread-safe according to
@@ -39,7 +22,7 @@ class IdRegistry {
     return instance;
   }
 
-  TypedId<Obj> register_id() {
+  size_t register_id() {
     mutex_.lock();
 
     if (freed_.empty()) {
@@ -50,29 +33,29 @@ class IdRegistry {
     freed_.pop();
     is_registered_[new_id] = true;
 
-    return TypedId<Obj>(new_id);
+    return new_id;
   }
 
-  bool is_registered(TypedId<Obj> id) {
+  bool is_registered(size_t id) {
     mutex_.lock();
 
-    if (id.get_raw() >= kMaxObjects) {
+    if (id >= kMaxObjects) {
       return false;
     }
 
-    return is_registered_[id.get_raw()];
+    return is_registered_[id];
   }
 
-  void unregister_id(TypedId<Obj> id) {
+  void unregister_id(size_t id) {
     mutex_.lock();
 
-    if (id.get_raw() >= kMaxObjects) {
-      Logger::warn("Detected an attempt to unregister a non-existent id [{}].", id.get_raw());
+    if (id >= kMaxObjects) {
+      Logger::warn("Detected an attempt to unregister a non-existent id [{}].", id);
       return;
     }
 
-    is_registered_[id.get_raw()] = false;
-    freed_.push(id.get_raw());
+    is_registered_[id] = false;
+    freed_.push(id);
   }
 
   IdRegistry(const IdRegistry&)            = delete;
@@ -80,7 +63,7 @@ class IdRegistry {
 
  private:
   IdRegistry() {
-    for (size_t i = kMaxObjects - 1; i >= 0; --i) {
+    for (size_t i = kMaxObjects; i-- > 0;) {
       freed_.push(i);
     }
     std::fill(is_registered_.begin(), is_registered_.end(), false);
@@ -89,6 +72,51 @@ class IdRegistry {
   std::stack<size_t> freed_;
   std::array<bool, kMaxObjects> is_registered_{};
   std::mutex mutex_;
+};
+
+template <typename Obj>
+struct IdView;
+
+template <typename Obj>
+struct Id {
+ public:
+  Id() : raw_id_(resin::IdRegistry<Obj>::get_instance().register_id()) {}
+  ~Id() { resin::IdRegistry<Obj>::get_instance().unregister_id(raw_id_); }
+
+  Id(const Id<Obj>& other)                 = delete;
+  Id<Obj>& operator=(const Id<Obj>& other) = delete;
+
+  bool operator==(const Id<Obj>& other) const { return raw_id_ == other.raw_id_; }
+  bool operator!=(const Id<Obj>& other) const { return raw_id_ != other.raw_id_; }
+
+  bool operator==(const IdView<Obj>& other) const { return raw_id_ == other.raw_id_; }
+  bool operator!=(const IdView<Obj>& other) const { return raw_id_ != other.raw_id_; }
+
+  inline size_t raw() const { return raw_id_; }
+
+  inline IdView<Obj> view() const { return IdView(*this); }
+
+ private:
+  size_t raw_id_;
+};
+
+template <typename Obj>
+struct IdView {
+  IdView() = delete;
+
+  explicit IdView(const Id<Obj> id) : raw_id_(id.raw_id_) {}
+
+  bool operator==(const IdView<Obj>& other) const { return raw_id_ == other.raw_id_; }
+  bool operator!=(const IdView<Obj>& other) const { return raw_id_ != other.raw_id_; }
+
+  bool operator==(const Id<Obj>& other) const { return raw_id_ == other.raw_id_; }
+  bool operator!=(const Id<Obj>& other) const { return raw_id_ != other.raw_id_; }
+
+  inline size_t raw() const { return raw_id_; }
+  inline bool expired() const { return resin::IdRegistry<Obj>::get_instance().is_registered(raw_id_); }
+
+ private:
+  size_t raw_id_;
 };
 
 }  // namespace resin

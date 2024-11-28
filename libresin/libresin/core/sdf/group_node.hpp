@@ -14,23 +14,35 @@ class GroupNode : public SDFTreeNode {
  public:
   std::string gen_shader_code() const override;
 
+  GroupNode();
   ~GroupNode() override = default;
 
-  void push_node(SDFBinaryOperation op, std::weak_ptr<const SDFTreeNode> node);
+  inline void push_node(SDFBinaryOperation op, std::unique_ptr<SDFTreeNode> node) {
+    nodes_.emplace_back(op, std::move(node));
+  }
+  template <SDFTreeNodeConcept Node>
+  inline void push_node(SDFBinaryOperation op) {
+    nodes_.emplace_back(op, std::make_unique<Node>());
+  }
 
-  void set_op(int node_id, SDFBinaryOperation op);
-  void set_obj(int node_id, std::weak_ptr<const SDFTreeNode>);
-  void reorder(std::vector<int> id_order);
-  void remove_node(int node_id);
+  inline void set_op(size_t node_id, SDFBinaryOperation op) { nodes_[node_id].first = op; }
+  inline void set_node(size_t node_id, std::unique_ptr<SDFTreeNode> new_node) {
+    nodes_[node_id].second = std::move(new_node);
+  }
 
   inline void accept_visitor(IMutableSDFTreeNodeVisitor& visitor) override { visitor.visit_group(*this); }
   inline void accept_visitor(IImmutableSDFTreeNodeVisitor& visitor) override { visitor.visit_group(*this); }
 
- private:
-  void remove_expired() const;
+  auto begin() { return nodes_.begin(); }
+  auto end() { return nodes_.end(); }
+  auto begin() const { return nodes_.begin(); }
+  auto end() const { return nodes_.end(); }
+
+  inline std::string_view get_name() const { return name_; }
 
  private:
-  mutable std::vector<std::pair<SDFBinaryOperation, std::weak_ptr<const SDFTreeNode>>> nodes_;
+  mutable std::vector<std::pair<SDFBinaryOperation, std::unique_ptr<SDFTreeNode>>> nodes_;
+  std::string name_;
 };
 
 }  // namespace resin
