@@ -10,12 +10,10 @@ namespace resin {
 
 class PrimitiveNode : public SDFTreeNode {
  public:
-  std::string gen_shader_code() const override = 0;
+  void accept_visitor(IMutableSDFTreeNodeVisitor& visitor) override { visitor.visit_primitive(*this); }
+  void accept_visitor(IImmutableSDFTreeNodeVisitor& visitor) override { visitor.visit_primitive(*this); }
 
-  void accept_visitor(IMutableSDFTreeNodeVisitor& visitor) override   = 0;
-  void accept_visitor(IImmutableSDFTreeNodeVisitor& visitor) override = 0;
-
-  ~PrimitiveNode() override = default;
+  virtual ~PrimitiveNode() = default;
 
  protected:
   inline std::string get_function_call_code(sdf_shader_consts::SDFShaderPrim primitive,
@@ -35,36 +33,59 @@ class PrimitiveNode : public SDFTreeNode {
 
 class SphereNode : public PrimitiveNode {
  public:
-  inline void accept_visitor(IMutableSDFTreeNodeVisitor& visitor) override { visitor.visit_sphere(*this); }
-  inline void accept_visitor(IImmutableSDFTreeNodeVisitor& visitor) override { visitor.visit_sphere(*this); }
+  inline void accept_visitor(IMutableSDFTreeNodeVisitor& visitor) override {
+    PrimitiveNode::accept_visitor(visitor);
+    visitor.visit_sphere(*this);
+  }
+
+  inline void accept_visitor(IImmutableSDFTreeNodeVisitor& visitor) override {
+    PrimitiveNode::accept_visitor(visitor);
+    visitor.visit_sphere(*this);
+  }
 
   inline std::string gen_shader_code() const override {
     return get_function_call_code(sdf_shader_consts::SDFShaderPrim::Sphere,
                                   sdf_shader_consts::SDFShaderComponents::Spheres, sphere_id_.raw());
   }
 
+  std::string_view name() const override { return name_; }
+  void rename(std::string&& name) override { name_ = std::move(name); }
+
+  virtual ~SphereNode() = default;
+
   inline IdView<SphereNode> component_id() const { return sphere_id_.view(); }
 
-  explicit SphereNode(float radius = 1.F) : radius(radius) {}
+  explicit SphereNode(float _radius = 1.F) : radius(_radius) {}
 
  public:
   float radius;
 
  private:
   Id<SphereNode> sphere_id_;
+  std::string name_;
 };
 
 class CubeNode : public PrimitiveNode {
  public:
-  inline void accept_visitor(IMutableSDFTreeNodeVisitor& visitor) override { visitor.visit_cube(*this); }
-  inline void accept_visitor(IImmutableSDFTreeNodeVisitor& visitor) override { visitor.visit_cube(*this); }
+  inline void accept_visitor(IMutableSDFTreeNodeVisitor& visitor) override {
+    PrimitiveNode::accept_visitor(visitor);
+    visitor.visit_cube(*this);
+  }
+  inline void accept_visitor(IImmutableSDFTreeNodeVisitor& visitor) override {
+    PrimitiveNode::accept_visitor(visitor);
+    visitor.visit_cube(*this);
+  }
 
   inline std::string gen_shader_code() const override {
     return get_function_call_code(sdf_shader_consts::SDFShaderPrim::Cube, sdf_shader_consts::SDFShaderComponents::Cubes,
                                   cube_id_.raw());
   }
 
-  explicit CubeNode(float size = 1.F) : size(size) {}
+  std::string_view name() const override { return name_; }
+  void rename(std::string&& name) override { name_ = std::move(name); }
+
+  virtual ~CubeNode() = default;
+  explicit CubeNode(float _size = 1.F) : size(_size), name_(std::format("Cube {}", cube_id_.raw())) {}
 
   inline IdView<CubeNode> component_id() const { return cube_id_.view(); }
 
@@ -73,6 +94,7 @@ class CubeNode : public PrimitiveNode {
 
  private:
   Id<CubeNode> cube_id_;
+  std::string name_;
 };
 
 }  // namespace resin

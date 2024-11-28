@@ -1,30 +1,32 @@
 #ifndef RESIN_SDF_TREE_NODE_HPP
 #define RESIN_SDF_TREE_NODE_HPP
+#include <libresin/core/id_registry.hpp>
+#include <libresin/core/transform.hpp>
 #include <string>
-
-#include "libresin/core/id_registry.hpp"
-#include "libresin/core/transform.hpp"
 
 namespace resin {
 
 class SphereNode;
 class CubeNode;
 class GroupNode;
+class PrimitiveNode;
 
 class IMutableSDFTreeNodeVisitor {
  public:
-  void virtual visit_sphere(SphereNode& node) = 0;
-  void virtual visit_cube(CubeNode& node)     = 0;
-  void virtual visit_group(GroupNode& node)   = 0;
+  void virtual visit_sphere(SphereNode&)       = 0;
+  void virtual visit_cube(CubeNode&)           = 0;
+  void virtual visit_group(GroupNode&)         = 0;
+  void virtual visit_primitive(PrimitiveNode&) = 0;
 
   virtual ~IMutableSDFTreeNodeVisitor() = default;
 };
 
 class IImmutableSDFTreeNodeVisitor {
  public:
-  void virtual visit_sphere(const SphereNode& node) = 0;
-  void virtual visit_cube(const CubeNode& node)     = 0;
-  void virtual visit_group(const GroupNode& node)   = 0;
+  void virtual visit_sphere(const SphereNode&)       = 0;
+  void virtual visit_cube(const CubeNode&)           = 0;
+  void virtual visit_group(const GroupNode&)         = 0;
+  void virtual visit_primitive(const PrimitiveNode&) = 0;
 
   virtual ~IImmutableSDFTreeNodeVisitor() = default;
 };
@@ -34,6 +36,8 @@ class SDFTreeNode {
   virtual std::string gen_shader_code() const                        = 0;
   virtual void accept_visitor(IMutableSDFTreeNodeVisitor& visitor)   = 0;
   virtual void accept_visitor(IImmutableSDFTreeNodeVisitor& visitor) = 0;
+  virtual std::string_view name() const                              = 0;
+  virtual void rename(std::string&&)                                 = 0;
 
   virtual ~SDFTreeNode() = default;
 

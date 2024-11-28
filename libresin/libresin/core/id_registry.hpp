@@ -23,7 +23,7 @@ class IdRegistry {
   }
 
   size_t register_id() {
-    mutex_.lock();
+    const std::lock_guard lock(mutex_);
 
     if (freed_.empty()) {
       log_throw(ObjectsOverflowException());
@@ -37,7 +37,7 @@ class IdRegistry {
   }
 
   bool is_registered(size_t id) {
-    mutex_.lock();
+    const std::lock_guard lock(mutex_);
 
     if (id >= kMaxObjects) {
       return false;
@@ -47,7 +47,7 @@ class IdRegistry {
   }
 
   void unregister_id(size_t id) {
-    mutex_.lock();
+    const std::lock_guard lock(mutex_);
 
     if (id >= kMaxObjects) {
       Logger::warn("Detected an attempt to unregister a non-existent id [{}].", id);
@@ -93,6 +93,7 @@ struct Id {
   bool operator!=(const IdView<Obj>& other) const { return raw_id_ != other.raw_id_; }
 
   inline size_t raw() const { return raw_id_; }
+  inline int raw_as_int() const { return static_cast<int>(raw_id_); }
 
   inline IdView<Obj> view() const { return IdView(*this); }
 
@@ -104,7 +105,7 @@ template <typename Obj>
 struct IdView {
   IdView() = delete;
 
-  explicit IdView(const Id<Obj> id) : raw_id_(id.raw_id_) {}
+  explicit IdView(const Id<Obj>& id) : raw_id_(id.raw()) {}
 
   bool operator==(const IdView<Obj>& other) const { return raw_id_ == other.raw_id_; }
   bool operator!=(const IdView<Obj>& other) const { return raw_id_ != other.raw_id_; }
@@ -113,6 +114,7 @@ struct IdView {
   bool operator!=(const Id<Obj>& other) const { return raw_id_ != other.raw_id_; }
 
   inline size_t raw() const { return raw_id_; }
+  inline int raw_as_int() const { return static_cast<int>(raw_id_); }
 
   inline bool expired() const { return resin::IdRegistry<Obj>::instance().is_registered(raw_id_); }
 
