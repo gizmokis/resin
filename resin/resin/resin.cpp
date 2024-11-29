@@ -68,9 +68,9 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof indices, indices, GL_STATIC_DRAW);
 
   // Example tree
-  sdf_tree_.root->push_node<SphereNode>(SDFBinaryOperation::Inter);
-  sdf_tree_.root->push_node<GroupNode>(SDFBinaryOperation::Union);
-  sdf_tree_.root->push_node<CubeNode>(SDFBinaryOperation::Union);
+  // sdf_tree_.root->push_node<SphereNode>(SDFBinaryOperation::Inter);
+  // sdf_tree_.root->push_node<GroupNode>(SDFBinaryOperation::Union);
+  // sdf_tree_.root->push_node<CubeNode>(SDFBinaryOperation::Union);
 }
 
 void Resin::run() {

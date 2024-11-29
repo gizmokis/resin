@@ -9,9 +9,8 @@
 
 namespace resin {
 
-GroupNode::GroupNode(const std::shared_ptr<SDFTreeRegistry>& tree)
-    : SDFTreeNode(tree), name_(std::format("Group {}", node_id_.raw())) {
-  nodes_.emplace_back(SDFBinaryOperation::Union, std::make_unique<SphereNode>(tree));
+GroupNode::GroupNode(SDFTreeRegistry& tree) : SDFTreeNode(tree), name_(std::format("Group {}", node_id_.raw())) {
+  this->push_node<SphereNode>(SDFBinaryOperation::Union);
 }
 
 GroupNode::~GroupNode() {}

@@ -14,7 +14,7 @@ class PrimitiveNode : public SDFTreeNode {
   void accept_visitor(ISDFTreeNodeVisitor& visitor) override { visitor.visit_primitive(*this); }
 
   virtual ~PrimitiveNode() = default;
-  explicit PrimitiveNode(const std::shared_ptr<SDFTreeRegistry>& tree) : SDFTreeNode(tree) {}
+  explicit PrimitiveNode(SDFTreeRegistry& tree) : SDFTreeNode(tree) {}
 
  protected:
   inline std::string get_function_call_code(sdf_shader_consts::SDFShaderPrim primitive,
@@ -54,10 +54,10 @@ class SphereNode : public PrimitiveNode {
 
   inline IdView<SphereNodeId> component_id() const { return sphere_id_; }
 
-  explicit SphereNode(const std::shared_ptr<SDFTreeRegistry>& tree, float _radius = 1.F)
+  SphereNode(SDFTreeRegistry& tree, float _radius = 1.F)
       : PrimitiveNode(tree),
         radius(_radius),
-        sphere_id_(tree->sphere_component_registry_),
+        sphere_id_(tree.sphere_component_registry_),
         name_(std::format("Sphere {}", node_id_.raw())) {}
 
  public:
@@ -87,10 +87,10 @@ class CubeNode : public PrimitiveNode {
   void rename(std::string&& name) override { name_ = std::move(name); }
 
   virtual ~CubeNode() = default;
-  explicit CubeNode(const std::shared_ptr<SDFTreeRegistry>& tree, float _size = 1.F)
+  explicit CubeNode(SDFTreeRegistry& tree, float _size = 1.F)
       : PrimitiveNode(tree),
         size(_size),
-        cube_id_(tree->cube_component_registry_),
+        cube_id_(tree.cube_component_registry_),
         name_(std::format("Cube {}", node_id_.raw())) {}
 
   inline IdView<CubeNodeId> component_id() const { return cube_id_; }
