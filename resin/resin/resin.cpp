@@ -8,8 +8,8 @@
 #include <filesystem>
 #include <format>
 #include <libresin/core/resources/shader_resource.hpp>
-#include <libresin/core/sdf/group_node.hpp>
-#include <libresin/core/sdf/primitive_node.hpp>
+#include <libresin/core/sdf_tree/group_node.hpp>
+#include <libresin/core/sdf_tree/primitive_node.hpp>
 #include <libresin/utils/logger.hpp>
 #include <memory>
 #include <resin/components/sdf_tree.hpp>
@@ -67,9 +67,10 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer_);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof indices, indices, GL_STATIC_DRAW);
 
-  sdf_tree_root_.push_node<resin::SphereNode>(SDFBinaryOperation::Inter);
-  sdf_tree_root_.push_node<resin::GroupNode>(SDFBinaryOperation::Union);
-  sdf_tree_root_.push_node<resin::CubeNode>(SDFBinaryOperation::Union);
+  // Example tree
+  sdf_tree_.root->push_node<SphereNode>(SDFBinaryOperation::Inter);
+  sdf_tree_.root->push_node<GroupNode>(SDFBinaryOperation::Union);
+  sdf_tree_.root->push_node<CubeNode>(SDFBinaryOperation::Union);
 }
 
 void Resin::run() {
@@ -141,7 +142,7 @@ void Resin::render() {
   glClear(GL_COLOR_BUFFER_BIT);
 
   if (::ImGui::Begin("SDF Tree")) {
-    auto selected = resin::ImGui::SDFTree(sdf_tree_root_);
+    auto selected = resin::ImGui::SDFTreeView(sdf_tree_);
     if (selected.has_value()) {
       Logger::info("Selected {}", selected.value());
     }

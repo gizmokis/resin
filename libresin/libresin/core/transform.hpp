@@ -9,7 +9,7 @@
 namespace resin {
 
 struct Transform;
-using TransformId = ComponentId<Transform>;
+using TransformId = Id<Transform>;
 
 struct Transform final {
  public:

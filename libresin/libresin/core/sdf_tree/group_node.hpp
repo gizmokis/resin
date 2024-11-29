@@ -1,7 +1,7 @@
 #ifndef RESIN_GROUP_NODE_HPP
 #define RESIN_GROUP_NODE_HPP
-#include <libresin/core/sdf/sdf_tree_node.hpp>
 #include <libresin/core/sdf_shader_consts.hpp>
+#include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/transform.hpp>
 #include <libresin/utils/logger.hpp>
 #include <memory>
@@ -14,18 +14,17 @@ using SDFBinaryOperation = sdf_shader_consts::SDFShaderBinOp;
 
 class GroupNode : public SDFTreeNode {
  public:
-  GroupNode();
+  explicit GroupNode(const std::shared_ptr<SDFTreeRegistry>& tree);
   virtual ~GroupNode();
 
   std::string gen_shader_code() const override;
 
-  inline void accept_visitor(IMutableSDFTreeNodeVisitor& visitor) override { visitor.visit_group(*this); }
-  inline void accept_visitor(IImmutableSDFTreeNodeVisitor& visitor) override { visitor.visit_group(*this); }
+  inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override { visitor.visit_group(*this); }
 
   template <SDFTreeNodeConcept Node, typename... Args>
-    requires std::constructible_from<Node, Args...>
+    requires std::constructible_from<Node, std::shared_ptr<SDFTreeRegistry>, Args...>
   inline void push_node(SDFBinaryOperation op, Args&&... args) {
-    auto node_ptr = std::make_shared<Node>(std::forward<Args>(args)...);
+    auto node_ptr = std::make_shared<Node>(this->tree_, std::forward<Args>(args)...);
 
     nodes_.emplace_back(op, std::move(node_ptr));
     nodes_.back().second->transform().set_parent(this->transform_);

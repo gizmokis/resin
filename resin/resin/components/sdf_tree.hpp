@@ -3,13 +3,13 @@
 
 #include <imgui/imgui_internal.h>
 
-#include <libresin/core/sdf/group_node.hpp>
-#include <libresin/core/sdf/sdf_tree_node.hpp>
+#include <libresin/core/sdf_tree/group_node.hpp>
+#include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <optional>
 
 namespace resin {
 
-class SDFTreeComponentVisitor : public IMutableSDFTreeNodeVisitor {
+class SDFTreeComponentVisitor : public ISDFTreeNodeVisitor {
  public:
   void visit_sphere(SphereNode&) override {}
   void visit_cube(CubeNode&) override {}
@@ -25,7 +25,7 @@ class SDFTreeComponentVisitor : public IMutableSDFTreeNodeVisitor {
 
 namespace ImGui {  // NOLINT
 
-std::optional<size_t> SDFTree(GroupNode& group_node);
+std::optional<size_t> SDFTreeView(SDFTree& tree);
 
 }
 

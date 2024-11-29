@@ -1,8 +1,7 @@
-#include <format>
-#include <libresin/core/sdf/group_node.hpp>
-#include <libresin/core/sdf/primitive_node.hpp>
-#include <libresin/core/sdf/sdf_tree_node.hpp>
 #include <libresin/core/sdf_shader_consts.hpp>
+#include <libresin/core/sdf_tree/group_node.hpp>
+#include <libresin/core/sdf_tree/primitive_node.hpp>
+#include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/logger.hpp>
 #include <memory>
@@ -10,8 +9,9 @@
 
 namespace resin {
 
-GroupNode::GroupNode() : name_(std::format("Group {}", this->node_id_)) {
-  nodes_.emplace_back(SDFBinaryOperation::Union, std::make_unique<SphereNode>());
+GroupNode::GroupNode(const std::shared_ptr<SDFTreeRegistry>& tree)
+    : SDFTreeNode(tree), name_(std::format("Group {}", node_id_.raw())) {
+  nodes_.emplace_back(SDFBinaryOperation::Union, std::make_unique<SphereNode>(tree));
 }
 
 GroupNode::~GroupNode() {}
