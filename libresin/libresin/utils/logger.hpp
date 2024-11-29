@@ -96,22 +96,22 @@ class Logger {
   };
 
   template <typename... Args>
-  static inline void err(FormatWithLocation fmt_loc, Args&&... args) {
+  static inline void err(FormatWithLocation fmt_loc, const Args&... args) {
     get_instance().log(LogLevel::Err, false, fmt_loc.loc, fmt_loc.value, args...);
   }
 
   template <typename... Args>
-  static inline void warn(FormatWithLocation fmt_loc, Args&&... args) {
+  static inline void warn(FormatWithLocation fmt_loc, const Args&... args) {
     get_instance().log(LogLevel::Warn, false, fmt_loc.loc, fmt_loc.value, args...);
   }
 
   template <typename... Args>
-  static inline void info(FormatWithLocation fmt_loc, Args&&... args) {
+  static inline void info(FormatWithLocation fmt_loc, const Args&... args) {
     get_instance().log(LogLevel::Info, false, fmt_loc.loc, fmt_loc.value, args...);
   }
 
   template <typename... Args>
-  static inline void debug(FormatWithLocation fmt_loc, Args&&... args) {
+  static inline void debug(FormatWithLocation fmt_loc, const Args&... args) {
 #ifndef NDEBUG
     get_instance().log(LogLevel::Info, true, fmt_loc.loc, fmt_loc.value, args...);
 #endif
@@ -119,7 +119,7 @@ class Logger {
 
   template <typename... Args>
   void log(const LogLevel level, const bool debug, const std::source_location& location, const std::string_view fmt,
-           Args&&... args) {
+           const Args&... args) {
     const std::lock_guard lock(mutex_);
     const auto file_path = std::string_view(location.file_name() + file_name_start_pos_);
     const auto now       = std::chrono::system_clock::now();

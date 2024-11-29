@@ -1,17 +1,27 @@
-#ifndef RESIN_SDF_TREE_NODE_HPP
-#define RESIN_SDF_TREE_NODE_HPP
-#include <libresin/core/component_id_registry.hpp>
+#ifndef RESIN_SDF_TREE_HPP
+#define RESIN_SDF_TREE_HPP
+#include <libresin/core/id_registry.hpp>
 #include <libresin/core/transform.hpp>
 #include <memory>
-#include <string>
 
 namespace resin {
 
+class SDFTree;
 class SDFTreeNode;
 class GroupNode;
 class PrimitiveNode;
 class SphereNode;
 class CubeNode;
+
+class ISDFTreeNodeVisitor {
+ public:
+  void virtual visit_sphere(SphereNode&)       = 0;
+  void virtual visit_cube(CubeNode&)           = 0;
+  void virtual visit_group(GroupNode&)         = 0;
+  void virtual visit_primitive(PrimitiveNode&) = 0;
+
+  virtual ~ISDFTreeNodeVisitor() = default;
+};
 
 class SDFTreeRegistry {
  public:
@@ -20,12 +30,12 @@ class SDFTreeRegistry {
       : sphere_component_registry_(std::make_shared<IdRegistry<SphereNode>>(1000)),
         cube_component_registry_(std::make_shared<IdRegistry<CubeNode>>(1000)),
         transform_component_registry_(std::make_shared<IdRegistry<Transform>>(2000)),
-        nodes_registry_(std::make_shared<IdRegistry<SDFTreeNode>>(5000)) {
-    Logger::debug("registry constructor");
-  }
+        nodes_registry_(std::make_shared<IdRegistry<SDFTreeNode>>(5000)) {}
 
  private:
+  friend SDFTree;
   friend SDFTreeNode;
+  friend GroupNode;
   friend SphereNode;
   friend CubeNode;
 
@@ -50,47 +60,6 @@ class SDFTree {
  public:
   std::shared_ptr<GroupNode> root;
 };
-
-class ISDFTreeNodeVisitor {
- public:
-  void virtual visit_sphere(SphereNode&)       = 0;
-  void virtual visit_cube(CubeNode&)           = 0;
-  void virtual visit_group(GroupNode&)         = 0;
-  void virtual visit_primitive(PrimitiveNode&) = 0;
-
-  virtual ~ISDFTreeNodeVisitor() = default;
-};
-
-using SDFTreeNodeId = Id<SDFTreeNode>;
-
-class SDFTreeNode {
- public:
-  virtual std::string gen_shader_code() const               = 0;
-  virtual void accept_visitor(ISDFTreeNodeVisitor& visitor) = 0;
-  virtual std::string_view name() const                     = 0;
-  virtual void rename(std::string&&)                        = 0;
-
-  virtual ~SDFTreeNode() = default;
-
-  SDFTreeNode() = delete;
-  explicit SDFTreeNode(const std::shared_ptr<SDFTreeRegistry>& tree)
-      : node_id_(tree->nodes_registry_), transform_id_(tree->transform_component_registry_), tree_(tree) {}
-
-  inline IdView<SDFTreeNodeId> node_id() const { return node_id_; }
-  inline IdView<TransformId> transform_component_id() const { return transform_id_; }
-  inline Transform& transform() { return transform_; }
-
-  // TODO(migoox): add material component
-
- protected:
-  SDFTreeNodeId node_id_;
-  TransformId transform_id_;
-  Transform transform_;
-  std::shared_ptr<SDFTreeRegistry> tree_;
-};
-
-template <typename T>
-concept SDFTreeNodeConcept = std::is_base_of_v<SDFTreeNode, T>;
 
 }  // namespace resin
 

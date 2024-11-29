@@ -3,7 +3,7 @@
 #include <functional>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/vec3.hpp>
-#include <libresin/core/component_id_registry.hpp>
+#include <libresin/core/id_registry.hpp>
 #include <optional>
 
 namespace resin {
