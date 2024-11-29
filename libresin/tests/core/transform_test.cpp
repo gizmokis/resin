@@ -69,9 +69,9 @@ TEST_F(TransformTest, DefaultMatricesAreIdentity) {
 TEST_F(TransformTest, MatricesAreCalculatedProperly) {
   // given
   // calculated on paper
-  const glm::mat4 parent_expected(glm::vec4(0, 0, -1, 0), glm::vec4(0, 2, 0, 0), glm::vec4(3, 0, 0, 0),
+  const glm::mat4 parent_expected(glm::vec4(0, 0, -2, 0), glm::vec4(0, 2, 0, 0), glm::vec4(2, 0, 0, 0),
                                   glm::vec4(1, 2, 3, 1));
-  const glm::mat4 expected(glm::vec4(0, 0, -1, 0), glm::vec4(3, 0, 0, 0), glm::vec4(0, -2, 0, 0),
+  const glm::mat4 expected(glm::vec4(0, 0, -2, 0), glm::vec4(2, 0, 0, 0), glm::vec4(0, -2, 0, 0),
                            glm::vec4(1, 2, 3, 1));
 
   // when
@@ -133,8 +133,8 @@ TEST_F(TransformTest, PosIsTransformedProperly) {
   // initial:    (1, 1, 1)
   // scaled:     (2, 2, 2)
   // rotated:    (2, 2,-2)
-  // translated: (2, 4, 1)
-  glm::vec3 expected(2, 4, 1);
+  // translated: (3, 4, 1)
+  glm::vec3 expected(3, 4, 1);
 
   // when
   transform_.set_local_pos(position);
@@ -156,4 +156,16 @@ TEST_F(TransformTest, RotIsTransformedProperly) {
 
   // then
   EXPECT_GLM_ROT_NEAR(expected, transform_.rot(), 1e-5F);
+}
+
+TEST_F(TransformTest, ScaleIsTransformedProperly) {
+  // given
+  const float scale    = 3;
+  const float expected = 6;
+
+  // when
+  transform_.set_local_scale(scale);
+
+  // then
+  EXPECT_NEAR(expected, transform_.scale(), 1e-5F);
 }
