@@ -5,11 +5,41 @@
 #include <string>
 
 namespace resin {
+class IMutableSDFTreeNodeVisitor;
+class IImmutableSDFTreeNodeVisitor;
 
-class SphereNode;
-class CubeNode;
+class SDFTreeNode;
+using SDFTreeNodeId = Id<SDFTreeNode, 10000>;  // NOLINT
+
+class SDFTreeNode {
+ public:
+  virtual std::string gen_shader_code() const                        = 0;
+  virtual void accept_visitor(IMutableSDFTreeNodeVisitor& visitor)   = 0;
+  virtual void accept_visitor(IImmutableSDFTreeNodeVisitor& visitor) = 0;
+  virtual std::string_view name() const                              = 0;
+  virtual void rename(std::string&&)                                 = 0;
+
+  virtual ~SDFTreeNode() = default;
+
+  inline IdView<SDFTreeNodeId> node_id() const { return IdView<SDFTreeNodeId>(node_id_); }
+  inline IdView<TransformId> transform_id() const { return IdView<TransformId>(transform_id_); }
+  inline Transform& transform() { return transform_; }
+
+  // TODO(migoox): add material
+
+ protected:
+  SDFTreeNodeId node_id_;
+  TransformId transform_id_;
+  Transform transform_;
+};
+
+template <typename T>
+concept SDFTreeNodeConcept = std::is_base_of_v<SDFTreeNode, T>;
+
 class GroupNode;
 class PrimitiveNode;
+class SphereNode;
+class CubeNode;
 
 class IMutableSDFTreeNodeVisitor {
  public:
@@ -30,32 +60,6 @@ class IImmutableSDFTreeNodeVisitor {
 
   virtual ~IImmutableSDFTreeNodeVisitor() = default;
 };
-
-class SDFTreeNode {
- public:
-  virtual std::string gen_shader_code() const                        = 0;
-  virtual void accept_visitor(IMutableSDFTreeNodeVisitor& visitor)   = 0;
-  virtual void accept_visitor(IImmutableSDFTreeNodeVisitor& visitor) = 0;
-  virtual std::string_view name() const                              = 0;
-  virtual void rename(std::string&&)                                 = 0;
-
-  virtual ~SDFTreeNode() = default;
-
-  inline IdView<SDFTreeNode> node_id() const { return node_id_.view(); }
-  inline IdView<Transform> transform_id() const { return transform_id_.view(); }
-  inline Transform& transform() { return transform_; }
-
-  // TODO(migoox): add material
-
- protected:
-  Id<SDFTreeNode> node_id_;
-  Id<Transform> transform_id_;
-  Transform transform_;
-};
-
-template <typename T>
-concept SDFTreeNodeConcept = std::is_base_of_v<SDFTreeNode, T>;
-
 }  // namespace resin
 
 #endif

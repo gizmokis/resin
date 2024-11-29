@@ -31,6 +31,9 @@ class PrimitiveNode : public SDFTreeNode {
   }
 };
 
+class SphereNode;
+using SphereNodeId = Id<SphereNode>;
+
 class SphereNode : public PrimitiveNode {
  public:
   inline void accept_visitor(IMutableSDFTreeNodeVisitor& visitor) override {
@@ -53,7 +56,7 @@ class SphereNode : public PrimitiveNode {
 
   virtual ~SphereNode() = default;
 
-  inline IdView<SphereNode> component_id() const { return sphere_id_.view(); }
+  inline IdView<SphereNodeId> component_id() const { return sphere_id_; }
 
   explicit SphereNode(float _radius = 1.F) : radius(_radius), name_(std::format("Sphere {}", sphere_id_.raw())) {}
 
@@ -61,9 +64,12 @@ class SphereNode : public PrimitiveNode {
   float radius;
 
  private:
-  Id<SphereNode> sphere_id_;
+  SphereNodeId sphere_id_;
   std::string name_;
 };
+
+class CubeNode;
+using CubeNodeId = Id<CubeNode>;
 
 class CubeNode : public PrimitiveNode {
  public:
@@ -87,13 +93,13 @@ class CubeNode : public PrimitiveNode {
   virtual ~CubeNode() = default;
   explicit CubeNode(float _size = 1.F) : size(_size), name_(std::format("Cube {}", cube_id_.raw())) {}
 
-  inline IdView<CubeNode> component_id() const { return cube_id_.view(); }
+  inline IdView<CubeNodeId> component_id() const { return cube_id_; }
 
  public:
   float size;
 
  private:
-  Id<CubeNode> cube_id_;
+  CubeNodeId cube_id_;
   std::string name_;
 };
 

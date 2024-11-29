@@ -18,15 +18,15 @@ class SDFTreeComponentVisitor : public IMutableSDFTreeNodeVisitor {
   void visit_group(GroupNode& node) override;
   void visit_primitive(PrimitiveNode& node) override;
 
-  inline std::optional<IdView<SDFTreeNode>> selected() const { return selected_; }
+  inline std::optional<IdView<SDFTreeNodeId>> selected() const { return selected_; }
 
  private:
-  std::optional<IdView<SDFTreeNode>> selected_ = std::nullopt;
+  std::optional<IdView<SDFTreeNodeId>> selected_ = std::nullopt;
 };
 
 namespace ImGui {  // NOLINT
 
-std::optional<IdView<SDFTreeNode>> SDFTree(GroupNode& group_node);
+std::optional<IdView<SDFTreeNodeId>> SDFTree(GroupNode& group_node);
 
 }
 

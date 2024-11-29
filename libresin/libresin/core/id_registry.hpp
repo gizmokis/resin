@@ -10,15 +10,17 @@
 
 namespace resin {
 
-template <typename Obj>
+const size_t kDefaultMaxObjects = 5000;
+
+template <typename Obj, size_t MaxObjects = kDefaultMaxObjects>
 class IdRegistry {
  public:
-  static const size_t kMaxObjects = 10000;
-
-  static IdRegistry<Obj>& instance() {
+  static IdRegistry<Obj, MaxObjects>& instance() {
     // thread-safe according to
     // https://stackoverflow.com/questions/1661529/is-meyers-implementation-of-the-singleton-pattern-thread-safe
-    static IdRegistry<Obj> instance;
+
+    // maybe some dynamic max objs loading?
+    static IdRegistry<Obj, MaxObjects> instance;
     return instance;
   }
 
@@ -39,7 +41,7 @@ class IdRegistry {
   bool is_registered(size_t id) {
     const std::lock_guard lock(mutex_);
 
-    if (id >= kMaxObjects) {
+    if (id >= MaxObjects) {
       return false;
     }
 
@@ -49,7 +51,7 @@ class IdRegistry {
   void unregister_id(size_t id) {
     const std::lock_guard lock(mutex_);
 
-    if (id >= kMaxObjects) {
+    if (id >= MaxObjects) {
       Logger::warn("Detected an attempt to unregister a non-existent id [{}].", id);
       return;
     }
@@ -63,60 +65,54 @@ class IdRegistry {
 
  private:
   IdRegistry() {
-    for (size_t i = kMaxObjects; i-- > 0;) {
+    for (size_t i = MaxObjects; i-- > 0;) {
       freed_.push(i);
     }
     std::fill(is_registered_.begin(), is_registered_.end(), false);
   }
 
   std::stack<size_t> freed_;
-  std::array<bool, kMaxObjects> is_registered_{};
+  std::array<bool, MaxObjects> is_registered_{};
   std::mutex mutex_;
 };
 
-template <typename Obj>
-struct IdView;
-
-template <typename Obj>
+template <typename Obj, size_t MaxObjects = kDefaultMaxObjects>
 struct Id {
  public:
-  Id() : raw_id_(resin::IdRegistry<Obj>::instance().register_id()) {}
-  ~Id() { resin::IdRegistry<Obj>::instance().unregister_id(raw_id_); }
+  using object_type                   = Obj;
+  static constexpr size_t kMaxObjects = MaxObjects;
 
-  Id(const Id<Obj>& other)                 = delete;
-  Id<Obj>& operator=(const Id<Obj>& other) = delete;
+  Id() : raw_id_(resin::IdRegistry<Obj, MaxObjects>::instance().register_id()) {}
+  ~Id() { resin::IdRegistry<Obj, MaxObjects>::instance().unregister_id(raw_id_); }
 
-  bool operator==(const Id<Obj>& other) const { return raw_id_ == other.raw_id_; }
-  bool operator!=(const Id<Obj>& other) const { return raw_id_ != other.raw_id_; }
+  Id(const Id<Obj, MaxObjects>& other)                             = delete;
+  Id<Obj, MaxObjects>& operator=(const Id<Obj, MaxObjects>& other) = delete;
 
-  bool operator==(const IdView<Obj>& other) const { return raw_id_ == other.raw_id_; }
-  bool operator!=(const IdView<Obj>& other) const { return raw_id_ != other.raw_id_; }
+  bool operator==(const Id<Obj, MaxObjects>& other) const { return raw_id_ == other.raw(); }
+  bool operator!=(const Id<Obj, MaxObjects>& other) const { return raw_id_ != other.raw(); }
 
   inline size_t raw() const { return raw_id_; }
   inline int raw_as_int() const { return static_cast<int>(raw_id_); }
-
-  inline IdView<Obj> view() const { return IdView(*this); }
 
  private:
   size_t raw_id_;
 };
 
-template <typename Obj>
+template <typename IdType>
+  requires std::is_base_of_v<Id<typename IdType::object_type, IdType::kMaxObjects>, IdType>
 struct IdView {
   IdView() = delete;
+  IdView(const IdType& id) : raw_id_(id.raw()) {}  // NOLINT (allow the implicit constructor)
 
-  explicit IdView(const Id<Obj>& id) : raw_id_(id.raw()) {}
-
-  bool operator==(const IdView<Obj>& other) const { return raw_id_ == other.raw_id_; }
-  bool operator!=(const IdView<Obj>& other) const { return raw_id_ != other.raw_id_; }
-
-  bool operator==(const Id<Obj>& other) const { return raw_id_ == other.raw_id_; }
-  bool operator!=(const Id<Obj>& other) const { return raw_id_ != other.raw_id_; }
+  bool operator==(const IdView<IdType>& other) const { return raw_id_ == other.raw(); }
+  bool operator!=(const IdView<IdType>& other) const { return raw_id_ != other.raw(); }
+  bool operator==(const IdType& other) const { return raw_id_ == other.raw(); }
+  bool operator!=(const IdType& other) const { return raw_id_ != other.raw(); }
 
   inline size_t raw() const { return raw_id_; }
   inline int raw_as_int() const { return static_cast<int>(raw_id_); }
 
-  inline bool expired() const { return resin::IdRegistry<Obj>::instance().is_registered(raw_id_); }
+  inline bool expired() const { return !resin::IdRegistry<IdType>::instance().is_registered(raw_id_); }
 
  private:
   size_t raw_id_;

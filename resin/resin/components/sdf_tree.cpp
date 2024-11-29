@@ -34,7 +34,7 @@ void SDFTreeComponentVisitor::visit_primitive(PrimitiveNode& node) {
 
 namespace ImGui {  // NOLINT
 
-std::optional<IdView<SDFTreeNode>> SDFTree(GroupNode& group_node) {
+std::optional<IdView<SDFTreeNodeId>> SDFTree(GroupNode& group_node) {
   SDFTreeComponentVisitor vs;
   group_node.accept_visitor(vs);
 
