@@ -2,12 +2,15 @@
 #define RESIN_SDF_TREE_NODE_HPP
 
 #include <libresin/core/id_registry.hpp>
-#include <libresin/core/sdf_tree/sdf_tree.hpp>
-#include <optional>
+#include <libresin/core/sdf_tree/sdf_tree_node_visitor.hpp>
+#include <libresin/core/transform.hpp>
 #include <string>
 
 namespace resin {
 
+class SDFTreeRegistry;
+
+class SDFTreeNode;
 using SDFTreeNodeId = Id<SDFTreeNode>;
 
 class SDFTreeNode {
@@ -24,15 +27,9 @@ class SDFTreeNode {
   inline Transform& transform() { return transform_; }
 
   // It is a programmer responsibility to assert that SDFTreeNode class will not outlive the provided registry!
-  explicit SDFTreeNode(SDFTreeRegistry& tree)
-      : node_id_(tree.nodes_registry_), transform_id_(tree.transform_component_registry_), tree_registry_(tree) {
-    this->tree_registry_.get().all_nodes_[node_id_.raw()] = *this;
-  }
+  explicit SDFTreeNode(SDFTreeRegistry& tree);
 
-  virtual ~SDFTreeNode() {
-    this->tree_registry_.get().all_nodes_[node_id_.raw()] = std::nullopt;
-    Logger::debug("Destructed node with id={}.", this->node_id_.raw());
-  }
+  virtual ~SDFTreeNode();
 
   // TODO(migoox): add material component
 

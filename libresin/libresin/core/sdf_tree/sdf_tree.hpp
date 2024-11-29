@@ -1,28 +1,12 @@
 #ifndef RESIN_SDF_TREE_HPP
 #define RESIN_SDF_TREE_HPP
 
-#include <functional>
 #include <libresin/core/id_registry.hpp>
+#include <libresin/core/sdf_tree/group_node.hpp>
+#include <libresin/core/sdf_tree/primitive_node.hpp>
 #include <libresin/core/transform.hpp>
 
 namespace resin {
-
-class SDFTree;
-class SDFTreeNode;
-class GroupNode;
-class PrimitiveNode;
-class SphereNode;
-class CubeNode;
-
-class ISDFTreeNodeVisitor {
- public:
-  void virtual visit_sphere(SphereNode&)       = 0;
-  void virtual visit_cube(CubeNode&)           = 0;
-  void virtual visit_group(GroupNode&)         = 0;
-  void virtual visit_primitive(PrimitiveNode&) = 0;
-
-  virtual ~ISDFTreeNodeVisitor() = default;
-};
 
 class SDFTreeRegistry {
  public:
@@ -44,6 +28,19 @@ class SDFTreeRegistry {
   IdRegistry<SDFTreeNode> nodes_registry_;
 
   std::vector<std::optional<std::reference_wrapper<SDFTreeNode>>> all_nodes_;
+};
+
+class SDFTree {
+ public:
+  SDFTree() : root(std::make_unique<GroupNode>(sdf_tree_registry_)) {}
+
+  std::optional<std::reference_wrapper<SDFTreeNode>> get_node(IdView<SDFTreeNodeId> node_id);
+
+ private:
+  SDFTreeRegistry sdf_tree_registry_;
+
+ public:
+  std::unique_ptr<GroupNode> root;
 };
 
 }  // namespace resin

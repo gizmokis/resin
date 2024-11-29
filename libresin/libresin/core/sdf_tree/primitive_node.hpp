@@ -3,7 +3,6 @@
 #include <format>
 #include <libresin/core/id_registry.hpp>
 #include <libresin/core/sdf_shader_consts.hpp>
-#include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/core/transform.hpp>
 
@@ -11,7 +10,7 @@ namespace resin {
 
 class PrimitiveNode : public SDFTreeNode {
  public:
-  void accept_visitor(ISDFTreeNodeVisitor& visitor) override { visitor.visit_primitive(*this); }
+  inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override { visitor.visit_primitive(*this); }
 
   virtual ~PrimitiveNode() = default;
   explicit PrimitiveNode(SDFTreeRegistry& tree) : SDFTreeNode(tree) {}
@@ -47,18 +46,14 @@ class SphereNode : public PrimitiveNode {
                                   sdf_shader_consts::SDFShaderComponents::Spheres, sphere_id_.raw());
   }
 
-  std::string_view name() const override { return name_; }
-  void rename(std::string&& name) override { name_ = std::move(name); }
+  inline std::string_view name() const override { return name_; }
+  inline void rename(std::string&& name) override { name_ = std::move(name); }
 
   virtual ~SphereNode() = default;
 
   inline IdView<SphereNodeId> component_id() const { return sphere_id_; }
 
-  SphereNode(SDFTreeRegistry& tree, float _radius = 1.F)
-      : PrimitiveNode(tree),
-        radius(_radius),
-        sphere_id_(tree.sphere_component_registry_),
-        name_(std::format("Sphere {}", node_id_.raw())) {}
+  explicit SphereNode(SDFTreeRegistry& tree, float _radius = 1.F);
 
  public:
   float radius;
@@ -83,16 +78,11 @@ class CubeNode : public PrimitiveNode {
                                   cube_id_.raw());
   }
 
-  std::string_view name() const override { return name_; }
-  void rename(std::string&& name) override { name_ = std::move(name); }
+  inline std::string_view name() const override { return name_; }
+  inline void rename(std::string&& name) override { name_ = std::move(name); }
 
   virtual ~CubeNode() = default;
-  explicit CubeNode(SDFTreeRegistry& tree, float _size = 1.F)
-      : PrimitiveNode(tree),
-        size(_size),
-        cube_id_(tree.cube_component_registry_),
-        name_(std::format("Cube {}", node_id_.raw())) {}
-
+  explicit CubeNode(SDFTreeRegistry& tree, float _size = 1.F);
   inline IdView<CubeNodeId> component_id() const { return cube_id_; }
 
  public:

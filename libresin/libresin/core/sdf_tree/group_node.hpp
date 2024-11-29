@@ -2,7 +2,6 @@
 #define RESIN_GROUP_NODE_HPP
 
 #include <libresin/core/sdf_shader_consts.hpp>
-#include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/core/transform.hpp>
 #include <libresin/utils/logger.hpp>
@@ -45,17 +44,6 @@ class GroupNode : public SDFTreeNode {
  private:
   std::vector<std::pair<SDFBinaryOperation, std::unique_ptr<SDFTreeNode>>> nodes_;
   std::string name_;
-};
-
-class SDFTree {
- public:
-  SDFTree() : root(std::make_unique<GroupNode>(sdf_tree_registry_)) {}
-
- private:
-  SDFTreeRegistry sdf_tree_registry_;
-
- public:
-  std::unique_ptr<GroupNode> root;
 };
 
 }  // namespace resin
