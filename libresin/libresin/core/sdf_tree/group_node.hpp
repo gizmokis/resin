@@ -1,6 +1,7 @@
 #ifndef RESIN_GROUP_NODE_HPP
 #define RESIN_GROUP_NODE_HPP
 
+#include <concepts>
 #include <libresin/core/sdf_shader_consts.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/core/transform.hpp>
@@ -23,6 +24,7 @@ class GroupNode : public SDFTreeNode {
   inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override { visitor.visit_group(*this); }
 
   template <SDFTreeNodeConcept Node, typename... Args>
+    requires std::constructible_from<Node, SDFTreeRegistry&, Args...>
   inline void push_node(SDFBinaryOperation op, Args&&... args) {
     auto node_ptr = std::make_unique<Node>(this->tree_registry_, std::forward<Args>(args)...);
     nodes_.emplace_back(std::move(node_ptr));
