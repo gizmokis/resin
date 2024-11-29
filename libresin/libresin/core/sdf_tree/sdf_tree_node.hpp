@@ -37,7 +37,6 @@ class SDFTreeNode {
   // TODO(migoox): add material component
 
  protected:
- protected:
   SDFTreeNodeId node_id_;
   TransformId transform_id_;
   Transform transform_;

@@ -65,6 +65,12 @@ class IdRegistry {
   IdRegistry(const IdRegistry&)            = delete;
   IdRegistry& operator=(const IdRegistry&) = delete;
 
+  ~IdRegistry() {
+    if (freed_.size() != max_objs_) {
+      Logger::err("Id registry is being destructed but not all ids are unregistered!");
+    }
+  }
+
  private:
   std::stack<size_t> freed_;
   std::vector<bool> is_registered_;
