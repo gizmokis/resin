@@ -9,8 +9,7 @@ namespace resin {
 
 struct Transform final {
  public:
-  explicit Transform(const glm::vec3 pos = glm::vec3(), const glm::quat rot = {1, 0, 0, 0},
-                     const glm::vec3 scale = {1, 1, 1})
+  explicit Transform(const glm::vec3 pos = glm::vec3(), const glm::quat rot = {1, 0, 0, 0}, const float scale = 1)
       : pos_(pos), rot_(rot), scale_(scale), dirty_(true), inv_dirty_(true) {}
   ~Transform();
 
@@ -32,9 +31,9 @@ struct Transform final {
   glm::quat rot() const;
   void set_local_rot(const glm::quat& rot);
 
-  const glm::vec3& local_scale() const { return scale_; }
-  glm::vec3& local_scale() { return scale_; }
-  void set_local_scale(const glm::vec3& scale);
+  const float& local_scale() const { return scale_; }
+  float& local_scale() { return scale_; }
+  float scale() const;
   void set_local_scale(float scale);
 
   glm::mat3 local_orientation() const;
@@ -46,6 +45,7 @@ struct Transform final {
   glm::vec3 local_up() const { return rot_ * glm::vec3(0, 1, 0); }
   glm::vec3 up() const;
 
+  void mark_dirty() const;
   glm::mat4 local_to_parent_matrix() const;
   glm::mat4 parent_to_local_matrix() const;
   const glm::mat4& local_to_world_matrix() const;
@@ -58,7 +58,6 @@ struct Transform final {
 
  private:
   void remove_from_parent();
-  void mark_dirty() const;
 
  private:
   std::optional<std::reference_wrapper<Transform>> parent_;
@@ -66,7 +65,7 @@ struct Transform final {
 
   glm::vec3 pos_;
   glm::quat rot_;
-  glm::vec3 scale_;
+  float scale_;
 
   mutable bool dirty_              = false;
   mutable glm::mat4 model_mat_     = glm::mat4(1.0F);
