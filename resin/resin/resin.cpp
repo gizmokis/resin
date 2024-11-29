@@ -125,17 +125,16 @@ void Resin::update(duration_t delta) {
   shader_->set_uniform("u_camSize", camera_->height());
 }
 
-void Resin::render() {
-  ImGui_ImplOpenGL3_NewFrame();
-  ImGui_ImplGlfw_NewFrame();
-  ImGui::NewFrame();
-
-  glClearColor(0.1F, 0.1F, 0.1F, 1.F);
-  glClear(GL_COLOR_BUFFER_BIT);
+void Resin::gui() {
+  // ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
+  // TODO(SDF-81): Proper rendering to framebuffer
 
   ImGui::ShowDemoWindow();
+}
 
-  ImGui::Render();
+void Resin::render() {
+  glClearColor(0.1F, 0.1F, 0.1F, 1.F);
+  glClear(GL_COLOR_BUFFER_BIT);
 
   {
     glBindVertexArray(vertex_array_);
@@ -144,6 +143,11 @@ void Resin::render() {
     shader_->unbind();
   }
 
+  ImGui_ImplOpenGL3_NewFrame();
+  ImGui_ImplGlfw_NewFrame();
+  ImGui::NewFrame();
+  gui();
+  ImGui::Render();
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
   window_->on_update();
@@ -163,11 +167,16 @@ bool Resin::on_window_resize(WindowResizeEvent& e) {
 
   minimized_ = false;
   glViewport(0, 0, static_cast<GLint>(e.width()), static_cast<GLint>(e.height()));
-  camera_->set_aspect_ratio(static_cast<float>(e.width()) / static_cast<float>(e.height()));
+  auto width  = static_cast<float>(e.width());
+  auto height = static_cast<float>(e.height());
+  camera_->set_aspect_ratio(width / height);
+
+  ImGuiIO& io    = ImGui::GetIO();
+  io.DisplaySize = ImVec2(width, height);
   return false;
 }
 
-bool Resin::on_test(WindowTestEvent& e) {
+bool Resin::on_test(WindowTestEvent&) {
   camera_->is_orthographic = !camera_->is_orthographic;
 
   return false;
