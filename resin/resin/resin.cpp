@@ -13,6 +13,7 @@
 #include <resin/core/window.hpp>
 #include <resin/event/event.hpp>
 #include <resin/event/window_events.hpp>
+#include <resin/imgui/components.hpp>
 #include <resin/resin.hpp>
 
 namespace resin {
@@ -115,12 +116,13 @@ void Resin::update(duration_t delta) {
                                  std::chrono::duration_cast<std::chrono::seconds>(time_)));
 
   cube_transform_.rotate(glm::angleAxis(2 * std::chrono::duration<float>(delta).count(), glm::vec3(0, 1, 0)));
-  camera_rig_.rotate(glm::angleAxis(std::chrono::duration<float>(delta).count(), glm::vec3(0, 1, 0)));
+  // camera_rig_.rotate(glm::angleAxis(std::chrono::duration<float>(delta).count(), glm::vec3(0, 1, 0)));
 
   shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
   shader_->set_uniform("u_resolution", glm::vec2(window_->dimensions()));
   shader_->set_uniform("u_focal", camera_->near_plane());
   shader_->set_uniform("u_iM", cube_transform_.world_to_local_matrix());
+  shader_->set_uniform("u_scale", cube_transform_.scale());
   shader_->set_uniform("u_ortho", camera_->is_orthographic);
   shader_->set_uniform("u_camSize", camera_->height());
 }
@@ -130,6 +132,17 @@ void Resin::gui() {
   // TODO(SDF-81): Proper rendering to framebuffer
 
   ImGui::ShowDemoWindow();
+
+  ImGui::Begin("Test Cube");
+  ImGui::Text("Parameters");
+  if (ImGui::BeginTabBar("TestTabBar", ImGuiTabBarFlags_None)) {
+    if (ImGui::BeginTabItem("Transform")) {
+      ImGui::resin::TransformEdit(&cube_transform_);
+      ImGui::EndTabItem();
+    }
+    ImGui::EndTabBar();
+  }
+  ImGui::End();
 }
 
 void Resin::render() {

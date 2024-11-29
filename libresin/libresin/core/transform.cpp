@@ -61,13 +61,10 @@ void Transform::set_local_rot(const glm::quat& rot) {
   mark_dirty();
 }
 
-void Transform::set_local_scale(const glm::vec3& scale) {
-  scale_ = scale;
-  mark_dirty();
-}
+float Transform::scale() const { return parent_.has_value() ? parent().scale() * scale_ : scale_; }
 
-void Transform::set_local_scale(const float scale) {
-  scale_ = glm::vec3(scale);
+void Transform::set_local_scale(float scale) {
+  scale_ = scale;
   mark_dirty();
 }
 
@@ -101,11 +98,11 @@ glm::vec3 Transform::up() const {
 }
 
 glm::mat4 Transform::local_to_parent_matrix() const {
-  return glm::translate(pos_) * glm::mat4_cast(rot_) * glm::scale(scale_);
+  return glm::translate(pos_) * glm::mat4_cast(rot_) * glm::scale(glm::vec3(scale_));
 }
 
 glm::mat4 Transform::parent_to_local_matrix() const {
-  return glm::scale(1.0F / scale_) * glm::mat4_cast(glm::inverse(rot_)) * glm::translate(-pos_);
+  return glm::scale(glm::vec3(1.0F / scale_)) * glm::mat4_cast(glm::inverse(rot_)) * glm::translate(-pos_);
 }
 
 const glm::mat4& Transform::local_to_world_matrix() const {

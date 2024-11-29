@@ -8,18 +8,18 @@ constexpr float kPi = glm::pi<float>();
 
 class TransformTest : public testing::Test {
  protected:
-  TransformTest() : parent_transform_(glm::vec3(1, 2, 3), glm::quat(glm::vec3(0, kPi / 2, 0)), glm::vec3(1, 2, 3)) {
+  TransformTest() : parent_transform_(glm::vec3(1, 2, 3), glm::quat(glm::vec3(0, kPi / 2, 0)), 2) {
     transform_.set_parent(parent_transform_);
   }
 
   // at:       1,2,3
   // rotation: 90deg around Y axis
-  // scale:    1,2,3
+  // scale:    2
   resin::Transform parent_transform_;
 
   // at:       0,0,0
   // rotation: none
-  // scale:    1,1,1
+  // scale:    1
   resin::Transform transform_;
 };
 
@@ -34,14 +34,14 @@ TEST_F(TransformTest, DefaultConstructorWorks) {
   // then
   EXPECT_EQ(transform.local_pos(), glm::vec3(0, 0, 0));
   EXPECT_EQ(transform.local_rot(), glm::quat(1, 0, 0, 0));
-  EXPECT_EQ(transform.local_scale(), glm::vec3(1, 1, 1));
+  EXPECT_EQ(transform.local_scale(), 1);
 }
 
 TEST_F(TransformTest, ParametricConstructorWorks) {
   // given
   const glm::vec3 pos(1, 2, 3);
   const glm::quat rot(4, 5, 6, 7);
-  const glm::vec3 scale(8, 9, 10);
+  const float scale = 8;
 
   // when
   const resin::Transform transform(pos, rot, scale);
@@ -131,10 +131,10 @@ TEST_F(TransformTest, PosIsTransformedProperly) {
   // given
   const glm::vec3 position(1, 1, 1);
   // initial:    (1, 1, 1)
-  // scaled:     (1, 2, 3)
-  // rotated:    (3, 2,-1)
-  // translated: (4, 4, 2)
-  glm::vec3 expected(4, 4, 2);
+  // scaled:     (2, 2, 2)
+  // rotated:    (2, 2,-2)
+  // translated: (2, 4, 1)
+  glm::vec3 expected(2, 4, 1);
 
   // when
   transform_.set_local_pos(position);

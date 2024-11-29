@@ -10,6 +10,7 @@ uniform vec2 u_resolution;
 uniform float u_focal;
 
 uniform mat4 u_iM;
+uniform float u_scale;
 uniform float u_camSize;
 
 float sdSphere( vec3 pos, float radius )
@@ -36,7 +37,7 @@ vec2 opSmoothUnion( vec2 d1, vec2 d2, float k )
 
 vec2 map( vec3 pos )
 {
-    return opSmoothUnion(vec2(sdCube((u_iM*vec4(pos,1)).xyz, 0.5), 0), vec2(sdSphere(pos, 1), 1), 0.5);
+    return opSmoothUnion(vec2(u_scale * sdCube((u_iM*vec4(pos,1)).xyz, 0.5), 0), vec2(sdSphere(pos, 1), 1), 0.5);
 }
 
 vec2 raycast( vec3 ray_origin, vec3 ray_direction )
