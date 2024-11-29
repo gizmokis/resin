@@ -14,7 +14,7 @@ GroupNode::GroupNode() : name_(std::format("Group {}", this->node_id_.raw())) {
   nodes_.emplace_back(SDFBinaryOperation::Union, std::make_unique<SphereNode>());
 }
 
-GroupNode::~GroupNode() { Logger::info("DUP"); }
+GroupNode::~GroupNode() {}
 
 std::string GroupNode::gen_shader_code() const {
   if (this->nodes_.empty()) {

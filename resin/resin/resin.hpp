@@ -6,6 +6,7 @@
 #include <libresin/core/camera.hpp>
 #include <libresin/core/resources/shader_resource.hpp>
 #include <libresin/core/sdf/group_node.hpp>
+#include <libresin/core/sdf/sdf_tree_node.hpp>
 #include <libresin/core/shader.hpp>
 #include <memory>
 #include <resin/core/window.hpp>
@@ -53,6 +54,8 @@ class Resin {
   ShaderResourceManager shader_resource_manager_;
 
   GroupNode sdf_tree_root_;
+
+  std::optional<IdView<SDFTreeNode>> selected_node_;
 
   std::unique_ptr<Window> window_;
   std::unique_ptr<RenderingShaderProgram> shader_;

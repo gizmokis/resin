@@ -141,7 +141,10 @@ void Resin::render() {
   glClear(GL_COLOR_BUFFER_BIT);
 
   if (::ImGui::Begin("SDF Tree")) {
-    resin::ImGui::SDFTree(sdf_tree_root_);
+    auto selected = resin::ImGui::SDFTree(sdf_tree_root_);
+    if (selected.has_value()) {
+      Logger::info("Selected {}", selected->raw());
+    }
   }
   ::ImGui::End();
   ::ImGui::Render();
@@ -176,7 +179,7 @@ bool Resin::on_window_resize(WindowResizeEvent& e) {
   return false;
 }
 
-bool Resin::on_test(WindowTestEvent& e) {
+bool Resin::on_test(WindowTestEvent&) {
   camera_->is_orthographic = !camera_->is_orthographic;
 
   return false;
