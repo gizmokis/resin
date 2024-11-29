@@ -4,7 +4,10 @@
 #include <libresin/core/id_registry.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
+#include <libresin/core/sdf_tree/sdf_tree_node.hpp>
+#include <libresin/core/sdf_tree/sdf_tree_node_visitor.hpp>
 #include <libresin/core/transform.hpp>
+#include <optional>
 
 namespace resin {
 
@@ -34,7 +37,7 @@ class SDFTree {
  public:
   SDFTree() : root(std::make_unique<GroupNode>(sdf_tree_registry_)) {}
 
-  std::optional<std::reference_wrapper<SDFTreeNode>> get_node(IdView<SDFTreeNodeId> node_id);
+  bool visit_node(IdView<SDFTreeNodeId> node_id, ISDFTreeNodeVisitor& visitor);
 
  private:
   SDFTreeRegistry sdf_tree_registry_;

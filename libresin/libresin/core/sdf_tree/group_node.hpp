@@ -17,7 +17,7 @@ class GroupNode : public SDFTreeNode {
  public:
   GroupNode() = delete;
   explicit GroupNode(SDFTreeRegistry& tree);
-  virtual ~GroupNode();
+  virtual ~GroupNode() = default;
 
   std::string gen_shader_code() const override;
   std::string_view name() const override { return name_; }

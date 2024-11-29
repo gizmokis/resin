@@ -26,7 +26,7 @@ class SDFTreeNode {
   inline IdView<TransformId> transform_component_id() const { return transform_id_; }
   inline Transform& transform() { return transform_; }
 
-  // It is a programmer responsibility to assert that SDFTreeNode class will not outlive the provided registry!
+  // It is the programmer's responsibility to assert that SDFTreeNode class will not outlive the provided registry!
   explicit SDFTreeNode(SDFTreeRegistry& tree);
 
   virtual ~SDFTreeNode();

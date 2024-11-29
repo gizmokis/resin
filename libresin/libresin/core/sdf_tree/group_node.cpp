@@ -13,8 +13,6 @@ GroupNode::GroupNode(SDFTreeRegistry& tree) : SDFTreeNode(tree), name_(std::form
   this->push_node<SphereNode>(SDFBinaryOperation::Union);
 }
 
-GroupNode::~GroupNode() {}
-
 std::string GroupNode::gen_shader_code() const {
   if (this->nodes_.empty()) {
     // If group is empty then the operation is undefined.

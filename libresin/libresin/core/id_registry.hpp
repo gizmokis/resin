@@ -86,7 +86,7 @@ struct Id {
   using object_type = Obj;
 
   Id() = delete;
-  // It is a programmer responsibility to assert that Id class will not outlive the provided registry!
+  // It is the programmer's responsibility to assert that Id class will not outlive the provided registry!
   explicit Id(IdRegistry<Obj>& registry) : registry_(registry) { raw_id_ = registry_.get().register_id(); }
 
   ~Id() { registry_.get().unregister_id(raw_id_); }
