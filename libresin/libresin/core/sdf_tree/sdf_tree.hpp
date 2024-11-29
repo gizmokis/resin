@@ -12,22 +12,22 @@ class SDFTreeRegistry {
  public:
   // TODO(migoox): allow specifying the sizes
   SDFTreeRegistry()
-      : sphere_component_registry_(IdRegistry<SphereNode>(1000)),
-        cube_component_registry_(IdRegistry<CubeNode>(1000)),
-        transform_component_registry_(IdRegistry<Transform>(2000)),
-        nodes_registry_(IdRegistry<SDFTreeNode>(5000)) {
-    all_nodes_.resize(nodes_registry_.get_max_objs());
+      : sphere_component_registry(IdRegistry<SphereNode>(1000)),
+        cube_component_registry(IdRegistry<CubeNode>(1000)),
+        transform_component_registry(IdRegistry<Transform>(2000)),
+        nodes_registry(IdRegistry<SDFTreeNode>(5000)) {
+    all_nodes.resize(nodes_registry.get_max_objs());
   }
 
   // Components: the ids correspond to the uniform buffers indices
-  IdRegistry<SphereNode> sphere_component_registry_;
-  IdRegistry<CubeNode> cube_component_registry_;
-  IdRegistry<Transform> transform_component_registry_;
+  IdRegistry<SphereNode> sphere_component_registry;
+  IdRegistry<CubeNode> cube_component_registry;
+  IdRegistry<Transform> transform_component_registry;
 
   // Nodes: the ids correspond to the nodes stored in the array all_nodes_
-  IdRegistry<SDFTreeNode> nodes_registry_;
+  IdRegistry<SDFTreeNode> nodes_registry;
 
-  std::vector<std::optional<std::reference_wrapper<SDFTreeNode>>> all_nodes_;
+  std::vector<std::optional<std::reference_wrapper<SDFTreeNode>>> all_nodes;
 };
 
 class SDFTree {
