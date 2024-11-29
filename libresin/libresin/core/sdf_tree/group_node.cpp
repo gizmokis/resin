@@ -24,14 +24,16 @@ std::string GroupNode::gen_shader_code() const {
   }
 
   std::string sdf;
-  for (const auto& node : std::ranges::reverse_view(this->nodes_)) {
-    sdf += sdf_shader_consts::kSDFShaderBinOpFunctionNames.get_name(node->bin_op());
+  for (auto it = this->nodes_.rbegin(); it != std::prev(this->nodes_.rend()); ++it) {
+    sdf += sdf_shader_consts::kSDFShaderBinOpFunctionNames.get_name((*it)->bin_op());
     sdf += "(";
   }
-  sdf += this->nodes_[0]->gen_shader_code();
 
-  for (const auto& node : this->nodes_) {
-    sdf += node->gen_shader_code();
+  sdf += this->nodes_[0]->gen_shader_code();
+  sdf += ",";
+
+  for (auto it = std::next(this->nodes_.begin()); it != this->nodes_.end(); ++it) {
+    sdf += (*it)->gen_shader_code();
     sdf += "),";
   }
   sdf.pop_back();
