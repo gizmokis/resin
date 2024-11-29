@@ -4,7 +4,10 @@
 namespace resin {
 
 SDFTreeNode::SDFTreeNode(SDFTreeRegistry& tree)
-    : node_id_(tree.nodes_registry), transform_id_(tree.transform_component_registry), tree_registry_(tree) {
+    : node_id_(tree.nodes_registry),
+      transform_id_(tree.transform_component_registry),
+      bin_op_(SDFBinaryOperation::Union),
+      tree_registry_(tree) {
   this->tree_registry_.get().all_nodes[node_id_.raw()] = *this;
 }
 

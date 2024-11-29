@@ -17,7 +17,7 @@ void SDFTreeComponentVisitor::visit_group(GroupNode& node) {
     return;
   }
 
-  for (auto& [child_op, child] : node) {
+  for (auto& child : node) {
     child->accept_visitor(*this);
   }
 

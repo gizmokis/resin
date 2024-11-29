@@ -11,8 +11,6 @@
 
 namespace resin {
 
-using SDFBinaryOperation = sdf_shader_consts::SDFShaderBinOp;
-
 class GroupNode : public SDFTreeNode {
  public:
   GroupNode() = delete;
@@ -27,13 +25,9 @@ class GroupNode : public SDFTreeNode {
   template <SDFTreeNodeConcept Node, typename... Args>
   inline void push_node(SDFBinaryOperation op, Args&&... args) {
     auto node_ptr = std::make_unique<Node>(this->tree_registry_, std::forward<Args>(args)...);
-    nodes_.emplace_back(op, std::move(node_ptr));
-    nodes_.back().second->transform().set_parent(this->transform_);
-  }
-
-  inline void set_op(size_t node_id, SDFBinaryOperation op) { nodes_[node_id].first = op; }
-  inline void set_node(size_t node_id, std::unique_ptr<SDFTreeNode> new_node) {
-    nodes_[node_id].second = std::move(new_node);
+    nodes_.emplace_back(std::move(node_ptr));
+    nodes_.back()->set_bin_op(op);
+    nodes_.back()->transform().set_parent(this->transform_);
   }
 
   auto begin() { return nodes_.begin(); }
@@ -42,7 +36,7 @@ class GroupNode : public SDFTreeNode {
   auto end() const { return nodes_.end(); }
 
  private:
-  std::vector<std::pair<SDFBinaryOperation, std::unique_ptr<SDFTreeNode>>> nodes_;
+  std::vector<std::unique_ptr<SDFTreeNode>> nodes_;
   std::string name_;
 };
 
