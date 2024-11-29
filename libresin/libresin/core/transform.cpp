@@ -102,7 +102,7 @@ glm::mat4 Transform::local_to_parent_matrix() const {
 }
 
 glm::mat4 Transform::parent_to_local_matrix() const {
-  return glm::scale(glm::vec3(scale_ == 0 ? 0.0F : 1.0F / scale_)) * glm::mat4_cast(glm::inverse(rot_)) *
+  return glm::scale(glm::vec3(scale_ < 1e-6F ? 0.0F : 1.0F / scale_)) * glm::mat4_cast(glm::inverse(rot_)) *
          glm::translate(-pos_);
 }
 
