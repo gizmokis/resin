@@ -7,11 +7,14 @@ uniform mat4 u_iV;
 uniform bool u_ortho;
 
 uniform vec2 u_resolution;
-uniform float u_focal;
+uniform float u_nearPlane;
+uniform float u_farPlane;
 
 uniform mat4 u_iM;
 uniform float u_scale;
 uniform float u_camSize;
+
+const float infinity = 1. / 0.;
 
 float sdSphere( vec3 pos, float radius )
 {
@@ -37,15 +40,15 @@ vec2 opSmoothUnion( vec2 d1, vec2 d2, float k )
 
 vec2 map( vec3 pos )
 {
-    return opSmoothUnion(vec2(u_scale * sdCube((u_iM*vec4(pos,1)).xyz, 0.5), 0), vec2(sdSphere(pos, 1), 1), 0.5);
+    return opSmoothUnion(vec2(u_scale == 0 ? u_farPlane : u_scale * sdCube((u_iM*vec4(pos,1)).xyz, 0.5), 0), vec2(sdSphere(pos, 1), 1), 0.5);
 }
 
 vec2 raycast( vec3 ray_origin, vec3 ray_direction )
 {
     vec2 result = vec2(-1.0,-1.0);
 
-    float tmin = 1.0;
-    float tmax = 20.0;
+    float tmin = u_nearPlane;
+    float tmax = u_farPlane;
 
     float t = tmin;
     for( int i=0; i<70 && t<tmax; i++ )
@@ -105,11 +108,11 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     vec3 ray_origin;
 
     if (u_ortho) {
-        ray_origin = vec3(pos, -u_focal);
+        ray_origin = vec3(pos, 0);
         ray_direction = vec3(0,0,-1);
     } else {
         ray_origin = vec3(0,0,0); 
-        ray_direction = normalize( vec3(pos, -u_focal) );
+        ray_direction = normalize( vec3(pos, -u_nearPlane) );
     }
    
     fragColor = vec4( render( ray_origin, ray_direction), 1.0 );

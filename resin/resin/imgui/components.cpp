@@ -43,8 +43,8 @@ bool resin::TransformEdit(::resin::Transform* transform) {
     ImGui::Text("Scale");
     ImGui::TableNextColumn();
     if (ImGui::DragFloat("##Scale", &transform->local_scale(), 0.01F, 0.F, FLT_MAX, "%.2f")) {
+      transform->set_local_scale(glm::max(transform->local_scale(), 0.F));
       value_changed = true;
-      transform->mark_dirty();
     }
 
     ImGui::EndTable();

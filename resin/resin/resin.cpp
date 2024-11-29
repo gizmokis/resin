@@ -120,7 +120,8 @@ void Resin::update(duration_t delta) {
 
   shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
   shader_->set_uniform("u_resolution", glm::vec2(window_->dimensions()));
-  shader_->set_uniform("u_focal", camera_->near_plane());
+  shader_->set_uniform("u_nearPlane", camera_->near_plane());
+  shader_->set_uniform("u_farPlane", camera_->far_plane());
   shader_->set_uniform("u_iM", cube_transform_.world_to_local_matrix());
   shader_->set_uniform("u_scale", cube_transform_.scale());
   shader_->set_uniform("u_ortho", camera_->is_orthographic);
