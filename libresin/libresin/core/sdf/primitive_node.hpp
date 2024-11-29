@@ -1,7 +1,7 @@
 #ifndef RESIN_PRIMITIVE_NODE_HPP
 #define RESIN_PRIMITIVE_NODE_HPP
 #include <format>
-#include <libresin/core/id_registry.hpp>
+#include <libresin/core/component_id_registry.hpp>
 #include <libresin/core/sdf/sdf_tree_node.hpp>
 #include <libresin/core/sdf_shader_consts.hpp>
 #include <libresin/core/transform.hpp>
@@ -32,7 +32,7 @@ class PrimitiveNode : public SDFTreeNode {
 };
 
 class SphereNode;
-using SphereNodeId = Id<SphereNode>;
+using SphereNodeId = ComponentId<SphereNode>;
 
 class SphereNode : public PrimitiveNode {
  public:
@@ -56,7 +56,7 @@ class SphereNode : public PrimitiveNode {
 
   virtual ~SphereNode() = default;
 
-  inline IdView<SphereNodeId> component_id() const { return sphere_id_; }
+  inline ComponentIdView<SphereNodeId> component_id() const { return sphere_id_; }
 
   explicit SphereNode(float _radius = 1.F) : radius(_radius), name_(std::format("Sphere {}", sphere_id_.raw())) {}
 
@@ -69,7 +69,7 @@ class SphereNode : public PrimitiveNode {
 };
 
 class CubeNode;
-using CubeNodeId = Id<CubeNode>;
+using CubeNodeId = ComponentId<CubeNode>;
 
 class CubeNode : public PrimitiveNode {
  public:
@@ -93,7 +93,7 @@ class CubeNode : public PrimitiveNode {
   virtual ~CubeNode() = default;
   explicit CubeNode(float _size = 1.F) : size(_size), name_(std::format("Cube {}", cube_id_.raw())) {}
 
-  inline IdView<CubeNodeId> component_id() const { return cube_id_; }
+  inline ComponentIdView<CubeNodeId> component_id() const { return cube_id_; }
 
  public:
   float size;

@@ -9,7 +9,7 @@
 namespace resin {
 
 void SDFTreeComponentVisitor::visit_group(GroupNode& node) {
-  ::ImGui::PushID(node.node_id().raw_as_int());
+  ::ImGui::PushID(node.node_id());
   bool tree_node_opened = ::ImGui::TreeNode(node.name().data());
   if (!tree_node_opened) {
     ::ImGui::PopID();
@@ -25,7 +25,7 @@ void SDFTreeComponentVisitor::visit_group(GroupNode& node) {
 }
 
 void SDFTreeComponentVisitor::visit_primitive(PrimitiveNode& node) {
-  ::ImGui::PushID(node.node_id().raw_as_int());
+  ::ImGui::PushID(node.node_id());
   if (::ImGui::Selectable(node.name().data())) {
     selected_ = node.node_id();
   }
@@ -34,7 +34,7 @@ void SDFTreeComponentVisitor::visit_primitive(PrimitiveNode& node) {
 
 namespace ImGui {  // NOLINT
 
-std::optional<IdView<SDFTreeNodeId>> SDFTree(GroupNode& group_node) {
+std::optional<size_t> SDFTree(GroupNode& group_node) {
   SDFTreeComponentVisitor vs;
   group_node.accept_visitor(vs);
 

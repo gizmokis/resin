@@ -1,6 +1,6 @@
 #ifndef RESIN_SDF_TREE_NODE_HPP
 #define RESIN_SDF_TREE_NODE_HPP
-#include <libresin/core/id_registry.hpp>
+#include <libresin/core/component_id_registry.hpp>
 #include <libresin/core/transform.hpp>
 #include <string>
 
@@ -9,7 +9,6 @@ class IMutableSDFTreeNodeVisitor;
 class IImmutableSDFTreeNodeVisitor;
 
 class SDFTreeNode;
-using SDFTreeNodeId = Id<SDFTreeNode, 10000>;  // NOLINT
 
 class SDFTreeNode {
  public:
@@ -21,14 +20,14 @@ class SDFTreeNode {
 
   virtual ~SDFTreeNode() = default;
 
-  inline IdView<SDFTreeNodeId> node_id() const { return IdView<SDFTreeNodeId>(node_id_); }
-  inline IdView<TransformId> transform_id() const { return IdView<TransformId>(transform_id_); }
+  inline size_t node_id() const { return node_id_; }
+  inline ComponentIdView<TransformId> transform_id() const { return ComponentIdView<TransformId>(transform_id_); }
   inline Transform& transform() { return transform_; }
 
   // TODO(migoox): add material
 
  protected:
-  SDFTreeNodeId node_id_;
+  size_t node_id_;
   TransformId transform_id_;
   Transform transform_;
 };

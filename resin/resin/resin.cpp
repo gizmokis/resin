@@ -143,7 +143,7 @@ void Resin::render() {
   if (::ImGui::Begin("SDF Tree")) {
     auto selected = resin::ImGui::SDFTree(sdf_tree_root_);
     if (selected.has_value()) {
-      Logger::info("Selected {}", selected->raw());
+      Logger::info("Selected {}", selected.value());
     }
   }
   ::ImGui::End();

@@ -10,7 +10,7 @@
 
 namespace resin {
 
-GroupNode::GroupNode() : name_(std::format("Group {}", this->node_id_.raw())) {
+GroupNode::GroupNode() : name_(std::format("Group {}", this->node_id_)) {
   nodes_.emplace_back(SDFBinaryOperation::Union, std::make_unique<SphereNode>());
 }
 

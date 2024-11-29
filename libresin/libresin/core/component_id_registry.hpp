@@ -13,14 +13,14 @@ namespace resin {
 const size_t kDefaultMaxObjects = 5000;
 
 template <typename Obj, size_t MaxObjects = kDefaultMaxObjects>
-class IdRegistry {
+class ComponentIdRegistry {
  public:
-  static IdRegistry<Obj, MaxObjects>& instance() {
+  static ComponentIdRegistry<Obj, MaxObjects>& instance() {
     // thread-safe according to
     // https://stackoverflow.com/questions/1661529/is-meyers-implementation-of-the-singleton-pattern-thread-safe
 
     // maybe some dynamic max objs loading?
-    static IdRegistry<Obj, MaxObjects> instance;
+    static ComponentIdRegistry<Obj, MaxObjects> instance;
     return instance;
   }
 
@@ -60,11 +60,11 @@ class IdRegistry {
     freed_.push(id);
   }
 
-  IdRegistry(const IdRegistry&)            = delete;
-  IdRegistry& operator=(const IdRegistry&) = delete;
+  ComponentIdRegistry(const ComponentIdRegistry&)            = delete;
+  ComponentIdRegistry& operator=(const ComponentIdRegistry&) = delete;
 
  private:
-  IdRegistry() {
+  ComponentIdRegistry() {
     for (size_t i = MaxObjects; i-- > 0;) {
       freed_.push(i);
     }
@@ -77,19 +77,19 @@ class IdRegistry {
 };
 
 template <typename Obj, size_t MaxObjects = kDefaultMaxObjects>
-struct Id {
+struct ComponentId {
  public:
   using object_type                   = Obj;
   static constexpr size_t kMaxObjects = MaxObjects;
 
-  Id() : raw_id_(resin::IdRegistry<Obj, MaxObjects>::instance().register_id()) {}
-  ~Id() { resin::IdRegistry<Obj, MaxObjects>::instance().unregister_id(raw_id_); }
+  ComponentId() : raw_id_(resin::ComponentIdRegistry<Obj, MaxObjects>::instance().register_id()) {}
+  ~ComponentId() { resin::ComponentIdRegistry<Obj, MaxObjects>::instance().unregister_id(raw_id_); }
 
-  Id(const Id<Obj, MaxObjects>& other)                             = delete;
-  Id<Obj, MaxObjects>& operator=(const Id<Obj, MaxObjects>& other) = delete;
+  ComponentId(const ComponentId<Obj, MaxObjects>& other)                             = delete;
+  ComponentId<Obj, MaxObjects>& operator=(const ComponentId<Obj, MaxObjects>& other) = delete;
 
-  bool operator==(const Id<Obj, MaxObjects>& other) const { return raw_id_ == other.raw(); }
-  bool operator!=(const Id<Obj, MaxObjects>& other) const { return raw_id_ != other.raw(); }
+  bool operator==(const ComponentId<Obj, MaxObjects>& other) const { return raw_id_ == other.raw(); }
+  bool operator!=(const ComponentId<Obj, MaxObjects>& other) const { return raw_id_ != other.raw(); }
 
   inline size_t raw() const { return raw_id_; }
   inline int raw_as_int() const { return static_cast<int>(raw_id_); }
@@ -99,20 +99,20 @@ struct Id {
 };
 
 template <typename IdType>
-  requires std::is_base_of_v<Id<typename IdType::object_type, IdType::kMaxObjects>, IdType>
-struct IdView {
-  IdView() = delete;
-  IdView(const IdType& id) : raw_id_(id.raw()) {}  // NOLINT (allow the implicit constructor)
+  requires std::is_base_of_v<ComponentId<typename IdType::object_type, IdType::kMaxObjects>, IdType>
+struct ComponentIdView {
+  ComponentIdView() = delete;
+  ComponentIdView(const IdType& id) : raw_id_(id.raw()) {}  // NOLINT (allow the implicit constructor)
 
-  bool operator==(const IdView<IdType>& other) const { return raw_id_ == other.raw(); }
-  bool operator!=(const IdView<IdType>& other) const { return raw_id_ != other.raw(); }
+  bool operator==(const ComponentIdView<IdType>& other) const { return raw_id_ == other.raw(); }
+  bool operator!=(const ComponentIdView<IdType>& other) const { return raw_id_ != other.raw(); }
   bool operator==(const IdType& other) const { return raw_id_ == other.raw(); }
   bool operator!=(const IdType& other) const { return raw_id_ != other.raw(); }
 
   inline size_t raw() const { return raw_id_; }
   inline int raw_as_int() const { return static_cast<int>(raw_id_); }
 
-  inline bool expired() const { return !resin::IdRegistry<IdType>::instance().is_registered(raw_id_); }
+  inline bool expired() const { return !resin::ComponentIdRegistry<IdType>::instance().is_registered(raw_id_); }
 
  private:
   size_t raw_id_;

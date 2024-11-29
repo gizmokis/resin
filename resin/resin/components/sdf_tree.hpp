@@ -3,7 +3,6 @@
 
 #include <imgui/imgui_internal.h>
 
-#include <libresin/core/id_registry.hpp>
 #include <libresin/core/sdf/group_node.hpp>
 #include <libresin/core/sdf/sdf_tree_node.hpp>
 #include <optional>
@@ -18,15 +17,15 @@ class SDFTreeComponentVisitor : public IMutableSDFTreeNodeVisitor {
   void visit_group(GroupNode& node) override;
   void visit_primitive(PrimitiveNode& node) override;
 
-  inline std::optional<IdView<SDFTreeNodeId>> selected() const { return selected_; }
+  inline std::optional<size_t> selected() const { return selected_; }
 
  private:
-  std::optional<IdView<SDFTreeNodeId>> selected_ = std::nullopt;
+  std::optional<size_t> selected_ = std::nullopt;
 };
 
 namespace ImGui {  // NOLINT
 
-std::optional<IdView<SDFTreeNodeId>> SDFTree(GroupNode& group_node);
+std::optional<size_t> SDFTree(GroupNode& group_node);
 
 }
 

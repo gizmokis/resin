@@ -55,7 +55,7 @@ class Resin {
 
   GroupNode sdf_tree_root_;
 
-  std::optional<IdView<SDFTreeNodeId>> selected_node_;
+  std::optional<size_t> selected_node_;
 
   std::unique_ptr<Window> window_;
   std::unique_ptr<RenderingShaderProgram> shader_;
