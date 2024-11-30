@@ -1,5 +1,5 @@
 struct material {
-    vec3 color;
+    vec3 albedo;
 
 	float ka;
 	float kd;
@@ -8,7 +8,7 @@ struct material {
 };
 
 material material_mix(material m1, material m2, float k) {
-    return material(mix(m1.color, m2.color, k), mix(m1.ka, m2.ka, k), mix(m1.kd, m2.kd, k), mix(m1.ks, m2.ks, k), mix(m1.m, m2.m, k));
+    return material(mix(m1.albedo, m2.albedo, k), mix(m1.ka, m2.ka, k), mix(m1.kd, m2.kd, k), mix(m1.ks, m2.ks, k), mix(m1.m, m2.m, k));
 }
 
 struct attenuation {

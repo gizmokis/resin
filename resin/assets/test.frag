@@ -85,7 +85,7 @@ vec3 render( vec3 ray_origin, vec3 ray_direction )
         vec3 light = mat.ka * u_Ambient
             + calc_dir_light(dir_light, mat, nor, -ray_direction)
             + calc_point_light(p_light, mat, nor, -ray_direction, pos);
-		col = light * mat.color;
+		col = light * mat.albedo;
     }
 
 	return col;
