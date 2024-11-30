@@ -24,7 +24,8 @@ const point_light p_light = point_light(vec3(0.57,0.38,0.04), vec3(0,1,0.5), att
 // objects
 uniform mat4 u_iM;
 uniform float u_scale;        
-material mat = material(vec3(0,0,0), 0.5, 0.5, 0.5, 50.f);
+material red_mat = material(vec3(0.96,0.25,0.25), 0.5, 0.5, 0.5, 50.);
+material blue_mat = material(vec3(0.25,0.25,0.96), 0.5, 0.5, 0.5, 50.);
 
 vec2 map( vec3 pos )
 {
@@ -79,12 +80,12 @@ vec3 render( vec3 ray_origin, vec3 ray_direction )
     {
         vec3 pos = ray_origin + t*ray_direction;
         vec3 nor = calcNormal( pos );
-        vec3 albedo = mix(vec3(0.96,0.25,0.25), vec3(0.25,0.25,0.96), m);
+        material mat = material_mix(red_mat, blue_mat, m);
 
         vec3 light = mat.ka * u_Ambient
             + calc_dir_light(dir_light, mat, nor, -ray_direction)
             + calc_point_light(p_light, mat, nor, -ray_direction, pos);
-		col = light * albedo;
+		col = light * mat.color;
     }
 
 	return col;
