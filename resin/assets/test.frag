@@ -1,6 +1,6 @@
 #version 330 core
 
-#include "phong.glsl"
+#include "pbr.glsl"
 #include "sdf.glsl"
 
 layout(location = 0) out vec4 fragColor;
@@ -17,15 +17,15 @@ uniform float u_farPlane;
 uniform float u_camSize;
 
 // rendering
-const vec3 u_Ambient = vec3(0.2, 0.1, 0.0);
-const directional_light dir_light = directional_light(0.5*vec3(1,1,1), normalize(vec3(-1,-1,-1)));
+const vec3 u_Ambient = vec3(0.63, 0.4, 0.16);
+const directional_light dir_light = directional_light(vec3(1,1,1), normalize(vec3(-1,-1,-1)));
 const point_light p_light = point_light(vec3(0.57,0.38,0.04), vec3(0,1,0.5), attenuation(1.0, 0.7, 1.8));
 
 // objects
 uniform mat4 u_iM;
 uniform float u_scale;        
-material red_mat = material(vec3(0.96,0.25,0.25), 0.5, 0.5, 0.5, 50.);
-material blue_mat = material(vec3(0.25,0.25,0.96), 0.5, 0.5, 0.5, 50.);
+material red_mat = material(vec3(0.96,0.25,0.25), 1, 0.1, 1, vec3(0.0));
+material blue_mat = material(vec3(0.25,0.25,0.96), 0, 0.1, 1, vec3(0.0));
 
 vec2 map( vec3 pos )
 {
@@ -81,11 +81,15 @@ vec3 render( vec3 ray_origin, vec3 ray_direction )
         vec3 pos = ray_origin + t*ray_direction;
         vec3 nor = calcNormal( pos );
         material mat = material_mix(red_mat, blue_mat, m);
+        mat.F0 = mix(vec3(0.95, 0.64, 0.54), mat.albedo, mat.metallic);
 
-        vec3 light = mat.ka * u_Ambient
-            + calc_dir_light(dir_light, mat, nor, -ray_direction)
-            + calc_point_light(p_light, mat, nor, -ray_direction, pos);
-		col = light * mat.albedo;
+        vec3 Lo = calc_dir_light(dir_light, mat, nor, -ray_direction)
+                + calc_point_light(p_light, mat, nor, -ray_direction, pos);
+    
+		col = vec3(0.03) * mat.ao * mat.albedo + Lo;
+
+        col = col / (col + vec3(1.0));
+        col = pow(col, vec3(1.0/2.2));
     }
 
 	return col;
