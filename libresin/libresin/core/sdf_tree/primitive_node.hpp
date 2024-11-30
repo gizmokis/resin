@@ -1,6 +1,7 @@
 #ifndef RESIN_PRIMITIVE_NODE_HPP
 #define RESIN_PRIMITIVE_NODE_HPP
 #include <format>
+#include <functional>
 #include <libresin/core/id_registry.hpp>
 #include <libresin/core/sdf_shader_consts.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>

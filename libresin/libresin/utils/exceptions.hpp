@@ -263,6 +263,28 @@ class ObjectsOverflowException : public std::runtime_error {
   explicit ObjectsOverflowException() : std::runtime_error(std::format(R"(No more free IDs available)")) {}
 };
 
+class SDFTreeNodeDoesNotExist : public std::runtime_error {
+ public:
+  EXCEPTION_NAME(SDFTreeNodeDoesNotExist)
+
+  explicit SDFTreeNodeDoesNotExist() : std::runtime_error(std::format(R"(SDF Tree node does not exist)")) {}
+};
+
+class SDFTreeRootDeletionError : public std::runtime_error {
+ public:
+  EXCEPTION_NAME(SDFTreeRootDeletionError)
+
+  explicit SDFTreeRootDeletionError() : std::runtime_error(std::format(R"(SDF Tree root must not be deleted)")) {}
+};
+
+class SDFTreeNodeIsNotAChild : public std::runtime_error {
+ public:
+  EXCEPTION_NAME(SDFTreeNodeIsNotAChild)
+
+  explicit SDFTreeNodeIsNotAChild()
+      : std::runtime_error(std::format(R"(SDF Tree node is not a child of the provided parent)")) {}
+};
+
 class NotImplementedException : public std::runtime_error {
  public:
   EXCEPTION_NAME(NotImplementedException)

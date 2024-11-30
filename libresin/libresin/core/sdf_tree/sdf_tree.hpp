@@ -27,7 +27,7 @@ class SDFTreeRegistry {
   IdRegistry<CubeNode> cube_component_registry;
   IdRegistry<Transform> transform_component_registry;
 
-  // Nodes: the ids correspond to the nodes stored in the array all_nodes_
+  // Nodes: the ids correspond to the indices of nodes stored in the array all_nodes_
   IdRegistry<SDFTreeNode> nodes_registry;
 
   std::vector<std::optional<std::reference_wrapper<SDFTreeNode>>> all_nodes;
@@ -37,7 +37,15 @@ class SDFTree {
  public:
   SDFTree() : root(std::make_unique<GroupNode>(sdf_tree_registry_)) {}
 
-  bool visit_node(IdView<SDFTreeNodeId> node_id, ISDFTreeNodeVisitor& visitor);
+  // Cost: O(1)
+  void visit_node(IdView<SDFTreeNodeId> node_id, ISDFTreeNodeVisitor& visitor);
+
+  // Cost: Amortized O(1)
+  std::unique_ptr<SDFTreeNode>& get_node(IdView<SDFTreeNodeId> node_id);
+
+  // Cost: Amortized O(1)
+  // WARNING: This function must not be called while children of the the provided node's parent is iterated.
+  void delete_node(IdView<SDFTreeNodeId> node_id);
 
  private:
   SDFTreeRegistry sdf_tree_registry_;

@@ -113,7 +113,7 @@ template <typename IdType>
 struct IdView {
   IdView() = delete;
   IdView(const IdType& id)  // NOLINT (allow the implicit constructor)
-      : raw_id_(id.raw()) {}
+      : raw_id_(id.raw()), registry_(id.registry()) {}
 
   bool operator==(const IdView<IdType>& other) const { return raw_id_ == other.raw(); }
   bool operator!=(const IdView<IdType>& other) const { return raw_id_ != other.raw(); }
@@ -123,8 +123,12 @@ struct IdView {
   inline size_t raw() const { return raw_id_; }
   inline int raw_as_int() const { return static_cast<int>(raw_id_); }
 
+  // If the registry is no longer alive, this function results in undefined behavior (in most cases segfault).
+  inline bool expired() const { return registry_.get().is_registered(raw_id_); }
+
  private:
   size_t raw_id_;
+  std::reference_wrapper<const IdRegistry<typename IdType::object_type>> registry_;
 };
 
 }  // namespace resin

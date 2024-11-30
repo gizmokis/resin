@@ -12,13 +12,23 @@ namespace resin {
 void SDFTreeComponentVisitor::visit_group(GroupNode& node) {
   ::ImGui::PushID(node.node_id().raw_as_int());
   bool tree_node_opened = ::ImGui::TreeNode(node.name().data());
+
+  ::ImGui::SameLine();
+  if (::ImGui::Button("Push node")) {
+    node.push_child<SphereNode>(SDFBinaryOperation::Union);
+  }
+
   if (!tree_node_opened) {
     ::ImGui::PopID();
     return;
   }
 
-  for (auto& child : node) {
-    child->accept_visitor(*this);
+  for (auto child_it = node.begin(); child_it != node.end(); ++child_it) {
+    node.get_child(*child_it)->accept_visitor(*this);
+    if (delete_) {
+      child_it = node.erase_child(child_it);
+      delete_  = false;
+    }
   }
 
   ::ImGui::TreePop();
@@ -30,6 +40,11 @@ void SDFTreeComponentVisitor::visit_primitive(PrimitiveNode& node) {
   if (::ImGui::Selectable(node.name().data())) {
     selected_ = node.node_id().raw();
   }
+  ::ImGui::SameLine();
+  if (::ImGui::Button("Delete")) {
+    delete_ = true;
+  }
+
   ::ImGui::PopID();
 }
 
