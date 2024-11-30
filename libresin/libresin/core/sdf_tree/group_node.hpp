@@ -28,6 +28,8 @@ class GroupNode : public SDFTreeNode {
   void rename(std::string&& name) override { name_ = std::move(name); }
   inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override { visitor.visit_group(*this); }
 
+  inline size_t get_children_count() const { return this->nodes_.size(); }
+
   template <SDFTreeNodeConcept Node, typename... Args>
     requires std::constructible_from<Node, SDFTreeRegistry&, Args...>
   inline IdView<SDFTreeNodeId> push_child(SDFBinaryOperation op, Args&&... args) {

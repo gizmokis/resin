@@ -22,6 +22,8 @@ class SDFTreeComponentVisitor : public ISDFTreeNodeVisitor {
  private:
   std::optional<size_t> selected_ = std::nullopt;
   bool delete_                    = false;
+  int level_                      = 0;
+  size_t curr_children_count_     = 0;
 };
 
 namespace ImGui {  // NOLINT

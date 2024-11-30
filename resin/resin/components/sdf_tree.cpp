@@ -10,12 +10,17 @@
 namespace resin {
 
 void SDFTreeComponentVisitor::visit_group(GroupNode& node) {
+  level_++;
   ::ImGui::PushID(node.node_id().raw_as_int());
   bool tree_node_opened = ::ImGui::TreeNode(node.name().data());
 
   ::ImGui::SameLine();
-  if (::ImGui::Button("Push node")) {
+  if (::ImGui::Button("Push sphere")) {
     node.push_child<SphereNode>(SDFBinaryOperation::Union);
+  }
+  ::ImGui::SameLine();
+  if (::ImGui::Button("Push group")) {
+    node.push_child<GroupNode>(SDFBinaryOperation::Union);
   }
 
   if (!tree_node_opened) {
@@ -24,6 +29,7 @@ void SDFTreeComponentVisitor::visit_group(GroupNode& node) {
   }
 
   for (auto child_it = node.begin(); child_it != node.end(); ++child_it) {
+    curr_children_count_ = node.get_children_count();
     node.get_child(*child_it)->accept_visitor(*this);
     if (delete_) {
       child_it = node.erase_child(child_it);
@@ -31,8 +37,13 @@ void SDFTreeComponentVisitor::visit_group(GroupNode& node) {
     }
   }
 
+  if (node.get_children_count() == 0) {
+    delete_ = true;
+  }
+
   ::ImGui::TreePop();
   ::ImGui::PopID();
+  level_--;
 }
 
 void SDFTreeComponentVisitor::visit_primitive(PrimitiveNode& node) {
@@ -41,8 +52,10 @@ void SDFTreeComponentVisitor::visit_primitive(PrimitiveNode& node) {
     selected_ = node.node_id().raw();
   }
   ::ImGui::SameLine();
-  if (::ImGui::Button("Delete")) {
-    delete_ = true;
+  if (level_ != 1 || curr_children_count_ != 1) {
+    if (::ImGui::Button("Delete")) {
+      delete_ = true;
+    }
   }
 
   ::ImGui::PopID();
