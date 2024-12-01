@@ -2,6 +2,7 @@
 #define RESIN_GROUP_NODE_HPP
 
 #include <concepts>
+#include <functional>
 #include <libresin/core/id_registry.hpp>
 #include <libresin/core/sdf_shader_consts.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
@@ -26,6 +27,7 @@ class GroupNode : public SDFTreeNode {
   std::string_view name() const override { return name_; }
   void rename(std::string&& name) override { name_ = std::move(name); }
   inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override { visitor.visit_group(*this); }
+  inline void mark_dirty() override {}
 
   inline size_t get_children_count() const { return this->nodes_.size(); }
 
@@ -62,7 +64,7 @@ class GroupNode : public SDFTreeNode {
 
   // Cost: Amortized O(1)
   auto erase_child(std::list<IdView<SDFTreeNodeId>>::iterator it) {
-    auto map_it = nodes_.find(it->raw());
+    auto map_it = nodes_.find(*it);
     if (map_it == nodes_.end()) {
       log_throw(SDFTreeNodeIsNotAChild());
     }
@@ -81,7 +83,7 @@ class GroupNode : public SDFTreeNode {
   // TEMPORARY:
   // Cost: Amortized O(1)
   SDFTreeNode& get_child(IdView<SDFTreeNodeId> node_id) {
-    auto it = nodes_.find(node_id.raw());
+    auto it = nodes_.find(node_id);
     if (it == nodes_.end()) {
       log_throw(SDFTreeNodeIsNotAChild());
     }
@@ -91,7 +93,7 @@ class GroupNode : public SDFTreeNode {
 
   // Cost: Amortized O(1)
   const SDFTreeNode& get_child(IdView<SDFTreeNodeId> node_id) const {
-    auto it = nodes_.find(node_id.raw());
+    auto it = nodes_.find(node_id);
     if (it == nodes_.end()) {
       log_throw(SDFTreeNodeIsNotAChild());
     }
@@ -105,7 +107,9 @@ class GroupNode : public SDFTreeNode {
 
  private:
   std::list<IdView<SDFTreeNodeId>> nodes_order_;
-  std::unordered_map<size_t, std::pair<std::list<IdView<SDFTreeNodeId>>::iterator, std::unique_ptr<SDFTreeNode>>>
+  std::unordered_map<IdView<SDFTreeNodeId>,
+                     std::pair<std::list<IdView<SDFTreeNodeId>>::iterator, std::unique_ptr<SDFTreeNode>>,
+                     IdViewHash<SDFTreeNodeId>, std::equal_to<>>
       nodes_;
 
   std::string name_;

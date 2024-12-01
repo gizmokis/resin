@@ -41,7 +41,7 @@ std::string GroupNode::gen_shader_code() const {
 }
 
 void GroupNode::delete_child(IdView<SDFTreeNodeId> node_id) {
-  auto it = nodes_.find(node_id.raw());
+  auto it = nodes_.find(node_id);
   if (it == nodes_.end()) {
     log_throw(SDFTreeNodeIsNotAChild());
   }
@@ -51,7 +51,7 @@ void GroupNode::delete_child(IdView<SDFTreeNodeId> node_id) {
 }
 
 bool GroupNode::child_has_neighbor_up(IdView<SDFTreeNodeId> node_id) const {
-  auto map_it = nodes_.find(node_id.raw());
+  auto map_it = nodes_.find(node_id);
   if (map_it == nodes_.end()) {
     log_throw(SDFTreeNodeIsNotAChild());
   }
@@ -60,7 +60,7 @@ bool GroupNode::child_has_neighbor_up(IdView<SDFTreeNodeId> node_id) const {
 }
 
 bool GroupNode::child_has_neighbor_down(IdView<SDFTreeNodeId> node_id) const {
-  auto map_it = nodes_.find(node_id.raw());
+  auto map_it = nodes_.find(node_id);
   if (map_it == nodes_.end()) {
     log_throw(SDFTreeNodeIsNotAChild());
   }
@@ -70,7 +70,7 @@ bool GroupNode::child_has_neighbor_down(IdView<SDFTreeNodeId> node_id) const {
 }
 
 SDFTreeNode& GroupNode::child_neighbor_up(IdView<SDFTreeNodeId> node_id) {
-  auto map_it = nodes_.find(node_id.raw());
+  auto map_it = nodes_.find(node_id);
   if (map_it == nodes_.end()) {
     log_throw(SDFTreeNodeIsNotAChild());
   }
@@ -80,11 +80,11 @@ SDFTreeNode& GroupNode::child_neighbor_up(IdView<SDFTreeNodeId> node_id) {
     log_throw(SDFTreeNodeDoesNotExist());
   }
 
-  return *nodes_.find((++list_it)->raw())->second.second;
+  return *nodes_.find(*(++list_it))->second.second;
 }
 
 SDFTreeNode& GroupNode::child_neighbor_down(IdView<SDFTreeNodeId> node_id) {
-  auto map_it = nodes_.find(node_id.raw());
+  auto map_it = nodes_.find(node_id);
   if (map_it == nodes_.end()) {
     log_throw(SDFTreeNodeIsNotAChild());
   }
@@ -94,7 +94,7 @@ SDFTreeNode& GroupNode::child_neighbor_down(IdView<SDFTreeNodeId> node_id) {
     log_throw(SDFTreeNodeDoesNotExist());
   }
 
-  return *nodes_.find(list_it->raw())->second.second;
+  return *nodes_.find(*list_it)->second.second;
 }
 
 void GroupNode::set_parent(std::unique_ptr<SDFTreeNode>& node_ptr) {
@@ -108,7 +108,7 @@ void GroupNode::remove_from_parent(std::unique_ptr<SDFTreeNode>& node_ptr) {
 }
 
 std::unique_ptr<SDFTreeNode> GroupNode::detach_child(IdView<SDFTreeNodeId> node_id) {
-  auto map_it = nodes_.find(node_id.raw());
+  auto map_it = nodes_.find(node_id);
   if (map_it == nodes_.end()) {
     log_throw(SDFTreeNodeIsNotAChild());
   }
@@ -127,7 +127,7 @@ void GroupNode::push_child(std::unique_ptr<SDFTreeNode> node_ptr) {
   auto node_id = node_ptr->node_id();
 
   nodes_order_.push_back(node_id);
-  nodes_.emplace(node_id.raw(), std::make_pair(std::prev(nodes_order_.end()), std::move(node_ptr)));
+  nodes_.emplace(node_id, std::make_pair(std::prev(nodes_order_.end()), std::move(node_ptr)));
 }
 
 void GroupNode::insert_before_child(std::optional<IdView<SDFTreeNodeId>> before_child_id,
@@ -138,13 +138,13 @@ void GroupNode::insert_before_child(std::optional<IdView<SDFTreeNodeId>> before_
   }
   set_parent(node_ptr);
 
-  auto map_it = nodes_.find(before_child_id->raw());
+  auto map_it = nodes_.find(*before_child_id);
   if (map_it != nodes_.end()) {
     log_throw(SDFTreeNodeIsNotAChild());
   }
 
   auto list_it = nodes_order_.emplace(map_it->second.first, node_ptr->node_id_);
-  nodes_.emplace(node_ptr->node_id().raw(), std::make_pair(list_it, std::move(node_ptr)));
+  nodes_.emplace(node_ptr->node_id(), std::make_pair(list_it, std::move(node_ptr)));
 }
 
 }  // namespace resin
