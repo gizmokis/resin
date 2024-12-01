@@ -30,10 +30,11 @@ class GroupNode final : public SDFTreeNode {
   void rename(std::string&& name) override { name_ = std::move(name); }
   inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override { visitor.visit_group(*this); }
   void mark_dirty() override;
+  std::unique_ptr<SDFTreeNode> copy() override;
 
   inline size_t get_children_count() const { return this->nodes_.size(); }
 
-  // Cost: Amortized O(1)
+  // Cost: O(h)
   template <SDFTreeNodeConcept Node, typename... Args>
     requires std::constructible_from<Node, SDFTreeRegistry&, Args...>
   inline void push_child(SDFBinaryOperation op, Args&&... args) {
@@ -42,10 +43,10 @@ class GroupNode final : public SDFTreeNode {
     this->push_child(std::move(node_ptr));
   }
 
-  // Cost: Amortized O(1)
+  // Cost: O(h)
   void push_child(std::unique_ptr<SDFTreeNode> node_ptr);
 
-  // Cost: Amortized O(1)
+  // Cost: O(h)
   // When after_node_id is nullopt, the node_ptr is pushed back
   void insert_before_child(std::optional<IdView<SDFTreeNodeId>> before_child_id, std::unique_ptr<SDFTreeNode> node_ptr);
 
@@ -59,12 +60,12 @@ class GroupNode final : public SDFTreeNode {
   // WARNING: This function must not be called while the children are iterated.
   std::unique_ptr<SDFTreeNode> detach_child(IdView<SDFTreeNodeId> node_id);
 
-  // Cost: Amortized O(1)
+  // Cost: O(h)
   // WARNING: This function must not be called while the children are iterated. Use GroupNode::erase_child in this
   // scenario.
   void delete_child(IdView<SDFTreeNodeId> node_id);
 
-  // Cost: Amortized O(1)
+  // Cost: O(h)
   auto erase_child(std::list<IdView<SDFTreeNodeId>>::iterator it) {
     auto map_it = nodes_.find(*it);
     if (map_it == nodes_.end()) {

@@ -5,6 +5,7 @@
 #include <libresin/core/sdf_shader_consts.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/core/transform.hpp>
+#include <memory>
 #include <unordered_set>
 
 namespace resin {
@@ -14,7 +15,10 @@ class PrimitiveNode : public SDFTreeNode {
   inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override { visitor.visit_primitive(*this); }
 
   virtual ~PrimitiveNode() = default;
-  explicit PrimitiveNode(SDFTreeRegistry& tree) : SDFTreeNode(tree) {}
+  explicit PrimitiveNode(SDFTreeRegistry& tree, std::string&& name) : SDFTreeNode(tree), name_(name) {}
+
+  inline std::string_view name() const override { return name_; }
+  inline void rename(std::string&& name) override { name_ = std::move(name); }
 
   void mark_dirty() final;
 
@@ -29,7 +33,6 @@ class PrimitiveNode : public SDFTreeNode {
     leaves.erase(leaves.find(node_id()));
   }
 
- protected:
   inline std::string get_function_call_code(sdf_shader_consts::SDFShaderPrim primitive,
                                             sdf_shader_consts::SDFShaderComponents component,
                                             size_t component_id) const {
@@ -43,6 +46,9 @@ class PrimitiveNode : public SDFTreeNode {
         component_id                                                                                          //
     );
   }
+
+ private:
+  std::string name_;
 };
 
 class SphereNode;
@@ -60,21 +66,19 @@ class SphereNode final : public PrimitiveNode {
                                   sdf_shader_consts::SDFShaderComponents::Spheres, sphere_id_.raw());
   }
 
-  inline std::string_view name() const override { return name_; }
-  inline void rename(std::string&& name) override { name_ = std::move(name); }
-
   virtual ~SphereNode() = default;
-
   inline IdView<SphereNodeId> component_id() const { return sphere_id_; }
-
   explicit SphereNode(SDFTreeRegistry& tree, float _radius = 1.F);
+
+  inline std::unique_ptr<SDFTreeNode> copy() override {
+    return std::make_unique<SphereNode>(this->tree_registry_, radius);
+  }
 
  public:
   float radius;
 
  private:
   SphereNodeId sphere_id_;
-  std::string name_;
 };
 
 class CubeNode;
@@ -92,12 +96,13 @@ class CubeNode final : public PrimitiveNode {
                                   cube_id_.raw());
   }
 
-  inline std::string_view name() const override { return name_; }
-  inline void rename(std::string&& name) override { name_ = std::move(name); }
-
   virtual ~CubeNode() = default;
   explicit CubeNode(SDFTreeRegistry& tree, float _size = 1.F);
   inline IdView<CubeNodeId> component_id() const { return cube_id_; }
+
+  inline std::unique_ptr<SDFTreeNode> copy() override {
+    return std::make_unique<SphereNode>(this->tree_registry_, size);
+  }
 
  public:
   float size;

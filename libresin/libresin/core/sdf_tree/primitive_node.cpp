@@ -12,15 +12,13 @@ void PrimitiveNode::mark_dirty() {
 }
 
 SphereNode::SphereNode(SDFTreeRegistry& tree, float _radius)
-    : PrimitiveNode(tree),
+    : PrimitiveNode(tree, std::format("Sphere {}", node_id_.raw())),
       radius(_radius),
-      sphere_id_(tree.sphere_component_registry),
-      name_(std::format("Sphere {}", node_id_.raw())) {}
+      sphere_id_(tree.sphere_component_registry) {}
 
 CubeNode::CubeNode(SDFTreeRegistry& tree, float _size)
-    : PrimitiveNode(tree),
+    : PrimitiveNode(tree, std::format("Cube {}", node_id_.raw())),
       size(_size),
-      cube_id_(tree.cube_component_registry),
-      name_(std::format("Cube {}", node_id_.raw())) {}
+      cube_id_(tree.cube_component_registry) {}
 
 }  // namespace resin

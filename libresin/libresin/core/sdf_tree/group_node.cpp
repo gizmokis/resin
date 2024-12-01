@@ -6,6 +6,8 @@
 #include <libresin/utils/logger.hpp>
 #include <optional>
 
+#include "libresin/core/sdf_tree/sdf_tree_node.hpp"
+
 namespace resin {
 
 GroupNode::GroupNode(SDFTreeRegistry& tree) : SDFTreeNode(tree), name_(std::format("Group {}", node_id_.raw())) {
@@ -157,6 +159,15 @@ void GroupNode::mark_dirty() {
   for (auto prim : primitives_) {
     tree_registry_.get().dirty_primitives.push_back(std::move(prim));
   }
+}
+
+std::unique_ptr<SDFTreeNode> GroupNode::copy() {
+  auto result = make_unique<GroupNode>(this->tree_registry_);
+  for (auto& list_it : nodes_order_) {
+    result->push_child(nodes_.find(list_it)->second.second->copy());
+  }
+
+  return result;
 }
 
 void GroupNode::insert_leaves_up(const std::unique_ptr<SDFTreeNode>& source) {
