@@ -100,11 +100,13 @@ SDFTreeNode& GroupNode::child_neighbor_down(IdView<SDFTreeNodeId> node_id) {
 void GroupNode::set_parent(std::unique_ptr<SDFTreeNode>& node_ptr) {
   node_ptr->set_parent(*this);
   node_ptr->transform().set_parent(this->transform_);
+  insert_leaves_up(node_ptr);
 }
 
 void GroupNode::remove_from_parent(std::unique_ptr<SDFTreeNode>& node_ptr) {
   node_ptr->remove_from_parent();
   node_ptr->transform().remove_from_parent();
+  remove_leaves_up(node_ptr);
 }
 
 std::unique_ptr<SDFTreeNode> GroupNode::detach_child(IdView<SDFTreeNodeId> node_id) {
@@ -143,8 +145,44 @@ void GroupNode::insert_before_child(std::optional<IdView<SDFTreeNodeId>> before_
     log_throw(SDFTreeNodeIsNotAChild());
   }
 
-  auto list_it = nodes_order_.emplace(map_it->second.first, node_ptr->node_id_);
+  auto list_it = nodes_order_.emplace(map_it->second.first, node_ptr->node_id());
   nodes_.emplace(node_ptr->node_id(), std::make_pair(list_it, std::move(node_ptr)));
+}
+
+void GroupNode::mark_dirty() {
+  if (tree_registry_.get().nodes_registry.get_max_objs() < tree_registry_.get().dirty_primitives.size()) {
+    log_throw(SDFTreeReachedDirtyPrimitivesLimit());
+  }
+
+  for (auto prim : primitives_) {
+    tree_registry_.get().dirty_primitives.push_back(std::move(prim));
+  }
+}
+
+void GroupNode::insert_leaves_to(
+    std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& leaves) {
+  leaves.insert(this->primitives_.begin(), this->primitives_.end());
+}
+
+void GroupNode::remove_leaves_from(
+    std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& leaves) {
+  for (const auto& leaf : this->primitives_) {
+    leaves.erase(leaf);
+  }
+}
+
+void GroupNode::insert_leaves_up(const std::unique_ptr<SDFTreeNode>& source) {
+  source->insert_leaves_to(this->primitives_);
+  if (this->parent_.has_value()) {
+    this->parent_->get().insert_leaves_up(source);
+  }
+}
+
+void GroupNode::remove_leaves_up(const std::unique_ptr<SDFTreeNode>& source) {
+  source->remove_leaves_from(this->primitives_);
+  if (this->parent_.has_value()) {
+    this->parent_->get().remove_leaves_up(source);
+  }
 }
 
 }  // namespace resin

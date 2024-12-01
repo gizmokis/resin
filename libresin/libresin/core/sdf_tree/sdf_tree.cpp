@@ -25,7 +25,18 @@ SDFTreeNode& SDFTree::get_node(IdView<SDFTreeNodeId> node_id) {
   return sdf_tree_registry_.all_nodes[node_id.raw()].value();
 }
 
-void visit_dirty_primitives(ISDFTreeNodeVisitor& visitor) { throw NotImplementedException(); }
+void SDFTree::visit_dirty_primitives(ISDFTreeNodeVisitor& visitor) {
+  for (auto prim : sdf_tree_registry_.dirty_primitives) {
+    sdf_tree_registry_.all_nodes[prim.raw()]->get().accept_visitor(visitor);
+  }
+  this->clear_dirty();
+}
+
+void SDFTree::visit_all_primitives(ISDFTreeNodeVisitor& visitor) {
+  for (auto prim : root->primitives()) {
+    sdf_tree_registry_.all_nodes[prim.raw()]->get().accept_visitor(visitor);
+  }
+}
 
 void SDFTree::delete_node(IdView<SDFTreeNodeId> node_id) {
   if (!sdf_tree_registry_.all_nodes[node_id.raw()].has_value()) {

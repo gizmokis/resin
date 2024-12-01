@@ -285,6 +285,14 @@ class SDFTreeNodeIsNotAChild : public std::runtime_error {
       : std::runtime_error(std::format(R"(SDF Tree node is not a child of the provided parent)")) {}
 };
 
+class SDFTreeReachedDirtyPrimitivesLimit : public std::runtime_error {
+ public:
+  EXCEPTION_NAME(SDFTreeReachedDirtyPrimitivesLimit)
+
+  explicit SDFTreeReachedDirtyPrimitivesLimit()
+      : std::runtime_error(std::format(R"(SDF Tree reached the dirty primitives limit)")) {}
+};
+
 class NotImplementedException : public std::runtime_error {
  public:
   EXCEPTION_NAME(NotImplementedException)

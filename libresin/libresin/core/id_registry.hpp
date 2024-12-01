@@ -133,7 +133,6 @@ struct IdView {
 
 template <typename IdType>
 struct IdViewHash {
-  using is_transparent = void;
   size_t operator()(const IdView<IdType>& id_view) const { return std::hash<size_t>{}(id_view.raw()); }
 };
 

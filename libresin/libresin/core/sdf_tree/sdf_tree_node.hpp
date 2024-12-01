@@ -7,6 +7,7 @@
 #include <libresin/core/sdf_tree/sdf_tree_node_visitor.hpp>
 #include <libresin/core/transform.hpp>
 #include <string>
+#include <unordered_set>
 
 namespace resin {
 
@@ -24,6 +25,7 @@ class SDFTreeNode {
   virtual void accept_visitor(ISDFTreeNodeVisitor& visitor) = 0;
   virtual std::string_view name() const                     = 0;
   virtual void rename(std::string&&)                        = 0;
+  virtual void mark_dirty()                                 = 0;
 
   SDFTreeNode() = delete;
 
@@ -51,6 +53,12 @@ class SDFTreeNode {
 
   inline void set_parent(GroupNode& parent) { this->parent_ = parent; }
   inline void remove_from_parent() { parent_.reset(); }
+
+  virtual void insert_leaves_to(
+      std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& leaves) = 0;
+
+  virtual void remove_leaves_from(
+      std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& leaves) = 0;
 
  protected:
   SDFTreeNodeId node_id_;

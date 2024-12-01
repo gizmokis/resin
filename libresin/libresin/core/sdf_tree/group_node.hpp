@@ -1,6 +1,7 @@
 #ifndef RESIN_GROUP_NODE_HPP
 #define RESIN_GROUP_NODE_HPP
 
+#include <algorithm>
 #include <concepts>
 #include <functional>
 #include <libresin/core/id_registry.hpp>
@@ -13,11 +14,12 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 
 namespace resin {
 
-class GroupNode : public SDFTreeNode {
+class GroupNode final : public SDFTreeNode {
  public:
   GroupNode() = delete;
   explicit GroupNode(SDFTreeRegistry& tree);
@@ -27,7 +29,7 @@ class GroupNode : public SDFTreeNode {
   std::string_view name() const override { return name_; }
   void rename(std::string&& name) override { name_ = std::move(name); }
   inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override { visitor.visit_group(*this); }
-  inline void mark_dirty() override {}
+  void mark_dirty() override;
 
   inline size_t get_children_count() const { return this->nodes_.size(); }
 
@@ -101,9 +103,23 @@ class GroupNode : public SDFTreeNode {
     return *it->second.second;
   }
 
+  inline const std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& primitives() {
+    return primitives_;
+  }
+
+ protected:
+  void insert_leaves_to(
+      std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& leaves) override;
+
+  void remove_leaves_from(
+      std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& leaves) override;
+
  private:
+  void insert_leaves_up(const std::unique_ptr<SDFTreeNode>& source);
+  void remove_leaves_up(const std::unique_ptr<SDFTreeNode>& source);
+
   void set_parent(std::unique_ptr<SDFTreeNode>& node_ptr);
-  static void remove_from_parent(std::unique_ptr<SDFTreeNode>& node_ptr);
+  void remove_from_parent(std::unique_ptr<SDFTreeNode>& node_ptr);
 
  private:
   std::list<IdView<SDFTreeNodeId>> nodes_order_;
@@ -111,6 +127,8 @@ class GroupNode : public SDFTreeNode {
                      std::pair<std::list<IdView<SDFTreeNodeId>>::iterator, std::unique_ptr<SDFTreeNode>>,
                      IdViewHash<SDFTreeNodeId>, std::equal_to<>>
       nodes_;
+
+  std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>> primitives_;  // leaves
 
   std::string name_;
 };

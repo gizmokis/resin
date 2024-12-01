@@ -1,8 +1,6 @@
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 
-#include "libresin/utils/exceptions.hpp"
-
 namespace resin {
 
 SDFTreeNode::SDFTreeNode(SDFTreeRegistry& tree)

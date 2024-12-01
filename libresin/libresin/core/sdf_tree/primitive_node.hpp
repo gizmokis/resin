@@ -1,11 +1,11 @@
 #ifndef RESIN_PRIMITIVE_NODE_HPP
 #define RESIN_PRIMITIVE_NODE_HPP
 #include <format>
-#include <functional>
 #include <libresin/core/id_registry.hpp>
 #include <libresin/core/sdf_shader_consts.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/core/transform.hpp>
+#include <unordered_set>
 
 namespace resin {
 
@@ -15,6 +15,19 @@ class PrimitiveNode : public SDFTreeNode {
 
   virtual ~PrimitiveNode() = default;
   explicit PrimitiveNode(SDFTreeRegistry& tree) : SDFTreeNode(tree) {}
+
+  void mark_dirty() final;
+
+ protected:
+  inline void insert_leaves_to(
+      std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& leaves) override {
+    leaves.emplace(node_id());
+  }
+
+  inline void remove_leaves_from(
+      std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& leaves) override {
+    leaves.erase(leaves.find(node_id()));
+  }
 
  protected:
   inline std::string get_function_call_code(sdf_shader_consts::SDFShaderPrim primitive,
@@ -35,7 +48,7 @@ class PrimitiveNode : public SDFTreeNode {
 class SphereNode;
 using SphereNodeId = Id<SphereNode>;
 
-class SphereNode : public PrimitiveNode {
+class SphereNode final : public PrimitiveNode {
  public:
   inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override {
     PrimitiveNode::accept_visitor(visitor);
@@ -67,7 +80,7 @@ class SphereNode : public PrimitiveNode {
 class CubeNode;
 using CubeNodeId = Id<CubeNode>;
 
-class CubeNode : public PrimitiveNode {
+class CubeNode final : public PrimitiveNode {
  public:
   inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override {
     PrimitiveNode::accept_visitor(visitor);
