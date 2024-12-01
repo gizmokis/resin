@@ -15,10 +15,7 @@ class PrimitiveNode : public SDFTreeNode {
   inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override { visitor.visit_primitive(*this); }
 
   virtual ~PrimitiveNode() = default;
-  explicit PrimitiveNode(SDFTreeRegistry& tree, std::string&& name) : SDFTreeNode(tree), name_(name) {}
-
-  inline std::string_view name() const override { return name_; }
-  inline void rename(std::string&& name) override { name_ = std::move(name); }
+  explicit PrimitiveNode(SDFTreeRegistry& tree) : SDFTreeNode(tree) {}
 
   void mark_dirty() final;
 
@@ -46,9 +43,6 @@ class PrimitiveNode : public SDFTreeNode {
         component_id                                                                                          //
     );
   }
-
- private:
-  std::string name_;
 };
 
 class SphereNode;
@@ -66,6 +60,9 @@ class SphereNode final : public PrimitiveNode {
                                   sdf_shader_consts::SDFShaderComponents::Spheres, sphere_id_.raw());
   }
 
+  inline std::string_view name() const override { return name_; }
+  inline void rename(std::string&& name) override { name_ = std::move(name); }
+
   virtual ~SphereNode() = default;
   inline IdView<SphereNodeId> component_id() const { return sphere_id_; }
   explicit SphereNode(SDFTreeRegistry& tree, float _radius = 1.F);
@@ -79,6 +76,7 @@ class SphereNode final : public PrimitiveNode {
 
  private:
   SphereNodeId sphere_id_;
+  std::string name_;
 };
 
 class CubeNode;
@@ -96,13 +94,14 @@ class CubeNode final : public PrimitiveNode {
                                   cube_id_.raw());
   }
 
+  inline std::string_view name() const override { return name_; }
+  inline void rename(std::string&& name) override { name_ = std::move(name); }
+
   virtual ~CubeNode() = default;
   explicit CubeNode(SDFTreeRegistry& tree, float _size = 1.F);
   inline IdView<CubeNodeId> component_id() const { return cube_id_; }
 
-  inline std::unique_ptr<SDFTreeNode> copy() override {
-    return std::make_unique<SphereNode>(this->tree_registry_, size);
-  }
+  inline std::unique_ptr<SDFTreeNode> copy() override { return std::make_unique<CubeNode>(this->tree_registry_, size); }
 
  public:
   float size;
