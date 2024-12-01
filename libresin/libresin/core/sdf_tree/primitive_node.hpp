@@ -20,12 +20,12 @@ class PrimitiveNode : public SDFTreeNode {
 
  protected:
   inline void insert_leaves_to(
-      std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& leaves) override {
+      std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& leaves) final {
     leaves.emplace(node_id());
   }
 
   inline void remove_leaves_from(
-      std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& leaves) override {
+      std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& leaves) final {
     leaves.erase(leaves.find(node_id()));
   }
 

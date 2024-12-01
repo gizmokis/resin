@@ -108,11 +108,17 @@ class GroupNode final : public SDFTreeNode {
   }
 
  protected:
-  void insert_leaves_to(
-      std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& leaves) override;
+  inline void insert_leaves_to(
+      std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& leaves) override {
+    leaves.insert(this->primitives_.begin(), this->primitives_.end());
+  }
 
-  void remove_leaves_from(
-      std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& leaves) override;
+  inline void remove_leaves_from(
+      std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& leaves) override {
+    for (const auto& leaf : this->primitives_) {
+      leaves.erase(leaf);
+    }
+  }
 
  private:
   void insert_leaves_up(const std::unique_ptr<SDFTreeNode>& source);
