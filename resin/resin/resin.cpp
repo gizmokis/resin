@@ -142,10 +142,7 @@ void Resin::render() {
   glClear(GL_COLOR_BUFFER_BIT);
 
   if (::ImGui::Begin("SDF Tree")) {
-    auto selected = resin::ImGui::SDFTreeView(sdf_tree_);
-    if (selected.has_value()) {
-      Logger::info("Selected {}", selected.value());
-    }
+    resin::ImGui::SDFTreeView(sdf_tree_);
   }
   ::ImGui::End();
   ::ImGui::Render();

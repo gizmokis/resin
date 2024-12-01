@@ -75,7 +75,7 @@ class IdRegistry {
   std::stack<size_t> freed_;
   std::vector<bool> is_registered_;
   size_t max_objs_;
-  std::mutex mutex_;
+  mutable std::mutex mutex_;
 };
 
 // Strongly typed id, with similar behavior to unique_ptr -- it unregisters in the provided registry when destructor is
@@ -124,7 +124,7 @@ struct IdView {
   inline int raw_as_int() const { return static_cast<int>(raw_id_); }
 
   // If the registry is no longer alive, this function results in undefined behavior (in most cases segfault).
-  inline bool expired() const { return registry_.get().is_registered(raw_id_); }
+  inline bool expired() const { return !registry_.get().is_registered(raw_id_); }
 
  private:
   size_t raw_id_;

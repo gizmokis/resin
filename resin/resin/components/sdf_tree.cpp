@@ -30,15 +30,11 @@ void SDFTreeComponentVisitor::visit_group(GroupNode& node) {
 
   for (auto child_it = node.begin(); child_it != node.end(); ++child_it) {
     curr_children_count_ = node.get_children_count();
-    node.get_child(*child_it)->accept_visitor(*this);
-    if (delete_) {
-      child_it = node.erase_child(child_it);
-      delete_  = false;
-    }
+    node.get_child(*child_it).accept_visitor(*this);
   }
 
   if (node.get_children_count() == 0) {
-    delete_ = true;
+    deleted_.push(node.node_id());
   }
 
   ::ImGui::TreePop();
@@ -54,21 +50,35 @@ void SDFTreeComponentVisitor::visit_primitive(PrimitiveNode& node) {
   ::ImGui::SameLine();
   if (level_ != 1 || curr_children_count_ != 1) {
     if (::ImGui::Button("Delete")) {
-      delete_ = true;
+      deleted_.push(node.node_id());
     }
   }
 
   ::ImGui::PopID();
 }
 
+void SDFTreeComponentVisitor::apply_operations(SDFTree& tree) {
+  // Apply delete operations
+  while (!this->deleted_.empty()) {
+    auto id = this->deleted_.top();
+    this->deleted_.pop();
+    Logger::info("test {}", id.raw());
+
+    if (!id.expired()) {
+      tree.delete_node(id);
+    }
+  }
+}
+
 namespace ImGui {  // NOLINT
 
 std::optional<size_t> SDFTreeView(SDFTree& tree) {
-  SDFTreeComponentVisitor vs;
+  static SDFTreeComponentVisitor vs;
+
   tree.root->accept_visitor(vs);
+  vs.apply_operations(tree);
 
   return vs.selected();
-  return std::nullopt;
 }
 
 }  // namespace ImGui

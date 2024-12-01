@@ -41,12 +41,23 @@ class SDFTreeNode {
 
   virtual ~SDFTreeNode();
 
+  inline bool has_parent() const { return this->parent_.has_value(); }
+  inline GroupNode& parent() { return this->parent_.value(); }
+  inline const GroupNode& parent() const { return this->parent_.value(); }
+
+  bool has_neighbor_up() const;
+  SDFTreeNode& neighbor_up();
+  SDFTreeNode& neighbor_up() const;
+
+  bool has_neighbor_down() const;
+  SDFTreeNode& neighbor_down();
+  SDFTreeNode& neighbor_down() const;
+
  protected:
   friend SDFTree;
   friend GroupNode;
 
   inline void set_parent(GroupNode& parent) { this->parent_ = parent; }
-  inline std::optional<std::reference_wrapper<GroupNode>> get_parent() { return this->parent_; }
 
  protected:
   SDFTreeNodeId node_id_;

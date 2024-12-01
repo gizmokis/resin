@@ -19,11 +19,15 @@ class SDFTreeComponentVisitor : public ISDFTreeNodeVisitor {
 
   inline std::optional<size_t> selected() const { return selected_; }
 
+  void apply_operations(SDFTree& tree);
+
  private:
   std::optional<size_t> selected_ = std::nullopt;
-  bool delete_                    = false;
-  int level_                      = 0;
-  size_t curr_children_count_     = 0;
+
+  std::stack<IdView<SDFTreeNodeId>> deleted_;
+
+  int level_                  = 0;
+  size_t curr_children_count_ = 0;
 };
 
 namespace ImGui {  // NOLINT

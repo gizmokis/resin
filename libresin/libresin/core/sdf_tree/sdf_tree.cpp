@@ -1,5 +1,4 @@
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
-#include <memory>
 
 #include "libresin/utils/exceptions.hpp"
 
@@ -12,30 +11,36 @@ void SDFTree::visit_node(IdView<SDFTreeNodeId> node_id, ISDFTreeNodeVisitor& vis
   sdf_tree_registry_.all_nodes[node_id.raw()]->get().accept_visitor(visitor);
 }
 
+void visit_dirty_primitives(ISDFTreeNodeVisitor& visitor) { throw NotImplementedException(); }
+
 void SDFTree::delete_node(IdView<SDFTreeNodeId> node_id) {
   if (!sdf_tree_registry_.all_nodes[node_id.raw()].has_value()) {
     log_throw(SDFTreeNodeDoesNotExist());
   }
 
-  auto parent = sdf_tree_registry_.all_nodes[node_id.raw()]->get().get_parent();
-  if (!parent.has_value()) {
+  if (!sdf_tree_registry_.all_nodes[node_id.raw()]->get().has_parent()) {
     log_throw(SDFTreeRootDeletionError());
   }
 
-  parent.value().get().delete_child(node_id);
+  sdf_tree_registry_.all_nodes[node_id.raw()]->get().parent().delete_child(node_id);
 }
 
-std::unique_ptr<SDFTreeNode>& SDFTree::get_node(IdView<SDFTreeNodeId> node_id) {
-  if (!sdf_tree_registry_.all_nodes[node_id.raw()].has_value()) {
-    log_throw(SDFTreeNodeDoesNotExist());
-  }
-
-  auto parent = sdf_tree_registry_.all_nodes[node_id.raw()]->get().get_parent();
-  if (!parent.has_value()) {
-    return reinterpret_cast<std::unique_ptr<SDFTreeNode>&>(this->root);  // GroupNode derives from SDFTreeNode
-  }
-
-  return parent->get().get_child(node_id);
+void SDFTree::move_node_before(IdView<SDFTreeNodeId> before_node_id, IdView<SDFTreeNodeId> node_id) {
+  throw NotImplementedException();
 }
+
+void SDFTree::move_node_after(IdView<SDFTreeNodeId> after_node_id, IdView<SDFTreeNodeId> node_id) {
+  throw NotImplementedException();
+}
+
+void SDFTree::copy_node_before(IdView<SDFTreeNodeId> before_node_id, IdView<SDFTreeNodeId> node_id) {
+  throw NotImplementedException();
+}
+
+void SDFTree::copy_node_after(IdView<SDFTreeNodeId> after_node_id, IdView<SDFTreeNodeId> node_id) {
+  throw NotImplementedException();
+}
+
+std::string SDFTree::gen_shader_code() const { return this->root->gen_shader_code(); }
 
 }  // namespace resin

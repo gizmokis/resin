@@ -2,18 +2,17 @@
 #define RESIN_GROUP_NODE_HPP
 
 #include <concepts>
+#include <libresin/core/id_registry.hpp>
 #include <libresin/core/sdf_shader_consts.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/core/transform.hpp>
+#include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/logger.hpp>
 #include <list>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <utility>
-#include <vector>
-
-#include "libresin/core/id_registry.hpp"
 
 namespace resin {
 
@@ -30,6 +29,7 @@ class GroupNode : public SDFTreeNode {
 
   inline size_t get_children_count() const { return this->nodes_.size(); }
 
+  // Cost: Amortized O(1)
   template <SDFTreeNodeConcept Node, typename... Args>
     requires std::constructible_from<Node, SDFTreeRegistry&, Args...>
   inline IdView<SDFTreeNodeId> push_child(SDFBinaryOperation op, Args&&... args) {
@@ -46,19 +46,14 @@ class GroupNode : public SDFTreeNode {
     return node_id;
   }
 
-  template <SDFTreeNodeConcept Node, typename... Args>
-    requires std::constructible_from<Node, SDFTreeRegistry&, Args...>
-  void insert_before(IdView<SDFTreeNodeId> node_id, SDFBinaryOperation op) {}
-
-  template <SDFTreeNodeConcept Node, typename... Args>
-    requires std::constructible_from<Node, SDFTreeRegistry&, Args...>
-  void insert_after(IdView<SDFTreeNodeId> node_id, SDFBinaryOperation op) {}
-
   void move_child_after(IdView<SDFTreeNodeId> after_child_id, IdView<SDFTreeNodeId> child_id);
   void move_child_before(IdView<SDFTreeNodeId> before_child_id, IdView<SDFTreeNodeId> child_id);
-  void move_child_up(IdView<SDFTreeNodeId> node_id);
-  void move_child_down(IdView<SDFTreeNodeId> node_id);
-  void reorder_children(std::vector<IdView<SDFTreeNodeId>>&& new_order);
+
+  bool child_has_neighbor_up(IdView<SDFTreeNodeId> node_id) const;
+  SDFTreeNode& child_neighbor_up(IdView<SDFTreeNodeId> node_id);
+
+  bool child_has_neighbor_down(IdView<SDFTreeNodeId> node_id) const;
+  SDFTreeNode& child_neighbor_down(IdView<SDFTreeNodeId> node_id);
 
   // Cost: Amortized O(1)
   // WARNING: This function must not be called while the children are iterated. Use GroupNode::erase_child in this
@@ -83,22 +78,25 @@ class GroupNode : public SDFTreeNode {
   auto begin() const { return nodes_order_.begin(); }
   auto end() const { return nodes_order_.end(); }
 
-  std::unique_ptr<SDFTreeNode>& get_child(IdView<SDFTreeNodeId> node_id) {
+  // TEMPORARY:
+  // Cost: Amortized O(1)
+  SDFTreeNode& get_child(IdView<SDFTreeNodeId> node_id) {
     auto it = nodes_.find(node_id.raw());
     if (it == nodes_.end()) {
       log_throw(SDFTreeNodeIsNotAChild());
     }
 
-    return it->second.second;
+    return *it->second.second;
   }
 
-  const std::unique_ptr<SDFTreeNode>& get_child(IdView<SDFTreeNodeId> node_id) const {
+  // Cost: Amortized O(1)
+  const SDFTreeNode& get_child(IdView<SDFTreeNodeId> node_id) const {
     auto it = nodes_.find(node_id.raw());
     if (it == nodes_.end()) {
       log_throw(SDFTreeNodeIsNotAChild());
     }
 
-    return it->second.second;
+    return *it->second.second;
   }
 
  private:
