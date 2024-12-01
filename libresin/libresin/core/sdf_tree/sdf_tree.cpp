@@ -25,18 +25,6 @@ SDFTreeNode& SDFTree::get_node(IdView<SDFTreeNodeId> node_id) {
   return sdf_tree_registry_.all_nodes[node_id.raw()].value();
 }
 
-GroupNode& SDFTree::get_parent(IdView<SDFTreeNodeId> node_id) {
-  if (!sdf_tree_registry_.all_nodes[node_id.raw()].has_value()) {
-    log_throw(SDFTreeNodeDoesNotExist());
-  }
-
-  if (!sdf_tree_registry_.all_nodes[node_id.raw()].value().get().has_parent()) {
-    log_throw(SDFTreeNodeDoesNotExist());
-  }
-
-  return sdf_tree_registry_.all_nodes[node_id.raw()]->get().parent();
-}
-
 void visit_dirty_primitives(ISDFTreeNodeVisitor& visitor) { throw NotImplementedException(); }
 
 void SDFTree::delete_node(IdView<SDFTreeNodeId> node_id) {

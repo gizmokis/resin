@@ -20,6 +20,7 @@ class SDFTreeComponentVisitor : public ISDFTreeNodeVisitor {
   inline std::optional<size_t> selected() const { return selected_; }
 
   void apply_operations(SDFTree& tree);
+  void reset();
 
  private:
   std::optional<size_t> selected_ = std::nullopt;

@@ -4,6 +4,7 @@
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/logger.hpp>
+#include <optional>
 
 namespace resin {
 
@@ -94,6 +95,56 @@ SDFTreeNode& GroupNode::child_neighbor_down(IdView<SDFTreeNodeId> node_id) {
   }
 
   return *nodes_.find(list_it->raw())->second.second;
+}
+
+void GroupNode::set_parent(std::unique_ptr<SDFTreeNode>& node_ptr) {
+  node_ptr->set_parent(*this);
+  node_ptr->transform().set_parent(this->transform_);
+}
+
+void GroupNode::remove_from_parent(std::unique_ptr<SDFTreeNode>& node_ptr) {
+  node_ptr->remove_from_parent();
+  node_ptr->transform().remove_from_parent();
+}
+
+std::unique_ptr<SDFTreeNode> GroupNode::detach_child(IdView<SDFTreeNodeId> node_id) {
+  auto map_it = nodes_.find(node_id.raw());
+  if (map_it == nodes_.end()) {
+    log_throw(SDFTreeNodeIsNotAChild());
+  }
+
+  nodes_order_.erase(map_it->second.first);
+  auto child_ptr = std::move(map_it->second.second);
+  nodes_.erase(map_it);
+
+  remove_from_parent(child_ptr);
+
+  return child_ptr;
+}
+
+void GroupNode::push_child(std::unique_ptr<SDFTreeNode> node_ptr) {
+  set_parent(node_ptr);
+  auto node_id = node_ptr->node_id();
+
+  nodes_order_.push_back(node_id);
+  nodes_.emplace(node_id.raw(), std::make_pair(std::prev(nodes_order_.end()), std::move(node_ptr)));
+}
+
+void GroupNode::insert_before_child(std::optional<IdView<SDFTreeNodeId>> before_child_id,
+                                    std::unique_ptr<SDFTreeNode> node_ptr) {
+  if (!before_child_id.has_value()) {
+    this->push_child(std::move(node_ptr));
+    return;
+  }
+  set_parent(node_ptr);
+
+  auto map_it = nodes_.find(before_child_id->raw());
+  if (map_it != nodes_.end()) {
+    log_throw(SDFTreeNodeIsNotAChild());
+  }
+
+  auto list_it = nodes_order_.emplace(map_it->second.first, node_ptr->node_id_);
+  nodes_.emplace(node_ptr->node_id().raw(), std::make_pair(list_it, std::move(node_ptr)));
 }
 
 }  // namespace resin

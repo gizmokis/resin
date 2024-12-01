@@ -60,8 +60,9 @@ struct Transform final {
   Transform& operator=(const Transform&) = delete;
   Transform& operator=(Transform&&)      = delete;
 
- private:
   void remove_from_parent();
+
+ private:
   void mark_dirty() const;
 
  private:

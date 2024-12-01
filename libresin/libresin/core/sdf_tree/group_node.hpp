@@ -32,28 +32,28 @@ class GroupNode : public SDFTreeNode {
   // Cost: Amortized O(1)
   template <SDFTreeNodeConcept Node, typename... Args>
     requires std::constructible_from<Node, SDFTreeRegistry&, Args...>
-  inline IdView<SDFTreeNodeId> push_child(SDFBinaryOperation op, Args&&... args) {
+  inline void push_child(SDFBinaryOperation op, Args&&... args) {
     auto node_ptr = std::make_unique<Node>(this->tree_registry_, std::forward<Args>(args)...);
     node_ptr->set_bin_op(op);
-    node_ptr->transform().set_parent(this->transform_);
-    node_ptr->set_parent(*this);
-
-    auto node_id = node_ptr->node_id();
-
-    nodes_order_.push_back(node_id);
-    nodes_.emplace(node_id.raw(), std::make_pair(std::prev(nodes_order_.end()), std::move(node_ptr)));
-
-    return node_id;
+    this->push_child(std::move(node_ptr));
   }
 
-  void move_child_after(IdView<SDFTreeNodeId> after_child_id, IdView<SDFTreeNodeId> child_id);
-  void move_child_before(IdView<SDFTreeNodeId> before_child_id, IdView<SDFTreeNodeId> child_id);
+  // Cost: Amortized O(1)
+  void push_child(std::unique_ptr<SDFTreeNode> node_ptr);
+
+  // Cost: Amortized O(1)
+  // When after_node_id is nullopt, the node_ptr is pushed back
+  void insert_before_child(std::optional<IdView<SDFTreeNodeId>> before_child_id, std::unique_ptr<SDFTreeNode> node_ptr);
 
   bool child_has_neighbor_up(IdView<SDFTreeNodeId> node_id) const;
   SDFTreeNode& child_neighbor_up(IdView<SDFTreeNodeId> node_id);
 
   bool child_has_neighbor_down(IdView<SDFTreeNodeId> node_id) const;
   SDFTreeNode& child_neighbor_down(IdView<SDFTreeNodeId> node_id);
+
+  // Cost: Amortized O(1)
+  // WARNING: This function must not be called while the children are iterated.
+  std::unique_ptr<SDFTreeNode> detach_child(IdView<SDFTreeNodeId> node_id);
 
   // Cost: Amortized O(1)
   // WARNING: This function must not be called while the children are iterated. Use GroupNode::erase_child in this
@@ -98,6 +98,10 @@ class GroupNode : public SDFTreeNode {
 
     return *it->second.second;
   }
+
+ private:
+  void set_parent(std::unique_ptr<SDFTreeNode>& node_ptr);
+  static void remove_from_parent(std::unique_ptr<SDFTreeNode>& node_ptr);
 
  private:
   std::list<IdView<SDFTreeNodeId>> nodes_order_;

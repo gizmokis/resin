@@ -50,9 +50,6 @@ class SDFTree {
   // Cost: O(1)
   SDFTreeNode& get_node(IdView<SDFTreeNodeId> node_id);
 
-  // Cost: O(1)
-  GroupNode& get_parent(IdView<SDFTreeNodeId> node_id);
-
   // Cost: Amortized O(1)
   // WARNING: This function must not be called while children of the the provided node's parent are iterated.
   void delete_node(IdView<SDFTreeNodeId> node_id);
