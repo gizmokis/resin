@@ -1,42 +1,31 @@
 #version 330 core
 
-layout(location = 0) out vec4 color;
-				
+#include "blinn_phong.glsl"
+#include "sdf.glsl"
+
+layout(location = 0) out vec4 fragColor;
+
+// fragment
 in vec3 v_Pos;
+
+// camera
 uniform mat4 u_iV;
 uniform bool u_ortho;
-
 uniform vec2 u_resolution;
 uniform float u_nearPlane;
 uniform float u_farPlane;
-
-uniform mat4 u_iM;
-uniform float u_scale;
 uniform float u_camSize;
 
-const float infinity = 1. / 0.;
+// rendering
+const vec3 u_Ambient = vec3(0.2, 0.1, 0.0);
+const directional_light dir_light = directional_light(0.5*vec3(1,1,1), normalize(vec3(-1,-1,-1)), 1.0);
+const point_light p_light = point_light(vec3(0.57,0.38,0.04), vec3(0,1,0.5), attenuation(1.0, 0.7, 1.8));
 
-float sdSphere( vec3 pos, float radius )
-{
-    return length(pos) - radius;
-}
-
-float sdCube( vec3 pos, float size )
-{
-    vec3 d = abs(pos) - size;
-    return min(max(d.x,max(d.y,d.z)),0.0) + length(max(d,0.0));
-}
-
-vec2 opUnion( vec2 d1, vec2 d2 )
-{
-	return (d1.x<d2.x) ? d1 : d2;
-}
-
-vec2 opSmoothUnion( vec2 d1, vec2 d2, float k )
-{
-    float h = clamp( 0.5 + 0.5*(d2.x-d1.x)/k, 0.0, 1.0 );
-    return mix( d2, d1, h )- vec2(k*h*(1.0-h), 0);
-}
+// objects
+uniform mat4 u_iM;
+uniform float u_scale;        
+material red_mat = material(vec3(0.96,0.25,0.25), 0.5, 0.5, 0.5, 50.);
+material blue_mat = material(vec3(0.25,0.25,0.96), 0.5, 0.5, 0.5, 50.);
 
 vec2 map( vec3 pos )
 {
@@ -53,7 +42,7 @@ vec2 raycast( vec3 ray_origin, vec3 ray_direction )
     float t = tmin;
     for( int i=0; i<70 && t<tmax; i++ )
     {
-        vec3 pos = (u_iV * vec4(ray_origin + t*ray_direction, 1)).xyz;
+        vec3 pos = ray_origin + t*ray_direction;
         vec2 dist = map(pos);
         if( abs(dist.x)<(0.0001*t) )
         { 
@@ -82,42 +71,40 @@ vec3 calcNormal( in vec3 pos )
 
 vec3 render( vec3 ray_origin, vec3 ray_direction )
 { 
-    vec3 col = vec3(0.2, 0.1, 0.0);
+    vec3 col = u_Ambient;
 
     vec2 res = raycast(ray_origin, ray_direction);
     float t = res.x;
 	float m = res.y;
     if( m>-0.5 )
     {
-        vec3 pos = (u_iV * vec4(ray_origin + t*ray_direction, 1)).xyz;
+        vec3 pos = ray_origin + t*ray_direction;
         vec3 nor = calcNormal( pos );
+        material mat = material_mix(red_mat, blue_mat, m);
 
-		col = mix(vec3(1,0,0), vec3(0,0,1), m) * (nor+1.0)/2.0;
+        vec3 totalAmbient = u_Ambient + dir_light.ambient_impact * dir_light.color;
+        vec3 light = mat.ka * totalAmbient
+            + calc_dir_light(dir_light, mat, nor, -ray_direction)
+            + calc_point_light(p_light, mat, nor, -ray_direction, pos);
+		col = light * mat.albedo;
     }
 
 	return col;
 }
 
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
-{
-    vec2 pos = (2.0*fragCoord-u_resolution)/u_resolution.y;
-    if(u_ortho) {
-        pos = u_camSize * pos;
-    }
-    vec3 ray_direction;
-    vec3 ray_origin;
-
-    if (u_ortho) {
-        ray_origin = vec3(pos, 0);
-        ray_direction = vec3(0,0,-1);
-    } else {
-        ray_origin = vec3(0,0,0); 
-        ray_direction = normalize( vec3(pos, -u_nearPlane) );
-    }
-   
-    fragColor = vec4( render( ray_origin, ray_direction), 1.0 );
-}
-
 void main() {
-    mainImage(color, gl_FragCoord.xy);
+    vec2 pos = (2.0*gl_FragCoord.xy-u_resolution)/u_resolution.y;
+
+    vec4 ray_origin;    // vec4(ro, 1) as it needs to be translated
+    vec4 ray_direction; // vec4(rd, 0) as it cannot be translated
+    if (u_ortho) {
+        ray_origin = vec4(vec3(u_camSize * pos, 0), 1); // apply desired scaling from fov
+        ray_direction = vec4(0, 0, -1, 0);
+    } else {
+        ray_origin = vec4(0, 0, 0, 1); 
+        ray_direction = vec4(normalize(vec3(pos, -u_nearPlane)), 0);
+    }
+    
+    vec3 color = render((u_iV * ray_origin).xyz, ((u_iV * ray_direction).xyz));
+    fragColor = vec4(color, 1.0 );
 }
