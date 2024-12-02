@@ -18,7 +18,7 @@ uniform float u_camSize;
 
 // rendering
 const vec3 u_Ambient = vec3(0.2, 0.1, 0.0);
-const directional_light dir_light = directional_light(0.5*vec3(1,1,1), normalize(vec3(-1,-1,-1)));
+const directional_light dir_light = directional_light(0.5*vec3(1,1,1), normalize(vec3(-1,-1,-1)), 1.0);
 const point_light p_light = point_light(vec3(0.57,0.38,0.04), vec3(0,1,0.5), attenuation(1.0, 0.7, 1.8));
 
 // objects
@@ -82,7 +82,8 @@ vec3 render( vec3 ray_origin, vec3 ray_direction )
         vec3 nor = calcNormal( pos );
         material mat = material_mix(red_mat, blue_mat, m);
 
-        vec3 light = mat.ka * u_Ambient
+        vec3 totalAmbient = u_Ambient + dir_light.ambient_impact * dir_light.color;
+        vec3 light = mat.ka * totalAmbient
             + calc_dir_light(dir_light, mat, nor, -ray_direction)
             + calc_point_light(p_light, mat, nor, -ray_direction, pos);
 		col = light * mat.albedo;

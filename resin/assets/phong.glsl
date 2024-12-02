@@ -20,6 +20,7 @@ struct attenuation {
 struct directional_light {
 	vec3 color;
 	vec3 dir;
+	float ambient_impact;
 }; 
 
 struct point_light {
