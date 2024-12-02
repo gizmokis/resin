@@ -1,6 +1,6 @@
 #version 330 core
 
-#include "phong.glsl"
+#include "blinn_phong.glsl"
 #include "sdf.glsl"
 
 layout(location = 0) out vec4 fragColor;
