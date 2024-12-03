@@ -17,7 +17,7 @@ void SDFTreeComponentVisitor::visit_group(GroupNode& node) {
   auto tree_flags       = base_flags;
   bool is_node_selected = false;
 
-  if (this->selected_ == node.node_id() || this->is_parent_selected_) {
+  if (selected_ == node.node_id() || is_parent_selected_) {
     tree_flags |= ImGuiTreeNodeFlags_Selected;
     is_node_selected = true;
   }
@@ -26,7 +26,7 @@ void SDFTreeComponentVisitor::visit_group(GroupNode& node) {
   bool tree_node_opened = ::ImGui::TreeNodeEx(node.name().data(), tree_flags);
   if (::ImGui::IsItemClicked()) {
     is_node_selected = true;
-    this->selected_  = node.node_id();
+    selected_        = node.node_id();
   }
 
   if (!tree_node_opened) {
@@ -35,9 +35,9 @@ void SDFTreeComponentVisitor::visit_group(GroupNode& node) {
   }
 
   for (auto child_it = node.begin(); child_it != node.end(); ++child_it) {
-    this->is_parent_selected_ = is_node_selected;
+    is_parent_selected_ = is_node_selected;
     node.get_child(*child_it).accept_visitor(*this);
-    this->is_parent_selected_ = is_node_selected;
+    is_parent_selected_ = is_node_selected;
   }
 
   ::ImGui::TreePop();
@@ -47,11 +47,11 @@ void SDFTreeComponentVisitor::visit_group(GroupNode& node) {
 void SDFTreeComponentVisitor::visit_primitive(PrimitiveNode& node) {
   bool is_selected = false;
 
-  is_selected = this->selected_ == node.node_id() || is_parent_selected_;
+  is_selected = selected_ == node.node_id() || is_parent_selected_;
 
   ::ImGui::PushID(node.node_id().raw_as_int());
   if (::ImGui::Selectable(node.name().data(), &is_selected)) {
-    this->selected_ = node.node_id();
+    selected_ = node.node_id();
   }
   ::ImGui::PopID();
 }
@@ -82,7 +82,7 @@ std::optional<IdView<SDFTreeNodeId>> SDFTreeView(SDFTree& tree) {
 
   if (::ImGui::BeginChild("ResizableChild", ImVec2(-FLT_MIN, ::ImGui::GetTextLineHeightWithSpacing() * 8),
                           ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeY)) {
-    tree.root->accept_visitor(comp_vs);
+    tree.root().accept_visitor(comp_vs);
     selected = comp_vs.selected();
   }
   ::ImGui::EndChild();

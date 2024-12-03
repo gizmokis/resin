@@ -29,11 +29,11 @@ void SDFTree::visit_dirty_primitives(ISDFTreeNodeVisitor& visitor) {
   for (auto prim : sdf_tree_registry_.dirty_primitives) {
     sdf_tree_registry_.all_nodes[prim.raw()]->get().accept_visitor(visitor);
   }
-  this->clear_dirty();
+  clear_dirty();
 }
 
 void SDFTree::visit_all_primitives(ISDFTreeNodeVisitor& visitor) {
-  for (auto prim : root->primitives()) {
+  for (auto prim : root_->primitives()) {
     sdf_tree_registry_.all_nodes[prim.raw()]->get().accept_visitor(visitor);
   }
 }

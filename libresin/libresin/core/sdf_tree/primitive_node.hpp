@@ -67,9 +67,7 @@ class SphereNode final : public PrimitiveNode {
   inline IdView<SphereNodeId> component_id() const { return sphere_id_; }
   explicit SphereNode(SDFTreeRegistry& tree, float _radius = 1.F);
 
-  inline std::unique_ptr<SDFTreeNode> copy() override {
-    return std::make_unique<SphereNode>(this->tree_registry_, radius);
-  }
+  inline std::unique_ptr<SDFTreeNode> copy() override { return std::make_unique<SphereNode>(tree_registry_, radius); }
 
  public:
   float radius;
@@ -101,7 +99,7 @@ class CubeNode final : public PrimitiveNode {
   explicit CubeNode(SDFTreeRegistry& tree, float _size = 1.F);
   inline IdView<CubeNodeId> component_id() const { return cube_id_; }
 
-  inline std::unique_ptr<SDFTreeNode> copy() override { return std::make_unique<CubeNode>(this->tree_registry_, size); }
+  inline std::unique_ptr<SDFTreeNode> copy() override { return std::make_unique<CubeNode>(tree_registry_, size); }
 
  public:
   float size;

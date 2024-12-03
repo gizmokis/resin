@@ -31,40 +31,37 @@ class SDFTreeRegistry {
 
   // Nodes: the ids correspond to the indices of nodes stored in the array all_nodes_
   IdRegistry<SDFTreeNode> nodes_registry;
-
   std::vector<std::optional<std::reference_wrapper<SDFTreeNode>>> all_nodes;
+
   std::vector<IdView<SDFTreeNodeId>> dirty_primitives;
 };
 
 class SDFTree {
  public:
-  SDFTree() : root(std::make_unique<GroupNode>(sdf_tree_registry_)) {}
+  SDFTree() : root_(std::make_unique<GroupNode>(sdf_tree_registry_)) {}
 
   std::optional<IdView<SDFTreeNodeId>> get_view_from_raw_id(size_t raw_id);
 
-  // Cost: O(1)
   void visit_node(IdView<SDFTreeNodeId> node_id, ISDFTreeNodeVisitor& visitor);
 
+  // Visits all dirty primitives AND clears the dirty primitives collection.
   void visit_dirty_primitives(ISDFTreeNodeVisitor& visitor);
   void visit_all_primitives(ISDFTreeNodeVisitor& visitor);
 
-  // Cost: O(1)
   SDFTreeNode& get_node(IdView<SDFTreeNodeId> node_id);
 
-  // Cost: Amortized O(1)
   // WARNING: This function must not be called while children of the the provided node's parent are iterated.
   void delete_node(IdView<SDFTreeNodeId> node_id);
 
-  // Cost: O(n)
-  inline std::string gen_shader_code() const { return this->root->gen_shader_code(); }
+  inline std::string gen_shader_code() const { return root_->gen_shader_code(); }
 
-  inline void clear_dirty() { this->sdf_tree_registry_.dirty_primitives.clear(); }
+  inline void clear_dirty() { sdf_tree_registry_.dirty_primitives.clear(); }
+
+  inline GroupNode& root() { return *root_; }
 
  private:
   SDFTreeRegistry sdf_tree_registry_;
-
- public:
-  std::unique_ptr<GroupNode> root;
+  std::unique_ptr<GroupNode> root_;
 };
 
 }  // namespace resin

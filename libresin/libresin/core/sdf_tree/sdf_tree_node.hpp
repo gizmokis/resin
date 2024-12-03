@@ -44,15 +44,15 @@ class SDFTreeNode {
 
   virtual ~SDFTreeNode();
 
-  inline bool has_parent() const { return this->parent_.has_value(); }
-  inline GroupNode& parent() { return this->parent_.value(); }
-  inline const GroupNode& parent() const { return this->parent_.value(); }
+  inline bool has_parent() const { return parent_.has_value(); }
+  inline GroupNode& parent() { return parent_.value(); }
+  inline const GroupNode& parent() const { return parent_.value(); }
 
  protected:
   friend SDFTree;
   friend GroupNode;
 
-  inline void set_parent(GroupNode& parent) { this->parent_ = parent; }
+  inline void set_parent(GroupNode& parent) { parent_ = parent; }
   inline void remove_from_parent() { parent_.reset(); }
 
   virtual void insert_leaves_to(

@@ -10,30 +10,30 @@
 namespace resin {
 
 GroupNode::GroupNode(SDFTreeRegistry& tree) : SDFTreeNode(tree), name_(std::format("Group {}", node_id_.raw())) {
-  this->push_back_child<SphereNode>(SDFBinaryOperation::Union);
+  push_back_child<SphereNode>(SDFBinaryOperation::Union);
 }
 
 std::string GroupNode::gen_shader_code() const {
-  if (this->nodes_.empty()) {
+  if (nodes_.empty()) {
     // If group is empty then the operation is undefined.
     log_throw(SDFTreeEmptyGroupException());
   }
 
-  if (this->nodes_.size() == 1) {
+  if (nodes_.size() == 1) {
     // If there is one node only, the operation is ignored
-    return this->get_child(*this->nodes_order_.begin()).gen_shader_code();
+    return get_child(*nodes_order_.begin()).gen_shader_code();
   }
 
   std::string sdf;
-  for (auto it = this->nodes_order_.rbegin(); it != std::prev(this->nodes_order_.rend()); ++it) {
-    sdf += sdf_shader_consts::kSDFShaderBinOpFunctionNames.get_name(this->get_child(*it).bin_op());
+  for (auto it = nodes_order_.rbegin(); it != std::prev(nodes_order_.rend()); ++it) {
+    sdf += sdf_shader_consts::kSDFShaderBinOpFunctionNames.get_name(get_child(*it).bin_op());
     sdf += "(";
   }
-  sdf += this->get_child(*this->nodes_order_.begin()).gen_shader_code();
+  sdf += get_child(*nodes_order_.begin()).gen_shader_code();
   sdf += ",";
 
-  for (auto it = std::next(this->nodes_order_.begin()); it != this->nodes_order_.end(); ++it) {
-    sdf += this->get_child(*it).gen_shader_code();
+  for (auto it = std::next(nodes_order_.begin()); it != nodes_order_.end(); ++it) {
+    sdf += get_child(*it).gen_shader_code();
     sdf += "),";
   }
   sdf.pop_back();
@@ -109,7 +109,7 @@ SDFTreeNode& GroupNode::child_neighbor_next(IdView<SDFTreeNodeId> node_id) {
 
 void GroupNode::set_parent(std::unique_ptr<SDFTreeNode>& node_ptr) {
   node_ptr->set_parent(*this);
-  node_ptr->transform().set_parent(this->transform_);
+  node_ptr->transform().set_parent(transform_);
   insert_leaves_up(node_ptr);
 }
 
@@ -153,7 +153,7 @@ void GroupNode::push_front_child(std::unique_ptr<SDFTreeNode> node_ptr) {
 void GroupNode::insert_before_child(std::optional<IdView<SDFTreeNodeId>> before_child_id,
                                     std::unique_ptr<SDFTreeNode> node_ptr) {
   if (!before_child_id.has_value()) {
-    this->push_back_child(std::move(node_ptr));
+    push_back_child(std::move(node_ptr));
     return;
   }
   set_parent(node_ptr);
@@ -170,7 +170,7 @@ void GroupNode::insert_before_child(std::optional<IdView<SDFTreeNodeId>> before_
 void GroupNode::insert_after_child(std::optional<IdView<SDFTreeNodeId>> after_child_id,
                                    std::unique_ptr<SDFTreeNode> node_ptr) {
   if (!after_child_id.has_value()) {
-    this->push_front_child(std::move(node_ptr));
+    push_front_child(std::move(node_ptr));
     return;
   }
   set_parent(node_ptr);
@@ -195,7 +195,7 @@ void GroupNode::mark_dirty() {
 }
 
 std::unique_ptr<SDFTreeNode> GroupNode::copy() {
-  auto result = make_unique<GroupNode>(this->tree_registry_);
+  auto result = make_unique<GroupNode>(tree_registry_);
   for (auto& list_it : nodes_order_) {
     result->push_back_child(nodes_.find(list_it)->second.second->copy());
   }
@@ -204,16 +204,16 @@ std::unique_ptr<SDFTreeNode> GroupNode::copy() {
 }
 
 void GroupNode::insert_leaves_up(const std::unique_ptr<SDFTreeNode>& source) {
-  source->insert_leaves_to(this->leaves_);
-  if (this->parent_.has_value()) {
-    this->parent_->get().insert_leaves_up(source);
+  source->insert_leaves_to(leaves_);
+  if (parent_.has_value()) {
+    parent_->get().insert_leaves_up(source);
   }
 }
 
 void GroupNode::remove_leaves_up(const std::unique_ptr<SDFTreeNode>& source) {
-  source->remove_leaves_from(this->leaves_);
-  if (this->parent_.has_value()) {
-    this->parent_->get().remove_leaves_up(source);
+  source->remove_leaves_from(leaves_);
+  if (parent_.has_value()) {
+    parent_->get().remove_leaves_up(source);
   }
 }
 

@@ -32,24 +32,24 @@ class GroupNode final : public SDFTreeNode {
   void mark_dirty() override;
   std::unique_ptr<SDFTreeNode> copy() override;
 
-  inline size_t get_children_count() const { return this->nodes_.size(); }
+  inline size_t get_children_count() const { return nodes_.size(); }
 
   // Cost: O(h)
   template <SDFTreeNodeConcept Node, typename... Args>
     requires std::constructible_from<Node, SDFTreeRegistry&, Args...>
   inline void push_back_child(SDFBinaryOperation op, Args&&... args) {
-    auto node_ptr = std::make_unique<Node>(this->tree_registry_, std::forward<Args>(args)...);
+    auto node_ptr = std::make_unique<Node>(tree_registry_, std::forward<Args>(args)...);
     node_ptr->set_bin_op(op);
-    this->push_back_child(std::move(node_ptr));
+    push_back_child(std::move(node_ptr));
   }
 
   // Cost: O(h)
   template <SDFTreeNodeConcept Node, typename... Args>
     requires std::constructible_from<Node, SDFTreeRegistry&, Args...>
   inline void push_front_child(SDFBinaryOperation op, Args&&... args) {
-    auto node_ptr = std::make_unique<Node>(this->tree_registry_, std::forward<Args>(args)...);
+    auto node_ptr = std::make_unique<Node>(tree_registry_, std::forward<Args>(args)...);
     node_ptr->set_bin_op(op);
-    this->push_front_child(std::move(node_ptr));
+    push_front_child(std::move(node_ptr));
   }
 
   // Cost: O(h)
@@ -101,12 +101,12 @@ class GroupNode final : public SDFTreeNode {
  protected:
   inline void insert_leaves_to(
       std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& leaves) override {
-    leaves.insert(this->leaves_.begin(), this->leaves_.end());
+    leaves.insert(leaves_.begin(), leaves_.end());
   }
 
   inline void remove_leaves_from(
       std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& leaves) override {
-    for (const auto& leaf : this->leaves_) {
+    for (const auto& leaf : leaves_) {
       leaves.erase(leaf);
     }
   }
