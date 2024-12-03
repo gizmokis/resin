@@ -10,8 +10,9 @@
 namespace resin {
 
 GroupNode::GroupNode(SDFTreeRegistry& tree) : SDFTreeNode(tree), name_(std::format("Group {}", node_id_.raw())) {
-  push_back_child<SphereNode>(SDFBinaryOperation::Union);
+  tree_registry_.get().all_group_nodes[node_id_.raw()] = *this;
 }
+GroupNode::~GroupNode() { tree_registry_.get().all_group_nodes[node_id_.raw()] = std::nullopt; }
 
 std::string GroupNode::gen_shader_code() const {
   if (nodes_.empty()) {

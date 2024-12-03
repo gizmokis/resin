@@ -58,7 +58,7 @@ void SDFTreeComponentVisitor::visit_primitive(PrimitiveNode& node) {
 
 void SDFTreeOperationVisitor::visit_group(GroupNode& node) {
   if (op == SDFTreeOperationVisitor::Operation::PushGroup) {
-    node.push_back_child<GroupNode>(SDFBinaryOperation::Union);
+    node.push_back_child<GroupNode>(SDFBinaryOperation::Union).push_back_child<SphereNode>(SDFBinaryOperation::Union);
   } else if (op == SDFTreeOperationVisitor::Operation::PushPrimitive) {
     node.push_back_child<SphereNode>(SDFBinaryOperation::Union);
   }
@@ -66,7 +66,9 @@ void SDFTreeOperationVisitor::visit_group(GroupNode& node) {
 
 void SDFTreeOperationVisitor::visit_primitive(PrimitiveNode& node) {
   if (op == SDFTreeOperationVisitor::Operation::PushGroup) {
-    node.parent().push_back_child<GroupNode>(SDFBinaryOperation::Union);
+    node.parent()
+        .push_back_child<GroupNode>(SDFBinaryOperation::Union)
+        .push_back_child<SphereNode>(SDFBinaryOperation::Union);
   } else if (op == SDFTreeOperationVisitor::Operation::PushPrimitive) {
     node.parent().push_back_child<SphereNode>(SDFBinaryOperation::Union);
   }
@@ -89,17 +91,16 @@ std::optional<resin::IdView<resin::SDFTreeNodeId>> SDFTreeView(resin::SDFTree& t
   }
   ImGui::EndChild();
 
-  bool delete_disabled = !selected.has_value() || !tree.get_node(selected.value()).has_parent() ||
-                         (tree.get_node(selected.value()).parent().get_children_count() == 1 &&
-                          tree.get_node(selected.value()).parent().node_id() == tree.root().node_id());
+  bool delete_disabled = !selected.has_value() || !tree.node(selected.value()).has_parent() ||
+                         (tree.node(selected.value()).parent().get_children_count() == 1 &&
+                          tree.node(selected.value()).parent().node_id() == tree.root().node_id());
   if (delete_disabled) {
     ImGui::BeginDisabled();
   }
 
   if (ImGui::Button("Delete")) {
-    if (tree.get_node(selected.value()).has_parent() &&
-        tree.get_node(selected.value()).parent().get_children_count() == 1) {
-      tree.delete_node(tree.get_node(selected.value()).parent().node_id());
+    if (tree.node(selected.value()).has_parent() && tree.node(selected.value()).parent().get_children_count() == 1) {
+      tree.delete_node(tree.node(selected.value()).parent().node_id());
     } else {
       tree.delete_node(selected.value());
     }
@@ -120,7 +121,7 @@ std::optional<resin::IdView<resin::SDFTreeNodeId>> SDFTreeView(resin::SDFTree& t
   if (ImGui::Button("Push sphere")) {
     if (comp_vs.selected().has_value()) {
       op_vs.op = resin::SDFTreeOperationVisitor::Operation::PushPrimitive;
-      tree.get_node(comp_vs.selected().value()).accept_visitor(op_vs);
+      tree.node(comp_vs.selected().value()).accept_visitor(op_vs);
     }
   }
 
@@ -128,7 +129,7 @@ std::optional<resin::IdView<resin::SDFTreeNodeId>> SDFTreeView(resin::SDFTree& t
   if (ImGui::Button("Push group")) {
     if (comp_vs.selected().has_value()) {
       op_vs.op = resin::SDFTreeOperationVisitor::Operation::PushGroup;
-      tree.get_node(comp_vs.selected().value()).accept_visitor(op_vs);
+      tree.node(comp_vs.selected().value()).accept_visitor(op_vs);
     }
   }
 

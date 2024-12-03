@@ -20,6 +20,7 @@ struct SDFTreeRegistry {
         transform_component_registry(IdRegistry<Transform>(2000)),
         nodes_registry(IdRegistry<SDFTreeNode>(5000)) {
     all_nodes.resize(nodes_registry.get_max_objs());
+    all_nodes.resize(nodes_registry.get_max_objs());
     dirty_primitives.reserve(nodes_registry.get_max_objs());
   }
 
@@ -31,6 +32,7 @@ struct SDFTreeRegistry {
   // Nodes: the ids correspond to the indices of nodes stored in the array all_nodes_
   IdRegistry<SDFTreeNode> nodes_registry;
   std::vector<std::optional<std::reference_wrapper<SDFTreeNode>>> all_nodes;
+  std::vector<std::optional<std::reference_wrapper<GroupNode>>> all_group_nodes;
 
   std::vector<IdView<SDFTreeNodeId>> dirty_primitives;
 };
@@ -47,7 +49,8 @@ class SDFTree {
   void visit_dirty_primitives(ISDFTreeNodeVisitor& visitor);
   void visit_all_primitives(ISDFTreeNodeVisitor& visitor);
 
-  SDFTreeNode& get_node(IdView<SDFTreeNodeId> node_id);
+  SDFTreeNode& node(IdView<SDFTreeNodeId> node_id);
+  GroupNode& group(IdView<SDFTreeNodeId> node_id);
 
   // WARNING: This function must not be called while children of the the provided node's parent are iterated.
   void delete_node(IdView<SDFTreeNodeId> node_id);

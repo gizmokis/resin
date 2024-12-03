@@ -17,12 +17,20 @@ void SDFTree::visit_node(IdView<SDFTreeNodeId> node_id, ISDFTreeNodeVisitor& vis
   sdf_tree_registry_.all_nodes[node_id.raw()]->get().accept_visitor(visitor);
 }
 
-SDFTreeNode& SDFTree::get_node(IdView<SDFTreeNodeId> node_id) {
+SDFTreeNode& SDFTree::node(IdView<SDFTreeNodeId> node_id) {
   if (!sdf_tree_registry_.all_nodes[node_id.raw()].has_value()) {
     log_throw(SDFTreeNodeDoesNotExist());
   }
 
   return sdf_tree_registry_.all_nodes[node_id.raw()].value();
+}
+
+GroupNode& SDFTree::group(IdView<SDFTreeNodeId> node_id) {
+  if (!sdf_tree_registry_.all_group_nodes[node_id.raw()].has_value()) {
+    log_throw(SDFTreeNodeDoesNotExist());
+  }
+
+  return sdf_tree_registry_.all_group_nodes[node_id.raw()].value();
 }
 
 void SDFTree::visit_dirty_primitives(ISDFTreeNodeVisitor& visitor) {

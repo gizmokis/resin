@@ -21,14 +21,19 @@ using SDFTreeNodeId = Id<SDFTreeNode>;
 
 class SDFTreeNode {
  public:
+  SDFTreeNode() = delete;
+
+  // It is the programmer's responsibility to assert that SDFTreeNode class will not outlive the provided registry!
+  explicit SDFTreeNode(SDFTreeRegistry& tree);
+
+  virtual ~SDFTreeNode();
+
   virtual std::string gen_shader_code() const               = 0;
   virtual void accept_visitor(ISDFTreeNodeVisitor& visitor) = 0;
   virtual std::string_view name() const                     = 0;
   virtual void rename(std::string&&)                        = 0;
   virtual std::unique_ptr<SDFTreeNode> copy()               = 0;
   virtual bool is_leaf()                                    = 0;
-
-  SDFTreeNode() = delete;
 
   inline IdView<SDFTreeNodeId> node_id() const { return node_id_; }
   inline IdView<TransformId> transform_component_id() const { return transform_id_; }
@@ -38,11 +43,6 @@ class SDFTreeNode {
 
   inline SDFBinaryOperation bin_op() const { return bin_op_; }
   inline void set_bin_op(SDFBinaryOperation bin_op) { bin_op_ = bin_op; }
-
-  // It is the programmer's responsibility to assert that SDFTreeNode class will not outlive the provided registry!
-  explicit SDFTreeNode(SDFTreeRegistry& tree);
-
-  virtual ~SDFTreeNode();
 
   inline bool has_parent() const { return parent_.has_value(); }
   inline GroupNode& parent() { return parent_.value(); }

@@ -23,33 +23,38 @@ class GroupNode final : public SDFTreeNode {
  public:
   GroupNode() = delete;
   explicit GroupNode(SDFTreeRegistry& tree);
-  virtual ~GroupNode() = default;
+  virtual ~GroupNode();
 
   std::string gen_shader_code() const override;
   std::string_view name() const override { return name_; }
   void rename(std::string&& name) override { name_ = std::move(name); }
   inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override { visitor.visit_group(*this); }
   std::unique_ptr<SDFTreeNode> copy() override;
-  bool is_leaf() override { return false; }
+  inline bool is_leaf() override { return nodes_.size() == 0; }
 
   inline size_t get_children_count() const { return nodes_.size(); }
 
   // Cost: O(h)
   template <SDFTreeNodeConcept Node, typename... Args>
     requires std::constructible_from<Node, SDFTreeRegistry&, Args...>
-  inline void push_back_child(SDFBinaryOperation op, Args&&... args) {
+  inline Node& push_back_child(SDFBinaryOperation op, Args&&... args) {
     auto node_ptr = std::make_unique<Node>(tree_registry_, std::forward<Args>(args)...);
+    auto id       = node_ptr->node_id();
     node_ptr->set_bin_op(op);
+    Node& result = *node_ptr;
     push_back_child(std::move(node_ptr));
+    return result;
   }
 
   // Cost: O(h)
   template <SDFTreeNodeConcept Node, typename... Args>
     requires std::constructible_from<Node, SDFTreeRegistry&, Args...>
-  inline void push_front_child(SDFBinaryOperation op, Args&&... args) {
+  inline Node& push_front_child(SDFBinaryOperation op, Args&&... args) {
     auto node_ptr = std::make_unique<Node>(tree_registry_, std::forward<Args>(args)...);
     node_ptr->set_bin_op(op);
+    Node& result = *node_ptr;
     push_front_child(std::move(node_ptr));
+    return result;
   }
 
   // Cost: O(h)
@@ -88,6 +93,9 @@ class GroupNode final : public SDFTreeNode {
 
   // Cost: Amortized O(1)
   SDFTreeNode& get_child(IdView<SDFTreeNodeId> node_id) const;
+
+  // Cost: Amortized O(1)
+  inline bool is_child(IdView<SDFTreeNodeId> node_id) const { return nodes_.find(node_id) == nodes_.end(); }
 
   inline const std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& primitives() {
     return leaves_;
