@@ -22,15 +22,15 @@ void SDFTreeComponentVisitor::visit_group(GroupNode& node) {
     is_node_selected = true;
   }
 
-  ::ImGui::PushID(node.node_id().raw_as_int());
-  bool tree_node_opened = ::ImGui::TreeNodeEx(node.name().data(), tree_flags);
-  if (::ImGui::IsItemClicked()) {
+  ImGui::PushID(node.node_id().raw_as_int());
+  bool tree_node_opened = ImGui::TreeNodeEx(node.name().data(), tree_flags);
+  if (ImGui::IsItemClicked()) {
     is_node_selected = true;
     selected_        = node.node_id();
   }
 
   if (!tree_node_opened) {
-    ::ImGui::PopID();
+    ImGui::PopID();
     return;
   }
 
@@ -40,8 +40,8 @@ void SDFTreeComponentVisitor::visit_group(GroupNode& node) {
     is_parent_selected_ = is_node_selected;
   }
 
-  ::ImGui::TreePop();
-  ::ImGui::PopID();
+  ImGui::TreePop();
+  ImGui::PopID();
 }
 
 void SDFTreeComponentVisitor::visit_primitive(PrimitiveNode& node) {
@@ -49,11 +49,11 @@ void SDFTreeComponentVisitor::visit_primitive(PrimitiveNode& node) {
 
   is_selected = selected_ == node.node_id() || is_parent_selected_;
 
-  ::ImGui::PushID(node.node_id().raw_as_int());
-  if (::ImGui::Selectable(node.name().data(), &is_selected)) {
+  ImGui::PushID(node.node_id().raw_as_int());
+  if (ImGui::Selectable(node.name().data(), &is_selected)) {
     selected_ = node.node_id();
   }
-  ::ImGui::PopID();
+  ImGui::PopID();
 }
 
 void SDFTreeOperationVisitor::visit_group(GroupNode& node) {
@@ -72,64 +72,64 @@ void SDFTreeOperationVisitor::visit_primitive(PrimitiveNode& node) {
   }
 }
 
+}  // namespace resin
+
 namespace ImGui {  // NOLINT
 
-std::optional<IdView<SDFTreeNodeId>> SDFTreeView(SDFTree& tree) {
-  static std::optional<IdView<SDFTreeNodeId>> selected = std::nullopt;
+std::optional<resin::IdView<resin::SDFTreeNodeId>> SDFTreeView(resin::SDFTree& tree) {
+  static std::optional<resin::IdView<resin::SDFTreeNodeId>> selected = std::nullopt;
 
-  auto comp_vs = SDFTreeComponentVisitor(selected);
-  SDFTreeOperationVisitor op_vs;
+  auto comp_vs = resin::SDFTreeComponentVisitor(selected);
+  resin::SDFTreeOperationVisitor op_vs;
 
-  if (::ImGui::BeginChild("ResizableChild", ImVec2(-FLT_MIN, ::ImGui::GetTextLineHeightWithSpacing() * 8),
-                          ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeY)) {
+  if (ImGui::BeginChild("ResizableChild", ImVec2(-FLT_MIN, ImGui::GetTextLineHeightWithSpacing() * 8),
+                        ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeY)) {
     tree.root().accept_visitor(comp_vs);
     selected = comp_vs.selected();
   }
-  ::ImGui::EndChild();
+  ImGui::EndChild();
 
   bool delete_disabled = !selected.has_value() || !tree.get_node(selected.value()).has_parent();
   if (delete_disabled) {
-    ::ImGui::BeginDisabled();
+    ImGui::BeginDisabled();
   }
 
-  if (::ImGui::Button("Delete")) {
+  if (ImGui::Button("Delete")) {
     tree.delete_node(selected.value());
     selected = std::nullopt;
   }
 
   if (delete_disabled) {
-    ::ImGui::EndDisabled();
+    ImGui::EndDisabled();
   }
 
-  ::ImGui::SameLine();
+  ImGui::SameLine();
 
   bool push_disabled = !selected.has_value();
   if (push_disabled) {
-    ::ImGui::BeginDisabled();
+    ImGui::BeginDisabled();
   }
 
-  if (::ImGui::Button("Push sphere")) {
+  if (ImGui::Button("Push sphere")) {
     if (comp_vs.selected().has_value()) {
-      op_vs.op = SDFTreeOperationVisitor::Operation::PushPrimitive;
+      op_vs.op = resin::SDFTreeOperationVisitor::Operation::PushPrimitive;
       tree.get_node(comp_vs.selected().value()).accept_visitor(op_vs);
     }
   }
 
-  ::ImGui::SameLine();
-  if (::ImGui::Button("Push group")) {
+  ImGui::SameLine();
+  if (ImGui::Button("Push group")) {
     if (comp_vs.selected().has_value()) {
-      op_vs.op = SDFTreeOperationVisitor::Operation::PushGroup;
+      op_vs.op = resin::SDFTreeOperationVisitor::Operation::PushGroup;
       tree.get_node(comp_vs.selected().value()).accept_visitor(op_vs);
     }
   }
 
   if (push_disabled) {
-    ::ImGui::EndDisabled();
+    ImGui::EndDisabled();
   }
 
   return selected;
 }
 
 }  // namespace ImGui
-
-}  // namespace resin

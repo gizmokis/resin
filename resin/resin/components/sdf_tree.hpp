@@ -37,12 +37,12 @@ class SDFTreeOperationVisitor : public ISDFTreeNodeVisitor {
   Operation op;
 };
 
+}  // namespace resin
+
 namespace ImGui {  // NOLINT
 
-std::optional<IdView<SDFTreeNodeId>> SDFTreeView(SDFTree& tree);
+std::optional<resin::IdView<resin::SDFTreeNodeId>> SDFTreeView(resin::SDFTree& tree);
 
 }
-
-}  // namespace resin
 
 #endif

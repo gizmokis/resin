@@ -136,17 +136,17 @@ void Resin::update(duration_t delta) {
 void Resin::render() {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
-  ::ImGui::NewFrame();
+  ImGui::NewFrame();
 
   glClearColor(0.1F, 0.1F, 0.1F, 1.F);
   glClear(GL_COLOR_BUFFER_BIT);
 
-  if (::ImGui::Begin("SDF Tree")) {
-    resin::ImGui::SDFTreeView(sdf_tree_);
+  if (ImGui::Begin("SDF Tree")) {
+    ImGui::SDFTreeView(sdf_tree_);
   }
-  ::ImGui::ShowDemoWindow();
-  ::ImGui::End();
-  ::ImGui::Render();
+  ImGui::ShowDemoWindow();
+  ImGui::End();
+  ImGui::Render();
 
   {
     glBindVertexArray(vertex_array_);
@@ -155,7 +155,7 @@ void Resin::render() {
     shader_->unbind();
   }
 
-  ImGui_ImplOpenGL3_RenderDrawData(::ImGui::GetDrawData());
+  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
   window_->on_update();
 }
