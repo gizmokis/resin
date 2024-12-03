@@ -25,7 +25,6 @@ class SDFTreeNode {
   virtual void accept_visitor(ISDFTreeNodeVisitor& visitor) = 0;
   virtual std::string_view name() const                     = 0;
   virtual void rename(std::string&&)                        = 0;
-  virtual void mark_dirty()                                 = 0;
   virtual std::unique_ptr<SDFTreeNode> copy()               = 0;
 
   SDFTreeNode() = delete;
@@ -48,6 +47,8 @@ class SDFTreeNode {
   inline GroupNode& parent() { return parent_.value(); }
   inline const GroupNode& parent() const { return parent_.value(); }
 
+  void mark_dirty();
+
  protected:
   friend SDFTree;
   friend GroupNode;
@@ -60,6 +61,8 @@ class SDFTreeNode {
 
   virtual void remove_leaves_from(
       std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& leaves) = 0;
+
+  virtual void push_dirty_primitives() = 0;
 
  protected:
   SDFTreeNodeId node_id_;

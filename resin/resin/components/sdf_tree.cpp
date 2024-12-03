@@ -89,13 +89,20 @@ std::optional<resin::IdView<resin::SDFTreeNodeId>> SDFTreeView(resin::SDFTree& t
   }
   ImGui::EndChild();
 
-  bool delete_disabled = !selected.has_value() || !tree.get_node(selected.value()).has_parent();
+  bool delete_disabled = !selected.has_value() || !tree.get_node(selected.value()).has_parent() ||
+                         (tree.get_node(selected.value()).parent().get_children_count() == 1 &&
+                          tree.get_node(selected.value()).parent().node_id() == tree.root().node_id());
   if (delete_disabled) {
     ImGui::BeginDisabled();
   }
 
   if (ImGui::Button("Delete")) {
-    tree.delete_node(selected.value());
+    if (tree.get_node(selected.value()).has_parent() &&
+        tree.get_node(selected.value()).parent().get_children_count() == 1) {
+      tree.delete_node(tree.get_node(selected.value()).parent().node_id());
+    } else {
+      tree.delete_node(selected.value());
+    }
     selected = std::nullopt;
   }
 

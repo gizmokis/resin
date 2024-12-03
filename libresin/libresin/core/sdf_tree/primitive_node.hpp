@@ -17,8 +17,6 @@ class PrimitiveNode : public SDFTreeNode {
   virtual ~PrimitiveNode() = default;
   explicit PrimitiveNode(SDFTreeRegistry& tree) : SDFTreeNode(tree) {}
 
-  void mark_dirty() final;
-
  protected:
   inline void insert_leaves_to(
       std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& leaves) final {
@@ -29,6 +27,8 @@ class PrimitiveNode : public SDFTreeNode {
       std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& leaves) final {
     leaves.erase(leaves.find(node_id()));
   }
+
+  void push_dirty_primitives() final;
 
   inline std::string get_function_call_code(sdf_shader_consts::SDFShaderPrim primitive,
                                             sdf_shader_consts::SDFShaderComponents component,

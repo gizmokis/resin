@@ -16,4 +16,12 @@ SDFTreeNode::~SDFTreeNode() {
   Logger::debug("Destructed node with id={}.", node_id_.raw());
 }
 
+void SDFTreeNode::mark_dirty() {
+  if (tree_registry_.get().nodes_registry.get_max_objs() < tree_registry_.get().dirty_primitives.size()) {
+    log_throw(SDFTreeReachedDirtyPrimitivesLimit());
+  }
+
+  push_dirty_primitives();
+}
+
 }  // namespace resin
