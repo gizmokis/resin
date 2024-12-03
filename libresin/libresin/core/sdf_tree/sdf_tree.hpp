@@ -20,7 +20,7 @@ struct SDFTreeRegistry {
         transform_component_registry(IdRegistry<Transform>(2000)),
         nodes_registry(IdRegistry<SDFTreeNode>(5000)) {
     all_nodes.resize(nodes_registry.get_max_objs());
-    all_nodes.resize(nodes_registry.get_max_objs());
+    all_group_nodes.resize(nodes_registry.get_max_objs());
     dirty_primitives.reserve(nodes_registry.get_max_objs());
   }
 
@@ -49,7 +49,10 @@ class SDFTree {
   void visit_dirty_primitives(ISDFTreeNodeVisitor& visitor);
   void visit_all_primitives(ISDFTreeNodeVisitor& visitor);
 
+  // Cost O(1)
   SDFTreeNode& node(IdView<SDFTreeNodeId> node_id);
+
+  // Cost O(1)
   GroupNode& group(IdView<SDFTreeNodeId> node_id);
 
   // WARNING: This function must not be called while children of the the provided node's parent are iterated.
