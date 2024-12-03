@@ -13,6 +13,7 @@ namespace resin {
 class PrimitiveNode : public SDFTreeNode {
  public:
   inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override { visitor.visit_primitive(*this); }
+  bool is_leaf() final { return true; }
 
   virtual ~PrimitiveNode() = default;
   explicit PrimitiveNode(SDFTreeRegistry& tree) : SDFTreeNode(tree) {}

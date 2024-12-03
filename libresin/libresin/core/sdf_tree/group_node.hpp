@@ -30,6 +30,7 @@ class GroupNode final : public SDFTreeNode {
   void rename(std::string&& name) override { name_ = std::move(name); }
   inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override { visitor.visit_group(*this); }
   std::unique_ptr<SDFTreeNode> copy() override;
+  bool is_leaf() override { return false; }
 
   inline size_t get_children_count() const { return nodes_.size(); }
 

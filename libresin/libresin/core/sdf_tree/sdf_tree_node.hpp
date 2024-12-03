@@ -26,6 +26,7 @@ class SDFTreeNode {
   virtual std::string_view name() const                     = 0;
   virtual void rename(std::string&&)                        = 0;
   virtual std::unique_ptr<SDFTreeNode> copy()               = 0;
+  virtual bool is_leaf()                                    = 0;
 
   SDFTreeNode() = delete;
 
