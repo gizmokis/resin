@@ -12,8 +12,7 @@
 
 namespace resin {
 
-class SDFTreeRegistry {
- public:
+struct SDFTreeRegistry {
   // TODO(migoox): allow specifying the sizes
   SDFTreeRegistry()
       : sphere_component_registry(IdRegistry<SphereNode>(1000)),

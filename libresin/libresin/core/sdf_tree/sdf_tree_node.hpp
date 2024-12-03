@@ -13,7 +13,7 @@ namespace resin {
 
 using SDFBinaryOperation = sdf_shader_consts::SDFShaderBinOp;
 
-class SDFTreeRegistry;
+struct SDFTreeRegistry;
 class SDFTree;
 
 class SDFTreeNode;
