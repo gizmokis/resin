@@ -37,86 +37,76 @@ class GroupNode final : public SDFTreeNode {
   // Cost: O(h)
   template <SDFTreeNodeConcept Node, typename... Args>
     requires std::constructible_from<Node, SDFTreeRegistry&, Args...>
-  inline void push_child(SDFBinaryOperation op, Args&&... args) {
+  inline void push_back_child(SDFBinaryOperation op, Args&&... args) {
     auto node_ptr = std::make_unique<Node>(this->tree_registry_, std::forward<Args>(args)...);
     node_ptr->set_bin_op(op);
-    this->push_child(std::move(node_ptr));
+    this->push_back_child(std::move(node_ptr));
   }
 
   // Cost: O(h)
-  void push_child(std::unique_ptr<SDFTreeNode> node_ptr);
+  template <SDFTreeNodeConcept Node, typename... Args>
+    requires std::constructible_from<Node, SDFTreeRegistry&, Args...>
+  inline void push_front_child(SDFBinaryOperation op, Args&&... args) {
+    auto node_ptr = std::make_unique<Node>(this->tree_registry_, std::forward<Args>(args)...);
+    node_ptr->set_bin_op(op);
+    this->push_front_child(std::move(node_ptr));
+  }
 
   // Cost: O(h)
-  // When after_node_id is nullopt, the node_ptr is pushed back
+  void push_back_child(std::unique_ptr<SDFTreeNode> node_ptr);
+
+  // Cost: O(h)
+  void push_front_child(std::unique_ptr<SDFTreeNode> node_ptr);
+
+  // If after_node_id is nullopt, the node_ptr is pushed back.
+  // Cost: O(h)
   void insert_before_child(std::optional<IdView<SDFTreeNodeId>> before_child_id, std::unique_ptr<SDFTreeNode> node_ptr);
 
-  bool child_has_neighbor_up(IdView<SDFTreeNodeId> node_id) const;
-  SDFTreeNode& child_neighbor_up(IdView<SDFTreeNodeId> node_id);
+  // If before_node_id is nullopt, the node_ptr is pushed front.
+  // Cost: O(h)
+  void insert_after_child(std::optional<IdView<SDFTreeNodeId>> after_child_id, std::unique_ptr<SDFTreeNode> node_ptr);
 
-  bool child_has_neighbor_down(IdView<SDFTreeNodeId> node_id) const;
-  SDFTreeNode& child_neighbor_down(IdView<SDFTreeNodeId> node_id);
+  // Cost: Amortized O(1)
+  bool child_has_neighbor_prev(IdView<SDFTreeNodeId> node_id) const;
+
+  // Cost: Amortized O(1)
+  SDFTreeNode& child_neighbor_prev(IdView<SDFTreeNodeId> node_id);
+
+  // Cost: Amortized O(1)
+  bool child_has_neighbor_next(IdView<SDFTreeNodeId> node_id) const;
+
+  // Cost: Amortized O(1)
+  SDFTreeNode& child_neighbor_next(IdView<SDFTreeNodeId> node_id);
 
   // Cost: Amortized O(1)
   // WARNING: This function must not be called while the children are iterated.
   std::unique_ptr<SDFTreeNode> detach_child(IdView<SDFTreeNodeId> node_id);
 
   // Cost: O(h)
-  // WARNING: This function must not be called while the children are iterated. Use GroupNode::erase_child in this
-  // scenario.
+  // WARNING: This function must not be called while the children are iterated.
   void delete_child(IdView<SDFTreeNodeId> node_id);
 
-  // Cost: O(h)
-  auto erase_child(std::list<IdView<SDFTreeNodeId>>::iterator it) {
-    auto map_it = nodes_.find(*it);
-    if (map_it == nodes_.end()) {
-      log_throw(SDFTreeNodeIsNotAChild());
-    }
-    auto next = nodes_order_.erase(it);
-    nodes_.erase(map_it);
+  // Cost: Amortized O(1)
+  SDFTreeNode& get_child(IdView<SDFTreeNodeId> node_id) const;
 
-    return next;
+  inline const std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& primitives() {
+    return leaves_;
   }
 
-  // TODO(migoox): write safe children iterator
   auto begin() { return nodes_order_.begin(); }
   auto end() { return nodes_order_.end(); }
   auto begin() const { return nodes_order_.begin(); }
   auto end() const { return nodes_order_.end(); }
 
-  // TEMPORARY:
-  // Cost: Amortized O(1)
-  SDFTreeNode& get_child(IdView<SDFTreeNodeId> node_id) {
-    auto it = nodes_.find(node_id);
-    if (it == nodes_.end()) {
-      log_throw(SDFTreeNodeIsNotAChild());
-    }
-
-    return *it->second.second;
-  }
-
-  // Cost: Amortized O(1)
-  const SDFTreeNode& get_child(IdView<SDFTreeNodeId> node_id) const {
-    auto it = nodes_.find(node_id);
-    if (it == nodes_.end()) {
-      log_throw(SDFTreeNodeIsNotAChild());
-    }
-
-    return *it->second.second;
-  }
-
-  inline const std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& primitives() {
-    return primitives_;
-  }
-
  protected:
   inline void insert_leaves_to(
       std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& leaves) override {
-    leaves.insert(this->primitives_.begin(), this->primitives_.end());
+    leaves.insert(this->leaves_.begin(), this->leaves_.end());
   }
 
   inline void remove_leaves_from(
       std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& leaves) override {
-    for (const auto& leaf : this->primitives_) {
+    for (const auto& leaf : this->leaves_) {
       leaves.erase(leaf);
     }
   }
@@ -135,7 +125,7 @@ class GroupNode final : public SDFTreeNode {
                      IdViewHash<SDFTreeNodeId>, std::equal_to<>>
       nodes_;
 
-  std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>> primitives_;  // leaves
+  std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>> leaves_;  // leaves
 
   std::string name_;
 };

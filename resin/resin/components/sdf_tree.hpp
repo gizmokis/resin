@@ -6,10 +6,9 @@
 
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
+#include <libresin/core/sdf_tree/sdf_tree_node.hpp>
+#include <libresin/core/sdf_tree/sdf_tree_node_visitor.hpp>
 #include <optional>
-
-#include "libresin/core/sdf_tree/sdf_tree_node.hpp"
-#include "libresin/core/sdf_tree/sdf_tree_node_visitor.hpp"
 
 namespace resin {
 

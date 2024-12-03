@@ -4,10 +4,9 @@
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
+#include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <optional>
 #include <resin/components/sdf_tree.hpp>
-
-#include "libresin/core/sdf_tree/sdf_tree_node.hpp"
 
 namespace resin {
 
@@ -59,17 +58,17 @@ void SDFTreeComponentVisitor::visit_primitive(PrimitiveNode& node) {
 
 void SDFTreeOperationVisitor::visit_group(GroupNode& node) {
   if (op == SDFTreeOperationVisitor::Operation::PushGroup) {
-    node.push_child<GroupNode>(SDFBinaryOperation::Union);
+    node.push_back_child<GroupNode>(SDFBinaryOperation::Union);
   } else if (op == SDFTreeOperationVisitor::Operation::PushPrimitive) {
-    node.push_child<SphereNode>(SDFBinaryOperation::Union);
+    node.push_back_child<SphereNode>(SDFBinaryOperation::Union);
   }
 }
 
 void SDFTreeOperationVisitor::visit_primitive(PrimitiveNode& node) {
   if (op == SDFTreeOperationVisitor::Operation::PushGroup) {
-    node.parent().push_child<GroupNode>(SDFBinaryOperation::Union);
+    node.parent().push_back_child<GroupNode>(SDFBinaryOperation::Union);
   } else if (op == SDFTreeOperationVisitor::Operation::PushPrimitive) {
-    node.parent().push_child<SphereNode>(SDFBinaryOperation::Union);
+    node.parent().push_back_child<SphereNode>(SDFBinaryOperation::Union);
   }
 }
 
