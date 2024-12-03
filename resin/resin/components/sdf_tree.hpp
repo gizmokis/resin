@@ -1,39 +1,46 @@
 #ifndef RESIN_TREE_COMPONENT_HPP
 #define RESIN_TREE_COMPONENT_HPP
 
+#include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
 
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <optional>
 
+#include "libresin/core/sdf_tree/sdf_tree_node.hpp"
+#include "libresin/core/sdf_tree/sdf_tree_node_visitor.hpp"
+
 namespace resin {
 
 class SDFTreeComponentVisitor : public ISDFTreeNodeVisitor {
  public:
-  void visit_sphere(SphereNode&) override {}
-  void visit_cube(CubeNode&) override {}
-
+  explicit SDFTreeComponentVisitor(std::optional<IdView<SDFTreeNodeId>> selected) : selected_(selected) {}
   void visit_group(GroupNode& node) override;
   void visit_primitive(PrimitiveNode& node) override;
 
-  inline std::optional<size_t> selected() const { return selected_; }
-
-  void apply_operations(SDFTree& tree);
-  void reset();
+  inline std::optional<IdView<SDFTreeNodeId>> selected() const { return selected_; }
 
  private:
-  std::optional<size_t> selected_ = std::nullopt;
+  std::optional<IdView<SDFTreeNodeId>> selected_ = std::nullopt;
+  bool is_parent_selected_                       = false;
+};
 
-  std::stack<IdView<SDFTreeNodeId>> deleted_;
+class SDFTreeOperationVisitor : public ISDFTreeNodeVisitor {
+ public:
+  void visit_group(GroupNode& node) override;
+  void visit_primitive(PrimitiveNode& node) override;
 
-  int level_                  = 0;
-  size_t curr_children_count_ = 0;
+  enum class Operation {
+    PushPrimitive,
+    PushGroup,
+  };
+  Operation op;
 };
 
 namespace ImGui {  // NOLINT
 
-std::optional<size_t> SDFTreeView(SDFTree& tree);
+std::optional<IdView<SDFTreeNodeId>> SDFTreeView(SDFTree& tree);
 
 }
 

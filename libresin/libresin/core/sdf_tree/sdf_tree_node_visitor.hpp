@@ -10,10 +10,10 @@ class CubeNode;
 
 class ISDFTreeNodeVisitor {
  public:
-  void virtual visit_sphere(SphereNode&)       = 0;
-  void virtual visit_cube(CubeNode&)           = 0;
-  void virtual visit_group(GroupNode&)         = 0;
-  void virtual visit_primitive(PrimitiveNode&) = 0;
+  void virtual visit_sphere(SphereNode&) {}
+  void virtual visit_cube(CubeNode&) {}
+  void virtual visit_group(GroupNode&) {}
+  void virtual visit_primitive(PrimitiveNode&) {}
 
   virtual ~ISDFTreeNodeVisitor() = default;
 };

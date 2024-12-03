@@ -144,6 +144,7 @@ void Resin::render() {
   if (::ImGui::Begin("SDF Tree")) {
     resin::ImGui::SDFTreeView(sdf_tree_);
   }
+  ::ImGui::ShowDemoWindow();
   ::ImGui::End();
   ::ImGui::Render();
 
