@@ -7,7 +7,6 @@
 #include <type_traits>
 
 namespace resin {
-const size_t kMaxEnumSize = 64;
 
 template <typename T>
 concept EnumWithCountConcept = requires {
@@ -35,8 +34,8 @@ struct EnumMapping {
     return (index < size) ? names_[index] : std::string_view{};
   }
 
-  std::array<std::string_view, kMaxEnumSize> names_ = {};
-  size_t size                                       = 0;
+  std::array<std::string_view, static_cast<size_t>(EnumType::_Count)> names_ = {};
+  size_t size                                                                = 0;
 };
 
 }  // namespace resin
