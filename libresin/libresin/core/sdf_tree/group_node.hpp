@@ -39,7 +39,6 @@ class GroupNode final : public SDFTreeNode {
     requires std::constructible_from<Node, SDFTreeRegistry&, Args...>
   inline Node& push_back_child(SDFBinaryOperation op, Args&&... args) {
     auto node_ptr = std::make_unique<Node>(tree_registry_, std::forward<Args>(args)...);
-    auto id       = node_ptr->node_id();
     node_ptr->set_bin_op(op);
     Node& result = *node_ptr;
     push_back_child(std::move(node_ptr));

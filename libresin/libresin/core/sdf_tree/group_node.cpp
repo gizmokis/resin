@@ -160,12 +160,13 @@ void GroupNode::insert_before_child(std::optional<IdView<SDFTreeNodeId>> before_
   set_parent(node_ptr);
 
   auto map_it = nodes_.find(*before_child_id);
-  if (map_it != nodes_.end()) {
+  if (map_it == nodes_.end()) {
     log_throw(SDFTreeNodeIsNotAChild());
   }
 
   auto list_it = nodes_order_.emplace(map_it->second.first, node_ptr->node_id());
-  nodes_.emplace(node_ptr->node_id(), std::make_pair(list_it, std::move(node_ptr)));
+  auto node_id = node_ptr->node_id();
+  nodes_.emplace(node_id, std::make_pair(list_it, std::move(node_ptr)));
 }
 
 void GroupNode::insert_after_child(std::optional<IdView<SDFTreeNodeId>> after_child_id,
@@ -177,12 +178,13 @@ void GroupNode::insert_after_child(std::optional<IdView<SDFTreeNodeId>> after_ch
   set_parent(node_ptr);
 
   auto map_it = nodes_.find(*after_child_id);
-  if (map_it != nodes_.end()) {
+  if (map_it == nodes_.end()) {
     log_throw(SDFTreeNodeIsNotAChild());
   }
 
   auto list_it = nodes_order_.emplace(map_it->second.first, node_ptr->node_id());
-  nodes_.emplace(node_ptr->node_id(), std::make_pair(++list_it, std::move(node_ptr)));
+  auto node_id = node_ptr->node_id();
+  nodes_.emplace(node_id, std::make_pair(++list_it, std::move(node_ptr)));
 }
 
 void GroupNode::push_dirty_primitives() {
