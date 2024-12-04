@@ -6,11 +6,13 @@
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <optional>
-#include <resin/components/sdf_tree.hpp>
+#include <resin/imgui/sdf_tree.hpp>
+
+namespace ImGui {  // NOLINT
 
 namespace resin {
 
-void SDFTreeComponentVisitor::visit_group(GroupNode& node) {
+void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
   static ImGuiTreeNodeFlags base_flags =
       ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth;
 
@@ -44,7 +46,7 @@ void SDFTreeComponentVisitor::visit_group(GroupNode& node) {
   ImGui::PopID();
 }
 
-void SDFTreeComponentVisitor::visit_primitive(PrimitiveNode& node) {
+void SDFTreeComponentVisitor::visit_primitive(::resin::PrimitiveNode& node) {
   bool is_selected = false;
 
   is_selected = selected_ == node.node_id() || is_parent_selected_;
@@ -56,30 +58,27 @@ void SDFTreeComponentVisitor::visit_primitive(PrimitiveNode& node) {
   ImGui::PopID();
 }
 
-void SDFTreeOperationVisitor::visit_group(GroupNode& node) {
+void SDFTreeOperationVisitor::visit_group(::resin::GroupNode& node) {
   if (op == SDFTreeOperationVisitor::Operation::PushGroup) {
-    node.push_back_child<GroupNode>(SDFBinaryOperation::Union).push_back_child<SphereNode>(SDFBinaryOperation::Union);
+    node.push_back_child<::resin::GroupNode>(::resin::SDFBinaryOperation::Union)
+        .push_back_child<::resin::SphereNode>(::resin::SDFBinaryOperation::Union);
   } else if (op == SDFTreeOperationVisitor::Operation::PushPrimitive) {
-    node.push_back_child<SphereNode>(SDFBinaryOperation::Union);
+    node.push_back_child<::resin::SphereNode>(::resin::SDFBinaryOperation::Union);
   }
 }
 
-void SDFTreeOperationVisitor::visit_primitive(PrimitiveNode& node) {
+void SDFTreeOperationVisitor::visit_primitive(::resin::PrimitiveNode& node) {
   if (op == SDFTreeOperationVisitor::Operation::PushGroup) {
     node.parent()
-        .push_back_child<GroupNode>(SDFBinaryOperation::Union)
-        .push_back_child<SphereNode>(SDFBinaryOperation::Union);
+        .push_back_child<::resin::GroupNode>(::resin::SDFBinaryOperation::Union)
+        .push_back_child<::resin::SphereNode>(::resin::SDFBinaryOperation::Union);
   } else if (op == SDFTreeOperationVisitor::Operation::PushPrimitive) {
-    node.parent().push_back_child<SphereNode>(SDFBinaryOperation::Union);
+    node.parent().push_back_child<::resin::SphereNode>(::resin::SDFBinaryOperation::Union);
   }
 }
 
-}  // namespace resin
-
-namespace ImGui {  // NOLINT
-
-std::optional<resin::IdView<resin::SDFTreeNodeId>> SDFTreeView(resin::SDFTree& tree) {
-  static std::optional<resin::IdView<resin::SDFTreeNodeId>> selected = std::nullopt;
+std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(::resin::SDFTree& tree) {
+  static std::optional<::resin::IdView<::resin::SDFTreeNodeId>> selected = std::nullopt;
 
   auto comp_vs = resin::SDFTreeComponentVisitor(selected);
   resin::SDFTreeOperationVisitor op_vs;
@@ -128,7 +127,7 @@ std::optional<resin::IdView<resin::SDFTreeNodeId>> SDFTreeView(resin::SDFTree& t
   ImGui::SameLine();
   if (ImGui::Button("Push group")) {
     if (comp_vs.selected().has_value()) {
-      op_vs.op = resin::SDFTreeOperationVisitor::Operation::PushGroup;
+      op_vs.op = SDFTreeOperationVisitor::Operation::PushGroup;
       tree.node(comp_vs.selected().value()).accept_visitor(op_vs);
     }
   }
@@ -139,5 +138,7 @@ std::optional<resin::IdView<resin::SDFTreeNodeId>> SDFTreeView(resin::SDFTree& t
 
   return selected;
 }
+
+}  // namespace resin
 
 }  // namespace ImGui

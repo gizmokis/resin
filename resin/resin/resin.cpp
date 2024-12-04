@@ -10,16 +10,14 @@
 #include <libresin/core/resources/shader_resource.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
+#include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/utils/logger.hpp>
-#include <memory>
-#include <resin/components/sdf_tree.hpp>
 #include <resin/core/window.hpp>
 #include <resin/event/event.hpp>
 #include <resin/event/window_events.hpp>
-#include <resin/imgui/components.hpp>
+#include <resin/imgui/sdf_tree.hpp>
+#include <resin/imgui/transform_edit.hpp>
 #include <resin/resin.hpp>
-
-#include "libresin/core/sdf_tree/sdf_tree_node.hpp"
 
 namespace resin {
 
@@ -145,11 +143,9 @@ void Resin::gui() {
   // TODO(SDF-81): Proper rendering to framebuffer
 
   if (ImGui::Begin("SDF Tree")) {
-    ImGui::SDFTreeView(sdf_tree_);
+    ImGui::resin::SDFTreeView(sdf_tree_);
   }
-  ImGui::ShowDemoWindow();
   ImGui::End();
-  ImGui::Render();
 
   ImGui::Begin("Test Cube");
   ImGui::Text("Parameters");

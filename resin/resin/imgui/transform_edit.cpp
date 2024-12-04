@@ -3,11 +3,14 @@
 #include <cfloat>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <resin/imgui/components.hpp>
+#include <libresin/core/transform.hpp>
+#include <resin/imgui/transform_edit.hpp>
 
 namespace ImGui {
 
-bool resin::TransformEdit(::resin::Transform* transform) {
+namespace resin {
+
+bool TransformEdit(::resin::Transform* transform) {
   bool value_changed = false;
 
   BeginGroup();
@@ -52,5 +55,7 @@ bool resin::TransformEdit(::resin::Transform* transform) {
   ImGui::EndGroup();
   return value_changed;
 }
+
+}  // namespace resin
 
 }  // namespace ImGui
