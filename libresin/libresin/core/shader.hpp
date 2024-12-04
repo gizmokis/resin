@@ -51,30 +51,6 @@ class ShaderProgram {
     }
   }
 
-  template <>
-  inline void set_uniform<DirectionalLight>(std::string_view name, const DirectionalLight& value) const {
-    std::string uniform(name);
-    set_uniform(uniform + ".color", value.color);
-    set_uniform(uniform + ".dir", value.transform.front());
-    set_uniform(uniform + ".ambient_impact", value.ambient_impact);
-  }
-
-  template <>
-  inline void set_uniform<PointLight::Attenuation>(std::string_view name, const PointLight::Attenuation& value) const {
-    std::string uniform(name);
-    set_uniform(uniform + ".constant", value.constant);
-    set_uniform(uniform + ".linear", value.linear);
-    set_uniform(uniform + ".quadratic", value.quadratic);
-  }
-
-  template <>
-  inline void set_uniform<PointLight>(std::string_view name, const PointLight& value) const {
-    std::string uniform(name);
-    set_uniform(uniform + ".color", value.color);
-    set_uniform(uniform + ".pos", value.transform.pos());
-    set_uniform(uniform + ".atten", value.attenuation);
-  }
-
   template <typename T>
   inline void set_uniform_array(std::string_view name, std::span<T> values) const {
     GLint location = get_uniform_location(name);
@@ -120,6 +96,31 @@ class ShaderProgram {
  private:
   mutable std::unordered_map<std::string, GLint, StringHash, std::equal_to<>> uniform_locations_;
 };
+
+template <>
+inline void ShaderProgram::set_uniform<DirectionalLight>(std::string_view name, const DirectionalLight& value) const {
+  std::string uniform(name);
+  set_uniform(uniform + ".color", value.color);
+  set_uniform(uniform + ".dir", value.transform.front());
+  set_uniform(uniform + ".ambient_impact", value.ambient_impact);
+}
+
+template <>
+inline void ShaderProgram::set_uniform<PointLight::Attenuation>(std::string_view name,
+                                                                const PointLight::Attenuation& value) const {
+  std::string uniform(name);
+  set_uniform(uniform + ".constant", value.constant);
+  set_uniform(uniform + ".linear", value.linear);
+  set_uniform(uniform + ".quadratic", value.quadratic);
+}
+
+template <>
+inline void ShaderProgram::set_uniform<PointLight>(std::string_view name, const PointLight& value) const {
+  std::string uniform(name);
+  set_uniform(uniform + ".color", value.color);
+  set_uniform(uniform + ".pos", value.transform.pos());
+  set_uniform(uniform + ".atten", value.attenuation);
+}
 
 class RenderingShaderProgram : public ShaderProgram {
  public:
