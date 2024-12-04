@@ -49,6 +49,8 @@ class SDFTree {
   void visit_dirty_primitives(ISDFTreeNodeVisitor& visitor);
   void visit_all_primitives(ISDFTreeNodeVisitor& visitor);
 
+  inline std::vector<IdView<SDFTreeNodeId>> dirty_primitives() const { return sdf_tree_registry_.dirty_primitives; }
+
   // Cost O(1)
   SDFTreeNode& node(IdView<SDFTreeNodeId> node_id);
 

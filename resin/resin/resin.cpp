@@ -18,6 +18,8 @@
 #include <resin/event/window_events.hpp>
 #include <resin/resin.hpp>
 
+#include "libresin/core/sdf_tree/sdf_tree_node.hpp"
+
 namespace resin {
 
 Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
@@ -69,7 +71,9 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
 
   // Example tree
   sdf_tree_.root().push_back_child<SphereNode>(SDFBinaryOperation::Inter);
-  sdf_tree_.root().push_back_child<GroupNode>(SDFBinaryOperation::Union);
+  sdf_tree_.root()
+      .push_back_child<GroupNode>(SDFBinaryOperation::Union)
+      .push_back_child<CubeNode>(SDFBinaryOperation::Diff);
   sdf_tree_.root().push_back_child<CubeNode>(SDFBinaryOperation::Union);
 }
 

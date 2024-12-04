@@ -42,6 +42,18 @@ std::string GroupNode::gen_shader_code() const {
   return sdf;
 }
 
+void GroupNode::set_parent(std::unique_ptr<SDFTreeNode>& node_ptr) {
+  node_ptr->set_parent(*this);
+  node_ptr->transform().set_parent(transform_);
+  insert_leaves_up(node_ptr);
+}
+
+void GroupNode::remove_from_parent(std::unique_ptr<SDFTreeNode>& node_ptr) {
+  node_ptr->remove_from_parent();
+  node_ptr->transform().remove_from_parent();
+  remove_leaves_up(node_ptr);
+}
+
 SDFTreeNode& GroupNode::get_child(IdView<SDFTreeNodeId> node_id) const {
   auto it = nodes_.find(node_id);
   if (it == nodes_.end()) {
@@ -56,6 +68,7 @@ void GroupNode::delete_child(IdView<SDFTreeNodeId> node_id) {
   if (it == nodes_.end()) {
     log_throw(SDFTreeNodeIsNotAChild());
   }
+  remove_from_parent(it->second.second);
 
   nodes_order_.erase(it->second.first);
   nodes_.erase(it);
@@ -108,18 +121,6 @@ SDFTreeNode& GroupNode::child_neighbor_next(IdView<SDFTreeNodeId> node_id) {
   return *nodes_.find(*list_it)->second.second;
 }
 
-void GroupNode::set_parent(std::unique_ptr<SDFTreeNode>& node_ptr) {
-  node_ptr->set_parent(*this);
-  node_ptr->transform().set_parent(transform_);
-  insert_leaves_up(node_ptr);
-}
-
-void GroupNode::remove_from_parent(std::unique_ptr<SDFTreeNode>& node_ptr) {
-  node_ptr->remove_from_parent();
-  node_ptr->transform().remove_from_parent();
-  remove_leaves_up(node_ptr);
-}
-
 std::unique_ptr<SDFTreeNode> GroupNode::detach_child(IdView<SDFTreeNodeId> node_id) {
   auto map_it = nodes_.find(node_id);
   if (map_it == nodes_.end()) {
@@ -163,8 +164,9 @@ void GroupNode::insert_before_child(std::optional<IdView<SDFTreeNodeId>> before_
   if (map_it == nodes_.end()) {
     log_throw(SDFTreeNodeIsNotAChild());
   }
+  auto pos = map_it->second.first;
 
-  auto list_it = nodes_order_.emplace(map_it->second.first, node_ptr->node_id());
+  auto list_it = nodes_order_.emplace(pos, node_ptr->node_id());
   auto node_id = node_ptr->node_id();
   nodes_.emplace(node_id, std::make_pair(list_it, std::move(node_ptr)));
 }
@@ -181,10 +183,11 @@ void GroupNode::insert_after_child(std::optional<IdView<SDFTreeNodeId>> after_ch
   if (map_it == nodes_.end()) {
     log_throw(SDFTreeNodeIsNotAChild());
   }
+  auto pos = map_it->second.first;
 
-  auto list_it = nodes_order_.emplace(map_it->second.first, node_ptr->node_id());
+  auto list_it = nodes_order_.emplace(++pos, node_ptr->node_id());
   auto node_id = node_ptr->node_id();
-  nodes_.emplace(node_id, std::make_pair(++list_it, std::move(node_ptr)));
+  nodes_.emplace(node_id, std::make_pair(list_it, std::move(node_ptr)));
 }
 
 void GroupNode::push_dirty_primitives() {

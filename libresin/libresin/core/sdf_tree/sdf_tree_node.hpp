@@ -32,7 +32,7 @@ class SDFTreeNode {
   virtual void accept_visitor(ISDFTreeNodeVisitor& visitor) = 0;
   virtual std::string_view name() const                     = 0;
   virtual void rename(std::string&&)                        = 0;
-  virtual std::unique_ptr<SDFTreeNode> copy()               = 0;
+  [[nodiscard]] virtual std::unique_ptr<SDFTreeNode> copy() = 0;
   virtual bool is_leaf()                                    = 0;
 
   inline IdView<SDFTreeNodeId> node_id() const { return node_id_; }

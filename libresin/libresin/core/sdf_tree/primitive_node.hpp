@@ -35,7 +35,7 @@ class PrimitiveNode : public SDFTreeNode {
                                             sdf_shader_consts::SDFShaderComponents component,
                                             size_t component_id) const {
     return std::format(
-        "{}({}[{}]*{}, {}[{}])", sdf_shader_consts::kSDFShaderPrimFunctionNames.get_name(primitive),
+        "{}({}[{}]*{},{}[{}])", sdf_shader_consts::kSDFShaderPrimFunctionNames.get_name(primitive),
         sdf_shader_consts::kSDFShaderComponentArrayNames.get_name(
             sdf_shader_consts::SDFShaderComponents::Transforms),                                              //
         transform_id_.raw(),                                                                                  //
@@ -68,7 +68,9 @@ class SphereNode final : public PrimitiveNode {
   inline IdView<SphereNodeId> component_id() const { return sphere_id_; }
   explicit SphereNode(SDFTreeRegistry& tree, float _radius = 1.F);
 
-  inline std::unique_ptr<SDFTreeNode> copy() override { return std::make_unique<SphereNode>(tree_registry_, radius); }
+  [[nodiscard]] inline std::unique_ptr<SDFTreeNode> copy() override {
+    return std::make_unique<SphereNode>(tree_registry_, radius);
+  }
 
  public:
   float radius;
@@ -88,7 +90,7 @@ class CubeNode final : public PrimitiveNode {
     visitor.visit_cube(*this);
   }
 
-  inline std::string gen_shader_code() const override {
+  [[nodiscard]] inline std::string gen_shader_code() const override {
     return get_function_call_code(sdf_shader_consts::SDFShaderPrim::Cube, sdf_shader_consts::SDFShaderComponents::Cubes,
                                   cube_id_.raw());
   }
