@@ -6,6 +6,7 @@
 #include <functional>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <libresin/core/light.hpp>
 #include <libresin/core/resources/shader_resource.hpp>
 #include <libresin/utils/string_hash.hpp>
 #include <span>
@@ -25,7 +26,7 @@ class ShaderProgram {
   void recompile();
 
   template <typename T>
-  inline void set_uniform(std::string_view name, const T& value) {
+  inline void set_uniform(std::string_view name, const T& value) const {
     GLint location = get_uniform_location(name);
     if constexpr (std::is_same_v<T, bool>) {
       glProgramUniform1i(program_id_, location, value ? 1 : 0);
@@ -50,8 +51,32 @@ class ShaderProgram {
     }
   }
 
+  template <>
+  inline void set_uniform<DirectionalLight>(std::string_view name, const DirectionalLight& value) const {
+    std::string uniform(name);
+    set_uniform(uniform + ".color", value.color);
+    set_uniform(uniform + ".dir", value.transform.front());
+    set_uniform(uniform + ".ambient_impact", value.ambient_impact);
+  }
+
+  template <>
+  inline void set_uniform<PointLight::Attenuation>(std::string_view name, const PointLight::Attenuation& value) const {
+    std::string uniform(name);
+    set_uniform(uniform + ".constant", value.constant);
+    set_uniform(uniform + ".linear", value.linear);
+    set_uniform(uniform + ".quadratic", value.quadratic);
+  }
+
+  template <>
+  inline void set_uniform<PointLight>(std::string_view name, const PointLight& value) const {
+    std::string uniform(name);
+    set_uniform(uniform + ".color", value.color);
+    set_uniform(uniform + ".pos", value.transform.pos());
+    set_uniform(uniform + ".atten", value.attenuation);
+  }
+
   template <typename T>
-  inline void set_uniform_array(std::string_view name, std::span<T> values) {
+  inline void set_uniform_array(std::string_view name, std::span<T> values) const {
     GLint location = get_uniform_location(name);
     if constexpr (std::is_same_v<T, int>) {
       glProgramUniform1iv(program_id_, location, static_cast<GLsizei>(values.size()), values.data());
