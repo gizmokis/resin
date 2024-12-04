@@ -5,12 +5,10 @@
 #include <glm/glm.hpp>
 #include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/logger.hpp>
-#include <mutex>
 #include <stack>
 
 namespace resin {
 
-// Thread safe id manager.
 template <typename Obj>
 class IdRegistry {
  public:
@@ -25,8 +23,6 @@ class IdRegistry {
   }
 
   size_t register_id() {
-    const std::lock_guard lock(mutex_);
-
     if (freed_.empty()) {
       log_throw(ObjectsOverflowException());
     }
@@ -39,8 +35,6 @@ class IdRegistry {
   }
 
   bool is_registered(size_t id) const {
-    const std::lock_guard lock(mutex_);
-
     if (id >= max_objs_) {
       return false;
     }
@@ -51,8 +45,6 @@ class IdRegistry {
   size_t get_max_objs() const { return max_objs_; }
 
   void unregister_id(size_t id) {
-    const std::lock_guard lock(mutex_);
-
     if (id >= max_objs_) {
       Logger::warn("Detected an attempt to unregister a non-existent id [{}].", id);
       return;
@@ -75,7 +67,6 @@ class IdRegistry {
   std::stack<size_t> freed_;
   std::vector<bool> is_registered_;
   size_t max_objs_;
-  mutable std::mutex mutex_;
 };
 
 // Strongly typed id, with similar behavior to unique_ptr -- it unregisters in the provided registry when destructor is
