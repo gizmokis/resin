@@ -17,7 +17,7 @@ GroupNode::~GroupNode() { tree_registry_.get().all_group_nodes[node_id_.raw()] =
 std::string GroupNode::gen_shader_code() const {
   if (nodes_.empty()) {
     // If group is empty then the operation is undefined.
-    log_throw(SDFTreeEmptyGroupException());
+    log_throw(SDFTreeEmptyGroupException(node_id_.raw()));
   }
 
   if (nodes_.size() == 1) {
@@ -57,7 +57,7 @@ void GroupNode::remove_from_parent(std::unique_ptr<SDFTreeNode>& node_ptr) {
 SDFTreeNode& GroupNode::get_child(IdView<SDFTreeNodeId> node_id) const {
   auto it = nodes_.find(node_id);
   if (it == nodes_.end()) {
-    log_throw(SDFTreeNodeIsNotAChild());
+    log_throw(SDFTreeNodeIsNotAChild(node_id.raw(), node_id_.raw()));
   }
 
   return *it->second.second;
@@ -66,7 +66,7 @@ SDFTreeNode& GroupNode::get_child(IdView<SDFTreeNodeId> node_id) const {
 void GroupNode::delete_child(IdView<SDFTreeNodeId> node_id) {
   auto it = nodes_.find(node_id);
   if (it == nodes_.end()) {
-    log_throw(SDFTreeNodeIsNotAChild());
+    log_throw(SDFTreeNodeIsNotAChild(node_id.raw(), node_id_.raw()));
   }
   remove_from_parent(it->second.second);
 
@@ -77,7 +77,7 @@ void GroupNode::delete_child(IdView<SDFTreeNodeId> node_id) {
 bool GroupNode::child_has_neighbor_prev(IdView<SDFTreeNodeId> node_id) const {
   auto map_it = nodes_.find(node_id);
   if (map_it == nodes_.end()) {
-    log_throw(SDFTreeNodeIsNotAChild());
+    log_throw(SDFTreeNodeIsNotAChild(node_id.raw(), node_id_.raw()));
   }
 
   return map_it->second.first != nodes_order_.begin();
@@ -86,7 +86,7 @@ bool GroupNode::child_has_neighbor_prev(IdView<SDFTreeNodeId> node_id) const {
 bool GroupNode::child_has_neighbor_next(IdView<SDFTreeNodeId> node_id) const {
   auto map_it = nodes_.find(node_id);
   if (map_it == nodes_.end()) {
-    log_throw(SDFTreeNodeIsNotAChild());
+    log_throw(SDFTreeNodeIsNotAChild(node_id.raw(), node_id_.raw()));
   }
 
   auto it = map_it->second.first;
@@ -96,12 +96,12 @@ bool GroupNode::child_has_neighbor_next(IdView<SDFTreeNodeId> node_id) const {
 SDFTreeNode& GroupNode::child_neighbor_prev(IdView<SDFTreeNodeId> node_id) {
   auto map_it = nodes_.find(node_id);
   if (map_it == nodes_.end()) {
-    log_throw(SDFTreeNodeIsNotAChild());
+    log_throw(SDFTreeNodeIsNotAChild(node_id.raw(), node_id_.raw()));
   }
 
   auto list_it = map_it->second.first;
   if (list_it == nodes_order_.begin()) {
-    log_throw(SDFTreeNodeDoesNotExist());
+    log_throw(SDFTreeNodeIsNotAChild(node_id.raw(), node_id_.raw()));
   }
 
   return *nodes_.find(*(++list_it))->second.second;
@@ -110,12 +110,12 @@ SDFTreeNode& GroupNode::child_neighbor_prev(IdView<SDFTreeNodeId> node_id) {
 SDFTreeNode& GroupNode::child_neighbor_next(IdView<SDFTreeNodeId> node_id) {
   auto map_it = nodes_.find(node_id);
   if (map_it == nodes_.end()) {
-    log_throw(SDFTreeNodeIsNotAChild());
+    log_throw(SDFTreeNodeIsNotAChild(node_id.raw(), node_id_.raw()));
   }
 
   auto list_it = map_it->second.first;
   if (++list_it == nodes_order_.end()) {
-    log_throw(SDFTreeNodeDoesNotExist());
+    log_throw(SDFTreeNodeIsNotAChild(node_id.raw(), node_id_.raw()));
   }
 
   return *nodes_.find(*list_it)->second.second;
@@ -124,7 +124,7 @@ SDFTreeNode& GroupNode::child_neighbor_next(IdView<SDFTreeNodeId> node_id) {
 std::unique_ptr<SDFTreeNode> GroupNode::detach_child(IdView<SDFTreeNodeId> node_id) {
   auto map_it = nodes_.find(node_id);
   if (map_it == nodes_.end()) {
-    log_throw(SDFTreeNodeIsNotAChild());
+    log_throw(SDFTreeNodeIsNotAChild(node_id.raw(), node_id_.raw()));
   }
 
   nodes_order_.erase(map_it->second.first);
@@ -162,7 +162,7 @@ void GroupNode::insert_before_child(std::optional<IdView<SDFTreeNodeId>> before_
 
   auto map_it = nodes_.find(*before_child_id);
   if (map_it == nodes_.end()) {
-    log_throw(SDFTreeNodeIsNotAChild());
+    log_throw(SDFTreeNodeIsNotAChild(before_child_id->raw(), node_id_.raw()));
   }
   auto pos = map_it->second.first;
 
@@ -181,7 +181,7 @@ void GroupNode::insert_after_child(std::optional<IdView<SDFTreeNodeId>> after_ch
 
   auto map_it = nodes_.find(*after_child_id);
   if (map_it == nodes_.end()) {
-    log_throw(SDFTreeNodeIsNotAChild());
+    log_throw(SDFTreeNodeIsNotAChild(after_child_id->raw(), node_id_.raw()));
   }
   auto pos = map_it->second.first;
 
