@@ -59,6 +59,7 @@ class Window {
   static void api_terminate();
 
   void set_glfw_callbacks() const;
+  void imgui_setup() const;
 
  private:
   static uint8_t glfw_window_count_;

@@ -16,6 +16,7 @@
 #include <resin/core/window.hpp>
 #include <resin/event/event.hpp>
 #include <resin/event/window_events.hpp>
+#include <resin/imgui/components.hpp>
 #include <resin/resin.hpp>
 
 #include "libresin/core/sdf_tree/sdf_tree_node.hpp"
@@ -127,23 +128,21 @@ void Resin::update(duration_t delta) {
                                  std::chrono::duration_cast<std::chrono::seconds>(time_)));
 
   cube_transform_.rotate(glm::angleAxis(2 * std::chrono::duration<float>(delta).count(), glm::vec3(0, 1, 0)));
-  camera_rig_.rotate(glm::angleAxis(std::chrono::duration<float>(delta).count(), glm::vec3(0, 1, 0)));
+  // camera_rig_.rotate(glm::angleAxis(std::chrono::duration<float>(delta).count(), glm::vec3(0, 1, 0)));
 
   shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
   shader_->set_uniform("u_resolution", glm::vec2(window_->dimensions()));
-  shader_->set_uniform("u_focal", camera_->near_plane());
+  shader_->set_uniform("u_nearPlane", camera_->near_plane());
+  shader_->set_uniform("u_farPlane", camera_->far_plane());
   shader_->set_uniform("u_iM", cube_transform_.world_to_local_matrix());
+  shader_->set_uniform("u_scale", cube_transform_.scale());
   shader_->set_uniform("u_ortho", camera_->is_orthographic);
   shader_->set_uniform("u_camSize", camera_->height());
 }
 
-void Resin::render() {
-  ImGui_ImplOpenGL3_NewFrame();
-  ImGui_ImplGlfw_NewFrame();
-  ImGui::NewFrame();
-
-  glClearColor(0.1F, 0.1F, 0.1F, 1.F);
-  glClear(GL_COLOR_BUFFER_BIT);
+void Resin::gui() {
+  // ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
+  // TODO(SDF-81): Proper rendering to framebuffer
 
   if (ImGui::Begin("SDF Tree")) {
     ImGui::SDFTreeView(sdf_tree_);
@@ -152,6 +151,22 @@ void Resin::render() {
   ImGui::End();
   ImGui::Render();
 
+  ImGui::Begin("Test Cube");
+  ImGui::Text("Parameters");
+  if (ImGui::BeginTabBar("TestTabBar", ImGuiTabBarFlags_None)) {
+    if (ImGui::BeginTabItem("Transform")) {
+      ImGui::resin::TransformEdit(&cube_transform_);
+      ImGui::EndTabItem();
+    }
+    ImGui::EndTabBar();
+  }
+  ImGui::End();
+}
+
+void Resin::render() {
+  glClearColor(0.1F, 0.1F, 0.1F, 1.F);
+  glClear(GL_COLOR_BUFFER_BIT);
+
   {
     glBindVertexArray(vertex_array_);
     shader_->bind();
@@ -159,6 +174,11 @@ void Resin::render() {
     shader_->unbind();
   }
 
+  ImGui_ImplOpenGL3_NewFrame();
+  ImGui_ImplGlfw_NewFrame();
+  ImGui::NewFrame();
+  gui();
+  ImGui::Render();
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
   window_->on_update();
@@ -178,7 +198,12 @@ bool Resin::on_window_resize(WindowResizeEvent& e) {
 
   minimized_ = false;
   glViewport(0, 0, static_cast<GLint>(e.width()), static_cast<GLint>(e.height()));
-  camera_->set_aspect_ratio(static_cast<float>(e.width()) / static_cast<float>(e.height()));
+  auto width  = static_cast<float>(e.width());
+  auto height = static_cast<float>(e.height());
+  camera_->set_aspect_ratio(width / height);
+
+  ImGuiIO& io    = ImGui::GetIO();
+  io.DisplaySize = ImVec2(width, height);
   return false;
 }
 

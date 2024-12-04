@@ -25,11 +25,24 @@ void Window::api_init() {
   }
 
   glfwSetErrorCallback(error_callback);
+
+  ImGui::CreateContext();
+  ImGuiIO& io = ImGui::GetIO();
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
+  io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+
+  ImGui::StyleColorsDark();
+
   Logger::debug("Api init");
 }
 
 void Window::api_terminate() {
+  ImGui_ImplOpenGL3_Shutdown();
+  ImGui_ImplGlfw_Shutdown();
+
   glfwTerminate();
+
   Logger::debug("Api shutdown");
 }
 
@@ -75,17 +88,9 @@ Window::Window(WindowProperties properties) : properties_(std::move(properties))
     Logger::warn("Window {} created without event dispatcher!", properties_.title);
   }
 
+  imgui_setup();
+
   Logger::info("Created window {} ({} x {})", properties_.title, properties_.width, properties_.height);
-
-  ImGui::CreateContext();
-  ImGuiIO& io = ImGui::GetIO();
-  (void)io;
-  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
-  io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
-  ImGui::StyleColorsDark();
-
-  ImGui_ImplGlfw_InitForOpenGL(window_ptr_, true);
-  ImGui_ImplOpenGL3_Init("#version 150");
 }
 
 void Window::set_glfw_callbacks() const {
@@ -164,6 +169,11 @@ void Window::set_fullscreen(bool fullscreen) {
     glfwSetWindowMonitor(window_ptr_, nullptr, *properties_.x, *properties_.y, static_cast<int>(properties_.width),
                          static_cast<int>(properties_.height), 0);
   }
+}
+
+void Window::imgui_setup() const {
+  ImGui_ImplGlfw_InitForOpenGL(window_ptr_, true);
+  ImGui_ImplOpenGL3_Init("#version 150");
 }
 
 }  // namespace resin
