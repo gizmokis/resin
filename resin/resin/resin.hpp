@@ -62,6 +62,8 @@ class Resin {
   std::unique_ptr<RenderingShaderProgram> shader_;
 
   std::unique_ptr<Camera> camera_;
+  std::unique_ptr<PointLight> point_light_;
+  std::unique_ptr<DirectionalLight> directional_light_;
   Transform cube_transform_, camera_rig_;
 
   bool running_   = true;
