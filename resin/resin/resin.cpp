@@ -32,18 +32,24 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
 
   const std::filesystem::path path = std::filesystem::current_path() / "assets";
 
-  // transform_ = std::make_unique<Transform>();
   cube_transform_.set_local_pos(glm::vec3(1, 1, 0));
+
   camera_       = std::make_unique<Camera>(true, 90.F, 16.F / 9.F, 0.75F, 100.F);
   glm::vec3 pos = glm::vec3(0, 2, 3);
   camera_->transform.set_local_pos(pos);
   glm::vec3 direction = glm::normalize(-pos);
   camera_->transform.set_local_rot(glm::quatLookAt(direction, glm::vec3(0, 1, 0)));
   camera_->transform.set_parent(camera_rig_);
+
+  point_light_       = std::make_unique<PointLight>(glm::vec3(0.57F, 0.38F, 0.04F), glm::vec3(0.0F, 1.0F, 0.5F),
+                                                    PointLight::Attenuation(1.0F, 0.7F, 1.8F));
+  directional_light_ = std::make_unique<DirectionalLight>(glm::vec3(0.5F, 0.5F, 0.5F), 1.0F);
+  directional_light_->transform.set_local_rot(glm::quatLookAt(direction, glm::vec3(0, 1, 0)));
+
   shader_ = std::make_unique<RenderingShaderProgram>("default", *shader_resource_manager_.get_res(path / "test.vert"),
                                                      *shader_resource_manager_.get_res(path / "test.frag"));
 
-  // TODO(anyone): temporary? at least error-check
+  // TODO(anyone): temporary, move out somewhere else
   float vertices[4 * 3]   = {-1.F, -1.F, 0.F, 1.F, -1.F, 0.F, -1.F, 1.F, 0.F, 1.F, 1.F, 0.F};
   unsigned int indices[6] = {0, 1, 2, 1, 3, 2};
 
@@ -116,7 +122,7 @@ void Resin::update(duration_t delta) {
                                  std::chrono::duration_cast<std::chrono::seconds>(time_)));
 
   cube_transform_.rotate(glm::angleAxis(2 * std::chrono::duration<float>(delta).count(), glm::vec3(0, 1, 0)));
-  // camera_rig_.rotate(glm::angleAxis(std::chrono::duration<float>(delta).count(), glm::vec3(0, 1, 0)));
+  directional_light_->transform.rotate(glm::angleAxis(std::chrono::duration<float>(delta).count(), glm::vec3(0, 1, 0)));
 
   shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
   shader_->set_uniform("u_resolution", glm::vec2(window_->dimensions()));
@@ -126,6 +132,8 @@ void Resin::update(duration_t delta) {
   shader_->set_uniform("u_scale", cube_transform_.scale());
   shader_->set_uniform("u_ortho", camera_->is_orthographic);
   shader_->set_uniform("u_camSize", camera_->height());
+  shader_->set_uniform("u_dirLight", *directional_light_);
+  shader_->set_uniform("u_pointLight", *point_light_);
 }
 
 void Resin::gui() {
@@ -139,6 +147,24 @@ void Resin::gui() {
   if (ImGui::BeginTabBar("TestTabBar", ImGuiTabBarFlags_None)) {
     if (ImGui::BeginTabItem("Transform")) {
       ImGui::resin::TransformEdit(&cube_transform_);
+      ImGui::EndTabItem();
+    }
+    // TODO(temp): i don't want to design GUI please save me guys 🤲🙏
+    if (ImGui::BeginTabItem("DirLight")) {
+      ImGui::ColorEdit3("Light color", glm::value_ptr(directional_light_->color));
+      ImGui::resin::TransformEdit(&directional_light_->transform);
+      ImGui::DragFloat("Ambient impact", &directional_light_->ambient_impact, 0.01F, 0.0F, 2.0F, "%.2f");
+      ImGui::EndTabItem();
+    }
+    if (ImGui::BeginTabItem("PointLight")) {
+      ImGui::ColorEdit3("Light color", glm::value_ptr(point_light_->color));
+      ImGui::resin::TransformEdit(&point_light_->transform);
+      if (ImGui::TreeNode("Attenuation")) {
+        ImGui::DragFloat("Constant", &point_light_->attenuation.constant, 0.01F, 0.0F, 2.0F, "%.2f");
+        ImGui::DragFloat("Linear", &point_light_->attenuation.linear, 0.01F, 0.0F, 2.0F, "%.2f");
+        ImGui::DragFloat("Quadratic", &point_light_->attenuation.quadratic, 0.01F, 0.0F, 2.0F, "%.2f");
+        ImGui::TreePop();
+      }
       ImGui::EndTabItem();
     }
     ImGui::EndTabBar();
