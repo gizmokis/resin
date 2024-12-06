@@ -16,7 +16,7 @@ class PrimitiveNode : public SDFTreeNode {
   bool is_leaf() final { return true; }
 
   ~PrimitiveNode() override = default;
-  explicit PrimitiveNode(SDFTreeRegistry& tree) : SDFTreeNode(tree) {}
+  explicit PrimitiveNode(SDFTreeRegistry& tree, std::string_view name) : SDFTreeNode(tree, name) {}
 
  protected:
   inline void insert_leaves_to(
@@ -61,9 +61,6 @@ class SphereNode final : public PrimitiveNode {
                                   sdf_shader_consts::SDFShaderComponents::Spheres, sphere_id_.raw());
   }
 
-  inline std::string_view name() const override { return name_; }
-  inline void rename(std::string&& name) override { name_ = std::move(name); }
-
   ~SphereNode() override = default;
   inline IdView<SphereNodeId> component_id() const { return sphere_id_; }
   explicit SphereNode(SDFTreeRegistry& tree, float _radius = 1.F);
@@ -94,9 +91,6 @@ class CubeNode final : public PrimitiveNode {
     return get_function_call_code(sdf_shader_consts::SDFShaderPrim::Cube, sdf_shader_consts::SDFShaderComponents::Cubes,
                                   cube_id_.raw());
   }
-
-  inline std::string_view name() const override { return name_; }
-  inline void rename(std::string&& name) override { name_ = std::move(name); }
 
   ~CubeNode() override = default;
   explicit CubeNode(SDFTreeRegistry& tree, float _size = 1.F);

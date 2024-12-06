@@ -26,8 +26,7 @@ class GroupNode final : public SDFTreeNode {
   ~GroupNode() override;
 
   std::string gen_shader_code() const override;
-  std::string_view name() const override { return name_; }
-  void rename(std::string&& name) override { name_ = std::move(name); }
+
   inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override { visitor.visit_group(*this); }
   [[nodiscard]] std::unique_ptr<SDFTreeNode> copy() override;
   inline bool is_leaf() override { return nodes_.size() == 0; }
@@ -135,8 +134,6 @@ class GroupNode final : public SDFTreeNode {
       nodes_;
 
   std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>> leaves_;
-
-  std::string name_;
 };
 
 }  // namespace resin

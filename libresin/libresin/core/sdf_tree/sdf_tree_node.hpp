@@ -24,7 +24,7 @@ class SDFTreeNode {
   SDFTreeNode() = delete;
 
   // It is the programmer's responsibility to assert that SDFTreeNode class will not outlive the provided registry!
-  explicit SDFTreeNode(SDFTreeRegistry& tree);
+  explicit SDFTreeNode(SDFTreeRegistry& tree, std::string_view name);
 
   SDFTreeNode(const SDFTreeNode&)            = delete;
   SDFTreeNode& operator=(const SDFTreeNode&) = delete;
@@ -33,8 +33,6 @@ class SDFTreeNode {
 
   virtual std::string gen_shader_code() const               = 0;
   virtual void accept_visitor(ISDFTreeNodeVisitor& visitor) = 0;
-  virtual std::string_view name() const                     = 0;
-  virtual void rename(std::string&&)                        = 0;
   [[nodiscard]] virtual std::unique_ptr<SDFTreeNode> copy() = 0;
   virtual bool is_leaf()                                    = 0;
 
@@ -50,6 +48,9 @@ class SDFTreeNode {
   inline bool has_parent() const { return parent_.has_value(); }
   inline GroupNode& parent() { return parent_.value(); }
   inline const GroupNode& parent() const { return parent_.value(); }
+
+  std::string_view name() const { return name_; }
+  void rename(std::string&& name) { name_ = std::move(name); }
 
   void mark_dirty();
 
@@ -77,6 +78,8 @@ class SDFTreeNode {
   std::optional<std::reference_wrapper<GroupNode>> parent_;
 
   SDFTreeRegistry& tree_registry_;
+
+  std::string name_;
 };
 
 template <typename T>

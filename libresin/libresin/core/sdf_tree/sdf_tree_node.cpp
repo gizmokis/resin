@@ -3,11 +3,12 @@
 
 namespace resin {
 
-SDFTreeNode::SDFTreeNode(SDFTreeRegistry& tree)
+SDFTreeNode::SDFTreeNode(SDFTreeRegistry& tree, std::string_view name)
     : node_id_(tree.nodes_registry),
       transform_id_(tree.transform_component_registry),
       bin_op_(SDFBinaryOperation::Union),
-      tree_registry_(tree) {
+      tree_registry_(tree),
+      name_(std::format("{} {}", name, node_id_.raw())) {
   tree_registry_.all_nodes[node_id_.raw()] = *this;
 }
 
