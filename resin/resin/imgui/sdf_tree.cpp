@@ -24,7 +24,7 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
     is_node_selected = true;
   }
 
-  ImGui::PushID(node.node_id().raw_as_int());
+  ImGui::PushID(static_cast<int>(node.node_id().raw()));
   bool tree_node_opened = ImGui::TreeNodeEx(node.name().data(), tree_flags);
   if (ImGui::IsItemClicked()) {
     is_node_selected = true;
@@ -51,7 +51,7 @@ void SDFTreeComponentVisitor::visit_primitive(::resin::PrimitiveNode& node) {
 
   is_selected = selected_ == node.node_id() || is_parent_selected_;
 
-  ImGui::PushID(node.node_id().raw_as_int());
+  ImGui::PushID(static_cast<int>(node.node_id().raw()));
   if (ImGui::Selectable(node.name().data(), &is_selected)) {
     selected_ = node.node_id();
   }
