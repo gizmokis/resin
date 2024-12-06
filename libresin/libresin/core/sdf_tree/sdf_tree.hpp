@@ -13,7 +13,7 @@
 namespace resin {
 
 struct SDFTreeRegistry {
-  // TODO(migoox): allow specifying the sizes
+  // TODO(SDF-98): allow specifying the sizes
   SDFTreeRegistry()
       : sphere_component_registry(IdRegistry<SphereNode>(1000)),
         cube_component_registry(IdRegistry<CubeNode>(1000)),

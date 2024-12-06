@@ -36,7 +36,6 @@ enum class SDFShaderComponents : uint8_t {
   Cubes      = 3,
   _Count     = 4,  // NOLINT
 };
-// TODO(migoox): better glsl_shader naming convention
 constexpr EnumMapping<SDFShaderComponents> kSDFShaderComponentArrayNames({
     "u_transforms",
     "u_materials",
