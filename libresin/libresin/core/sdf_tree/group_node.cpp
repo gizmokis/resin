@@ -149,7 +149,7 @@ void GroupNode::push_front_child(std::unique_ptr<SDFTreeNode> node_ptr) {
   auto node_id = node_ptr->node_id();
 
   nodes_order_.push_front(node_id);
-  nodes_.emplace(node_id, std::make_pair(std::prev(nodes_order_.end()), std::move(node_ptr)));
+  nodes_.emplace(node_id, std::make_pair(nodes_order_.begin(), std::move(node_ptr)));
 }
 
 void GroupNode::insert_before_child(std::optional<IdView<SDFTreeNodeId>> before_child_id,
