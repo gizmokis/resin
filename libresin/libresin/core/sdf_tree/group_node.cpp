@@ -14,26 +14,56 @@ GroupNode::GroupNode(SDFTreeRegistry& tree) : SDFTreeNode(tree, "Group") {
 }
 GroupNode::~GroupNode() { tree_registry_.all_group_nodes[node_id_.raw()] = std::nullopt; }
 
+bool GroupNode::is_node_shallow(IdView<SDFTreeNodeId> id) const {
+  return tree_registry_.all_group_nodes[id.raw()].has_value() &&
+         tree_registry_.all_group_nodes[id.raw()].value().get().primitives().size() == 0;
+}
+
 std::string GroupNode::gen_shader_code() const {
-  if (nodes_.empty()) {
-    // If group is empty then the operation is undefined.
-    log_throw(SDFTreeEmptyGroupException(node_id_.raw()));
+  size_t non_shallow_nodes_count = 0;
+  auto first_non_shallow_node    = nodes_order_.begin();
+  auto second_non_shallow_node   = nodes_order_.begin();
+  auto last_non_shallow_node     = nodes_order_.begin();
+  for (auto it = nodes_order_.begin(); it != nodes_order_.end(); ++it) {
+    if (!is_node_shallow(*it)) {
+      if (non_shallow_nodes_count == 0) {
+        first_non_shallow_node = it;
+      }
+      if (non_shallow_nodes_count == 1) {
+        second_non_shallow_node = it;
+      }
+      last_non_shallow_node = it;
+      non_shallow_nodes_count++;
+    }
   }
 
-  if (nodes_.size() == 1) {
+  if (non_shallow_nodes_count == 0) {
+    // The current node must be a root
+    return "";
+  }
+
+  if (non_shallow_nodes_count == 1) {
     // If there is one node only, the operation is ignored
-    return get_child(*nodes_order_.begin()).gen_shader_code();
+    return get_child(*last_non_shallow_node).gen_shader_code();
   }
 
   std::string sdf;
-  for (auto it = nodes_order_.rbegin(); it != std::prev(nodes_order_.rend()); ++it) {
+  for (auto it = last_non_shallow_node; it != first_non_shallow_node; --it) {
+    if (is_node_shallow(*it)) {
+      continue;
+    }
+
     sdf += sdf_shader_consts::kSDFShaderBinOpFunctionNames.get_name(get_child(*it).bin_op());
     sdf += "(";
   }
-  sdf += get_child(*nodes_order_.begin()).gen_shader_code();
+  sdf += get_child(*first_non_shallow_node).gen_shader_code();
   sdf += ",";
 
-  for (auto it = std::next(nodes_order_.begin()); it != nodes_order_.end(); ++it) {
+  for (auto it = second_non_shallow_node; it != nodes_order_.end(); ++it) {
+    if (is_node_shallow(*it)) {
+      continue;
+    }
+
     sdf += get_child(*it).gen_shader_code();
     sdf += "),";
   }

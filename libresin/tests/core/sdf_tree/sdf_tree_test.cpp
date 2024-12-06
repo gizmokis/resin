@@ -39,6 +39,43 @@ TEST_F(SDFTreeTest, SDFShaderIsCorrectlyGenerated) {
   ASSERT_EQ(expected_sh_code, sh_code);
 }
 
+TEST_F(SDFTreeTest, SDFShaderGenerationOmmitsShallowNodes) {
+  // given
+  //      +
+  // +          -
+  //       +    ^    -
+  //           + -
+  resin::SDFTree tree;
+  tree.root().push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Union);
+  auto& group1 = tree.root().push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Diff);
+  group1.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Union);
+  auto& group2 = group1.push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Inter);
+  group1.push_back_child<resin::SphereNode>(resin::SDFBinaryOperation::Diff);
+  group2.push_back_child<resin::SphereNode>(resin::SDFBinaryOperation::Union);
+  auto& group3 = group2.push_front_child<resin::GroupNode>(resin::SDFBinaryOperation::Union)
+                     .push_front_child<resin::GroupNode>(resin::SDFBinaryOperation::Union)
+                     .push_front_child<resin::GroupNode>(resin::SDFBinaryOperation::Union);
+  group3.push_front_child<resin::GroupNode>(resin::SDFBinaryOperation::Union);
+  group3.push_front_child<resin::GroupNode>(resin::SDFBinaryOperation::Union);
+  group3.push_front_child<resin::GroupNode>(resin::SDFBinaryOperation::Union);
+  group2.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Diff);
+  auto& group4 = group1.push_front_child<resin::GroupNode>(resin::SDFBinaryOperation::Union);
+  group4.push_front_child<resin::GroupNode>(resin::SDFBinaryOperation::Union);
+  group4.push_front_child<resin::GroupNode>(resin::SDFBinaryOperation::Union);
+  group4.push_front_child<resin::GroupNode>(resin::SDFBinaryOperation::Union);
+  group4.push_front_child<resin::GroupNode>(resin::SDFBinaryOperation::Union);
+
+  // when
+  auto sh_code = tree.gen_shader_code();
+
+  // then
+  auto expected_sh_code = std::string_view(
+      "opDiff(sdCube(u_transforms[1]*pos,u_cubes[0]),opDiff(opInter(sdCube(u_transforms[3]*pos,u_cubes[1]),opDiff("
+      "sdSphere(u_transforms[6]*pos,u_spheres[1]),sdCube(u_transforms[13]*pos,u_cubes[2]))),sdSphere(u_transforms[5]*"
+      "pos,u_spheres[0])))");
+  ASSERT_EQ(expected_sh_code, sh_code);
+}
+
 TEST_F(SDFTreeTest, NodesAreCorrectlyMoved) {
   // given
   //       o

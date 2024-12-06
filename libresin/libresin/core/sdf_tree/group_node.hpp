@@ -126,6 +126,8 @@ class GroupNode final : public SDFTreeNode {
   void set_parent(std::unique_ptr<SDFTreeNode>& node_ptr);
   void remove_from_parent(std::unique_ptr<SDFTreeNode>& node_ptr);
 
+  bool is_node_shallow(IdView<SDFTreeNodeId> id) const;
+
  private:
   std::list<IdView<SDFTreeNodeId>> nodes_order_;
   std::unordered_map<IdView<SDFTreeNodeId>,
