@@ -26,6 +26,9 @@ class SDFTreeNode {
   // It is the programmer's responsibility to assert that SDFTreeNode class will not outlive the provided registry!
   explicit SDFTreeNode(SDFTreeRegistry& tree);
 
+  SDFTreeNode(const SDFTreeNode&)            = delete;
+  SDFTreeNode& operator=(const SDFTreeNode&) = delete;
+
   virtual ~SDFTreeNode();
 
   virtual std::string gen_shader_code() const               = 0;
@@ -73,7 +76,7 @@ class SDFTreeNode {
 
   std::optional<std::reference_wrapper<GroupNode>> parent_;
 
-  std::reference_wrapper<SDFTreeRegistry> tree_registry_;
+  SDFTreeRegistry& tree_registry_;
 };
 
 template <typename T>

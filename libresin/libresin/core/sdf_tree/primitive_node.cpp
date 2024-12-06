@@ -3,7 +3,7 @@
 
 namespace resin {
 
-void PrimitiveNode::push_dirty_primitives() { tree_registry_.get().dirty_primitives.emplace_back(node_id()); }
+void PrimitiveNode::push_dirty_primitives() { tree_registry_.dirty_primitives.emplace_back(node_id()); }
 
 SphereNode::SphereNode(SDFTreeRegistry& tree, float _radius)
     : PrimitiveNode(tree),

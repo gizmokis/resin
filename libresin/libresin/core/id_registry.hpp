@@ -78,9 +78,9 @@ struct Id {
 
   Id() = delete;
   // It is the programmer's responsibility to assert that Id class will not outlive the provided registry!
-  explicit Id(IdRegistry<Obj>& registry) : registry_(registry) { raw_id_ = registry_.get().register_id(); }
+  explicit Id(IdRegistry<Obj>& registry) : registry_(registry) { raw_id_ = registry_.register_id(); }
 
-  ~Id() { registry_.get().unregister_id(raw_id_); }
+  ~Id() { registry_.unregister_id(raw_id_); }
 
   Id(const Id<Obj>& other)                 = delete;
   Id<Obj>& operator=(const Id<Obj>& other) = delete;
@@ -90,11 +90,11 @@ struct Id {
 
   inline size_t raw() const { return raw_id_; }
 
-  std::reference_wrapper<const IdRegistry<Obj>> registry() const { return registry_; }
+  const IdRegistry<Obj>& registry() const { return registry_; }
 
  private:
   size_t raw_id_;
-  std::reference_wrapper<IdRegistry<Obj>> registry_;
+  IdRegistry<Obj>& registry_;
 };
 
 // Strongly typed id observer. It does not ensure that the observed Id is still registered.

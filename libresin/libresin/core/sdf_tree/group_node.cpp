@@ -10,9 +10,9 @@
 namespace resin {
 
 GroupNode::GroupNode(SDFTreeRegistry& tree) : SDFTreeNode(tree), name_(std::format("Group {}", node_id_.raw())) {
-  tree_registry_.get().all_group_nodes[node_id_.raw()] = *this;
+  tree_registry_.all_group_nodes[node_id_.raw()] = *this;
 }
-GroupNode::~GroupNode() { tree_registry_.get().all_group_nodes[node_id_.raw()] = std::nullopt; }
+GroupNode::~GroupNode() { tree_registry_.all_group_nodes[node_id_.raw()] = std::nullopt; }
 
 std::string GroupNode::gen_shader_code() const {
   if (nodes_.empty()) {
@@ -192,12 +192,12 @@ void GroupNode::insert_after_child(std::optional<IdView<SDFTreeNodeId>> after_ch
 
 void GroupNode::push_dirty_primitives() {
   for (auto prim : leaves_) {
-    tree_registry_.get().dirty_primitives.push_back(std::move(prim));
+    tree_registry_.dirty_primitives.push_back(std::move(prim));
   }
 }
 
 std::unique_ptr<SDFTreeNode> GroupNode::copy() {
-  auto result = make_unique<GroupNode>(tree_registry_);
+  auto result = std::make_unique<GroupNode>(tree_registry_);
   for (auto& list_it : nodes_order_) {
     result->push_back_child(nodes_.find(list_it)->second.second->copy());
   }

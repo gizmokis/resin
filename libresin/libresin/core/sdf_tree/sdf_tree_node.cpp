@@ -8,16 +8,16 @@ SDFTreeNode::SDFTreeNode(SDFTreeRegistry& tree)
       transform_id_(tree.transform_component_registry),
       bin_op_(SDFBinaryOperation::Union),
       tree_registry_(tree) {
-  tree_registry_.get().all_nodes[node_id_.raw()] = *this;
+  tree_registry_.all_nodes[node_id_.raw()] = *this;
 }
 
 SDFTreeNode::~SDFTreeNode() {
-  tree_registry_.get().all_nodes[node_id_.raw()] = std::nullopt;
+  tree_registry_.all_nodes[node_id_.raw()] = std::nullopt;
   Logger::debug("Destructed node with id={}.", node_id_.raw());
 }
 
 void SDFTreeNode::mark_dirty() {
-  if (tree_registry_.get().nodes_registry.get_max_objs() < tree_registry_.get().dirty_primitives.size()) {
+  if (tree_registry_.nodes_registry.get_max_objs() < tree_registry_.dirty_primitives.size()) {
     log_throw(SDFTreeReachedDirtyPrimitivesLimit());
   }
 
