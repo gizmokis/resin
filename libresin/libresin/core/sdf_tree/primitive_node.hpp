@@ -15,7 +15,7 @@ class PrimitiveNode : public SDFTreeNode {
   inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override { visitor.visit_primitive(*this); }
   bool is_leaf() final { return true; }
 
-  virtual ~PrimitiveNode() = default;
+  ~PrimitiveNode() override = default;
   explicit PrimitiveNode(SDFTreeRegistry& tree) : SDFTreeNode(tree) {}
 
  protected:
@@ -64,7 +64,7 @@ class SphereNode final : public PrimitiveNode {
   inline std::string_view name() const override { return name_; }
   inline void rename(std::string&& name) override { name_ = std::move(name); }
 
-  virtual ~SphereNode() = default;
+  ~SphereNode() override = default;
   inline IdView<SphereNodeId> component_id() const { return sphere_id_; }
   explicit SphereNode(SDFTreeRegistry& tree, float _radius = 1.F);
 
@@ -98,7 +98,7 @@ class CubeNode final : public PrimitiveNode {
   inline std::string_view name() const override { return name_; }
   inline void rename(std::string&& name) override { name_ = std::move(name); }
 
-  virtual ~CubeNode() = default;
+  ~CubeNode() override = default;
   explicit CubeNode(SDFTreeRegistry& tree, float _size = 1.F);
   inline IdView<CubeNodeId> component_id() const { return cube_id_; }
 

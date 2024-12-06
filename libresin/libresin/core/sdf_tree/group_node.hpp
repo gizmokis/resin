@@ -23,7 +23,7 @@ class GroupNode final : public SDFTreeNode {
  public:
   GroupNode() = delete;
   explicit GroupNode(SDFTreeRegistry& tree);
-  virtual ~GroupNode();
+  ~GroupNode() override;
 
   std::string gen_shader_code() const override;
   std::string_view name() const override { return name_; }
@@ -134,7 +134,7 @@ class GroupNode final : public SDFTreeNode {
                      IdViewHash<SDFTreeNodeId>, std::equal_to<>>
       nodes_;
 
-  std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>> leaves_;  // leaves
+  std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>> leaves_;
 
   std::string name_;
 };
