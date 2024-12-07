@@ -5,12 +5,50 @@
 #include <libresin/core/sdf_tree/primitive_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
+#include <libresin/utils/logger.hpp>
 #include <optional>
 #include <resin/imgui/sdf_tree.hpp>
 
 namespace ImGui {  // NOLINT
 
 namespace resin {
+
+void SDFTreeComponentVisitor::drag_and_drop(::resin::SDFTreeNode& node) {
+  auto curr_id = node.node_id();
+  if (ImGui::BeginDragDropTarget()) {
+    ImVec2 item_min = ImGui::GetItemRectMin();
+    ImVec2 item_max = ImGui::GetItemRectMax();
+    bool below      = ImGui::GetItemRectSize().y / 2.F > item_max.y - ImGui::GetMousePos().y;
+
+    if (below) {
+      ImGui::GetForegroundDrawList()->AddLine(ImVec2(item_min.x, item_max.y), item_max, IM_COL32(255, 255, 0, 255));
+    } else {
+      ImGui::GetForegroundDrawList()->AddLine(item_min, ImVec2(item_max.x, item_min.y), IM_COL32(255, 255, 0, 255));
+    }
+
+    if (const ImGuiPayload* payload =
+            ImGui::AcceptDragDropPayload("SDF_TREE_DND_PAYLOAD", ImGuiDragDropFlags_AcceptNoDrawDefaultRect)) {
+      IM_ASSERT(payload->DataSize == sizeof(::resin::IdView<::resin::SDFTreeNodeId>));
+      ::resin::IdView<::resin::SDFTreeNodeId> source_id =
+          *static_cast<const ::resin::IdView<::resin::SDFTreeNodeId>*>(payload->Data);
+
+      move_source_target_ = source_id;
+      if (below) {
+        move_after_target_ = node.node_id();
+      } else {
+        move_before_target_ = node.node_id();
+      }
+    }
+
+    ImGui::EndDragDropTarget();
+  }
+
+  if (ImGui::BeginDragDropSource()) {
+    ImGui::SetDragDropPayload("SDF_TREE_DND_PAYLOAD", &curr_id, sizeof(::resin::IdView<::resin::SDFTreeNodeId>));
+    ImGui::Text("%s", node.name().data());
+    ImGui::EndDragDropSource();
+  }
+}
 
 void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
   static ImGuiTreeNodeFlags base_flags =
@@ -29,6 +67,10 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
   if (ImGui::IsItemClicked()) {
     is_node_selected = true;
     selected_        = node.node_id();
+  }
+
+  if (node.has_parent()) {
+    drag_and_drop(node);
   }
 
   if (!tree_node_opened) {
@@ -55,7 +97,25 @@ void SDFTreeComponentVisitor::visit_primitive(::resin::PrimitiveNode& node) {
   if (ImGui::Selectable(node.name().data(), &is_selected)) {
     selected_ = node.node_id();
   }
+
+  drag_and_drop(node);
+
   ImGui::PopID();
+}
+
+void SDFTreeComponentVisitor::apply_move_operation(::resin::SDFTree& tree) {
+  if (!move_source_target_.has_value()) {
+    return;
+  }
+  auto node_ptr = tree.node(*move_source_target_).parent().detach_child(*move_source_target_);
+
+  if (move_before_target_.has_value()) {
+    tree.node(*move_before_target_).parent().insert_before_child(*move_before_target_, std::move(node_ptr));
+  }
+
+  if (move_after_target_.has_value()) {
+    tree.node(*move_after_target_).parent().insert_after_child(*move_after_target_, std::move(node_ptr));
+  }
 }
 
 void SDFTreeOperationVisitor::visit_group(::resin::GroupNode& node) {
@@ -89,6 +149,11 @@ std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(::resin::SDFT
     selected = comp_vs.selected();
   }
   ImGui::EndChild();
+
+  comp_vs.apply_move_operation(tree);
+
+  ImGui::IsItemClicked();
+  ImGui::GetMouseDragDelta();
 
   bool delete_disabled = !selected.has_value() || !tree.node(selected.value()).has_parent() ||
                          (tree.node(selected.value()).parent().get_children_count() == 1 &&
