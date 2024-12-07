@@ -120,8 +120,7 @@ void SDFTreeComponentVisitor::apply_move_operation(::resin::SDFTree& tree) {
 
 void SDFTreeOperationVisitor::visit_group(::resin::GroupNode& node) {
   if (op == SDFTreeOperationVisitor::Operation::PushGroup) {
-    node.push_back_child<::resin::GroupNode>(::resin::SDFBinaryOperation::Union)
-        .push_back_child<::resin::SphereNode>(::resin::SDFBinaryOperation::Union);
+    node.push_back_child<::resin::GroupNode>(::resin::SDFBinaryOperation::Union);
   } else if (op == SDFTreeOperationVisitor::Operation::PushPrimitive) {
     node.push_back_child<::resin::SphereNode>(::resin::SDFBinaryOperation::Union);
   }
@@ -129,9 +128,7 @@ void SDFTreeOperationVisitor::visit_group(::resin::GroupNode& node) {
 
 void SDFTreeOperationVisitor::visit_primitive(::resin::PrimitiveNode& node) {
   if (op == SDFTreeOperationVisitor::Operation::PushGroup) {
-    node.parent()
-        .push_back_child<::resin::GroupNode>(::resin::SDFBinaryOperation::Union)
-        .push_back_child<::resin::SphereNode>(::resin::SDFBinaryOperation::Union);
+    node.parent().push_back_child<::resin::GroupNode>(::resin::SDFBinaryOperation::Union);
   } else if (op == SDFTreeOperationVisitor::Operation::PushPrimitive) {
     node.parent().push_back_child<::resin::SphereNode>(::resin::SDFBinaryOperation::Union);
   }
@@ -155,19 +152,13 @@ std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(::resin::SDFT
   ImGui::IsItemClicked();
   ImGui::GetMouseDragDelta();
 
-  bool delete_disabled = !selected.has_value() || !tree.node(selected.value()).has_parent() ||
-                         (tree.node(selected.value()).parent().get_children_count() == 1 &&
-                          tree.node(selected.value()).parent().node_id() == tree.root().node_id());
+  bool delete_disabled = !selected.has_value() || !tree.node(selected.value()).has_parent();
   if (delete_disabled) {
     ImGui::BeginDisabled();
   }
 
   if (ImGui::Button("Delete")) {
-    if (tree.node(selected.value()).has_parent() && tree.node(selected.value()).parent().get_children_count() == 1) {
-      tree.delete_node(tree.node(selected.value()).parent().node_id());
-    } else {
-      tree.delete_node(selected.value());
-    }
+    tree.delete_node(selected.value());
     selected = std::nullopt;
   }
 
