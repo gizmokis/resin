@@ -2,6 +2,7 @@
 #include <libresin/utils/exceptions.hpp>
 
 namespace resin {
+size_t SDFTree::curr_id_ = 0;
 
 std::optional<IdView<SDFTreeNodeId>> SDFTree::get_view_from_raw_id(size_t raw_id) {
   if (!sdf_tree_registry_.all_nodes[raw_id].has_value()) {

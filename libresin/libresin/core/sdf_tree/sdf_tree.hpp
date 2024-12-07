@@ -39,7 +39,7 @@ struct SDFTreeRegistry {
 
 class SDFTree {
  public:
-  SDFTree() : root_(std::make_unique<GroupNode>(sdf_tree_registry_)) {}
+  SDFTree() : root_(std::make_unique<GroupNode>(sdf_tree_registry_)), tree_id_((curr_id_++)) {}
 
   std::optional<IdView<SDFTreeNodeId>> get_view_from_raw_id(size_t raw_id);
 
@@ -66,9 +66,14 @@ class SDFTree {
 
   inline GroupNode& root() { return *root_; }
 
+  inline size_t tree_id() const { return tree_id_; }
+
  private:
+  static size_t curr_id_;
+
   SDFTreeRegistry sdf_tree_registry_;
   std::unique_ptr<GroupNode> root_;
+  size_t tree_id_;
 };
 
 }  // namespace resin

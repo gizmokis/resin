@@ -13,27 +13,52 @@ namespace ImGui {  // NOLINT
 
 namespace resin {
 
-void SDFTreeComponentVisitor::drag_and_drop(::resin::SDFTreeNode& node) {
+std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeComponentVisitor::get_curr_payload() {
+  std::optional<::resin::IdView<::resin::SDFTreeNodeId>> source_id;
+  if (const ImGuiPayload* payload = ImGui::GetDragDropPayload()) {
+    if (payload->IsDataType(payload_type_.c_str())) {
+      IM_ASSERT(payload->DataSize == sizeof(::resin::IdView<::resin::SDFTreeNodeId>));
+      source_id = *static_cast<const ::resin::IdView<::resin::SDFTreeNodeId>*>(payload->Data);
+    }
+  }
+
+  return source_id;
+}
+
+void SDFTreeComponentVisitor::drag_and_drop(::resin::SDFTreeNode& node, bool ignore_middle) {
   auto curr_id = node.node_id();
+  if (ImGui::BeginDragDropSource()) {
+    ImGui::SetDragDropPayload(payload_type_.c_str(), &curr_id, sizeof(::resin::IdView<::resin::SDFTreeNodeId>));
+    ImGui::Text("%s", node.name().data());
+    ImGui::EndDragDropSource();
+  }
+
   if (ImGui::BeginDragDropTarget()) {
     ImVec2 item_min = ImGui::GetItemRectMin();
     ImVec2 item_max = ImGui::GetItemRectMax();
-    bool below      = ImGui::GetItemRectSize().y / 2.F > item_max.y - ImGui::GetMousePos().y;
 
-    if (below) {
+    float bottom_dist = item_max.y - ImGui::GetMousePos().y;
+    bool middle       = !ignore_middle && ImGui::GetItemRectSize().y / 3.F * 2.F > bottom_dist &&
+                  ImGui::GetItemRectSize().y / 3.F < bottom_dist;
+    bool below = ImGui::GetItemRectSize().y / 2.F > bottom_dist;
+
+    if (middle) {
+      ImGui::GetForegroundDrawList()->AddRect(item_min, item_max, IM_COL32(255, 255, 0, 255));
+    } else if (below) {
       ImGui::GetForegroundDrawList()->AddLine(ImVec2(item_min.x, item_max.y), item_max, IM_COL32(255, 255, 0, 255));
     } else {
       ImGui::GetForegroundDrawList()->AddLine(item_min, ImVec2(item_max.x, item_min.y), IM_COL32(255, 255, 0, 255));
     }
 
     if (const ImGuiPayload* payload =
-            ImGui::AcceptDragDropPayload("SDF_TREE_DND_PAYLOAD", ImGuiDragDropFlags_AcceptNoDrawDefaultRect)) {
+            ImGui::AcceptDragDropPayload(payload_type_.c_str(), ImGuiDragDropFlags_AcceptNoDrawDefaultRect)) {
       IM_ASSERT(payload->DataSize == sizeof(::resin::IdView<::resin::SDFTreeNodeId>));
-      ::resin::IdView<::resin::SDFTreeNodeId> source_id =
-          *static_cast<const ::resin::IdView<::resin::SDFTreeNodeId>*>(payload->Data);
+      auto source_id = *static_cast<const ::resin::IdView<::resin::SDFTreeNodeId>*>(payload->Data);
 
       move_source_target_ = source_id;
-      if (below) {
+      if (middle) {
+        move_into_target_ = node.node_id();
+      } else if (below) {
         move_after_target_ = node.node_id();
       } else {
         move_before_target_ = node.node_id();
@@ -42,35 +67,49 @@ void SDFTreeComponentVisitor::drag_and_drop(::resin::SDFTreeNode& node) {
 
     ImGui::EndDragDropTarget();
   }
-
-  if (ImGui::BeginDragDropSource()) {
-    ImGui::SetDragDropPayload("SDF_TREE_DND_PAYLOAD", &curr_id, sizeof(::resin::IdView<::resin::SDFTreeNodeId>));
-    ImGui::Text("%s", node.name().data());
-    ImGui::EndDragDropSource();
-  }
 }
 
 void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
   static ImGuiTreeNodeFlags base_flags =
       ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth;
 
-  auto tree_flags       = base_flags;
-  bool is_node_selected = false;
+  auto tree_flags = base_flags;
 
+  if (node.is_leaf()) {
+    tree_flags |= ImGuiTreeNodeFlags_Leaf;
+  }
+
+  bool is_node_dragged = is_parent_dragged_;
+  if (!is_node_dragged) {
+    auto source_id  = get_curr_payload();
+    is_node_dragged = source_id.has_value() && *source_id == node.node_id();
+  }
+
+  bool is_node_selected = false;
   if (selected_ == node.node_id() || is_parent_selected_) {
     tree_flags |= ImGuiTreeNodeFlags_Selected;
     is_node_selected = true;
   }
 
   ImGui::PushID(static_cast<int>(node.node_id().raw()));
+
+  if (is_node_dragged) {
+    ImGui::BeginDisabled();
+  }
+
   bool tree_node_opened = ImGui::TreeNodeEx(node.name().data(), tree_flags);
+
+  if (is_node_dragged) {
+    ImGui::EndDisabled();
+  }
+
   if (ImGui::IsItemClicked()) {
     is_node_selected = true;
     selected_        = node.node_id();
   }
 
-  if (node.has_parent()) {
-    drag_and_drop(node);
+  if (!is_node_dragged) {
+    drag_and_drop(node, false);
   }
 
   if (!tree_node_opened) {
@@ -80,8 +119,8 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
 
   for (auto child_it = node.begin(); child_it != node.end(); ++child_it) {
     is_parent_selected_ = is_node_selected;
+    is_parent_dragged_  = is_node_dragged;
     node.get_child(*child_it).accept_visitor(*this);
-    is_parent_selected_ = is_node_selected;
   }
 
   ImGui::TreePop();
@@ -89,31 +128,52 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
 }
 
 void SDFTreeComponentVisitor::visit_primitive(::resin::PrimitiveNode& node) {
-  bool is_selected = false;
+  auto source_id = get_curr_payload();
 
-  is_selected = selected_ == node.node_id() || is_parent_selected_;
+  bool is_node_selected = selected_ == node.node_id() || is_parent_selected_;
+  bool is_node_dragged  = is_parent_dragged_ || (source_id.has_value() && *source_id == node.node_id());
 
   ImGui::PushID(static_cast<int>(node.node_id().raw()));
-  if (ImGui::Selectable(node.name().data(), &is_selected)) {
+  if (is_node_dragged) {
+    ImGui::BeginDisabled();
+  }
+
+  if (ImGui::Selectable(node.name().data(), &is_node_selected)) {
     selected_ = node.node_id();
   }
 
-  drag_and_drop(node);
+  if (is_node_dragged) {
+    ImGui::EndDisabled();
+  }
+
+  if (!is_node_dragged) {
+    drag_and_drop(node, true);
+  }
 
   ImGui::PopID();
+}
+
+void SDFTreeComponentVisitor::visit_root(::resin::GroupNode& node) {
+  for (auto child_it = node.begin(); child_it != node.end(); ++child_it) {
+    is_parent_selected_ = false;
+    is_parent_dragged_  = false;
+    node.get_child(*child_it).accept_visitor(*this);
+  }
 }
 
 void SDFTreeComponentVisitor::apply_move_operation(::resin::SDFTree& tree) {
   if (!move_source_target_.has_value()) {
     return;
   }
-  auto node_ptr = tree.node(*move_source_target_).parent().detach_child(*move_source_target_);
 
-  if (move_before_target_.has_value()) {
+  if (move_into_target_.has_value() && tree.node(*move_source_target_).parent().node_id() != *move_into_target_) {
+    auto node_ptr = tree.node(*move_source_target_).parent().detach_child(*move_source_target_);
+    tree.group(*move_into_target_).push_back_child(std::move(node_ptr));
+  } else if (move_before_target_.has_value()) {
+    auto node_ptr = tree.node(*move_source_target_).parent().detach_child(*move_source_target_);
     tree.node(*move_before_target_).parent().insert_before_child(*move_before_target_, std::move(node_ptr));
-  }
-
-  if (move_after_target_.has_value()) {
+  } else if (move_after_target_.has_value()) {
+    auto node_ptr = tree.node(*move_source_target_).parent().detach_child(*move_source_target_);
     tree.node(*move_after_target_).parent().insert_after_child(*move_after_target_, std::move(node_ptr));
   }
 }
@@ -137,12 +197,12 @@ void SDFTreeOperationVisitor::visit_primitive(::resin::PrimitiveNode& node) {
 std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(::resin::SDFTree& tree) {
   static std::optional<::resin::IdView<::resin::SDFTreeNodeId>> selected = std::nullopt;
 
-  auto comp_vs = resin::SDFTreeComponentVisitor(selected);
+  auto comp_vs = resin::SDFTreeComponentVisitor(selected, tree.tree_id());
   resin::SDFTreeOperationVisitor op_vs;
 
   if (ImGui::BeginChild("ResizableChild", ImVec2(-FLT_MIN, ImGui::GetTextLineHeightWithSpacing() * 8),
                         ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeY)) {
-    tree.root().accept_visitor(comp_vs);
+    comp_vs.visit_root(tree.root());
     selected = comp_vs.selected();
   }
   ImGui::EndChild();
@@ -152,7 +212,7 @@ std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(::resin::SDFT
   ImGui::IsItemClicked();
   ImGui::GetMouseDragDelta();
 
-  bool delete_disabled = !selected.has_value() || !tree.node(selected.value()).has_parent();
+  bool delete_disabled = !selected.has_value();
   if (delete_disabled) {
     ImGui::BeginDisabled();
   }
