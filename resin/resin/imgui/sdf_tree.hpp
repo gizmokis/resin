@@ -4,6 +4,7 @@
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
 
+#include <libresin/core/id_registry.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
@@ -23,9 +24,18 @@ class SDFTreeComponentVisitor : public ::resin::ISDFTreeNodeVisitor {
 
   inline std::optional<::resin::IdView<::resin::SDFTreeNodeId>> selected() const { return selected_; }
 
+  void apply_move_operation(::resin::SDFTree& tree);
+
+ private:
+  void drag_and_drop(::resin::SDFTreeNode& node);
+
  private:
   std::optional<::resin::IdView<::resin::SDFTreeNodeId>> selected_ = std::nullopt;
   bool is_parent_selected_                                         = false;
+
+  std::optional<::resin::IdView<::resin::SDFTreeNodeId>> move_source_target_ = std::nullopt;
+  std::optional<::resin::IdView<::resin::SDFTreeNodeId>> move_after_target_  = std::nullopt;
+  std::optional<::resin::IdView<::resin::SDFTreeNodeId>> move_before_target_ = std::nullopt;
 };
 
 class SDFTreeOperationVisitor : public ::resin::ISDFTreeNodeVisitor {
