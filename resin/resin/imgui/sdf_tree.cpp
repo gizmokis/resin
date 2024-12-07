@@ -130,7 +130,7 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
 void SDFTreeComponentVisitor::visit_primitive(::resin::PrimitiveNode& node) {
   auto source_id = get_curr_payload();
 
-  bool is_node_selected = selected_ == node.node_id() || is_parent_selected_;
+  bool is_node_selected = is_parent_selected_ || selected_ == node.node_id();
   bool is_node_dragged  = is_parent_dragged_ || (source_id.has_value() && *source_id == node.node_id());
 
   ImGui::PushID(static_cast<int>(node.node_id().raw()));
@@ -195,6 +195,7 @@ void SDFTreeOperationVisitor::visit_primitive(::resin::PrimitiveNode& node) {
 }
 
 std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(::resin::SDFTree& tree) {
+  ImGui::PushID(static_cast<int>(tree.tree_id()));
   static std::optional<::resin::IdView<::resin::SDFTreeNodeId>> selected = std::nullopt;
 
   auto comp_vs = resin::SDFTreeComponentVisitor(selected, tree.tree_id());
@@ -233,24 +234,37 @@ std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(::resin::SDFT
     ImGui::BeginDisabled();
   }
 
-  if (ImGui::Button("Push sphere")) {
-    if (comp_vs.selected().has_value()) {
-      op_vs.op = resin::SDFTreeOperationVisitor::Operation::PushPrimitive;
-      tree.node(comp_vs.selected().value()).accept_visitor(op_vs);
-    }
-  }
-
-  ImGui::SameLine();
-  if (ImGui::Button("Push group")) {
+  if (ImGui::Button("Add Group")) {
     if (comp_vs.selected().has_value()) {
       op_vs.op = SDFTreeOperationVisitor::Operation::PushGroup;
       tree.node(comp_vs.selected().value()).accept_visitor(op_vs);
     }
   }
 
+  ImGui::SameLine();
+
+  const char* names[] = {"Sphere", "Cube"};
+  if (ImGui::Button("Add")) {
+    ImGui::OpenPopup("AddPopUp");
+  }
+  ImGui::SameLine();
+  if (ImGui::BeginPopup("AddPopUp")) {
+    ImGui::SeparatorText("Primitives");
+    for (auto& name : names) {
+      if (ImGui::Selectable(name)) {
+        if (selected.has_value()) {
+          op_vs.op = resin::SDFTreeOperationVisitor::Operation::PushPrimitive;
+          tree.node(comp_vs.selected().value()).accept_visitor(op_vs);
+        }
+      }
+    }
+    ImGui::EndPopup();
+  }
+
   if (push_disabled) {
     ImGui::EndDisabled();
   }
+  ImGui::PopID();
 
   return selected;
 }
