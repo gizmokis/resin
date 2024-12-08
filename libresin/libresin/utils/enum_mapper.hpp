@@ -15,7 +15,7 @@ concept EnumWithCountConcept = requires {
 };
 
 template <typename T>
-concept EnumMappingValueConcept = requires { std::is_copy_assignable<T>(); };
+concept EnumMappingValueConcept = requires { std::is_move_assignable<T>(); };
 
 template <EnumWithCountConcept EnumType, EnumMappingValueConcept Value>
 struct EnumMapping {
