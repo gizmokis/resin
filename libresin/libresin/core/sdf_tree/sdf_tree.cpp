@@ -1,11 +1,14 @@
 #include <libresin/core/id_registry.hpp>
 #include <libresin/core/sdf_shader_consts.hpp>
+#include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/primitive_base_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/utils/exceptions.hpp>
 
 namespace resin {
 size_t SDFTree::curr_id_ = 0;
+
+SDFTree::SDFTree() : root_(std::make_unique<GroupNode>(sdf_tree_registry_)), tree_id_((curr_id_++)) {}
 
 std::optional<IdView<SDFTreeNodeId>> SDFTree::get_view_from_raw_id(size_t raw_id) {
   if (!sdf_tree_registry_.all_nodes[raw_id].has_value()) {
@@ -62,14 +65,6 @@ void SDFTree::delete_node(IdView<SDFTreeNodeId> node_id) {
   sdf_tree_registry_.all_nodes[node_id.raw()]->get().parent().delete_child(node_id);
 }
 
-SDFTreeRegistry::SDFTreeRegistry()
-    : sphere_components_registry(IdRegistry<PrimitiveNode<sdf_shader_consts::SDFShaderPrim::Sphere>>(1000)),
-      cubes_components_registry(IdRegistry<PrimitiveNode<sdf_shader_consts::SDFShaderPrim::Cube>>(1000)),
-      transform_component_registry(IdRegistry<Transform>(2000)),
-      nodes_registry(IdRegistry<SDFTreeNode>(5000)) {
-  all_nodes.resize(nodes_registry.get_max_objs());
-  all_group_nodes.resize(nodes_registry.get_max_objs());
-  dirty_primitives.reserve(nodes_registry.get_max_objs());
-}
+std::string SDFTree::gen_shader_code() const { return root_->gen_shader_code(); }
 
 }  // namespace resin

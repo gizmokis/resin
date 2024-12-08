@@ -46,18 +46,6 @@ class SDFTreeComponentVisitor : public ::resin::ISDFTreeNodeVisitor {
   std::string payload_type_;
 };
 
-class SDFTreeOperationVisitor : public ::resin::ISDFTreeNodeVisitor {
- public:
-  void visit_group(::resin::GroupNode& node) override;
-  void visit_primitive(::resin::BasePrimitiveNode& node) override;
-
-  enum class Operation {
-    PushPrimitive,
-    PushGroup,
-  };
-  Operation op;
-};
-
 std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(::resin::SDFTree& tree);
 
 }  // namespace resin
