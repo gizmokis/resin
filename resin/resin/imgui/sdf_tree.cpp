@@ -2,11 +2,14 @@
 #include <imgui/imgui_internal.h>
 
 #include <libresin/core/sdf_tree/group_node.hpp>
+#include <libresin/core/sdf_tree/primitive_base_node.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/utils/logger.hpp>
+#include <memory>
 #include <optional>
+#include <ranges>
 #include <resin/imgui/sdf_tree.hpp>
 
 namespace ImGui {  // NOLINT
@@ -178,28 +181,11 @@ void SDFTreeComponentVisitor::apply_move_operation(::resin::SDFTree& tree) {
   }
 }
 
-void SDFTreeOperationVisitor::visit_group(::resin::GroupNode& node) {
-  if (op == SDFTreeOperationVisitor::Operation::PushGroup) {
-    node.push_back_child<::resin::GroupNode>(::resin::SDFBinaryOperation::Union);
-  } else if (op == SDFTreeOperationVisitor::Operation::PushPrimitive) {
-    node.push_back_child<::resin::SphereNode>(::resin::SDFBinaryOperation::Union);
-  }
-}
-
-void SDFTreeOperationVisitor::visit_primitive(::resin::BasePrimitiveNode& node) {
-  if (op == SDFTreeOperationVisitor::Operation::PushGroup) {
-    node.parent().push_back_child<::resin::GroupNode>(::resin::SDFBinaryOperation::Union);
-  } else if (op == SDFTreeOperationVisitor::Operation::PushPrimitive) {
-    node.parent().push_back_child<::resin::SphereNode>(::resin::SDFBinaryOperation::Union);
-  }
-}
-
 std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(::resin::SDFTree& tree) {
   ImGui::PushID(static_cast<int>(tree.tree_id()));
   static std::optional<::resin::IdView<::resin::SDFTreeNodeId>> selected = std::nullopt;
 
   auto comp_vs = resin::SDFTreeComponentVisitor(selected, tree.tree_id());
-  resin::SDFTreeOperationVisitor op_vs;
 
   if (ImGui::BeginChild("ResizableChild", ImVec2(-FLT_MIN, ImGui::GetTextLineHeightWithSpacing() * 8),
                         ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeY)) {
@@ -236,25 +222,33 @@ std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(::resin::SDFT
 
   if (ImGui::Button("Add Group")) {
     if (comp_vs.selected().has_value()) {
-      op_vs.op = SDFTreeOperationVisitor::Operation::PushGroup;
-      tree.node(comp_vs.selected().value()).accept_visitor(op_vs);
+      if (tree.is_group(*selected)) {
+        tree.group(*selected).push_back_child<::resin::GroupNode>(::resin::SDFBinaryOperation::Union);
+      } else {
+        tree.node(*selected).parent().push_back_child<::resin::GroupNode>(::resin::SDFBinaryOperation::Union);
+      }
     }
   }
 
   ImGui::SameLine();
 
-  if (ImGui::Button("Add")) {
+  if (ImGui::Button("Add Primitive")) {
     ImGui::OpenPopup("AddPopUp");
   }
 
   ImGui::SameLine();
   if (ImGui::BeginPopup("AddPopUp")) {
-    ImGui::SeparatorText("Primitives");
-    for (const auto& name : ::resin::BasePrimitiveNode::available_primitive_names()) {
+    for (const auto [index, name] :
+         std::ranges::views::enumerate(::resin::BasePrimitiveNode::available_primitive_names())) {
       if (ImGui::Selectable(name.data())) {
         if (selected.has_value()) {
-          op_vs.op = resin::SDFTreeOperationVisitor::Operation::PushPrimitive;
-          tree.node(comp_vs.selected().value()).accept_visitor(op_vs);
+          if (tree.is_group(*selected)) {
+            tree.group(*selected).push_back_primitive(static_cast<::resin::SDFTreePrimitiveType>(index),
+                                                      ::resin::SDFBinaryOperation::Union);
+          } else {
+            tree.node(*selected).parent().push_back_primitive(static_cast<::resin::SDFTreePrimitiveType>(index),
+                                                              ::resin::SDFBinaryOperation::Union);
+          }
         }
       }
     }

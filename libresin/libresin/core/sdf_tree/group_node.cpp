@@ -6,6 +6,7 @@
 #include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/logger.hpp>
 #include <optional>
+#include <utility>
 
 namespace resin {
 
@@ -13,6 +14,22 @@ GroupNode::GroupNode(SDFTreeRegistry& tree) : SDFTreeNode(tree, "Group") {
   tree_registry_.all_group_nodes[node_id_.raw()] = *this;
 }
 GroupNode::~GroupNode() { tree_registry_.all_group_nodes[node_id_.raw()] = std::nullopt; }
+
+void GroupNode::push_back_primitive(SDFTreePrimitiveType type, SDFBinaryOperation bin_op) {
+  switch (type) {
+    case SDFTreePrimitiveType::Sphere:
+      push_back_child<SphereNode>(bin_op);
+      break;
+    case SDFTreePrimitiveType::Cube:
+      push_back_child<CubeNode>(bin_op);
+      break;
+    case resin::SDFTreePrimitiveType::_Count:
+      throw NonExhaustiveEnumException();
+      break;
+  }
+
+  throw NonExhaustiveEnumException();
+}
 
 bool GroupNode::is_node_shallow(IdView<SDFTreeNodeId> id) const {
   return tree_registry_.all_group_nodes[id.raw()].has_value() &&
