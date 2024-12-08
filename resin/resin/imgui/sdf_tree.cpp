@@ -127,7 +127,7 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
   ImGui::PopID();
 }
 
-void SDFTreeComponentVisitor::visit_primitive(::resin::PrimitiveNode& node) {
+void SDFTreeComponentVisitor::visit_primitive(::resin::BasePrimitiveNode& node) {
   auto source_id = get_curr_payload();
 
   bool is_node_selected = is_parent_selected_ || selected_ == node.node_id();
@@ -186,7 +186,7 @@ void SDFTreeOperationVisitor::visit_group(::resin::GroupNode& node) {
   }
 }
 
-void SDFTreeOperationVisitor::visit_primitive(::resin::PrimitiveNode& node) {
+void SDFTreeOperationVisitor::visit_primitive(::resin::BasePrimitiveNode& node) {
   if (op == SDFTreeOperationVisitor::Operation::PushGroup) {
     node.parent().push_back_child<::resin::GroupNode>(::resin::SDFBinaryOperation::Union);
   } else if (op == SDFTreeOperationVisitor::Operation::PushPrimitive) {
@@ -243,15 +243,15 @@ std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(::resin::SDFT
 
   ImGui::SameLine();
 
-  const char* names[] = {"Sphere", "Cube"};
   if (ImGui::Button("Add")) {
     ImGui::OpenPopup("AddPopUp");
   }
+
   ImGui::SameLine();
   if (ImGui::BeginPopup("AddPopUp")) {
     ImGui::SeparatorText("Primitives");
-    for (auto& name : names) {
-      if (ImGui::Selectable(name)) {
+    for (const auto& name : ::resin::BasePrimitiveNode::available_primitive_names()) {
+      if (ImGui::Selectable(name.data())) {
         if (selected.has_value()) {
           op_vs.op = resin::SDFTreeOperationVisitor::Operation::PushPrimitive;
           tree.node(comp_vs.selected().value()).accept_visitor(op_vs);
