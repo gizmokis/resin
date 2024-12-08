@@ -19,13 +19,13 @@ void GroupNode::push_back_primitive(SDFTreePrimitiveType type, SDFBinaryOperatio
   switch (type) {
     case SDFTreePrimitiveType::Sphere:
       push_back_child<SphereNode>(bin_op);
-      break;
+      return;
     case SDFTreePrimitiveType::Cube:
       push_back_child<CubeNode>(bin_op);
-      break;
+      return;
     case resin::SDFTreePrimitiveType::_Count:
       throw NonExhaustiveEnumException();
-      break;
+      return;
   }
 
   throw NonExhaustiveEnumException();
