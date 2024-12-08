@@ -215,11 +215,6 @@ std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(::resin::SDFT
 
   ImGui::SameLine();
 
-  bool push_disabled = !selected.has_value();
-  if (push_disabled) {
-    ImGui::BeginDisabled();
-  }
-
   if (ImGui::Button("Add Group")) {
     if (comp_vs.selected().has_value()) {
       if (tree.is_group(*selected)) {
@@ -227,6 +222,8 @@ std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(::resin::SDFT
       } else {
         tree.node(*selected).parent().push_back_child<::resin::GroupNode>(::resin::SDFBinaryOperation::Union);
       }
+    } else {
+      tree.root().push_back_child<::resin::GroupNode>(::resin::SDFBinaryOperation::Union);
     }
   }
 
@@ -249,15 +246,15 @@ std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(::resin::SDFT
             tree.node(*selected).parent().push_back_primitive(static_cast<::resin::SDFTreePrimitiveType>(index),
                                                               ::resin::SDFBinaryOperation::Union);
           }
+        } else {
+          tree.root().push_back_primitive(static_cast<::resin::SDFTreePrimitiveType>(index),
+                                          ::resin::SDFBinaryOperation::Union);
         }
       }
     }
     ImGui::EndPopup();
   }
 
-  if (push_disabled) {
-    ImGui::EndDisabled();
-  }
   ImGui::PopID();
 
   return selected;
