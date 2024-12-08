@@ -21,7 +21,7 @@ class SDFTreeComponentVisitor : public ::resin::ISDFTreeNodeVisitor {
                                    size_t sdf_tree_comp_id)
       : selected_(selected), payload_type_(std::format("SDF_TREE_DND_PAYLOAD_{}", sdf_tree_comp_id)) {}
   void visit_group(::resin::GroupNode& node) override;
-  void visit_primitive(::resin::PrimitiveNode& node) override;
+  void visit_primitive(::resin::BasePrimitiveNode& node) override;
 
   void visit_root(::resin::GroupNode& node);
 
@@ -49,7 +49,7 @@ class SDFTreeComponentVisitor : public ::resin::ISDFTreeNodeVisitor {
 class SDFTreeOperationVisitor : public ::resin::ISDFTreeNodeVisitor {
  public:
   void visit_group(::resin::GroupNode& node) override;
-  void visit_primitive(::resin::PrimitiveNode& node) override;
+  void visit_primitive(::resin::BasePrimitiveNode& node) override;
 
   enum class Operation {
     PushPrimitive,
