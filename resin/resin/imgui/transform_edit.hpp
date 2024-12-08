@@ -1,8 +1,5 @@
-#ifndef RESIN_COMPONENTS_HPP
-#define RESIN_COMPONENTS_HPP
-
-#include <imgui/imgui.h>
-
+#ifndef RESIN_TRANSFORM_EDIT_HPP
+#define RESIN_TRANSFORM_EDIT_HPP
 #include <libresin/core/transform.hpp>
 
 namespace ImGui {  // NOLINT
@@ -15,4 +12,4 @@ bool TransformEdit(::resin::Transform* transform);
 
 }  // namespace ImGui
 
-#endif  // RESIN_COMPONENTS_HPP
+#endif  // RESIN_TRANSFORM_EDIT_HPP

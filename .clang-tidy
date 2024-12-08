@@ -11,6 +11,7 @@ Checks: >
   modernize-*,
   -android-*,
   -misc-non-private-member-variables-in-classes,
+  -misc-no-recursion,
   -cppcoreguidelines-special-member-functions,
   -cppcoreguidelines-avoid-c-arrays,
   -cppcoreguidelines-pro-bounds-array-to-pointer-decay,

@@ -3,9 +3,13 @@
 #include <functional>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/vec3.hpp>
+#include <libresin/core/id_registry.hpp>
 #include <optional>
 
 namespace resin {
+
+struct Transform;
+using TransformId = Id<Transform>;
 
 struct Transform final {
  public:
@@ -56,7 +60,6 @@ struct Transform final {
   Transform& operator=(const Transform&) = delete;
   Transform& operator=(Transform&&)      = delete;
 
- private:
   void remove_from_parent();
 
  private:

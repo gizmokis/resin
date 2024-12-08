@@ -5,6 +5,8 @@
 #include <cstdint>
 #include <libresin/core/camera.hpp>
 #include <libresin/core/resources/shader_resource.hpp>
+#include <libresin/core/sdf_tree/group_node.hpp>
+#include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/shader.hpp>
 #include <memory>
 #include <resin/core/window.hpp>
@@ -51,6 +53,10 @@ class Resin {
   unsigned int vertex_array_, vertex_buffer_, index_buffer_;
   EventDispatcher dispatcher_;
   ShaderResourceManager shader_resource_manager_;
+
+  SDFTree sdf_tree_;
+
+  std::optional<size_t> selected_node_;
 
   std::unique_ptr<Window> window_;
   std::unique_ptr<RenderingShaderProgram> shader_;

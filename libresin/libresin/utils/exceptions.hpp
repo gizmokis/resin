@@ -239,6 +239,81 @@ class ShaderCreationException : public std::runtime_error {
   std::string reason_;
 };
 
+class SDFTreeNodeDoesNotExist : public std::runtime_error {
+ public:
+  EXCEPTION_NAME(SDFTreeNodeDoesNotExist)
+
+  explicit SDFTreeNodeDoesNotExist(size_t id)
+      : std::runtime_error(std::format(R"(SDF Tree node with id {} does not exist)", id)), id_(id) {}
+
+  inline size_t get_id() const { return id_; }
+
+ private:
+  size_t id_;
+};
+
+class ObjectsOverflowException : public std::runtime_error {
+ public:
+  EXCEPTION_NAME(ObjectsOverflowException)
+
+  explicit ObjectsOverflowException() : std::runtime_error(std::format(R"(No more free IDs available)")) {}
+};
+
+class SDFTreeEmptyGroupException : public std::runtime_error {
+ public:
+  EXCEPTION_NAME(SDFTreeEmptyGroupException)
+
+  explicit SDFTreeEmptyGroupException(size_t group_id)
+      : std::runtime_error(std::format(
+            R"(Cannot generate shader as there is a group node with id {} that does not have any children)", group_id)),
+        group_id_(group_id) {}
+
+  inline size_t get_group_id() const { return group_id_; }
+
+ private:
+  size_t group_id_;
+};
+
+class SDFTreeRootDeletionError : public std::runtime_error {
+ public:
+  EXCEPTION_NAME(SDFTreeRootDeletionError)
+
+  explicit SDFTreeRootDeletionError() : std::runtime_error(std::format(R"(SDF Tree root must not be deleted)")) {}
+};
+
+class SDFTreeNodeIsNotAChild : public std::runtime_error {
+ public:
+  EXCEPTION_NAME(SDFTreeNodeIsNotAChild)
+
+  explicit SDFTreeNodeIsNotAChild(size_t id1, size_t id2)
+      : std::runtime_error(
+            std::format(R"(SDF Tree node with id {} is not a child of the parent with id {})", id1, id2)),
+        id1_(id1),
+        id2_(id2) {}
+
+  inline size_t get_id1() const { return id1_; }
+  inline size_t get_id2() const { return id2_; }
+
+ private:
+  size_t id1_;
+  size_t id2_;
+};
+
+class SDFTreeReachedDirtyPrimitivesLimit : public std::runtime_error {
+ public:
+  EXCEPTION_NAME(SDFTreeReachedDirtyPrimitivesLimit)
+
+  explicit SDFTreeReachedDirtyPrimitivesLimit()
+      : std::runtime_error(std::format(R"(SDF Tree reached the dirty primitives limit)")) {}
+};
+
+class NotImplementedException : public std::runtime_error {
+ public:
+  EXCEPTION_NAME(NotImplementedException)
+
+  explicit NotImplementedException() : std::runtime_error(std::format(R"(Not implemented yet)")) {}
+};
+
 }  // namespace resin
 
 #endif  // RESIN_EXCEPTIONS_HPP

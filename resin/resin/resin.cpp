@@ -1,19 +1,22 @@
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_opengl3.h>
+#include <imgui/imgui_internal.h>
 
 #include <chrono>
 #include <cstdint>
 #include <filesystem>
 #include <format>
-#include <glm/ext/quaternion_trigonometric.hpp>
 #include <libresin/core/resources/shader_resource.hpp>
+#include <libresin/core/sdf_tree/group_node.hpp>
+#include <libresin/core/sdf_tree/primitive_node.hpp>
+#include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/utils/logger.hpp>
-#include <memory>
 #include <resin/core/window.hpp>
 #include <resin/event/event.hpp>
 #include <resin/event/window_events.hpp>
-#include <resin/imgui/components.hpp>
+#include <resin/imgui/sdf_tree.hpp>
+#include <resin/imgui/transform_edit.hpp>
 #include <resin/resin.hpp>
 
 namespace resin {
@@ -70,6 +73,13 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
   glGenBuffers(1, &index_buffer_);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer_);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof indices, indices, GL_STATIC_DRAW);
+
+  // Example tree
+  sdf_tree_.root().push_back_child<SphereNode>(SDFBinaryOperation::Inter);
+  sdf_tree_.root()
+      .push_back_child<GroupNode>(SDFBinaryOperation::Union)
+      .push_back_child<CubeNode>(SDFBinaryOperation::Diff);
+  sdf_tree_.root().push_back_child<CubeNode>(SDFBinaryOperation::Union);
 }
 
 void Resin::run() {
@@ -140,7 +150,10 @@ void Resin::gui() {
   // ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
   // TODO(SDF-81): Proper rendering to framebuffer
 
-  ImGui::ShowDemoWindow();
+  if (ImGui::Begin("SDF Tree")) {
+    ImGui::resin::SDFTreeView(sdf_tree_);
+  }
+  ImGui::End();
 
   ImGui::Begin("Test Cube");
   ImGui::Text("Parameters");
