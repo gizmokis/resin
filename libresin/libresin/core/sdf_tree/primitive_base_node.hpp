@@ -53,7 +53,7 @@ template <SDFTreePrimitiveType PrimType>
 class PrimitiveNode : public BasePrimitiveNode {
  public:
   explicit PrimitiveNode(SDFTreeRegistry& tree)
-      : BasePrimitiveNode(tree, primitive_name()), comp_id_(tree.primitve_components_registry<PrimType>()) {}
+      : BasePrimitiveNode(tree, primitive_name()), comp_id_(tree.primitive_components_registry<PrimType>()) {}
 
   constexpr static SDFTreePrimitiveType type() { return PrimType; }
   constexpr SDFTreePrimitiveType primitive_type() const final { return PrimType; }

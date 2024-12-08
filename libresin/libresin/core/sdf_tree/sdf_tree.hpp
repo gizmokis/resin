@@ -19,8 +19,9 @@ struct SDFTreeRegistry {
 
   IdRegistry<PrimitiveNode<sdf_shader_consts::SDFShaderPrim::Sphere>> sphere_components_registry;
   IdRegistry<PrimitiveNode<sdf_shader_consts::SDFShaderPrim::Cube>> cubes_components_registry;
+
   template <sdf_shader_consts::SDFShaderPrim EnumType>
-  constexpr IdRegistry<PrimitiveNode<EnumType>>& primitve_components_registry() {
+  constexpr IdRegistry<PrimitiveNode<EnumType>>& primitive_components_registry() {
     if constexpr (sdf_shader_consts::SDFShaderPrim::Sphere == EnumType) {
       return sphere_components_registry;
     } else if constexpr (sdf_shader_consts::SDFShaderPrim::Cube == EnumType) {
@@ -56,6 +57,11 @@ class SDFTree {
 
   // Cost O(1)
   SDFTreeNode& node(IdView<SDFTreeNodeId> node_id);
+
+  // Cost O(1)
+  inline bool is_group(IdView<SDFTreeNodeId> node_id) const {
+    return sdf_tree_registry_.all_group_nodes[node_id.raw()].has_value();
+  }
 
   // Cost O(1)
   GroupNode& group(IdView<SDFTreeNodeId> node_id);

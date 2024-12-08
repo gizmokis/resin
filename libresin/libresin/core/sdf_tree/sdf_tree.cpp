@@ -30,7 +30,7 @@ SDFTreeNode& SDFTree::node(IdView<SDFTreeNodeId> node_id) {
 }
 
 GroupNode& SDFTree::group(IdView<SDFTreeNodeId> node_id) {
-  if (!sdf_tree_registry_.all_group_nodes[node_id.raw()].has_value()) {
+  if (!is_group(node_id)) {
     log_throw(SDFTreeNodeDoesNotExist(node_id.raw()));
   }
 
