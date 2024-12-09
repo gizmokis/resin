@@ -15,8 +15,6 @@
 #include <string_view>
 #include <unordered_map>
 
-#include "material.hpp"
-
 namespace resin {
 class ShaderProgram {
  public:
