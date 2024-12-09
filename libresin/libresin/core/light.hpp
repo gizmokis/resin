@@ -6,29 +6,30 @@
 namespace resin {
 
 struct BaseLight {
-  explicit BaseLight(const glm::vec3& color) : color(color) {}
+  explicit BaseLight(const glm::vec3& _color) : color(_color) {}
 
   Transform transform;
   glm::vec3 color;
 };
 
 struct DirectionalLight : public BaseLight {
-  DirectionalLight(const glm::vec3& color, float ambient_impact) : BaseLight(color), ambient_impact(ambient_impact) {}
+  DirectionalLight(const glm::vec3& _color, float _ambient_impact)
+      : BaseLight(_color), ambient_impact(_ambient_impact) {}
 
   float ambient_impact;
 };
 
 struct PointLight : public BaseLight {
   struct Attenuation {
-    Attenuation(float constant, float linear, float quadratic)
-        : constant(constant), linear(linear), quadratic(quadratic) {}
+    Attenuation(float _constant, float _linear, float _quadratic)
+        : constant(_constant), linear(_linear), quadratic(_quadratic) {}
 
     float constant, linear, quadratic;
   };
 
-  PointLight(const glm::vec3& color, const glm::vec3& pos, const Attenuation& attenuation)
-      : BaseLight(color), attenuation(attenuation) {
-    transform.set_local_pos(pos);
+  PointLight(const glm::vec3& _color, const glm::vec3& _pos, const Attenuation& _attenuation)
+      : BaseLight(_color), attenuation(_attenuation) {
+    transform.set_local_pos(_pos);
   }
 
   Attenuation attenuation;

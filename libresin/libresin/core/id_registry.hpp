@@ -12,7 +12,9 @@ namespace resin {
 template <typename Obj>
 class IdRegistry {
  public:
-  IdRegistry() = delete;
+  IdRegistry()                             = delete;
+  IdRegistry(const IdRegistry&)            = delete;
+  IdRegistry& operator=(const IdRegistry&) = delete;
 
   explicit IdRegistry(size_t max_objs) : max_objs_(max_objs) {
     for (size_t i = max_objs_; i-- > 0;) {
@@ -53,9 +55,6 @@ class IdRegistry {
     is_registered_[id] = false;
     freed_.push(id);
   }
-
-  IdRegistry(const IdRegistry&)            = delete;
-  IdRegistry& operator=(const IdRegistry&) = delete;
 
   ~IdRegistry() {
     if (freed_.size() != max_objs_) {

@@ -314,6 +314,13 @@ class NotImplementedException : public std::runtime_error {
   explicit NotImplementedException() : std::runtime_error(std::format(R"(Not implemented yet)")) {}
 };
 
+class NonExhaustiveEnumException : public std::runtime_error {
+ public:
+  EXCEPTION_NAME(NonExhaustiveEnumException)
+
+  explicit NonExhaustiveEnumException() : std::runtime_error(std::format(R"(Enum is not exhaustive.)")) {}
+};
+
 }  // namespace resin
 
 #endif  // RESIN_EXCEPTIONS_HPP
