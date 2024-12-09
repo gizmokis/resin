@@ -230,7 +230,8 @@ void SDFTreeComponentVisitor::apply_move_operation(::resin::SDFTree& tree) {
   }
 }
 
-std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(::resin::SDFTree& tree) {
+std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(
+    ::resin::SDFTree& tree, const std::optional<::resin::IdView<::resin::SDFTreeNodeId>>& old_selected) {
   static std::string_view delete_label    = "Delete";
   static std::string_view add_prim_label  = "Add Primitive";
   static std::string_view add_group_label = "Add Group";
@@ -245,15 +246,14 @@ std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(::resin::SDFT
       ImGui::CalcTextSize(add_prim_label.data()).x + style.FramePadding.x * 2.0F + style.ItemSpacing.y * 2.0F;
 
   ImGui::PushID(static_cast<int>(tree.tree_id()));
-  static std::optional<::resin::IdView<::resin::SDFTreeNodeId>> selected = std::nullopt;
 
-  auto comp_vs = resin::SDFTreeComponentVisitor(selected, tree.tree_id());
+  auto comp_vs = resin::SDFTreeComponentVisitor(old_selected, tree.tree_id());
 
   ImGui::BeginChild("ResizableInnerChild", ImVec2(-FLT_MIN, ImGui::GetWindowHeight() - buttons_section_height),
                     ImGuiChildFlags_Borders);
 
   comp_vs.render_tree(tree);
-  selected = comp_vs.selected();
+  auto selected = comp_vs.selected();
   ImGui::EndChild();
 
   comp_vs.apply_move_operation(tree);
