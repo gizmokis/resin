@@ -9,6 +9,9 @@ namespace resin {
 using SDFTreePrimitiveType = sdf_shader_consts::SDFShaderPrim;
 constexpr StringEnumMapping<SDFTreePrimitiveType> kSDFTreePrimitiveNames({"Sphere", "Cube"});
 
+class BasePrimitiveNode;
+using PrimitiveNodeId = Id<BasePrimitiveNode>;
+
 class BasePrimitiveNode : public SDFTreeNode {
  public:
   constexpr static auto available_primitive_names() { return kSDFTreePrimitiveNames.names_; }
@@ -20,8 +23,11 @@ class BasePrimitiveNode : public SDFTreeNode {
   inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override { visitor.visit_primitive(*this); }
   bool is_leaf() final { return true; }
 
+  inline IdView<PrimitiveNodeId> primitive_id() const { return prim_id_; }
+
   ~BasePrimitiveNode() override = default;
-  explicit BasePrimitiveNode(SDFTreeRegistry& tree, std::string_view name) : SDFTreeNode(tree, name) {}
+  explicit BasePrimitiveNode(SDFTreeRegistry& tree, std::string_view name)
+      : SDFTreeNode(tree, name), prim_id_(tree.primitives_registry) {}
 
   inline std::string gen_shader_code() const final {
     return std::format(
@@ -47,6 +53,8 @@ class BasePrimitiveNode : public SDFTreeNode {
   }
 
   inline void push_dirty_primitives() final { tree_registry_.dirty_primitives.emplace_back(node_id()); }
+
+  PrimitiveNodeId prim_id_;
 };
 
 template <SDFTreePrimitiveType PrimType>

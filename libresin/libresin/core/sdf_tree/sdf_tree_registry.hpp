@@ -17,7 +17,9 @@ struct SDFTreeRegistry {
       : sphere_components_registry(IdRegistry<PrimitiveNode<sdf_shader_consts::SDFShaderPrim::Sphere>>(1000)),
         cubes_components_registry(IdRegistry<PrimitiveNode<sdf_shader_consts::SDFShaderPrim::Cube>>(1000)),
         transform_component_registry(IdRegistry<Transform>(2000)),
-        nodes_registry(IdRegistry<SDFTreeNode>(5000)) {
+        primitives_registry(IdRegistry<BasePrimitiveNode>(2000)),
+        nodes_registry(IdRegistry<SDFTreeNode>(5000)),
+        node_index(0) {
     all_nodes.resize(nodes_registry.get_max_objs());
     all_group_nodes.resize(nodes_registry.get_max_objs());
     dirty_primitives.reserve(nodes_registry.get_max_objs());
@@ -38,6 +40,7 @@ struct SDFTreeRegistry {
   }
 
   IdRegistry<Transform> transform_component_registry;
+  IdRegistry<BasePrimitiveNode> primitives_registry;
 
   // Nodes: the ids correspond to the indices of nodes stored in the array all_nodes_
   IdRegistry<SDFTreeNode> nodes_registry;
