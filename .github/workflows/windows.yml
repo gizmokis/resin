@@ -53,7 +53,7 @@ jobs:
       run: |
         New-Item -ItemType Directory -Path artifact
         Get-ChildItem -Recurse -Include *.exe
-        & 7z a ./artifact/${{ env.BINARY_NAME }}-windows-x64.zip ./build/bin/${{ env.BINARY_NAME }}.exe
+        & 7z a ./artifact/${{ env.BINARY_NAME }}-windows-x64.zip ./build/bin/${{ env.BINARY_NAME }}.exe ./build/bin/assets
     
     - name: Upload artifact 
       uses: actions/upload-artifact@v4  
