@@ -75,7 +75,7 @@ void SDFTreeComponentVisitor::drag_and_drop(::resin::SDFTreeNode& node, bool ign
 
 void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
   static ImGuiTreeNodeFlags base_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick |
-                                         ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_FramePadding |
+                                         ImGuiTreeNodeFlags_SpanFullWidth | ImGuiTreeNodeFlags_FramePadding |
                                          ImGuiTreeNodeFlags_Selected;
 
   auto tree_flags = base_flags;
@@ -151,7 +151,7 @@ void SDFTreeComponentVisitor::visit_primitive(::resin::BasePrimitiveNode& node) 
   }
 
   ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen |
-                             ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_FramePadding;
+                             ImGuiTreeNodeFlags_SpanFullWidth | ImGuiTreeNodeFlags_FramePadding;
 
   if (is_node_selected) {
     flags |= ImGuiTreeNodeFlags_Selected;
@@ -179,7 +179,7 @@ void SDFTreeComponentVisitor::visit_primitive(::resin::BasePrimitiveNode& node) 
 }
 
 void SDFTreeComponentVisitor::render_op(::resin::SDFTreeNode& node) const {
-  ImGui::SameLine();
+  ImGui::SameLine(ImGui::GetItemRectSize().x - 30.F);
   if (is_first_ && node.bin_op() != ::resin::SDFBinaryOperation::Union) {
     ImGui::TextColored(ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled), " (%s)",
                        kOperationSymbol.get_value(node.bin_op()).data());
