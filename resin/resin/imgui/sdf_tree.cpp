@@ -179,9 +179,9 @@ void SDFTreeComponentVisitor::visit_primitive(::resin::BasePrimitiveNode& node) 
 }
 
 void SDFTreeComponentVisitor::render_op(::resin::SDFTreeNode& node) const {
-  ImGui::SameLine(GetWindowWidth() - 30.F);
+  ImGui::SameLine();
   if (is_first_ && node.bin_op() != ::resin::SDFBinaryOperation::Union) {
-    ImGui::TextColored(ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled), "(%s)",
+    ImGui::TextColored(ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled), " (%s)",
                        kOperationSymbol.get_value(node.bin_op()).data());
     if (ImGui::BeginItemTooltip()) {
       ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
@@ -190,7 +190,7 @@ void SDFTreeComponentVisitor::render_op(::resin::SDFTreeNode& node) const {
       ImGui::EndTooltip();
     }
   } else {
-    ImGui::Text("(%s)", kOperationSymbol.get_value(node.bin_op()).data());
+    ImGui::Text(" (%s)", kOperationSymbol.get_value(node.bin_op()).data());
   }
 }
 
