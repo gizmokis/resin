@@ -30,11 +30,12 @@ std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeComponentVisitor::
 
 void SDFTreeComponentVisitor::drag_and_drop(::resin::SDFTreeNode& node, bool ignore_middle) {
   auto curr_id = node.node_id();
-  if (ImGui::BeginDragDropSource()) {
+  if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoPreviewTooltip)) {
     ImGui::SetDragDropPayload(payload_type_.c_str(), &curr_id, sizeof(::resin::IdView<::resin::SDFTreeNodeId>));
     ImGui::Text("%s", node.name().data());
     ImGui::EndDragDropSource();
   }
+  auto dnd_col = ImGui::GetColorU32(ImGuiCol_DragDropTarget);
 
   if (ImGui::BeginDragDropTarget()) {
     ImVec2 item_min = ImGui::GetItemRectMin();
@@ -46,11 +47,11 @@ void SDFTreeComponentVisitor::drag_and_drop(::resin::SDFTreeNode& node, bool ign
     bool below = ImGui::GetItemRectSize().y / 2.F > bottom_dist;
 
     if (middle) {
-      ImGui::GetForegroundDrawList()->AddRect(item_min, item_max, IM_COL32(255, 255, 0, 255));
+      ImGui::GetForegroundDrawList()->AddRect(item_min, item_max, dnd_col);
     } else if (below) {
-      ImGui::GetForegroundDrawList()->AddLine(ImVec2(item_min.x, item_max.y), item_max, IM_COL32(255, 255, 0, 255));
+      ImGui::GetForegroundDrawList()->AddLine(ImVec2(item_min.x, item_max.y), item_max, dnd_col);
     } else {
-      ImGui::GetForegroundDrawList()->AddLine(item_min, ImVec2(item_max.x, item_min.y), IM_COL32(255, 255, 0, 255));
+      ImGui::GetForegroundDrawList()->AddLine(item_min, ImVec2(item_max.x, item_min.y), dnd_col);
     }
 
     if (const ImGuiPayload* payload =
@@ -73,14 +74,11 @@ void SDFTreeComponentVisitor::drag_and_drop(::resin::SDFTreeNode& node, bool ign
 }
 
 void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
-  static ImGuiTreeNodeFlags base_flags =
-      ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth;
+  static ImGuiTreeNodeFlags base_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick |
+                                         ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_FramePadding |
+                                         ImGuiTreeNodeFlags_Selected;
 
   auto tree_flags = base_flags;
-
-  if (node.is_leaf()) {
-    tree_flags |= ImGuiTreeNodeFlags_Leaf;
-  }
 
   bool is_node_dragged = is_parent_dragged_;
   if (!is_node_dragged) {
@@ -88,11 +86,7 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
     is_node_dragged = source_id.has_value() && *source_id == node.node_id();
   }
 
-  bool is_node_selected = false;
-  if (selected_ == node.node_id() || is_parent_selected_) {
-    tree_flags |= ImGuiTreeNodeFlags_Selected;
-    is_node_selected = true;
-  }
+  bool is_node_selected = is_parent_selected_ || selected_ == node.node_id();
 
   ImGui::PushID(static_cast<int>(node.node_id().raw()));
 
@@ -100,7 +94,17 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
     ImGui::BeginDisabled();
   }
 
+  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.f, 4.f));
+
+  if (!is_node_selected) {
+    ImGui::PushStyleColor(ImGuiCol_Header, ImGui::GetColorU32(ImGuiCol_MenuBarBg));
+  }
   bool tree_node_opened = ImGui::TreeNodeEx(node.name().data(), tree_flags);
+  if (!is_node_selected) {
+    ImGui::PopStyleColor();
+  }
+
+  ImGui::PopStyleVar();
 
   if (is_node_dragged) {
     ImGui::EndDisabled();
@@ -141,7 +145,18 @@ void SDFTreeComponentVisitor::visit_primitive(::resin::BasePrimitiveNode& node) 
     ImGui::BeginDisabled();
   }
 
-  if (ImGui::Selectable(node.name().data(), &is_node_selected)) {
+  ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen |
+                             ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_FramePadding;
+
+  if (is_node_selected) {
+    flags |= ImGuiTreeNodeFlags_Selected;
+  }
+
+  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.f, 2.f));
+  ImGui::TreeNodeEx(node.name().data(), flags);
+  ImGui::PopStyleVar();
+
+  if (ImGui::IsItemClicked()) {
     selected_ = node.node_id();
   }
 
@@ -153,14 +168,27 @@ void SDFTreeComponentVisitor::visit_primitive(::resin::BasePrimitiveNode& node) 
     drag_and_drop(node, true);
   }
 
+  ImGui::SameLine(GetWindowWidth() - 30.F);
+
+  ImGui::Text("(^)");
+
   ImGui::PopID();
 }
 
-void SDFTreeComponentVisitor::visit_root(::resin::GroupNode& node) {
-  for (auto child_it = node.begin(); child_it != node.end(); ++child_it) {
+void SDFTreeComponentVisitor::render_tree(::resin::SDFTree& tree) {
+  ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {0.0f, 0.0f});
+  for (auto child_it = tree.root().begin(); child_it != tree.root().end(); ++child_it) {
     is_parent_selected_ = false;
     is_parent_dragged_  = false;
-    node.get_child(*child_it).accept_visitor(*this);
+    tree.root().get_child(*child_it).accept_visitor(*this);
+  }
+  ImGui::PopStyleVar();
+
+  auto source_id = get_curr_payload();
+  if (source_id.has_value()) {
+    ImGui::BeginTooltipEx(ImGuiTooltipFlags_OverridePrevious, ImGuiWindowFlags_None);
+    ImGui::Text("%s", tree.node(*source_id).name().data());
+    ImGui::EndTooltip();
   }
 }
 
@@ -189,7 +217,7 @@ std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(::resin::SDFT
 
   if (ImGui::BeginChild("ResizableChild", ImVec2(-FLT_MIN, ImGui::GetTextLineHeightWithSpacing() * 8),
                         ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeY)) {
-    comp_vs.visit_root(tree.root());
+    comp_vs.render_tree(tree);
     selected = comp_vs.selected();
   }
   ImGui::EndChild();

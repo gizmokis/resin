@@ -25,7 +25,6 @@ void GroupNode::push_back_primitive(SDFTreePrimitiveType type, SDFBinaryOperatio
       return;
     case resin::SDFTreePrimitiveType::_Count:
       throw NonExhaustiveEnumException();
-      return;
   }
 
   throw NonExhaustiveEnumException();
