@@ -23,7 +23,7 @@ class SDFTreeComponentVisitor : public ::resin::ISDFTreeNodeVisitor {
   void visit_group(::resin::GroupNode& node) override;
   void visit_primitive(::resin::BasePrimitiveNode& node) override;
 
-  void visit_root(::resin::GroupNode& node);
+  void render_tree(::resin::SDFTree& tree);
 
   inline std::optional<::resin::IdView<::resin::SDFTreeNodeId>> selected() const { return selected_; }
 
