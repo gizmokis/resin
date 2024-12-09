@@ -12,6 +12,7 @@
 #include <libresin/core/sdf_tree/primitive_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/utils/logger.hpp>
+#include <memory>
 #include <resin/core/window.hpp>
 #include <resin/event/event.hpp>
 #include <resin/event/window_events.hpp>
@@ -36,6 +37,9 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
   const std::filesystem::path path = std::filesystem::current_path() / "assets";
 
   cube_transform_.set_local_pos(glm::vec3(1, 1, 0));
+
+  cube_mat_   = std::make_unique<Material>(glm::vec3(0.96F, 0.25F, 0.25F));
+  sphere_mat_ = std::make_unique<Material>(glm::vec3(0.25F, 0.25F, 0.96F));
 
   camera_       = std::make_unique<Camera>(true, 90.F, 16.F / 9.F, 0.75F, 100.F);
   glm::vec3 pos = glm::vec3(0, 2, 3);
@@ -144,6 +148,8 @@ void Resin::update(duration_t delta) {
   shader_->set_uniform("u_camSize", camera_->height());
   shader_->set_uniform("u_dirLight", *directional_light_);
   shader_->set_uniform("u_pointLight", *point_light_);
+  shader_->set_uniform("u_cubeMat", *cube_mat_);
+  shader_->set_uniform("u_sphereMat", *sphere_mat_);
 }
 
 void Resin::gui() {
@@ -162,7 +168,7 @@ void Resin::gui() {
       ImGui::resin::TransformEdit(&cube_transform_);
       ImGui::EndTabItem();
     }
-    // TODO(temp): i don't want to design GUI please save me guys 🤲🙏
+    // TODO(SDF-88): i don't want to design GUI please save me guys 🤲🙏
     if (ImGui::BeginTabItem("DirLight")) {
       ImGui::ColorEdit3("Light color", glm::value_ptr(directional_light_->color));
       ImGui::resin::TransformEdit(&directional_light_->transform);
@@ -178,6 +184,23 @@ void Resin::gui() {
         ImGui::DragFloat("Quadratic", &point_light_->attenuation.quadratic, 0.01F, 0.0F, 2.0F, "%.2f");
         ImGui::TreePop();
       }
+      ImGui::EndTabItem();
+    }
+    // TODO(SDF-87)
+    if (ImGui::BeginTabItem("CubeMat")) {
+      ImGui::ColorEdit3("Color", glm::value_ptr(cube_mat_->albedo));
+      ImGui::DragFloat("Ambient", &cube_mat_->ambientFactor, 0.01F, 0.0F, 1.0F, "%.2f");
+      ImGui::DragFloat("Diffuse", &cube_mat_->diffuseFactor, 0.01F, 0.0F, 1.0F, "%.2f");
+      ImGui::DragFloat("Specular", &cube_mat_->specularFactor, 0.01F, 0.0F, 1.0F, "%.2f");
+      ImGui::DragFloat("Exponent", &cube_mat_->specularExponent, 0.1F, 0.0F, 100.0F, "%.1f");
+      ImGui::EndTabItem();
+    }
+    if (ImGui::BeginTabItem("SphereMat")) {
+      ImGui::ColorEdit3("Color", glm::value_ptr(sphere_mat_->albedo));
+      ImGui::DragFloat("Ambient", &sphere_mat_->ambientFactor, 0.01F, 0.0F, 2.0F, "%.2f");
+      ImGui::DragFloat("Diffuse", &sphere_mat_->diffuseFactor, 0.01F, 0.0F, 2.0F, "%.2f");
+      ImGui::DragFloat("Specular", &sphere_mat_->specularFactor, 0.01F, 0.0F, 2.0F, "%.2f");
+      ImGui::DragFloat("Exponent", &sphere_mat_->specularExponent, 0.1F, 0.0F, 100.0F, "%.1f");
       ImGui::EndTabItem();
     }
     ImGui::EndTabBar();

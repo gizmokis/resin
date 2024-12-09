@@ -59,7 +59,7 @@ jobs:
       id: create-artifact
       run: |
         mkdir artifact
-        tar -czf ./artifact/${{ env.BINARY_NAME }}-linux-x86_x64.tar.gz ./build/bin/${{ env.BINARY_NAME }}
+        tar -czf ./artifact/${{ env.BINARY_NAME }}-linux-x86_x64.tar.gz ./build/bin/${{ env.BINARY_NAME }} ./build/bin/assets
     
     - name: Upload artifact 
       uses: actions/upload-artifact@v4

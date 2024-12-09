@@ -7,6 +7,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <libresin/core/light.hpp>
+#include <libresin/core/material.hpp>
 #include <libresin/core/resources/shader_resource.hpp>
 #include <libresin/utils/string_hash.hpp>
 #include <span>
@@ -120,6 +121,16 @@ inline void ShaderProgram::set_uniform<PointLight>(std::string_view name, const 
   set_uniform(uniform + ".color", value.color);
   set_uniform(uniform + ".pos", value.transform.pos());
   set_uniform(uniform + ".atten", value.attenuation);
+}
+
+template <>
+inline void ShaderProgram::set_uniform<Material>(std::string_view name, const Material& value) const {
+  std::string uniform(name);
+  set_uniform(uniform + ".albedo", value.albedo);
+  set_uniform(uniform + ".ka", value.ambientFactor);
+  set_uniform(uniform + ".kd", value.diffuseFactor);
+  set_uniform(uniform + ".ks", value.specularFactor);
+  set_uniform(uniform + ".m", value.specularExponent);
 }
 
 class RenderingShaderProgram : public ShaderProgram {
