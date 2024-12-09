@@ -45,6 +45,8 @@ struct SDFTreeRegistry {
   std::vector<std::optional<std::reference_wrapper<GroupNode>>> all_group_nodes;
 
   std::vector<IdView<SDFTreeNodeId>> dirty_primitives;
+
+  size_t node_index;
 };
 
 }  // namespace resin
