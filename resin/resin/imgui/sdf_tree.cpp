@@ -184,7 +184,7 @@ void SDFTreeComponentVisitor::render_op(::resin::SDFTreeNode& node) const {
     ImGui::TextColored(ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled), " (%s)",
                        kOperationSymbol.get_value(node.bin_op()).data());
     if (ImGui::BeginItemTooltip()) {
-      ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+      ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0F);
       ImGui::TextUnformatted("This operation is ignored for the first element in the group");
       ImGui::PopTextWrapPos();
       ImGui::EndTooltip();
@@ -195,7 +195,7 @@ void SDFTreeComponentVisitor::render_op(::resin::SDFTreeNode& node) const {
 }
 
 void SDFTreeComponentVisitor::render_tree(::resin::SDFTree& tree) {
-  ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {0.0f, 0.0f});
+  ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {0.0F, 0.0F});
   is_first_ = true;
   for (auto child_it = tree.root().begin(); child_it != tree.root().end(); ++child_it) {
     is_parent_selected_ = false;
@@ -231,16 +231,29 @@ void SDFTreeComponentVisitor::apply_move_operation(::resin::SDFTree& tree) {
 }
 
 std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(::resin::SDFTree& tree) {
+  static std::string_view delete_label    = "Delete";
+  static std::string_view add_prim_label  = "Add Primitive";
+  static std::string_view add_group_label = "Add Group";
+
+  ImGuiStyle& style            = ImGui::GetStyle();
+  float buttons_section_height = ImGui::CalcTextSize(delete_label.data()).y + style.FramePadding.y * 2.0F +
+                                 style.WindowPadding.y * 4.0F + style.ItemSpacing.y * 2.0F;
+  float add_buttons_section_width = ImGui::CalcTextSize(add_prim_label.data()).x +
+                                    ImGui::CalcTextSize(add_group_label.data()).x + style.FramePadding.x * 4.0F +
+                                    style.ItemSpacing.y * 4.0F;
+  float add_prim_button_width =
+      ImGui::CalcTextSize(add_prim_label.data()).x + style.FramePadding.x * 2.0F + style.ItemSpacing.y * 2.0F;
+
   ImGui::PushID(static_cast<int>(tree.tree_id()));
   static std::optional<::resin::IdView<::resin::SDFTreeNodeId>> selected = std::nullopt;
 
   auto comp_vs = resin::SDFTreeComponentVisitor(selected, tree.tree_id());
 
-  if (ImGui::BeginChild("ResizableChild", ImVec2(-FLT_MIN, ImGui::GetTextLineHeightWithSpacing() * 8),
-                        ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeY)) {
-    comp_vs.render_tree(tree);
-    selected = comp_vs.selected();
-  }
+  ImGui::BeginChild("ResizableInnerChild", ImVec2(-FLT_MIN, ImGui::GetWindowHeight() - buttons_section_height),
+                    ImGuiChildFlags_Borders);
+
+  comp_vs.render_tree(tree);
+  selected = comp_vs.selected();
   ImGui::EndChild();
 
   comp_vs.apply_move_operation(tree);
@@ -253,7 +266,7 @@ std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(::resin::SDFT
     ImGui::BeginDisabled();
   }
 
-  if (ImGui::Button("Delete")) {
+  if (ImGui::Button(delete_label.data())) {
     tree.delete_node(selected.value());
     selected = std::nullopt;
   }
@@ -262,9 +275,8 @@ std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(::resin::SDFT
     ImGui::EndDisabled();
   }
 
-  ImGui::SameLine();
-
-  if (ImGui::Button("Add Group")) {
+  ImGui::SameLine(ImGui::GetWindowWidth() - add_buttons_section_width);
+  if (ImGui::Button(add_group_label.data())) {
     if (comp_vs.selected().has_value()) {
       if (tree.is_group(*selected)) {
         tree.group(*selected).push_back_child<::resin::GroupNode>(::resin::SDFBinaryOperation::Union);
@@ -276,13 +288,11 @@ std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(::resin::SDFT
     }
   }
 
-  ImGui::SameLine();
-
-  if (ImGui::Button("Add Primitive")) {
+  ImGui::SameLine(ImGui::GetWindowWidth() - add_prim_button_width);
+  if (ImGui::Button(add_prim_label.data())) {
     ImGui::OpenPopup("AddPopUp");
   }
 
-  ImGui::SameLine();
   if (ImGui::BeginPopup("AddPopUp")) {
     for (const auto [index, name] :
          std::ranges::views::enumerate(::resin::BasePrimitiveNode::available_primitive_names())) {
