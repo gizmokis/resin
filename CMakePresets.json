@@ -1,192 +1,192 @@
 {
-    "version": 6,
-    "cmakeMinimumRequired": {
-        "major": 3,
-        "minor": 20,
-        "patch": 0
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 20,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "linux-pedantic",
+      "hidden": true,
+      "cacheVariables": {
+        "PROJ_CXX_FLAGS": "-O3;-U_FORTIFY_SOURCE;-D_FORTIFY_SOURCE=3;-D_GLIBCXX_ASSERTIONS=1;-fstack-protector-strong;-fcf-protection=full;-fstack-clash-protection;-Wall;-Wextra;-Wpedantic;-Wconversion;-Wsign-conversion;-Wcast-qual;-Wformat=2;-Wundef;-Werror=float-equal;-Werror=switch;-Wshadow;-Wcast-align;-Wunused;-Wnull-dereference;-Wdouble-promotion;-Wimplicit-fallthrough;-Wextra-semi;-Woverloaded-virtual;-Wnon-virtual-dtor;-Wold-style-cast",
+        "PROJ_EXE_LINKER_FLAGS": "-Wl,--allow-shlib-undefined,--as-needed;SHELL: -z noexecstack;SHELL: -z relro;SHELL: -z now;SHELL: -z nodlopen",
+        "PROJ_SHARED_LINKER_FLAGS": "-Wl,--allow-shlib-undefined,--as-needed;SHELL: -z noexecstack;SHELL: -z relro;SHELL: -z now;SHELL: -z nodlopen"
+      }
     },
-    "configurePresets": [
-        {
-            "name": "linux-pedantic",
-            "hidden": true,
-            "cacheVariables": {
-                "PROJ_CXX_FLAGS": "-O3;-U_FORTIFY_SOURCE;-D_FORTIFY_SOURCE=3;-D_GLIBCXX_ASSERTIONS=1;-fstack-protector-strong;-fcf-protection=full;-fstack-clash-protection;-Wall;-Wextra;-Wpedantic;-Wconversion;-Wsign-conversion;-Wcast-qual;-Wformat=2;-Wundef;-Werror=float-equal;-Werror=switch;-Wshadow;-Wcast-align;-Wunused;-Wnull-dereference;-Wdouble-promotion;-Wimplicit-fallthrough;-Wextra-semi;-Woverloaded-virtual;-Wnon-virtual-dtor;-Wold-style-cast",
-                "PROJ_EXE_LINKER_FLAGS": "-Wl,--allow-shlib-undefined,--as-needed;SHELL: -z noexecstack;SHELL: -z relro;SHELL: -z now;SHELL: -z nodlopen",
-                "PROJ_SHARED_LINKER_FLAGS": "-Wl,--allow-shlib-undefined,--as-needed;SHELL: -z noexecstack;SHELL: -z relro;SHELL: -z now;SHELL: -z nodlopen"
-            }
-        },
-        {
-            "name": "windows-x64-pedantic",
-            "hidden": true,
-            "cacheVariables": {
-                "PROJ_CXX_FLAGS": "/sdl;/guard:cf;/utf-8;/diagnostics:caret;/w14165;/w44242;/w44254;/w44263;/w34265;/w34287;/w44296;/w44365;/w44388;/w44464;/w14545;/w14546;/w14547;/w14549;/w14555;/w34619;/w34640;/w24826;/w14905;/w14906;/w14928;/w45038;/W4;/permissive-;/volatile:iso;/Zc:inline;/Zc:preprocessor;/Zc:enumTypes;/Zc:lambda;/Zc:__cplusplus;/Zc:externConstexpr;/Zc:throwingNew;/EHsc",
-                "PROJ_EXE_LINKER_FLAGS": "/machine:x64;/guard:cf"
-            }
-        },
-        {
-            "name": "test",
-            "hidden": true,
-            "cacheVariables": {
-                "BUILD_TESTING": true
-            }
-        },
-        {
-            "name": "ci-sanitize-ubuntu",
-            "description": "Detects out-of-bounds accesses to heap, stack and globals, use after free and more",
-            "binaryDir": "${sourceDir}/build/sanitize",
-            "inherits": [
-                "linux-pedantic"
-            ],
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Sanitize",
-                "CMAKE_CXX_COMPILER": "/usr/bin/g++-14",
-                "CMAKE_C_COMPILER": "/usr/bin/gcc-14",
-                "CMAKE_CXX_FLAGS_SANITIZE": "-U_FORTIFY_SOURCE -O2 -g -fsanitize=address,undefined -fno-omit-frame-pointer -fno-common"
-            }
-        },
-        {
-            "name": "ci-ubuntu-gcc",
-            "description": "Builds the ubuntu release pedantically",
-            "generator": "Unix Makefiles",
-            "binaryDir": "${sourceDir}/build",
-            "inherits": [
-                "linux-pedantic"
-            ],
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release",
-                "CMAKE_CXX_COMPILER": "/usr/bin/g++-14",
-                "CMAKE_C_COMPILER": "/usr/bin/gcc-14"
-            }
-        },
-        {
-            "name": "ci-ubuntu-gcc-test",
-            "description": "Builds the ubuntu release with tests pedantically",
-            "generator": "Unix Makefiles",
-            "binaryDir": "${sourceDir}/build",
-            "inherits": [
-                "ci-ubuntu-gcc",
-                "test"
-            ]
-        },
-        {
-            "name": "ci-ubuntu-clang",
-            "description": "Builds the ubuntu release pedantically",
-            "generator": "Unix Makefiles",
-            "binaryDir": "${sourceDir}/build",
-            "inherits": [
-                "linux-pedantic"
-            ],
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release",
-                "CMAKE_CXX_COMPILER": "/usr/bin/clang++",
-                "CMAKE_C_COMPILER": "/usr/bin/clang"
-            }
-        },
-        {
-            "name": "ci-windows-x64-msvc",
-            "binaryDir": "${sourceDir}/build",
-            "architecture": "x64",
-            "generator": "Visual Studio 17 2022",
-            "description": "Builds win64 release pedantically",
-            "inherits": [
-                "windows-x64-pedantic"
-            ],
-            "cacheVariables": {
-                "CMAKE_CONFIGURATION_TYPES": "Release"
-            }
-        },
-        {
-            "name": "dev-debug-linux",
-            "binaryDir": "${sourceDir}/build/debug",
-            "generator": "Ninja",
-            "inherits": [
-                "linux-pedantic",
-                "test"
-            ],
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug"
-            }
-        },
-        {
-            "name": "release-linux",
-            "binaryDir": "${sourceDir}/build/release",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release"
-            }
-        },
-        {
-            "name": "dev-debug-windows-x64",
-            "binaryDir": "${sourceDir}/build/debug",
-            "generator": "Ninja",
-            "inherits": [
-                "windows-x64-pedantic",
-                "test"
-            ],
-            "environment": {
-                "UseMultiToolTask": "true",
-                "EnforceProcessCountAcrossBuilds": "true"
-            },
-            "cacheVariables": {
-                "CMAKE_CONFIGURATION_TYPES": "Debug",
-                "CMAKE_TOOLCHAIN_FILE": "cmake/toolchains/Windows.MSVC.toolchain.cmake",
-                "CMAKE_VS_VERSION_PRERELEASE": "ON",
-                "VS_EXPERIMENTAL_MODULE": "OFF",
-                "VS_USE_SPECTRE_MITIGATION_ATLMFC_RUNTIME": "OFF",
-                "VS_USE_SPECTRE_MITIGATION_RUNTIME": "OFF"
-            }
-        },
-        {
-            "name": "release-windows-x64",
-            "binaryDir": "${sourceDir}/build/release",
-            "environment": {
-                "UseMultiToolTask": "true",
-                "EnforceProcessCountAcrossBuilds": "true"
-            },
-            "cacheVariables": {
-                "CMAKE_CONFIGURATION_TYPES": "Release"
-            }
-        }
-    ],
-    "buildPresets": [
-        {
-            "name": "ci-ubuntu-gcc",
-            "configurePreset": "ci-ubuntu-gcc",
-            "configuration": "Release"
-        },
-        {
-            "name": "ci-ubuntu-gcc-test",
-            "configurePreset": "ci-ubuntu-gcc-test",
-            "configuration": "Release"
-        },
-        {
-            "name": "ci-ubuntu-clang",
-            "configurePreset": "ci-ubuntu-clang",
-            "configuration": "Release"
-        },
-        {
-            "name": "ci-windows-x64-msvc",
-            "configurePreset": "ci-windows-x64-msvc",
-            "configuration": "Release"
-        },
-        {
-            "name": "dev-debug-linux",
-            "configurePreset": "dev-debug-linux",
-            "configuration": "Debug"
-        },
-        {
-            "name": "release-linux",
-            "configurePreset": "release-linux",
-            "configuration": "Release"
-        },
-        {
-            "name": "dev-debug-windows-x64",
-            "configurePreset": "dev-debug-windows-x64",
-            "configuration": "Debug"
-        },
-        {
-            "name": "release-windows-x64",
-            "configurePreset": "release-windows-x64",
-            "configuration": "Release"
-        }
-    ]
+    {
+      "name": "windows-x64-pedantic",
+      "hidden": true,
+      "cacheVariables": {
+        "PROJ_CXX_FLAGS": "/sdl;/guard:cf;/utf-8;/diagnostics:caret;/w14165;/w44242;/w44254;/w44263;/w34265;/w34287;/w44296;/w44365;/w44388;/w44464;/w14545;/w14546;/w14547;/w14549;/w14555;/w34619;/w34640;/w24826;/w14905;/w14906;/w14928;/w45038;/W4;/permissive-;/volatile:iso;/Zc:inline;/Zc:preprocessor;/Zc:enumTypes;/Zc:lambda;/Zc:__cplusplus;/Zc:externConstexpr;/Zc:throwingNew;/EHsc",
+        "PROJ_EXE_LINKER_FLAGS": "/machine:x64;/guard:cf"
+      }
+    },
+    {
+      "name": "test",
+      "hidden": true,
+      "cacheVariables": {
+        "BUILD_TESTING": true
+      }
+    },
+    {
+      "name": "ci-sanitize-ubuntu",
+      "description": "Detects out-of-bounds accesses to heap, stack and globals, use after free and more",
+      "binaryDir": "${sourceDir}/build/sanitize",
+      "inherits": [
+        "linux-pedantic"
+      ],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Sanitize",
+        "CMAKE_CXX_COMPILER": "/usr/bin/g++-14",
+        "CMAKE_C_COMPILER": "/usr/bin/gcc-14",
+        "CMAKE_CXX_FLAGS_SANITIZE": "-U_FORTIFY_SOURCE -O2 -g -fsanitize=address,undefined -fno-omit-frame-pointer -fno-common"
+      }
+    },
+    {
+      "name": "ci-ubuntu-gcc",
+      "description": "Builds the ubuntu release pedantically",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build",
+      "inherits": [
+        "linux-pedantic"
+      ],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_COMPILER": "/usr/bin/g++-14",
+        "CMAKE_C_COMPILER": "/usr/bin/gcc-14"
+      }
+    },
+    {
+      "name": "ci-ubuntu-gcc-test",
+      "description": "Builds the ubuntu release with tests pedantically",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build",
+      "inherits": [
+        "ci-ubuntu-gcc",
+        "test"
+      ]
+    },
+    {
+      "name": "ci-ubuntu-clang",
+      "description": "Builds the ubuntu release pedantically",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build",
+      "inherits": [
+        "linux-pedantic"
+      ],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_COMPILER": "/usr/bin/clang++",
+        "CMAKE_C_COMPILER": "/usr/bin/clang"
+      }
+    },
+    {
+      "name": "ci-windows-x64-msvc",
+      "binaryDir": "${sourceDir}/build",
+      "architecture": "x64",
+      "generator": "Visual Studio 17 2022",
+      "description": "Builds win64 release pedantically",
+      "inherits": [
+        "windows-x64-pedantic"
+      ],
+      "cacheVariables": {
+        "CMAKE_CONFIGURATION_TYPES": "Release"
+      }
+    },
+    {
+      "name": "dev-debug-linux",
+      "binaryDir": "${sourceDir}/build/debug",
+      "generator": "Ninja",
+      "inherits": [
+        "linux-pedantic",
+        "test"
+      ],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "release-linux",
+      "binaryDir": "${sourceDir}/build/release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "dev-debug-windows-x64",
+      "binaryDir": "${sourceDir}/build/debug",
+      "generator": "Ninja",
+      "inherits": [
+        "windows-x64-pedantic",
+        "test"
+      ],
+      "environment": {
+        "UseMultiToolTask": "true",
+        "EnforceProcessCountAcrossBuilds": "true"
+      },
+      "cacheVariables": {
+        "CMAKE_CONFIGURATION_TYPES": "Debug",
+        "CMAKE_TOOLCHAIN_FILE": "cmake/toolchains/Windows.MSVC.toolchain.cmake",
+        "CMAKE_VS_VERSION_PRERELEASE": "ON",
+        "VS_EXPERIMENTAL_MODULE": "OFF",
+        "VS_USE_SPECTRE_MITIGATION_ATLMFC_RUNTIME": "OFF",
+        "VS_USE_SPECTRE_MITIGATION_RUNTIME": "OFF"
+      }
+    },
+    {
+      "name": "release-windows-x64",
+      "binaryDir": "${sourceDir}/build/release",
+      "environment": {
+        "UseMultiToolTask": "true",
+        "EnforceProcessCountAcrossBuilds": "true"
+      },
+      "cacheVariables": {
+        "CMAKE_CONFIGURATION_TYPES": "Release"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "ci-ubuntu-gcc",
+      "configurePreset": "ci-ubuntu-gcc",
+      "configuration": "Release"
+    },
+    {
+      "name": "ci-ubuntu-gcc-test",
+      "configurePreset": "ci-ubuntu-gcc-test",
+      "configuration": "Release"
+    },
+    {
+      "name": "ci-ubuntu-clang",
+      "configurePreset": "ci-ubuntu-clang",
+      "configuration": "Release"
+    },
+    {
+      "name": "ci-windows-x64-msvc",
+      "configurePreset": "ci-windows-x64-msvc",
+      "configuration": "Release"
+    },
+    {
+      "name": "dev-debug-linux",
+      "configurePreset": "dev-debug-linux",
+      "configuration": "Debug"
+    },
+    {
+      "name": "release-linux",
+      "configurePreset": "release-linux",
+      "configuration": "Release"
+    },
+    {
+      "name": "dev-debug-windows-x64",
+      "configurePreset": "dev-debug-windows-x64",
+      "configuration": "Debug"
+    },
+    {
+      "name": "release-windows-x64",
+      "configurePreset": "release-windows-x64",
+      "configuration": "Release"
+    }
+  ]
 }
