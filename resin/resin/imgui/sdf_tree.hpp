@@ -30,6 +30,7 @@ class SDFTreeComponentVisitor : public ::resin::ISDFTreeNodeVisitor {
   void apply_move_operation(::resin::SDFTree& tree);
 
  private:
+  void render_op(::resin::SDFTreeNode& node) const;
   void drag_and_drop(::resin::SDFTreeNode& node, bool ignore_middle);
   std::optional<::resin::IdView<::resin::SDFTreeNodeId>> get_curr_payload();
 
@@ -37,6 +38,7 @@ class SDFTreeComponentVisitor : public ::resin::ISDFTreeNodeVisitor {
   std::optional<::resin::IdView<::resin::SDFTreeNodeId>> selected_ = std::nullopt;
   bool is_parent_selected_                                         = false;
   bool is_parent_dragged_                                          = false;
+  bool is_first_                                                   = false;
 
   std::optional<::resin::IdView<::resin::SDFTreeNodeId>> move_source_target_ = std::nullopt;
   std::optional<::resin::IdView<::resin::SDFTreeNodeId>> move_after_target_  = std::nullopt;
@@ -44,6 +46,8 @@ class SDFTreeComponentVisitor : public ::resin::ISDFTreeNodeVisitor {
   std::optional<::resin::IdView<::resin::SDFTreeNodeId>> move_into_target_   = std::nullopt;
 
   std::string payload_type_;
+  static constexpr ::resin::StringEnumMapping<::resin::SDFBinaryOperation> kOperationSymbol =
+      ::resin::StringEnumMapping<::resin::SDFBinaryOperation>({"+", "+'", "-", "-'", "&", "&'", "^", "^'"});
 };
 
 std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(::resin::SDFTree& tree);
