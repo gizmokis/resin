@@ -67,7 +67,7 @@ if(BUILD_GLFW)
 endif()
 
 # ##############################################################################
-# IMGUI (depends on GLFW)
+# ImGui (depends on GLFW)
 # ##############################################################################
 message(CHECK_START "Fetching ImGui")
 list(APPEND CMAKE_MESSAGE_INDENT "  ")
@@ -99,6 +99,48 @@ if(BUILD_GLM)
                   "${CMAKE_CURRENT_LIST_DIR}/../../patches/glm.patch"
     UPDATE_DISCONNECTED 1)
   FetchContent_MakeAvailable(glm)
+
+  list(POP_BACK CMAKE_MESSAGE_INDENT)
+  message(CHECK_PASS "fetched")
+endif()
+
+# ##############################################################################
+# nlohmann/json
+# ##############################################################################
+message(CHECK_START "Fetching nlohmann/json")
+list(APPEND CMAKE_MESSAGE_INDENT "  ")
+
+FetchContent_Declare(
+  nlohmann_json 
+  GIT_REPOSITORY "https://github.com/nlohmann/json.git"
+  GIT_TAG "v3.11.3"
+  UPDATE_DISCONNECTED 1)
+FetchContent_MakeAvailable(nlohmann_json)
+
+list(POP_BACK CMAKE_MESSAGE_INDENT)
+message(CHECK_PASS "fetched")
+
+# ##############################################################################
+# assimp 
+# ##############################################################################
+if(BUILD_ASSIMP)
+  message(CHECK_START "Fetching assimp")
+  list(APPEND CMAKE_MESSAGE_INDENT "  ")
+
+  set(ASSIMP_BUILD_TESTS
+      OFF
+      CACHE BOOL "Do not build assimp tests" FORCE)
+
+  set(ASSIMP_INSTALL
+      OFF
+      CACHE BOOL "Do not install assimp" FORCE)
+      
+  FetchContent_Declare(
+  assimp 
+  GIT_REPOSITORY "https://github.com/assimp/assimp.git"
+  GIT_TAG "v5.4.3"
+  UPDATE_DISCONNECTED 1)
+  FetchContent_MakeAvailable(assimp)
 
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")

@@ -13,8 +13,9 @@ project(
 option(GENERATE_CLANGD_FILE
        "Generate the .clangd file for the host operating system" ON)
 option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
-option(BUILD_GLM "Fetch and build GLM" ON)
-option(BUILD_GLFW "Fetch and build GLFW" ON)
+option(BUILD_GLM "Fetch and build GLM. When OFF, CMake will look for proper GLM version on your operating system." ON)
+option(BUILD_GLFW "Fetch and build GLFW. When OFF, CMake will look for proper GLFW version on your operating system." ON)
+option(BUILD_ASSIMP "Fetch and build assimp. When OFF, CMake will look for proper assimp version on your operating system." ON)
 option(BUILD_TESTING "Fetch GoogleTest and build tests" OFF)
 option(
   USE_IMPLICIT_INCLUDE_DIRECTORIES
@@ -73,6 +74,10 @@ endif()
 
 if(NOT BUILD_GLFW)
   find_package(GLFW 3.4)
+endif()
+
+if(NOT BUILD_ASSIMP)
+  find_package(assimp 5.4.3)
 endif()
 
 add_subdirectory(cmake/dependencies)
