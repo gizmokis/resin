@@ -119,16 +119,21 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
     drag_and_drop(node, false);
   }
 
+  render_op(node);
+
   if (!tree_node_opened) {
     ImGui::PopID();
     return;
   }
 
+  is_first_ = true;
   for (auto child_it = node.begin(); child_it != node.end(); ++child_it) {
     is_parent_selected_ = is_node_selected;
     is_parent_dragged_  = is_node_dragged;
     node.get_child(*child_it).accept_visitor(*this);
+    is_first_ = false;
   }
+  is_first_ = false;
 
   ImGui::TreePop();
   ImGui::PopID();
@@ -168,19 +173,35 @@ void SDFTreeComponentVisitor::visit_primitive(::resin::BasePrimitiveNode& node) 
     drag_and_drop(node, true);
   }
 
-  ImGui::SameLine(GetWindowWidth() - 30.F);
-
-  ImGui::Text("(^)");
+  render_op(node);
 
   ImGui::PopID();
 }
 
+void SDFTreeComponentVisitor::render_op(::resin::SDFTreeNode& node) const {
+  ImGui::SameLine(GetWindowWidth() - 30.F);
+  if (is_first_ && node.bin_op() != ::resin::SDFBinaryOperation::Union) {
+    ImGui::TextColored(ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled), "(%s)",
+                       kOperationSymbol.get_value(node.bin_op()).data());
+    if (ImGui::BeginItemTooltip()) {
+      ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+      ImGui::TextUnformatted("This operation is ignored for the first element in the group");
+      ImGui::PopTextWrapPos();
+      ImGui::EndTooltip();
+    }
+  } else {
+    ImGui::Text("(%s)", kOperationSymbol.get_value(node.bin_op()).data());
+  }
+}
+
 void SDFTreeComponentVisitor::render_tree(::resin::SDFTree& tree) {
   ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {0.0f, 0.0f});
+  is_first_ = true;
   for (auto child_it = tree.root().begin(); child_it != tree.root().end(); ++child_it) {
     is_parent_selected_ = false;
     is_parent_dragged_  = false;
     tree.root().get_child(*child_it).accept_visitor(*this);
+    is_first_ = false;
   }
   ImGui::PopStyleVar();
 
