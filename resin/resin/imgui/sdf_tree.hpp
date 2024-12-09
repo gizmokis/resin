@@ -50,7 +50,8 @@ class SDFTreeComponentVisitor : public ::resin::ISDFTreeNodeVisitor {
       ::resin::StringEnumMapping<::resin::SDFBinaryOperation>({"+", "+'", "-", "-'", "&", "&'", "^", "^'"});
 };
 
-std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(::resin::SDFTree& tree);
+std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(
+    ::resin::SDFTree& tree, const std::optional<::resin::IdView<::resin::SDFTreeNodeId>>& old_selected);
 
 }  // namespace resin
 

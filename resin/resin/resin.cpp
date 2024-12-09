@@ -157,7 +157,7 @@ void Resin::gui() {
   // TODO(SDF-81): Proper rendering to framebuffer
 
   if (ImGui::Begin("SDF Tree")) {
-    ImGui::resin::SDFTreeView(sdf_tree_);
+    selected_node_ = ImGui::resin::SDFTreeView(sdf_tree_, selected_node_);
   }
   ImGui::End();
 
