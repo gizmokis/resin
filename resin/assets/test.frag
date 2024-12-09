@@ -24,8 +24,8 @@ uniform point_light u_pointLight;
 // objects
 uniform mat4 u_iM;
 uniform float u_scale;        
-material red_mat = material(vec3(0.96,0.25,0.25), 0.5, 0.5, 0.5, 50.);
-material blue_mat = material(vec3(0.25,0.25,0.96), 0.5, 0.5, 0.5, 50.);
+uniform material u_sphereMat;
+uniform material u_cubeMat;
 
 vec2 map( vec3 pos )
 {
@@ -80,7 +80,7 @@ vec3 render( vec3 ray_origin, vec3 ray_direction )
     {
         vec3 pos = ray_origin + t*ray_direction;
         vec3 nor = calcNormal( pos );
-        material mat = material_mix(red_mat, blue_mat, m);
+        material mat = material_mix(u_cubeMat, u_sphereMat, m);
 
         vec3 totalAmbient = u_Ambient + u_dirLight.ambient_impact * u_dirLight.color;
         vec3 light = mat.ka * totalAmbient

@@ -64,6 +64,7 @@ class Resin {
   std::unique_ptr<Camera> camera_;
   std::unique_ptr<PointLight> point_light_;
   std::unique_ptr<DirectionalLight> directional_light_;
+  std::unique_ptr<Material> cube_mat_, sphere_mat_;
   Transform cube_transform_, camera_rig_;
 
   bool running_   = true;
