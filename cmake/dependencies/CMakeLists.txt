@@ -67,7 +67,7 @@ if(BUILD_GLFW)
 endif()
 
 # ##############################################################################
-# IMGUI (depends on GLFW)
+# ImGui (depends on GLFW)
 # ##############################################################################
 message(CHECK_START "Fetching ImGui")
 list(APPEND CMAKE_MESSAGE_INDENT "  ")
@@ -103,6 +103,22 @@ if(BUILD_GLM)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
 endif()
+
+# ##############################################################################
+# nlohmann/json
+# ##############################################################################
+message(CHECK_START "Fetching nlohmann/json")
+list(APPEND CMAKE_MESSAGE_INDENT "  ")
+
+FetchContent_Declare(
+  nlohmann_json 
+  GIT_REPOSITORY "https://github.com/nlohmann/json.git"
+  GIT_TAG "v3.11.3"
+  UPDATE_DISCONNECTED 1)
+FetchContent_MakeAvailable(nlohmann_json)
+
+list(POP_BACK CMAKE_MESSAGE_INDENT)
+message(CHECK_PASS "fetched")
 
 # ##############################################################################
 # GTest
