@@ -75,7 +75,7 @@ void SDFTreeComponentVisitor::drag_and_drop(::resin::SDFTreeNode& node, bool ign
 
 void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
   static ImGuiTreeNodeFlags base_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick |
-                                         ImGuiTreeNodeFlags_SpanFullWidth | ImGuiTreeNodeFlags_FramePadding |
+                                         ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_FramePadding |
                                          ImGuiTreeNodeFlags_Selected;
 
   auto tree_flags = base_flags;
@@ -151,12 +151,13 @@ void SDFTreeComponentVisitor::visit_primitive(::resin::BasePrimitiveNode& node) 
   }
 
   ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen |
-                             ImGuiTreeNodeFlags_SpanFullWidth | ImGuiTreeNodeFlags_FramePadding;
+                             ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_FramePadding;
 
   if (is_node_selected) {
     flags |= ImGuiTreeNodeFlags_Selected;
   }
 
+  // TODO(SDF-100): Use primitive icons
   ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.f, 2.f));
   ImGui::TreeNodeEx(node.name().data(), flags);
   ImGui::PopStyleVar();
@@ -179,12 +180,13 @@ void SDFTreeComponentVisitor::visit_primitive(::resin::BasePrimitiveNode& node) 
 }
 
 void SDFTreeComponentVisitor::render_op(::resin::SDFTreeNode& node) const {
-  ImGui::SameLine(ImGui::GetItemRectSize().x - 30.F);
+  // TODO(SDF-100): Use operation icons
+  ImGui::SameLine(ImGui::GetWindowWidth() - 42.F);
   if (is_first_ && node.bin_op() != ::resin::SDFBinaryOperation::Union) {
     ImGui::TextColored(ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled), " (%s)",
                        kOperationSymbol.get_value(node.bin_op()).data());
     if (ImGui::BeginItemTooltip()) {
-      ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0F);
+      ImGui::PushTextWrapPos(ImGui::GetFontSize() * 36.0F);
       ImGui::TextUnformatted("This operation is ignored for the first element in the group");
       ImGui::PopTextWrapPos();
       ImGui::EndTooltip();
