@@ -111,8 +111,9 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
   }
 
   if (ImGui::IsItemClicked()) {
-    is_node_selected = true;
-    selected_        = node.node_id();
+    is_node_selected     = true;
+    selected_            = node.node_id();
+    is_any_node_clicked_ = true;
   }
 
   if (!is_node_dragged) {
@@ -163,7 +164,8 @@ void SDFTreeComponentVisitor::visit_primitive(::resin::BasePrimitiveNode& node) 
   ImGui::PopStyleVar();
 
   if (ImGui::IsItemClicked()) {
-    selected_ = node.node_id();
+    selected_            = node.node_id();
+    is_any_node_clicked_ = true;
   }
 
   if (is_node_dragged) {
@@ -217,6 +219,11 @@ void SDFTreeComponentVisitor::render_tree(::resin::SDFTree& tree) {
     ImGui::Text("%s", tree.node(*source_id).name().data());
     ImGui::EndTooltip();
   }
+  auto child_rect = ImGui::GetCurrentWindow()->Rect();
+  if (ImGui::IsMouseHoveringRect(child_rect.Min, child_rect.Max) && IsMouseClicked(ImGuiMouseButton_Left) &&
+      !is_any_node_clicked_) {
+    selected_ = std::nullopt;
+  }
 }
 
 void SDFTreeComponentVisitor::apply_move_operation(::resin::SDFTree& tree) {
@@ -260,6 +267,7 @@ std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(
 
   comp_vs.render_tree(tree);
   auto selected = comp_vs.selected();
+
   ImGui::EndChild();
 
   comp_vs.apply_move_operation(tree);

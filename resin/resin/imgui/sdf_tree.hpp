@@ -39,6 +39,7 @@ class SDFTreeComponentVisitor : public ::resin::ISDFTreeNodeVisitor {
   bool is_parent_selected_                                         = false;
   bool is_parent_dragged_                                          = false;
   bool is_first_                                                   = false;
+  bool is_any_node_clicked_                                        = false;
 
   std::optional<::resin::IdView<::resin::SDFTreeNodeId>> move_source_target_ = std::nullopt;
   std::optional<::resin::IdView<::resin::SDFTreeNodeId>> move_after_target_  = std::nullopt;
