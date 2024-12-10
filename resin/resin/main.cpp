@@ -1,4 +1,5 @@
 #include <GLFW/glfw3.h>
+#include <assimp/version.h>
 #include <glad/gl.h>
 #include <imgui/imgui.h>
 
@@ -7,6 +8,7 @@
 #include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/logger.hpp>
 #include <memory>
+#include <nlohmann/json.hpp>
 #include <print>
 #include <resin/resin.hpp>
 #include <version/version.hpp>
@@ -28,6 +30,9 @@ int main() {
 
   resin::Logger::info("GLFW version: {0}.{1}.{2}", GLFW_VERSION_MAJOR, GLFW_VERSION_MINOR, GLFW_VERSION_REVISION);
   resin::Logger::info("GLM version: {0}.{1}.{2}", GLM_VERSION_MAJOR, GLM_VERSION_MINOR, GLM_VERSION_REVISION);
+  resin::Logger::info("nlohmann/json version: {0}.{1}.{2}", NLOHMANN_JSON_VERSION_MAJOR, NLOHMANN_JSON_VERSION_MINOR,
+                      NLOHMANN_JSON_VERSION_PATCH);
+  resin::Logger::info("assimp version: {0}.{1}.{2}", aiGetVersionMajor(), aiGetVersionMinor(), aiGetVersionPatch());
 
   try {
     resin::log_throw(resin::FileDoesNotExistException("test"));
