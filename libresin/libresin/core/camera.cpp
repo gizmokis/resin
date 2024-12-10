@@ -32,7 +32,7 @@ void Camera::set_near_plane(const float near_plane) {
 void Camera::set_far_plane(const float far_plane) { far_plane_ = far_plane; }
 
 void Camera::update_dimensions() {
-  height_ = 2.0F * near_plane_ * std::tan(glm::radians(fov_ * 0.5f));
+  height_ = 2.0F * near_plane_ * std::tan(glm::radians(fov_ * 0.5F));
   width_  = height_ * aspect_ratio_;
 }
 

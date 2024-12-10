@@ -94,7 +94,7 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
     ImGui::BeginDisabled();
   }
 
-  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.f, 4.f));
+  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.F, 4.F));
 
   if (!is_node_selected) {
     ImGui::PushStyleColor(ImGuiCol_Header, ImGui::GetColorU32(ImGuiCol_MenuBarBg));
@@ -158,7 +158,7 @@ void SDFTreeComponentVisitor::visit_primitive(::resin::BasePrimitiveNode& node) 
   }
 
   // TODO(SDF-100): Use primitive icons
-  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.f, 2.f));
+  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.F, 2.F));
   ImGui::TreeNodeEx(node.name().data(), flags);
   ImGui::PopStyleVar();
 
