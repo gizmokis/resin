@@ -17,8 +17,8 @@ class BasePrimitiveNode : public SDFTreeNode {
   constexpr static auto available_primitive_names() { return kSDFTreePrimitiveNames.names_; }
 
   virtual SDFTreePrimitiveType primitive_type() const = 0;
-  virtual std::string_view primitive_name() const = 0; 
-  virtual size_t get_component_raw_id() const = 0;
+  virtual std::string_view primitive_name() const     = 0;
+  virtual size_t get_component_raw_id() const         = 0;
 
   inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override { visitor.visit_primitive(*this); }
   bool is_leaf() final { return true; }
