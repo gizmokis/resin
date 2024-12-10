@@ -180,8 +180,12 @@ void SDFTreeComponentVisitor::visit_primitive(::resin::BasePrimitiveNode& node) 
 }
 
 void SDFTreeComponentVisitor::render_op(::resin::SDFTreeNode& node) const {
+  ImGuiWindow* window = ImGui::GetCurrentWindow();
+  ImGuiStyle& style   = ImGui::GetStyle();
+  float op_offset     = ImGui::GetWindowWidth() - (window->ScrollbarY ? style.ScrollbarSize + 42.F : 42.F);
+
   // TODO(SDF-100): Use operation icons
-  ImGui::SameLine(ImGui::GetWindowWidth() - 42.F);
+  ImGui::SameLine(op_offset);
   if (is_first_ && node.bin_op() != ::resin::SDFBinaryOperation::Union) {
     ImGui::TextColored(ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled), " (%s)",
                        kOperationSymbol.get_value(node.bin_op()).data());
