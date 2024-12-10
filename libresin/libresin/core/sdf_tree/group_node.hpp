@@ -6,6 +6,7 @@
 #include <functional>
 #include <libresin/core/id_registry.hpp>
 #include <libresin/core/sdf_shader_consts.hpp>
+#include <libresin/core/sdf_tree/primitive_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/core/transform.hpp>
 #include <libresin/utils/exceptions.hpp>
@@ -18,6 +19,7 @@
 #include <utility>
 
 namespace resin {
+using SDFTreePrimitiveType = sdf_shader_consts::SDFShaderPrim;
 
 class GroupNode final : public SDFTreeNode {
  public:
@@ -54,6 +56,8 @@ class GroupNode final : public SDFTreeNode {
     push_front_child(std::move(node_ptr));
     return result;
   }
+
+  void push_back_primitive(SDFTreePrimitiveType type, SDFBinaryOperation bin_op);
 
   // Cost: O(h)
   void push_back_child(std::unique_ptr<SDFTreeNode> node_ptr);

@@ -6,10 +6,10 @@ namespace resin {
 
 TEST(CameraTest, UpdateDimensions) {
   // given
-  const float fov             = 45.0f;
-  const float aspect_ratio    = 16.0f / 9.0f;
-  const float near_plane      = 0.1f;
-  const float far_plane       = 100.0f;
+  const float fov             = 45.0F;
+  const float aspect_ratio    = 16.0F / 9.0F;
+  const float near_plane      = 0.1F;
+  const float far_plane       = 100.0F;
   const float expected_height = 0.082842715;
   const float expected_width  = 0.14727594;
 

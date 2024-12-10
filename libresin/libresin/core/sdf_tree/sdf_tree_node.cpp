@@ -8,7 +8,7 @@ SDFTreeNode::SDFTreeNode(SDFTreeRegistry& tree, std::string_view name)
       transform_id_(tree.transform_component_registry),
       bin_op_(SDFBinaryOperation::Union),
       tree_registry_(tree),
-      name_(std::format("{} {}", name, node_id_.raw())) {
+      name_(std::format("{} {}", name, tree.node_index++)) {
   tree_registry_.all_nodes[node_id_.raw()] = *this;
 }
 

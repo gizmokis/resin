@@ -18,36 +18,36 @@ enum class SDFShaderBinOp : uint8_t {
   SmoothXor   = 7,
   _Count      = 8  // NOLINT
 };
-constexpr EnumMapping<SDFShaderBinOp> kSDFShaderBinOpFunctionNames({"opUnion", "opSmoothUnion", "opDiff",
-                                                                    "opSmoothDiff", "opInter", "opSmoothInter", "opXor",
-                                                                    "opSmoothXor"});
+constexpr StringEnumMapping<SDFShaderBinOp> kSDFShaderBinOpFunctionNames({"opUnion", "opSmoothUnion", "opDiff",
+                                                                          "opSmoothDiff", "opInter", "opSmoothInter",
+                                                                          "opXor", "opSmoothXor"});
 
 enum class SDFShaderPrim : uint8_t {
   Sphere = 0,
   Cube   = 1,
   _Count = 2,  // NOLINT
 };
-constexpr EnumMapping<SDFShaderPrim> kSDFShaderPrimFunctionNames({"sdSphere", "sdCube"});
-
-enum class SDFShaderComponents : uint8_t {
-  Transforms = 0,
-  Materials  = 1,
-  Spheres    = 2,
-  Cubes      = 3,
-  _Count     = 4,  // NOLINT
-};
-constexpr EnumMapping<SDFShaderComponents> kSDFShaderComponentArrayNames({
-    "u_transforms",
-    "u_materials",
+constexpr StringEnumMapping<SDFShaderPrim> kSDFShaderPrimFunctionNames({"sdSphere", "sdCube"});
+constexpr StringEnumMapping<SDFShaderPrim> kSDFShaderPrimComponentArrayNames({
     "u_spheres",
     "u_cubes",
+});
+
+enum class SDFShaderCoreComponents : uint8_t {
+  Transforms = 0,
+  Materials  = 1,
+  _Count     = 2,  // NOLINT
+};
+constexpr StringEnumMapping<SDFShaderCoreComponents> kSDFShaderCoreComponentArrayNames({
+    "u_transforms",
+    "u_materials",
 });
 
 enum class SDFShaderVariable : uint8_t {
   Position = 0,
   _Count   = 1,  // NOLINT
 };
-constexpr EnumMapping<SDFShaderVariable> kSDFShaderVariableNames({"pos"});
+constexpr StringEnumMapping<SDFShaderVariable> kSDFShaderVariableNames({"pos"});
 
 }  // namespace sdf_shader_consts
 

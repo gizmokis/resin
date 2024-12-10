@@ -156,11 +156,13 @@ void Resin::gui() {
   // ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
   // TODO(SDF-81): Proper rendering to framebuffer
 
+  ImGui::SetNextWindowSizeConstraints(ImVec2(280.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
   if (ImGui::Begin("SDF Tree")) {
-    ImGui::resin::SDFTreeView(sdf_tree_);
+    selected_node_ = ImGui::resin::SDFTreeView(sdf_tree_, selected_node_);
   }
   ImGui::End();
 
+  ImGui::SetNextWindowSizeConstraints(ImVec2(350.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
   ImGui::Begin("Test Cube");
   ImGui::Text("Parameters");
   if (ImGui::BeginTabBar("TestTabBar", ImGuiTabBarFlags_None)) {
