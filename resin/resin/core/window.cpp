@@ -33,7 +33,6 @@ void Window::api_init() {
   io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
   imgui_set_style();
-  // ImGui::StyleColorsDark();
 
   Logger::debug("Api init");
 }
