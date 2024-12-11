@@ -6,13 +6,13 @@
 namespace resin {
 
 struct Material {
-  explicit Material(const glm::vec3& color, float ambientFactor = 0.5F, float diffuseFactor = 0.5F,
-                    float specularFactor = 0.5F, float specularExponent = 50.F)
+  explicit Material(const glm::vec3& color, float _ambientFactor = 0.5F, float _diffuseFactor = 0.5F,
+                    float _specularFactor = 0.5F, float _specularExponent = 50.F)
       : albedo(color),
-        ambientFactor(ambientFactor),
-        diffuseFactor(diffuseFactor),
-        specularFactor(specularFactor),
-        specularExponent(specularExponent) {}
+        ambientFactor(_ambientFactor),
+        diffuseFactor(_diffuseFactor),
+        specularFactor(_specularFactor),
+        specularExponent(_specularExponent) {}
 
   glm::vec3 albedo;
 

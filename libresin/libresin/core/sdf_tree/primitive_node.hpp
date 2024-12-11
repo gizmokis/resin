@@ -5,6 +5,8 @@
 #include <libresin/core/transform.hpp>
 #include <memory>
 
+#include "libresin/core/material.hpp"
+
 namespace resin {
 
 class SphereNode final : public PrimitiveNode<SDFTreePrimitiveType::Sphere> {
@@ -23,6 +25,7 @@ class SphereNode final : public PrimitiveNode<SDFTreePrimitiveType::Sphere> {
   }
 
  public:
+  Material mat;
   float radius;
 };
 
@@ -43,6 +46,7 @@ class CubeNode final : public PrimitiveNode<SDFTreePrimitiveType::Cube> {
 
  public:
   float size;
+  Material mat;
 };
 
 }  // namespace resin

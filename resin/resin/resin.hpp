@@ -8,6 +8,7 @@
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
+#include <libresin/core/sdf_tree/sdf_tree_registry.hpp>
 #include <libresin/core/shader.hpp>
 #include <memory>
 #include <resin/core/window.hpp>
@@ -65,8 +66,11 @@ class Resin {
   std::unique_ptr<Camera> camera_;
   std::unique_ptr<PointLight> point_light_;
   std::unique_ptr<DirectionalLight> directional_light_;
-  std::unique_ptr<Material> cube_mat_, sphere_mat_;
-  Transform cube_transform_, camera_rig_;
+  Transform camera_rig_;
+
+  SDFTreeRegistry registry_;
+  SphereNode sphere_node_;
+  CubeNode cube_node_;
 
   bool running_   = true;
   bool minimized_ = false;

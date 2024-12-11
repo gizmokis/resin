@@ -1,6 +1,5 @@
 #version 330 core
 
-#include "blinn_phong.glsl"
 #include "sdf.glsl"
 
 layout(location = 0) out vec4 fragColor;
@@ -22,19 +21,19 @@ uniform directional_light u_dirLight;
 uniform point_light u_pointLight;
 
 // objects
-uniform mat4 u_iM;
-uniform float u_scale;        
-uniform material u_sphereMat;
-uniform material u_cubeMat;
+uniform mat4 u_transforms[100];
+uniform sdf_primitive u_sdf_primitives[100];
 
-vec2 map( vec3 pos )
+sdf_result map( vec3 pos3 )
 {
-    return opSmoothUnion(vec2(u_scale == 0 ? u_farPlane : u_scale * sdCube((u_iM*vec4(pos,1)).xyz, 0.5), 0), vec2(sdSphere(pos, 1), 1), 0.5);
+    vec4 pos = vec4(pos3, 1.0);
+    return opSmoothUnion(sdCube(u_transforms[1]*pos, u_sdf_primitives[1]), sdSphere(u_transforms[0]*pos, u_sdf_primitives[0]));
 }
 
-vec2 raycast( vec3 ray_origin, vec3 ray_direction )
+sdf_result raycast( vec3 ray_origin, vec3 ray_direction )
 {
-    vec2 result = vec2(-1.0,-1.0);
+    sdf_result result;
+    result.mat.ka = -1.0;
 
     float tmin = u_nearPlane;
     float tmax = u_farPlane;
@@ -43,13 +42,14 @@ vec2 raycast( vec3 ray_origin, vec3 ray_direction )
     for( int i=0; i<70 && t<tmax; i++ )
     {
         vec3 pos = ray_origin + t*ray_direction;
-        vec2 dist = map(pos);
-        if( abs(dist.x)<(0.0001*t) )
+        sdf_result res = map(pos);
+        if( abs(res.dist)<(0.0001*t) )
         { 
-            result = vec2(t,dist.y); 
+            result = res;
+            res.dist = t;
             break;
         }
-        t += dist.x;
+        t += res.dist;
     }
     
     return result;
@@ -63,7 +63,7 @@ vec3 calcNormal( in vec3 pos )
     for( int i=0; i<4; i++ )
     {
         vec3 e = 0.5773*(2.0*vec3((((i+3)>>1)&1),((i>>1)&1),(i&1))-1.0);
-        n += e*map(pos+0.0005*e).x;
+        n += e*map(pos+0.0005*e).dist;
       //if( n.x+n.y+n.z>100.0 ) break;
     }
     return normalize(n); 
@@ -73,14 +73,12 @@ vec3 render( vec3 ray_origin, vec3 ray_direction )
 { 
     vec3 col = u_Ambient;
 
-    vec2 res = raycast(ray_origin, ray_direction);
-    float t = res.x;
-	float m = res.y;
-    if( m>-0.5 )
+    sdf_result res = raycast(ray_origin, ray_direction);
+    if( res.mat.ka>-0.5 )
     {
-        vec3 pos = ray_origin + t*ray_direction;
+        vec3 pos = ray_origin + res.dist*ray_direction;
         vec3 nor = calcNormal( pos );
-        material mat = material_mix(u_cubeMat, u_sphereMat, m);
+        material mat = res.mat; 
 
         vec3 totalAmbient = u_Ambient + u_dirLight.ambient_impact * u_dirLight.color;
         vec3 light = mat.ka * totalAmbient

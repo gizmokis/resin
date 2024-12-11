@@ -11,6 +11,7 @@
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
+#include <libresin/core/sdf_tree/sdf_tree_registry.hpp>
 #include <libresin/utils/logger.hpp>
 #include <memory>
 #include <resin/core/window.hpp>
@@ -22,7 +23,13 @@
 
 namespace resin {
 
-Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
+Resin::Resin()
+    : vertex_array_(0),
+      vertex_buffer_(0),
+      index_buffer_(0),
+      registry_(),
+      sphere_node_(this->registry_),
+      cube_node_(this->registry_) {
   dispatcher_.subscribe<WindowCloseEvent>(BIND_EVENT_METHOD(on_window_close));
   dispatcher_.subscribe<WindowResizeEvent>(BIND_EVENT_METHOD(on_window_resize));
   dispatcher_.subscribe<WindowTestEvent>(BIND_EVENT_METHOD(on_test));
@@ -35,11 +42,6 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
   }
 
   const std::filesystem::path path = std::filesystem::current_path() / "assets";
-
-  cube_transform_.set_local_pos(glm::vec3(1, 1, 0));
-
-  cube_mat_   = std::make_unique<Material>(glm::vec3(0.96F, 0.25F, 0.25F));
-  sphere_mat_ = std::make_unique<Material>(glm::vec3(0.25F, 0.25F, 0.96F));
 
   camera_       = std::make_unique<Camera>(true, 90.F, 16.F / 9.F, 0.75F, 100.F);
   glm::vec3 pos = glm::vec3(0, 2, 3);
@@ -79,11 +81,8 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof indices, indices, GL_STATIC_DRAW);
 
   // Example tree
-  sdf_tree_.root().push_back_child<SphereNode>(SDFBinaryOperation::Inter);
-  sdf_tree_.root()
-      .push_back_child<GroupNode>(SDFBinaryOperation::Union)
-      .push_back_child<CubeNode>(SDFBinaryOperation::Diff);
-  sdf_tree_.root().push_back_child<CubeNode>(SDFBinaryOperation::Union);
+  //   sdf_tree_.root().push_back_child<SphereNode>(SDFBinaryOperation::Union);
+  //   sdf_tree_.root().push_back_child<CubeNode>(SDFBinaryOperation::Union);
 }
 
 void Resin::run() {
@@ -135,21 +134,21 @@ void Resin::update(duration_t delta) {
   window_->set_title(std::format("Resin [{} FPS {} TPS] running for: {}", fps_, tps_,
                                  std::chrono::duration_cast<std::chrono::seconds>(time_)));
 
-  cube_transform_.rotate(glm::angleAxis(2 * std::chrono::duration<float>(delta).count(), glm::vec3(0, 1, 0)));
   directional_light_->transform.rotate(glm::angleAxis(std::chrono::duration<float>(delta).count(), glm::vec3(0, 1, 0)));
 
   shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
   shader_->set_uniform("u_resolution", glm::vec2(window_->dimensions()));
   shader_->set_uniform("u_nearPlane", camera_->near_plane());
   shader_->set_uniform("u_farPlane", camera_->far_plane());
-  shader_->set_uniform("u_iM", cube_transform_.world_to_local_matrix());
-  shader_->set_uniform("u_scale", cube_transform_.scale());
   shader_->set_uniform("u_ortho", camera_->is_orthographic);
   shader_->set_uniform("u_camSize", camera_->height());
   shader_->set_uniform("u_dirLight", *directional_light_);
   shader_->set_uniform("u_pointLight", *point_light_);
-  shader_->set_uniform("u_cubeMat", *cube_mat_);
-  shader_->set_uniform("u_sphereMat", *sphere_mat_);
+
+  shader_->set_uniform("u_transforms[0]", sphere_node_.transform().world_to_local_matrix());
+  shader_->set_uniform("u_sdf_primitives[0]", sphere_node_);
+  shader_->set_uniform("u_transforms[1]", cube_node_.transform().world_to_local_matrix());
+  shader_->set_uniform("u_sdf_primitives[1]", cube_node_);
 }
 
 void Resin::gui() {
@@ -167,7 +166,7 @@ void Resin::gui() {
   ImGui::Text("Parameters");
   if (ImGui::BeginTabBar("TestTabBar", ImGuiTabBarFlags_None)) {
     if (ImGui::BeginTabItem("Transform")) {
-      ImGui::resin::TransformEdit(&cube_transform_);
+      ImGui::resin::TransformEdit(&cube_node_.transform());
       ImGui::EndTabItem();
     }
     // TODO(SDF-88): i don't want to design GUI please save me guys 🤲🙏
@@ -190,19 +189,19 @@ void Resin::gui() {
     }
     // TODO(SDF-87)
     if (ImGui::BeginTabItem("CubeMat")) {
-      ImGui::ColorEdit3("Color", glm::value_ptr(cube_mat_->albedo));
-      ImGui::DragFloat("Ambient", &cube_mat_->ambientFactor, 0.01F, 0.0F, 1.0F, "%.2f");
-      ImGui::DragFloat("Diffuse", &cube_mat_->diffuseFactor, 0.01F, 0.0F, 1.0F, "%.2f");
-      ImGui::DragFloat("Specular", &cube_mat_->specularFactor, 0.01F, 0.0F, 1.0F, "%.2f");
-      ImGui::DragFloat("Exponent", &cube_mat_->specularExponent, 0.1F, 0.0F, 100.0F, "%.1f");
+      ImGui::ColorEdit3("Color", glm::value_ptr(cube_node_.mat.albedo));
+      ImGui::DragFloat("Ambient", &cube_node_.mat.ambientFactor, 0.01F, 0.0F, 1.0F, "%.2f");
+      ImGui::DragFloat("Diffuse", &cube_node_.mat.diffuseFactor, 0.01F, 0.0F, 1.0F, "%.2f");
+      ImGui::DragFloat("Specular", &cube_node_.mat.specularFactor, 0.01F, 0.0F, 1.0F, "%.2f");
+      ImGui::DragFloat("Exponent", &cube_node_.mat.specularExponent, 0.1F, 0.0F, 100.0F, "%.1f");
       ImGui::EndTabItem();
     }
     if (ImGui::BeginTabItem("SphereMat")) {
-      ImGui::ColorEdit3("Color", glm::value_ptr(sphere_mat_->albedo));
-      ImGui::DragFloat("Ambient", &sphere_mat_->ambientFactor, 0.01F, 0.0F, 2.0F, "%.2f");
-      ImGui::DragFloat("Diffuse", &sphere_mat_->diffuseFactor, 0.01F, 0.0F, 2.0F, "%.2f");
-      ImGui::DragFloat("Specular", &sphere_mat_->specularFactor, 0.01F, 0.0F, 2.0F, "%.2f");
-      ImGui::DragFloat("Exponent", &sphere_mat_->specularExponent, 0.1F, 0.0F, 100.0F, "%.1f");
+      ImGui::ColorEdit3("Color", glm::value_ptr(sphere_node_.mat.albedo));
+      ImGui::DragFloat("Ambient", &sphere_node_.mat.ambientFactor, 0.01F, 0.0F, 2.0F, "%.2f");
+      ImGui::DragFloat("Diffuse", &sphere_node_.mat.diffuseFactor, 0.01F, 0.0F, 2.0F, "%.2f");
+      ImGui::DragFloat("Specular", &sphere_node_.mat.specularFactor, 0.01F, 0.0F, 2.0F, "%.2f");
+      ImGui::DragFloat("Exponent", &sphere_node_.mat.specularExponent, 0.1F, 0.0F, 100.0F, "%.1f");
       ImGui::EndTabItem();
     }
     ImGui::EndTabBar();
