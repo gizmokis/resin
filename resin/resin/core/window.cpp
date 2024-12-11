@@ -32,7 +32,8 @@ void Window::api_init() {
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
   io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
-  ImGui::StyleColorsDark();
+  imgui_set_style();
+  // ImGui::StyleColorsDark();
 
   Logger::debug("Api init");
 }
@@ -174,6 +175,116 @@ void Window::set_fullscreen(bool fullscreen) {
 void Window::imgui_setup() const {
   ImGui_ImplGlfw_InitForOpenGL(window_ptr_, true);
   ImGui_ImplOpenGL3_Init("#version 150");
+}
+void Window::imgui_set_style() {
+  ImGuiIO& io                = ImGui::GetIO();
+
+  std::filesystem::path path = std::filesystem::current_path() / "assets/fonts";
+  if(std::filesystem::exists(path / "OpenSans-Regular.ttf")) {
+    ImFont* sans_regular       = io.Fonts->AddFontFromFileTTF((path / "OpenSans-Regular.ttf").string().c_str(), 18.0f);
+  }
+  else {
+    Logger::warn("Failed to load font. Using ImGui's default.");
+  }
+
+  io.Fonts->Build();
+
+  // Resin Gold
+  ImGuiStyle& style = ImGui::GetStyle();
+
+  style.Alpha                     = 1.0f;
+  style.DisabledAlpha             = 0.1000000014901161f;
+  style.WindowPadding             = ImVec2(8.0f, 8.0f);
+  style.WindowRounding            = 5.0f;
+  style.WindowBorderSize          = 1.0f;
+  style.WindowMinSize             = ImVec2(30.0f, 30.0f);
+  style.WindowTitleAlign          = ImVec2(0.5f, 0.5f);
+  style.WindowMenuButtonPosition  = ImGuiDir_Right;
+  style.ChildRounding             = 5.0f;
+  style.ChildBorderSize           = 1.0f;
+  style.PopupRounding             = 5.0f;
+  style.PopupBorderSize           = 0.0f;
+  style.FramePadding              = ImVec2(5.0f, 3.0f);
+  style.FrameRounding             = 5.0f;
+  style.FrameBorderSize           = 0.0f;
+  style.ItemSpacing               = ImVec2(8.0f, 4.0f);
+  style.ItemInnerSpacing          = ImVec2(4.0f, 4.0f);
+  style.CellPadding               = ImVec2(4.0f, 2.0f);
+  style.IndentSpacing             = 5.0f;
+  style.ColumnsMinSpacing         = 5.0f;
+  style.ScrollbarSize             = 15.0f;
+  style.ScrollbarRounding         = 9.0f;
+  style.GrabMinSize               = 15.0f;
+  style.GrabRounding              = 5.0f;
+  style.TabRounding               = 5.0f;
+  style.TabBorderSize             = 0.0f;
+  style.TabMinWidthForCloseButton = 0.0f;
+  style.ColorButtonPosition       = ImGuiDir_Right;
+  style.ButtonTextAlign           = ImVec2(0.5f, 0.5f);
+  style.SelectableTextAlign       = ImVec2(0.0f, 0.0f);
+
+  // Colors
+  constexpr ImVec4 primary =
+      ImVec4(0.9803921580314636f, 0.6627451181411743f, 0.07450980693101883f, 0.7450980544090271f);
+  constexpr ImVec4 gui_background = ImVec4(0.09803921729326248f, 0.09803921729326248f, 0.09803921729326248f, 1.0f);
+  constexpr ImVec4 grey           = ImVec4(0.1568627506494522f, 0.1568627506494522f, 0.1568627506494522f, 1.0f);
+  constexpr ImVec4 white          = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+
+  style.Colors[ImGuiCol_Text] = white;
+
+  style.Colors[ImGuiCol_Border]            = primary;
+  style.Colors[ImGuiCol_FrameBgActive]     = primary;
+  style.Colors[ImGuiCol_TitleBg]           = primary;
+  style.Colors[ImGuiCol_TitleBgActive]     = primary;
+  style.Colors[ImGuiCol_CheckMark]         = primary;
+  style.Colors[ImGuiCol_ButtonActive]      = primary;
+  style.Colors[ImGuiCol_SliderGrab]        = primary;
+  style.Colors[ImGuiCol_SliderGrabActive]  = primary;
+  style.Colors[ImGuiCol_Button]            = primary;
+  style.Colors[ImGuiCol_ButtonHovered]     = primary;
+  style.Colors[ImGuiCol_HeaderHovered]     = primary;
+  style.Colors[ImGuiCol_Separator]         = primary;
+  style.Colors[ImGuiCol_SeparatorHovered]  = primary;
+  style.Colors[ImGuiCol_SeparatorActive]   = primary;
+  style.Colors[ImGuiCol_ResizeGrip]        = primary;
+  style.Colors[ImGuiCol_ResizeGripHovered] = primary;
+  style.Colors[ImGuiCol_ResizeGripActive]  = primary;
+  style.Colors[ImGuiCol_TabHovered]        = primary;
+  style.Colors[ImGuiCol_TabActive]         = primary;
+  style.Colors[ImGuiCol_PlotLinesHovered]  = primary;
+  style.Colors[ImGuiCol_PlotHistogram]     = primary;
+  style.Colors[ImGuiCol_TableBorderStrong] = primary;
+  style.Colors[ImGuiCol_TextSelectedBg]    = primary;
+
+  style.Colors[ImGuiCol_WindowBg]     = gui_background;
+  style.Colors[ImGuiCol_PopupBg]      = gui_background;
+  style.Colors[ImGuiCol_Header]       = gui_background;
+  style.Colors[ImGuiCol_HeaderActive] = gui_background;
+
+  style.Colors[ImGuiCol_FrameBg]       = grey;
+  style.Colors[ImGuiCol_ScrollbarGrab] = grey;
+
+  // Misc
+  style.Colors[ImGuiCol_TextDisabled] = ImVec4(1.0f, 1.0f, 1.0f, 0.3605149984359741f);
+  style.Colors[ImGuiCol_FrameBgHovered] =
+      ImVec4(0.3803921639919281f, 0.4235294163227081f, 0.572549045085907f, 0.5490196347236633f);
+  style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.2588235437870026f, 0.2588235437870026f, 0.2588235437870026f, 0.0f);
+  style.Colors[ImGuiCol_MenuBarBg]        = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+  style.Colors[ImGuiCol_ScrollbarBg]      = ImVec4(0.1568627506494522f, 0.1568627506494522f, 0.1568627506494522f, 0.0f);
+  style.Colors[ImGuiCol_ScrollbarGrabHovered] =
+      ImVec4(0.2352941185235977f, 0.2352941185235977f, 0.2352941185235977f, 1.0f);
+  style.Colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.294117659330368f, 0.294117659330368f, 0.294117659330368f, 1.0f);
+  style.Colors[ImGuiCol_Tab] =
+      ImVec4(0.9803921580314636f, 0.6627451181411743f, 0.07450980693101883f, 0.1176470592617989f);
+  style.Colors[ImGuiCol_TabUnfocused] = ImVec4(0.0f, 0.4509803950786591f, 1.0f, 0.0f);
+  style.Colors[ImGuiCol_TabUnfocusedActive] =
+      ImVec4(0.1333333402872086f, 0.2588235437870026f, 0.4235294163227081f, 0.0f);
+  style.Colors[ImGuiCol_TableHeaderBg] = ImVec4(0.1882352977991104f, 0.1882352977991104f, 0.2000000029802322f, 1.0f);
+  style.Colors[ImGuiCol_TableBorderLight] =
+      ImVec4(0.9803921580314636f, 0.6627451181411743f, 0.07450980693101883f, 0.3921568691730499f);
+  style.Colors[ImGuiCol_TableRowBg]     = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+  style.Colors[ImGuiCol_TableRowBgAlt]  = ImVec4(1.0f, 1.0f, 1.0f, 0.03433477878570557f);
+  style.Colors[ImGuiCol_DragDropTarget] = ImVec4(1.0f, 1.0f, 0.0f, 0.8999999761581421f);
 }
 
 }  // namespace resin
