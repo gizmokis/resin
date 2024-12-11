@@ -17,6 +17,7 @@
 #include <resin/core/window.hpp>
 #include <resin/event/event.hpp>
 #include <resin/event/window_events.hpp>
+#include <resin/imgui/node_edit.hpp>
 #include <resin/imgui/sdf_tree.hpp>
 #include <resin/imgui/transform_edit.hpp>
 #include <resin/resin.hpp>
@@ -81,8 +82,8 @@ Resin::Resin()
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof indices, indices, GL_STATIC_DRAW);
 
   // Example tree
-  //   sdf_tree_.root().push_back_child<SphereNode>(SDFBinaryOperation::Union);
-  //   sdf_tree_.root().push_back_child<CubeNode>(SDFBinaryOperation::Union);
+  sdf_tree_.root().push_back_child<SphereNode>(SDFBinaryOperation::Union);
+  sdf_tree_.root().push_back_child<CubeNode>(SDFBinaryOperation::Union);
 }
 
 void Resin::run() {
@@ -162,13 +163,8 @@ void Resin::gui() {
   ImGui::End();
 
   ImGui::SetNextWindowSizeConstraints(ImVec2(350.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
-  ImGui::Begin("Test Cube");
-  ImGui::Text("Parameters");
-  if (ImGui::BeginTabBar("TestTabBar", ImGuiTabBarFlags_None)) {
-    if (ImGui::BeginTabItem("Transform")) {
-      ImGui::resin::TransformEdit(&cube_node_.transform());
-      ImGui::EndTabItem();
-    }
+  ImGui::Begin("Lights");
+  if (ImGui::BeginTabBar("LightsTabBar", ImGuiTabBarFlags_None)) {
     // TODO(SDF-88): i don't want to design GUI please save me guys 🤲🙏
     if (ImGui::BeginTabItem("DirLight")) {
       ImGui::ColorEdit3("Light color", glm::value_ptr(directional_light_->color));
@@ -187,25 +183,16 @@ void Resin::gui() {
       }
       ImGui::EndTabItem();
     }
-    // TODO(SDF-87)
-    if (ImGui::BeginTabItem("CubeMat")) {
-      ImGui::ColorEdit3("Color", glm::value_ptr(cube_node_.mat.albedo));
-      ImGui::DragFloat("Ambient", &cube_node_.mat.ambientFactor, 0.01F, 0.0F, 1.0F, "%.2f");
-      ImGui::DragFloat("Diffuse", &cube_node_.mat.diffuseFactor, 0.01F, 0.0F, 1.0F, "%.2f");
-      ImGui::DragFloat("Specular", &cube_node_.mat.specularFactor, 0.01F, 0.0F, 1.0F, "%.2f");
-      ImGui::DragFloat("Exponent", &cube_node_.mat.specularExponent, 0.1F, 0.0F, 100.0F, "%.1f");
-      ImGui::EndTabItem();
-    }
-    if (ImGui::BeginTabItem("SphereMat")) {
-      ImGui::ColorEdit3("Color", glm::value_ptr(sphere_node_.mat.albedo));
-      ImGui::DragFloat("Ambient", &sphere_node_.mat.ambientFactor, 0.01F, 0.0F, 2.0F, "%.2f");
-      ImGui::DragFloat("Diffuse", &sphere_node_.mat.diffuseFactor, 0.01F, 0.0F, 2.0F, "%.2f");
-      ImGui::DragFloat("Specular", &sphere_node_.mat.specularFactor, 0.01F, 0.0F, 2.0F, "%.2f");
-      ImGui::DragFloat("Exponent", &sphere_node_.mat.specularExponent, 0.1F, 0.0F, 100.0F, "%.1f");
-      ImGui::EndTabItem();
-    }
     ImGui::EndTabBar();
   }
+  ImGui::End();
+
+  ImGui::SetNextWindowSizeConstraints(ImVec2(350.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
+  ImGui::Begin("Selection");
+  if (selected_node_.has_value()) {
+    ImGui::resin::NodeEdit(sdf_tree_.node(*selected_node_));
+  }
+
   ImGui::End();
 }
 

@@ -1,6 +1,7 @@
 #ifndef RESIN_PRIMITIVE_BASE_NODE_HPP
 #define RESIN_PRIMITIVE_BASE_NODE_HPP
 
+#include <libresin/core/material.hpp>
 #include <libresin/core/sdf_shader_consts.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
@@ -27,7 +28,7 @@ class BasePrimitiveNode : public SDFTreeNode {
 
   ~BasePrimitiveNode() override = default;
   explicit BasePrimitiveNode(SDFTreeRegistry& tree, std::string_view name)
-      : SDFTreeNode(tree, name), prim_id_(tree.primitives_registry) {}
+      : SDFTreeNode(tree, name), prim_id_(tree.primitives_registry), mat(glm::vec3(1.0F, 1.0F, 1.0F)) {}
 
   inline std::string gen_shader_code(GenShaderMode mode) const final {
     switch (mode) {
@@ -56,6 +57,10 @@ class BasePrimitiveNode : public SDFTreeNode {
     throw NonExhaustiveEnumException();
   }
 
+ public:
+  // TODO(SDF-96): Remove and add to SDFTreeNode + handle material overriding
+  Material mat;
+
  protected:
   inline void insert_leaves_to(
       std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& leaves) final {
@@ -69,6 +74,7 @@ class BasePrimitiveNode : public SDFTreeNode {
 
   inline void push_dirty_primitives() final { tree_registry_.dirty_primitives.emplace_back(node_id()); }
 
+ protected:
   PrimitiveNodeId prim_id_;
 };
 

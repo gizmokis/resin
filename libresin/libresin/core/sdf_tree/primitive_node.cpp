@@ -5,9 +5,8 @@
 namespace resin {
 
 SphereNode::SphereNode(SDFTreeRegistry& tree, float _radius)
-    : PrimitiveNode<SDFTreePrimitiveType::Sphere>(tree), radius(_radius), mat(glm::vec3(1.0F, 1.0F, 0.0F)) {}
+    : PrimitiveNode<SDFTreePrimitiveType::Sphere>(tree), radius(_radius) {}
 
-CubeNode::CubeNode(SDFTreeRegistry& tree, float _size)
-    : PrimitiveNode<SDFTreePrimitiveType::Cube>(tree), size(_size), mat(glm::vec3(0.0F, 1.0F, 1.0F)) {}
+CubeNode::CubeNode(SDFTreeRegistry& tree, float _size) : PrimitiveNode<SDFTreePrimitiveType::Cube>(tree), size(_size) {}
 
 }  // namespace resin
