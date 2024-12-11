@@ -29,16 +29,31 @@ class BasePrimitiveNode : public SDFTreeNode {
   explicit BasePrimitiveNode(SDFTreeRegistry& tree, std::string_view name)
       : SDFTreeNode(tree, name), prim_id_(tree.primitives_registry) {}
 
-  inline std::string gen_shader_code() const final {
-    return std::format(
-        "{}({}[{}]*{},{}[{}])", sdf_shader_consts::kSDFShaderPrimFunctionNames.get_value(primitive_type()),
-        sdf_shader_consts::kSDFShaderCoreComponentArrayNames.get_value(
-            sdf_shader_consts::SDFShaderCoreComponents::Transforms),                                           //
-        transform_id_.raw(),                                                                                   //
-        sdf_shader_consts::kSDFShaderVariableNames.get_value(sdf_shader_consts::SDFShaderVariable::Position),  //
-        sdf_shader_consts::kSDFShaderPrimComponentArrayNames.get_value(primitive_type()),                      //
-        get_component_raw_id()                                                                                 //
-    );
+  inline std::string gen_shader_code(GenShaderMode mode) const final {
+    switch (mode) {
+      case resin::GenShaderMode::SinglePrimitiveArray:
+        return std::format(
+            "{}({}[{}]*{},{}[{}])", sdf_shader_consts::kSDFShaderPrimFunctionNames.get_value(primitive_type()),
+            sdf_shader_consts::kSDFShaderCoreComponentArrayNames.get_value(
+                sdf_shader_consts::SDFShaderCoreComponents::Transforms),                                           //
+            transform_id_.raw(),                                                                                   //
+            sdf_shader_consts::kSDFShaderVariableNames.get_value(sdf_shader_consts::SDFShaderVariable::Position),  //
+            sdf_shader_consts::kSDFPrimitivesArrayName,                                                            //
+            get_component_raw_id()                                                                                 //
+        );
+      case resin::GenShaderMode::ArrayPerPrimitiveType:
+        return std::format(
+            "{}({}[{}]*{},{}[{}])", sdf_shader_consts::kSDFShaderPrimFunctionNames.get_value(primitive_type()),
+            sdf_shader_consts::kSDFShaderCoreComponentArrayNames.get_value(
+                sdf_shader_consts::SDFShaderCoreComponents::Transforms),                                           //
+            transform_id_.raw(),                                                                                   //
+            sdf_shader_consts::kSDFShaderVariableNames.get_value(sdf_shader_consts::SDFShaderVariable::Position),  //
+            sdf_shader_consts::kSDFShaderPrimComponentArrayNames.get_value(primitive_type()),                      //
+            get_component_raw_id()                                                                                 //
+        );
+    }
+
+    throw NonExhaustiveEnumException();
   }
 
  protected:
