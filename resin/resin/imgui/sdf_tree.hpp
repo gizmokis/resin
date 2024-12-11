@@ -4,6 +4,7 @@
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
 
+#include <libresin/core/id_registry.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
@@ -16,31 +17,42 @@ namespace resin {
 
 class SDFTreeComponentVisitor : public ::resin::ISDFTreeNodeVisitor {
  public:
-  explicit SDFTreeComponentVisitor(std::optional<::resin::IdView<::resin::SDFTreeNodeId>> selected)
-      : selected_(selected) {}
+  explicit SDFTreeComponentVisitor(std::optional<::resin::IdView<::resin::SDFTreeNodeId>> selected,
+                                   size_t sdf_tree_comp_id)
+      : selected_(selected), payload_type_(std::format("SDF_TREE_DND_PAYLOAD_{}", sdf_tree_comp_id)) {}
   void visit_group(::resin::GroupNode& node) override;
-  void visit_primitive(::resin::PrimitiveNode& node) override;
+  void visit_primitive(::resin::BasePrimitiveNode& node) override;
+
+  void render_tree(::resin::SDFTree& tree);
 
   inline std::optional<::resin::IdView<::resin::SDFTreeNodeId>> selected() const { return selected_; }
+
+  void apply_move_operation(::resin::SDFTree& tree);
+
+ private:
+  void render_op(::resin::SDFTreeNode& node) const;
+  void drag_and_drop(::resin::SDFTreeNode& node, bool ignore_middle);
+  std::optional<::resin::IdView<::resin::SDFTreeNodeId>> get_curr_payload();
 
  private:
   std::optional<::resin::IdView<::resin::SDFTreeNodeId>> selected_ = std::nullopt;
   bool is_parent_selected_                                         = false;
+  bool is_parent_dragged_                                          = false;
+  bool is_first_                                                   = false;
+  bool is_any_node_clicked_                                        = false;
+
+  std::optional<::resin::IdView<::resin::SDFTreeNodeId>> move_source_target_ = std::nullopt;
+  std::optional<::resin::IdView<::resin::SDFTreeNodeId>> move_after_target_  = std::nullopt;
+  std::optional<::resin::IdView<::resin::SDFTreeNodeId>> move_before_target_ = std::nullopt;
+  std::optional<::resin::IdView<::resin::SDFTreeNodeId>> move_into_target_   = std::nullopt;
+
+  std::string payload_type_;
+  static constexpr ::resin::StringEnumMapping<::resin::SDFBinaryOperation> kOperationSymbol =
+      ::resin::StringEnumMapping<::resin::SDFBinaryOperation>({"+", "+'", "-", "-'", "&", "&'", "^", "^'"});
 };
 
-class SDFTreeOperationVisitor : public ::resin::ISDFTreeNodeVisitor {
- public:
-  void visit_group(::resin::GroupNode& node) override;
-  void visit_primitive(::resin::PrimitiveNode& node) override;
-
-  enum class Operation {
-    PushPrimitive,
-    PushGroup,
-  };
-  Operation op;
-};
-
-std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(::resin::SDFTree& tree);
+std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(
+    ::resin::SDFTree& tree, const std::optional<::resin::IdView<::resin::SDFTreeNodeId>>& old_selected);
 
 }  // namespace resin
 

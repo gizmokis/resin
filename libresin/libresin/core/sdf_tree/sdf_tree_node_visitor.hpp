@@ -4,7 +4,7 @@
 namespace resin {
 
 class GroupNode;
-class PrimitiveNode;
+class BasePrimitiveNode;
 class SphereNode;
 class CubeNode;
 
@@ -13,7 +13,7 @@ class ISDFTreeNodeVisitor {
   void virtual visit_sphere(SphereNode&) {}
   void virtual visit_cube(CubeNode&) {}
   void virtual visit_group(GroupNode&) {}
-  void virtual visit_primitive(PrimitiveNode&) {}
+  void virtual visit_primitive(BasePrimitiveNode&) {}
 
   virtual ~ISDFTreeNodeVisitor() = default;
 };

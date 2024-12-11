@@ -36,6 +36,9 @@ class SDFTreeNode {
   [[nodiscard]] virtual std::unique_ptr<SDFTreeNode> copy() = 0;
   virtual bool is_leaf()                                    = 0;
 
+  bool operator==(const SDFTreeNode& other) const { return node_id_ == other.node_id_; }
+  bool operator!=(const SDFTreeNode& other) const { return node_id_ != other.node_id_; }
+
   inline IdView<SDFTreeNodeId> node_id() const { return node_id_; }
   inline IdView<TransformId> transform_component_id() const { return transform_id_; }
   inline Transform& transform() { return transform_; }

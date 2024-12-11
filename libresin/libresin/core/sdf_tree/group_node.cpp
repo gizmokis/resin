@@ -6,6 +6,7 @@
 #include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/logger.hpp>
 #include <optional>
+#include <utility>
 
 namespace resin {
 
@@ -13,6 +14,21 @@ GroupNode::GroupNode(SDFTreeRegistry& tree) : SDFTreeNode(tree, "Group") {
   tree_registry_.all_group_nodes[node_id_.raw()] = *this;
 }
 GroupNode::~GroupNode() { tree_registry_.all_group_nodes[node_id_.raw()] = std::nullopt; }
+
+void GroupNode::push_back_primitive(SDFTreePrimitiveType type, SDFBinaryOperation bin_op) {
+  switch (type) {
+    case SDFTreePrimitiveType::Sphere:
+      push_back_child<SphereNode>(bin_op);
+      return;
+    case SDFTreePrimitiveType::Cube:
+      push_back_child<CubeNode>(bin_op);
+      return;
+    case resin::SDFTreePrimitiveType::_Count:
+      throw NonExhaustiveEnumException();
+  }
+
+  throw NonExhaustiveEnumException();
+}
 
 bool GroupNode::is_node_shallow(IdView<SDFTreeNodeId> id) const {
   return tree_registry_.all_group_nodes[id.raw()].has_value() &&
@@ -53,7 +69,7 @@ std::string GroupNode::gen_shader_code() const {
       continue;
     }
 
-    sdf += sdf_shader_consts::kSDFShaderBinOpFunctionNames.get_name(get_child(*it).bin_op());
+    sdf += sdf_shader_consts::kSDFShaderBinOpFunctionNames.get_value(get_child(*it).bin_op());
     sdf += "(";
   }
   sdf += get_child(*first_non_shallow_node).gen_shader_code();
