@@ -11,6 +11,7 @@
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
+#include <libresin/core/uniform_buffer.hpp>
 #include <libresin/utils/logger.hpp>
 #include <memory>
 #include <resin/core/window.hpp>
@@ -55,6 +56,8 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
 
   shader_ = std::make_unique<RenderingShaderProgram>("default", *shader_resource_manager_.get_res(path / "test.vert"),
                                                      *shader_resource_manager_.get_res(path / "test.frag"));
+  ubo_    = std::make_unique<UniformBuffer>();
+  shader_->bind_uniform_buffer("Data", ubo_->binding());
 
   // TODO(anyone): temporary, move out somewhere else
   float vertices[4 * 3]   = {-1.F, -1.F, 0.F, 1.F, -1.F, 0.F, -1.F, 1.F, 0.F, 1.F, 1.F, 0.F};
@@ -84,6 +87,10 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
       .push_back_child<GroupNode>(SDFBinaryOperation::Union)
       .push_back_child<CubeNode>(SDFBinaryOperation::Diff);
   sdf_tree_.root().push_back_child<CubeNode>(SDFBinaryOperation::Union);
+
+  ubo_->bind();
+  ubo_->set(sdf_tree_);
+  ubo_->unbind();
 }
 
 void Resin::run() {
