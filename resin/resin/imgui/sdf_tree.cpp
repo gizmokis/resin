@@ -252,7 +252,7 @@ std::pair<std::optional<::resin::IdView<::resin::SDFTreeNodeId>>, bool> SDFTreeV
   static std::string_view add_group_label = "Add Group";
 
   ImGuiStyle& style            = ImGui::GetStyle();
-  float buttons_section_height = ImGui::CalcTextSize(delete_label.data()).y + style.FramePadding.y * 2.0F +
+  float buttons_section_height = ImGui::CalcTextSize(delete_label.data()).y + style.FramePadding.y * 4.0F +
                                  style.WindowPadding.y * 4.0F + style.ItemSpacing.y * 2.0F;
   float add_buttons_section_width = ImGui::CalcTextSize(add_prim_label.data()).x +
                                     ImGui::CalcTextSize(add_group_label.data()).x + style.FramePadding.x * 4.0F +
@@ -264,8 +264,7 @@ std::pair<std::optional<::resin::IdView<::resin::SDFTreeNodeId>>, bool> SDFTreeV
 
   auto comp_vs = resin::SDFTreeComponentVisitor(old_selected, tree.tree_id());
 
-  ImGui::BeginChild("ResizableInnerChild", ImVec2(-FLT_MIN, ImGui::GetWindowHeight() - buttons_section_height),
-                    ImGuiChildFlags_Borders);
+  ImGui::BeginChild("ResizableInnerChild", ImVec2(-FLT_MIN, ImGui::GetWindowHeight() - buttons_section_height));
 
   comp_vs.render_tree(tree);
   auto selected = comp_vs.selected();

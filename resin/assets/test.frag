@@ -17,7 +17,7 @@ uniform float u_farPlane;
 uniform float u_camSize;
 
 // rendering
-const vec3 u_Ambient = vec3(0.2, 0.1, 0.0);
+const vec3 u_Ambient = vec3(0.25,0.25,0.25);
 uniform directional_light u_dirLight;
 uniform point_light u_pointLight;
 
