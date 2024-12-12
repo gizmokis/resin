@@ -1,8 +1,5 @@
 #version 330 core
 
-#include "blinn_phong.glsl"
-#include "sdf.glsl"
-
 layout(location = 0) out vec4 fragColor;
 
 // fragment
@@ -16,8 +13,17 @@ uniform float u_nearPlane;
 uniform float u_farPlane;
 uniform float u_camSize;
 
+#include "blinn_phong.glsl"
+#include "sdf.glsl"
+
 // rendering
 const vec3 u_Ambient = vec3(0.25,0.25,0.25);
+const int kMaxNodeCount = 10;
+layout (std140) uniform Data 
+{
+    node u_nodes[kMaxNodeCount];
+};
+
 uniform directional_light u_dirLight;
 uniform point_light u_pointLight;
 
@@ -29,7 +35,9 @@ uniform material u_cubeMat;
 
 vec2 map( vec3 pos )
 {
-    return opSmoothUnion(vec2(u_scale == 0 ? u_farPlane : u_scale * sdCube((u_iM*vec4(pos,1)).xyz, 0.5), 0), vec2(sdSphere(pos, 1), 1), 0.5);
+    node cube = node(u_iM, vec3(0.5), u_scale);
+    node sphere = u_nodes[0];//node(mat4(1.0), vec3(1), 1);
+    return opSmoothUnion(vec2(sdCube(pos, cube), 0), vec2(sdSphere(pos, sphere), 1), 0.5);
 }
 
 vec2 raycast( vec3 ray_origin, vec3 ray_direction )

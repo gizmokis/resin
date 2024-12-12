@@ -66,6 +66,8 @@ class ShaderProgram {
     }
   }
 
+  void bind_uniform_buffer(std::string_view name, size_t binding) const;
+
  protected:
   static std::optional<std::string> get_shader_status(GLuint shader, GLenum type);
   static std::optional<std::string> get_program_status(GLuint program, GLenum type);
