@@ -182,7 +182,14 @@ void Resin::gui() {
 
   ImGui::SetNextWindowSizeConstraints(ImVec2(280.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
   if (ImGui::Begin("SDF Tree")) {
-    selected_node_ = ImGui::resin::SDFTreeView(sdf_tree_, selected_node_);
+    auto result    = ImGui::resin::SDFTreeView(sdf_tree_, selected_node_);
+    selected_node_ = result.first;
+    if (result.second) {
+      shader_->fragment_shader().set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
+      shader_->recompile();
+      Logger::info("Refreshed the SDF Tree");
+      //   Logger::info("{}", shader_->fragment_shader().get_glsl());
+    }
   }
   ImGui::End();
 

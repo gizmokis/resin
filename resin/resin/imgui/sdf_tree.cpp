@@ -241,9 +241,11 @@ void SDFTreeComponentVisitor::apply_move_operation(::resin::SDFTree& tree) {
     auto node_ptr = tree.node(*move_source_target_).parent().detach_child(*move_source_target_);
     tree.node(*move_after_target_).parent().insert_after_child(*move_after_target_, std::move(node_ptr));
   }
+
+  is_tree_edited_ = true;
 }
 
-std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(
+std::pair<std::optional<::resin::IdView<::resin::SDFTreeNodeId>>, bool> SDFTreeView(
     ::resin::SDFTree& tree, const std::optional<::resin::IdView<::resin::SDFTreeNodeId>>& old_selected) {
   static std::string_view delete_label    = "Delete";
   static std::string_view add_prim_label  = "Add Primitive";
@@ -267,10 +269,10 @@ std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(
 
   comp_vs.render_tree(tree);
   auto selected = comp_vs.selected();
+  comp_vs.apply_move_operation(tree);
+  bool is_tree_edited = comp_vs.is_tree_edited();
 
   ImGui::EndChild();
-
-  comp_vs.apply_move_operation(tree);
 
   ImGui::IsItemClicked();
   ImGui::GetMouseDragDelta();
@@ -282,7 +284,8 @@ std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(
 
   if (ImGui::Button(delete_label.data())) {
     tree.delete_node(selected.value());
-    selected = std::nullopt;
+    selected       = std::nullopt;
+    is_tree_edited = true;
   }
 
   if (delete_disabled) {
@@ -300,6 +303,7 @@ std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(
     } else {
       tree.root().push_back_child<::resin::GroupNode>(::resin::SDFBinaryOperation::Union);
     }
+    is_tree_edited = true;
   }
 
   ImGui::SameLine(ImGui::GetWindowWidth() - add_prim_button_width);
@@ -323,6 +327,7 @@ std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(
           tree.root().push_back_primitive(static_cast<::resin::SDFTreePrimitiveType>(index),
                                           ::resin::SDFBinaryOperation::Union);
         }
+        is_tree_edited = true;
       }
     }
     ImGui::EndPopup();
@@ -330,7 +335,7 @@ std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(
 
   ImGui::PopID();
 
-  return selected;
+  return std::make_pair(selected, is_tree_edited);
 }
 
 }  // namespace resin
