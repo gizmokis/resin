@@ -13,6 +13,14 @@
 namespace ImGui {
 static void edit_mat_tab(::resin::Material& mat) {
   // TODO(SDF-87)
+  if (ImGui::BeginTabItem("Material")) {
+    ImGui::ColorEdit3("Color", glm::value_ptr(mat.albedo));
+    ImGui::DragFloat("Ambient", &mat.ambientFactor, 0.01F, 0.0F, 1.0F, "%.2f");
+    ImGui::DragFloat("Diffuse", &mat.diffuseFactor, 0.01F, 0.0F, 1.0F, "%.2f");
+    ImGui::DragFloat("Specular", &mat.specularFactor, 0.01F, 0.0F, 1.0F, "%.2f");
+    ImGui::DragFloat("Exponent", &mat.specularExponent, 0.1F, 0.0F, 100.0F, "%.1f");
+    ImGui::EndTabItem();
+  }
 }
 
 static void edit_op(::resin::SDFTreeNode& node) {
