@@ -60,6 +60,7 @@ class Window {
 
   void set_glfw_callbacks() const;
   void imgui_setup() const;
+  static void imgui_set_style();
 
  private:
   static uint8_t glfw_window_count_;
