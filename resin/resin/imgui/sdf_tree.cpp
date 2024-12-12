@@ -317,14 +317,14 @@ std::pair<std::optional<::resin::IdView<::resin::SDFTreeNodeId>>, bool> SDFTreeV
         if (selected.has_value()) {
           if (tree.is_group(*selected)) {
             tree.group(*selected).push_back_primitive(static_cast<::resin::SDFTreePrimitiveType>(index),
-                                                      ::resin::SDFBinaryOperation::Union);
+                                                      ::resin::SDFBinaryOperation::SmoothUnion);
           } else {
             tree.node(*selected).parent().push_back_primitive(static_cast<::resin::SDFTreePrimitiveType>(index),
-                                                              ::resin::SDFBinaryOperation::Union);
+                                                              ::resin::SDFBinaryOperation::SmoothUnion);
           }
         } else {
           tree.root().push_back_primitive(static_cast<::resin::SDFTreePrimitiveType>(index),
-                                          ::resin::SDFBinaryOperation::Union);
+                                          ::resin::SDFBinaryOperation::SmoothUnion);
         }
         is_tree_edited = true;
       }
