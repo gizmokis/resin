@@ -81,7 +81,7 @@ std::string GroupNode::gen_shader_code(GenShaderMode mode) const {
     }
 
     sdf += get_child(*it).gen_shader_code(mode);
-    sdf += "),";
+    sdf += ",0.5),";
   }
   sdf.pop_back();
 

@@ -4,17 +4,17 @@ struct node {
     float scale;
 };
 
-float sdSphere(vec3 pos, node prop)
+vec2 sdSphere(vec3 pos, node prop)
 {
     pos = (prop.transform * vec4(pos,1)).xyz;
-    return prop.scale == 0 ? u_farPlane : prop.scale * (length(pos) - prop.size.x);
+    return vec2(prop.scale == 0 ? u_farPlane : prop.scale * (length(pos) - prop.size.x),1);
 }
 
-float sdCube(vec3 pos, node prop)
+vec2 sdCube(vec3 pos, node prop)
 {
     pos = (prop.transform * vec4(pos,1)).xyz;
     vec3 d = abs(pos) - prop.size;
-    return prop.scale == 0 ? u_farPlane : prop.scale * (min(max(d.x,max(d.y,d.z)),0.0) + length(max(d,0.0)));
+    return vec2(prop.scale == 0 ? u_farPlane : prop.scale * (min(max(d.x,max(d.y,d.z)),0.0) + length(max(d,0.0))),0);
 }
 
 vec2 opUnion(vec2 d1, vec2 d2)

@@ -15,13 +15,14 @@ uniform float u_camSize;
 
 #include "blinn_phong.glsl"
 #include "sdf.glsl"
+#external_definition SDF_CODE
 
 // rendering
 const vec3 u_Ambient = vec3(0.25,0.25,0.25);
 const int kMaxNodeCount = 10;
 layout (std140) uniform Data 
 {
-    node u_nodes[kMaxNodeCount];
+    node u_sdf_primitives[kMaxNodeCount];
 };
 
 uniform directional_light u_dirLight;
@@ -35,9 +36,9 @@ uniform material u_cubeMat;
 
 vec2 map( vec3 pos )
 {
-    node cube = u_nodes[1];//node(u_iM, vec3(0.5), u_scale);
-    node sphere = u_nodes[0];//node(mat4(1.0), vec3(1), 1);
-    return opSmoothUnion(vec2(sdCube(pos, cube), 0), vec2(sdSphere(pos, sphere), 1), 0.5);
+    //node cube = u_nodes[1];//node(u_iM, vec3(0.5), u_scale);
+    //node sphere = u_nodes[0];//node(mat4(1.0), vec3(1), 1);
+    return SDF_CODE;// opSmoothUnion(vec2(sdCube(pos, cube), 0), vec2(sdSphere(pos, sphere), 1), 0.5);
 }
 
 vec2 raycast( vec3 ray_origin, vec3 ray_direction )
@@ -48,7 +49,7 @@ vec2 raycast( vec3 ray_origin, vec3 ray_direction )
     float tmax = u_farPlane;
 
     float t = tmin;
-    for( int i=0; i<70 && t<tmax; i++ )
+    for( int i=0; i<256 && t<tmax; i++ )
     {
         vec3 pos = ray_origin + t*ray_direction;
         vec2 dist = map(pos);
