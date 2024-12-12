@@ -1,6 +1,7 @@
 #version 330 core
 
 #include "sdf.glsl"
+#external_definition SDF_CODE
 
 layout(location = 0) out vec4 fragColor;
 
@@ -27,7 +28,8 @@ uniform sdf_primitive u_sdf_primitives[100];
 sdf_result map( vec3 pos3 )
 {
     vec4 pos = vec4(pos3, 1.0);
-    return opSmoothUnion(sdCube(u_transforms[1]*pos, u_sdf_primitives[1]), sdSphere(u_transforms[0]*pos, u_sdf_primitives[0]));
+    // return opSmoothUnion(sdCube(u_transforms[1]*pos, u_sdf_primitives[1]), sdSphere(u_transforms[0]*pos, u_sdf_primitives[0]));
+    return SDF_CODE;
 }
 
 sdf_result raycast( vec3 ray_origin, vec3 ray_direction )
@@ -39,7 +41,7 @@ sdf_result raycast( vec3 ray_origin, vec3 ray_direction )
     float tmax = u_farPlane;
 
     float t = tmin;
-    for( int i=0; i<70 && t<tmax; i++ )
+    for( int i=0; i<256 && t<tmax; i++ )
     {
         vec3 pos = ray_origin + t*ray_direction;
         sdf_result res = map(pos);

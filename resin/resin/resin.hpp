@@ -68,10 +68,6 @@ class Resin {
   std::unique_ptr<DirectionalLight> directional_light_;
   Transform camera_rig_;
 
-  SDFTreeRegistry registry_;
-  SphereNode sphere_node_;
-  CubeNode cube_node_;
-
   bool running_   = true;
   bool minimized_ = false;
 

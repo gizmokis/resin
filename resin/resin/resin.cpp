@@ -11,7 +11,9 @@
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
+#include <libresin/core/sdf_tree/sdf_tree_node_visitor.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_registry.hpp>
+#include <libresin/core/shader.hpp>
 #include <libresin/utils/logger.hpp>
 #include <memory>
 #include <resin/core/window.hpp>
@@ -24,13 +26,7 @@
 
 namespace resin {
 
-Resin::Resin()
-    : vertex_array_(0),
-      vertex_buffer_(0),
-      index_buffer_(0),
-      registry_(),
-      sphere_node_(this->registry_),
-      cube_node_(this->registry_) {
+Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
   dispatcher_.subscribe<WindowCloseEvent>(BIND_EVENT_METHOD(on_window_close));
   dispatcher_.subscribe<WindowResizeEvent>(BIND_EVENT_METHOD(on_window_resize));
   dispatcher_.subscribe<WindowTestEvent>(BIND_EVENT_METHOD(on_test));
@@ -56,9 +52,6 @@ Resin::Resin()
   directional_light_ = std::make_unique<DirectionalLight>(glm::vec3(0.5F, 0.5F, 0.5F), 1.0F);
   directional_light_->transform.set_local_rot(glm::quatLookAt(direction, glm::vec3(0, 1, 0)));
 
-  shader_ = std::make_unique<RenderingShaderProgram>("default", *shader_resource_manager_.get_res(path / "test.vert"),
-                                                     *shader_resource_manager_.get_res(path / "test.frag"));
-
   // TODO(anyone): temporary, move out somewhere else
   float vertices[4 * 3]   = {-1.F, -1.F, 0.F, 1.F, -1.F, 0.F, -1.F, 1.F, 0.F, 1.F, 1.F, 0.F};
   unsigned int indices[6] = {0, 1, 2, 1, 3, 2};
@@ -83,7 +76,15 @@ Resin::Resin()
 
   // Example tree
   sdf_tree_.root().push_back_child<SphereNode>(SDFBinaryOperation::Union);
-  sdf_tree_.root().push_back_child<CubeNode>(SDFBinaryOperation::Union);
+  sdf_tree_.root().push_back_child<CubeNode>(SDFBinaryOperation::SmoothUnion);
+  sdf_tree_.root().push_back_child<SphereNode>(SDFBinaryOperation::SmoothUnion);
+
+  ShaderResource frag_shader = *shader_resource_manager_.get_res(path / "test.frag");
+  frag_shader.set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
+  Logger::info("{}", frag_shader.get_glsl());
+
+  shader_ = std::make_unique<RenderingShaderProgram>("default", *shader_resource_manager_.get_res(path / "test.vert"),
+                                                     std::move(frag_shader));
 }
 
 void Resin::run() {
@@ -131,6 +132,31 @@ void Resin::run() {
   }
 }
 
+class SDFNodeShaderVisitor : public ISDFTreeNodeVisitor {
+ public:
+  explicit SDFNodeShaderVisitor(RenderingShaderProgram& shader) : shader_(shader) {}
+  void visit_cube(CubeNode& node) override {
+    shader_.set_uniform(std::format("u_sdf_primitives[{}]", node.primitive_id().raw()), node);
+    shader_.set_uniform(std::format("u_transforms[{}]", node.transform_component_id().raw()),
+                        node.transform().world_to_local_matrix());
+  }
+
+  void visit_sphere(SphereNode& node) override {
+    shader_.set_uniform(std::format("u_sdf_primitives[{}]", node.primitive_id().raw()), node);
+    shader_.set_uniform(std::format("u_transforms[{}]", node.transform_component_id().raw()),
+                        node.transform().world_to_local_matrix());
+  }
+
+  void visit_group(GroupNode& node) override {
+    for (auto n : node) {
+      node.get_child(n).accept_visitor(*this);
+    }
+  }
+
+ private:
+  RenderingShaderProgram& shader_;
+};
+
 void Resin::update(duration_t delta) {
   window_->set_title(std::format("Resin [{} FPS {} TPS] running for: {}", fps_, tps_,
                                  std::chrono::duration_cast<std::chrono::seconds>(time_)));
@@ -146,10 +172,8 @@ void Resin::update(duration_t delta) {
   shader_->set_uniform("u_dirLight", *directional_light_);
   shader_->set_uniform("u_pointLight", *point_light_);
 
-  shader_->set_uniform("u_transforms[0]", sphere_node_.transform().world_to_local_matrix());
-  shader_->set_uniform("u_sdf_primitives[0]", sphere_node_);
-  shader_->set_uniform("u_transforms[1]", cube_node_.transform().world_to_local_matrix());
-  shader_->set_uniform("u_sdf_primitives[1]", cube_node_);
+  SDFNodeShaderVisitor vs = SDFNodeShaderVisitor(*shader_);
+  vs.visit_group(this->sdf_tree_.root());
 }
 
 void Resin::gui() {
