@@ -33,6 +33,8 @@ constexpr StringEnumMapping<SDFShaderPrim> kSDFShaderPrimComponentArrayNames({
     "u_cubes",
 });
 
+constexpr std::string_view kSDFPrimitivesArrayName = "u_sdf_primitives";
+
 enum class SDFShaderCoreComponents : uint8_t {
   Transforms = 0,
   Materials  = 1,

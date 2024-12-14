@@ -27,6 +27,7 @@ void ShaderProgram::recompile() {
   glDeleteProgram(program_id_);
   program_id_ = glCreateProgram();
   create_program();
+    uniform_locations_.clear();
 
   auto stop     = clock::now();
   auto duration = duration_cast<std::chrono::milliseconds>(stop - start);

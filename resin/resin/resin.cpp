@@ -11,11 +11,15 @@
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
+#include <libresin/core/sdf_tree/sdf_tree_node_visitor.hpp>
+#include <libresin/core/sdf_tree/sdf_tree_registry.hpp>
+#include <libresin/core/shader.hpp>
 #include <libresin/utils/logger.hpp>
 #include <memory>
 #include <resin/core/window.hpp>
 #include <resin/event/event.hpp>
 #include <resin/event/window_events.hpp>
+#include <resin/imgui/node_edit.hpp>
 #include <resin/imgui/sdf_tree.hpp>
 #include <resin/imgui/transform_edit.hpp>
 #include <resin/resin.hpp>
@@ -36,11 +40,6 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
 
   const std::filesystem::path path = std::filesystem::current_path() / "assets";
 
-  cube_transform_.set_local_pos(glm::vec3(1, 1, 0));
-
-  cube_mat_   = std::make_unique<Material>(glm::vec3(0.96F, 0.25F, 0.25F));
-  sphere_mat_ = std::make_unique<Material>(glm::vec3(0.25F, 0.25F, 0.96F));
-
   camera_       = std::make_unique<Camera>(true, 90.F, 16.F / 9.F, 0.75F, 100.F);
   glm::vec3 pos = glm::vec3(0, 2, 3);
   camera_->transform.set_local_pos(pos);
@@ -52,9 +51,6 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
                                                     PointLight::Attenuation(1.0F, 0.7F, 1.8F));
   directional_light_ = std::make_unique<DirectionalLight>(glm::vec3(0.5F, 0.5F, 0.5F), 1.0F);
   directional_light_->transform.set_local_rot(glm::quatLookAt(direction, glm::vec3(0, 1, 0)));
-
-  shader_ = std::make_unique<RenderingShaderProgram>("default", *shader_resource_manager_.get_res(path / "test.vert"),
-                                                     *shader_resource_manager_.get_res(path / "test.frag"));
 
   // TODO(anyone): temporary, move out somewhere else
   float vertices[4 * 3]   = {-1.F, -1.F, 0.F, 1.F, -1.F, 0.F, -1.F, 1.F, 0.F, 1.F, 1.F, 0.F};
@@ -79,11 +75,16 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof indices, indices, GL_STATIC_DRAW);
 
   // Example tree
-  sdf_tree_.root().push_back_child<SphereNode>(SDFBinaryOperation::Inter);
-  sdf_tree_.root()
-      .push_back_child<GroupNode>(SDFBinaryOperation::Union)
-      .push_back_child<CubeNode>(SDFBinaryOperation::Diff);
-  sdf_tree_.root().push_back_child<CubeNode>(SDFBinaryOperation::Union);
+  sdf_tree_.root().push_back_child<SphereNode>(SDFBinaryOperation::Union);
+  sdf_tree_.root().push_back_child<CubeNode>(SDFBinaryOperation::SmoothUnion);
+  sdf_tree_.root().push_back_child<SphereNode>(SDFBinaryOperation::SmoothUnion);
+
+  ShaderResource frag_shader = *shader_resource_manager_.get_res(path / "test.frag");
+  frag_shader.set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
+  Logger::info("{}", frag_shader.get_glsl());
+
+  shader_ = std::make_unique<RenderingShaderProgram>("default", *shader_resource_manager_.get_res(path / "test.vert"),
+                                                     std::move(frag_shader));
 }
 
 void Resin::run() {
@@ -131,25 +132,48 @@ void Resin::run() {
   }
 }
 
+class SDFNodeShaderVisitor : public ISDFTreeNodeVisitor {
+ public:
+  explicit SDFNodeShaderVisitor(RenderingShaderProgram& shader) : shader_(shader) {}
+  void visit_cube(CubeNode& node) override {
+    shader_.set_uniform(std::format("u_sdf_primitives[{}]", node.primitive_id().raw()), node);
+    shader_.set_uniform(std::format("u_transforms[{}]", node.transform_component_id().raw()),
+                        node.transform().world_to_local_matrix());
+  }
+
+  void visit_sphere(SphereNode& node) override {
+    shader_.set_uniform(std::format("u_sdf_primitives[{}]", node.primitive_id().raw()), node);
+    shader_.set_uniform(std::format("u_transforms[{}]", node.transform_component_id().raw()),
+                        node.transform().world_to_local_matrix());
+  }
+
+  void visit_group(GroupNode& node) override {
+    for (auto n : node) {
+      node.get_child(n).accept_visitor(*this);
+    }
+  }
+
+ private:
+  RenderingShaderProgram& shader_;
+};
+
 void Resin::update(duration_t delta) {
   window_->set_title(std::format("Resin [{} FPS {} TPS] running for: {}", fps_, tps_,
                                  std::chrono::duration_cast<std::chrono::seconds>(time_)));
 
-  cube_transform_.rotate(glm::angleAxis(2 * std::chrono::duration<float>(delta).count(), glm::vec3(0, 1, 0)));
   directional_light_->transform.rotate(glm::angleAxis(std::chrono::duration<float>(delta).count(), glm::vec3(0, 1, 0)));
 
   shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
   shader_->set_uniform("u_resolution", glm::vec2(window_->dimensions()));
   shader_->set_uniform("u_nearPlane", camera_->near_plane());
   shader_->set_uniform("u_farPlane", camera_->far_plane());
-  shader_->set_uniform("u_iM", cube_transform_.world_to_local_matrix());
-  shader_->set_uniform("u_scale", cube_transform_.scale());
   shader_->set_uniform("u_ortho", camera_->is_orthographic);
   shader_->set_uniform("u_camSize", camera_->height());
   shader_->set_uniform("u_dirLight", *directional_light_);
   shader_->set_uniform("u_pointLight", *point_light_);
-  shader_->set_uniform("u_cubeMat", *cube_mat_);
-  shader_->set_uniform("u_sphereMat", *sphere_mat_);
+
+  SDFNodeShaderVisitor vs = SDFNodeShaderVisitor(*shader_);
+  vs.visit_group(this->sdf_tree_.root());
 }
 
 void Resin::gui() {
@@ -158,18 +182,20 @@ void Resin::gui() {
 
   ImGui::SetNextWindowSizeConstraints(ImVec2(280.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
   if (ImGui::Begin("SDF Tree")) {
-    selected_node_ = ImGui::resin::SDFTreeView(sdf_tree_, selected_node_);
+    auto result    = ImGui::resin::SDFTreeView(sdf_tree_, selected_node_);
+    selected_node_ = result.first;
+    if (result.second) {
+      shader_->fragment_shader().set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
+      shader_->recompile();
+      Logger::info("Refreshed the SDF Tree");
+      //   Logger::info("{}", shader_->fragment_shader().get_glsl());
+    }
   }
   ImGui::End();
 
   ImGui::SetNextWindowSizeConstraints(ImVec2(350.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
-  ImGui::Begin("Test Cube");
-  ImGui::Text("Parameters");
-  if (ImGui::BeginTabBar("TestTabBar", ImGuiTabBarFlags_None)) {
-    if (ImGui::BeginTabItem("Transform")) {
-      ImGui::resin::TransformEdit(&cube_transform_);
-      ImGui::EndTabItem();
-    }
+  ImGui::Begin("Lights");
+  if (ImGui::BeginTabBar("LightsTabBar", ImGuiTabBarFlags_None)) {
     // TODO(SDF-88): i don't want to design GUI please save me guys 🤲🙏
     if (ImGui::BeginTabItem("DirLight")) {
       ImGui::ColorEdit3("Light color", glm::value_ptr(directional_light_->color));
@@ -188,25 +214,16 @@ void Resin::gui() {
       }
       ImGui::EndTabItem();
     }
-    // TODO(SDF-87)
-    if (ImGui::BeginTabItem("CubeMat")) {
-      ImGui::ColorEdit3("Color", glm::value_ptr(cube_mat_->albedo));
-      ImGui::DragFloat("Ambient", &cube_mat_->ambientFactor, 0.01F, 0.0F, 1.0F, "%.2f");
-      ImGui::DragFloat("Diffuse", &cube_mat_->diffuseFactor, 0.01F, 0.0F, 1.0F, "%.2f");
-      ImGui::DragFloat("Specular", &cube_mat_->specularFactor, 0.01F, 0.0F, 1.0F, "%.2f");
-      ImGui::DragFloat("Exponent", &cube_mat_->specularExponent, 0.1F, 0.0F, 100.0F, "%.1f");
-      ImGui::EndTabItem();
-    }
-    if (ImGui::BeginTabItem("SphereMat")) {
-      ImGui::ColorEdit3("Color", glm::value_ptr(sphere_mat_->albedo));
-      ImGui::DragFloat("Ambient", &sphere_mat_->ambientFactor, 0.01F, 0.0F, 2.0F, "%.2f");
-      ImGui::DragFloat("Diffuse", &sphere_mat_->diffuseFactor, 0.01F, 0.0F, 2.0F, "%.2f");
-      ImGui::DragFloat("Specular", &sphere_mat_->specularFactor, 0.01F, 0.0F, 2.0F, "%.2f");
-      ImGui::DragFloat("Exponent", &sphere_mat_->specularExponent, 0.1F, 0.0F, 100.0F, "%.1f");
-      ImGui::EndTabItem();
-    }
     ImGui::EndTabBar();
   }
+  ImGui::End();
+
+  ImGui::SetNextWindowSizeConstraints(ImVec2(350.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
+  ImGui::Begin("Selection");
+  if (selected_node_.has_value()) {
+    ImGui::resin::NodeEdit(sdf_tree_.node(*selected_node_));
+  }
+
   ImGui::End();
 }
 

@@ -15,6 +15,8 @@
 #include <string_view>
 #include <unordered_map>
 
+#include "libresin/core/sdf_tree/primitive_node.hpp"
+
 namespace resin {
 class ShaderProgram {
  public:
@@ -131,6 +133,20 @@ inline void ShaderProgram::set_uniform<Material>(std::string_view name, const Ma
   set_uniform(uniform + ".kd", value.diffuseFactor);
   set_uniform(uniform + ".ks", value.specularFactor);
   set_uniform(uniform + ".m", value.specularExponent);
+}
+
+template <>
+inline void ShaderProgram::set_uniform<SphereNode>(std::string_view name, const SphereNode& value) const {
+  std::string uniform(name);
+  set_uniform(uniform + ".size", value.radius);
+  set_uniform(uniform + ".mat", value.mat);
+}
+
+template <>
+inline void ShaderProgram::set_uniform<CubeNode>(std::string_view name, const CubeNode& value) const {
+  std::string uniform(name);
+  set_uniform(uniform + ".size", value.size);
+  set_uniform(uniform + ".mat", value.mat);
 }
 
 class RenderingShaderProgram : public ShaderProgram {
