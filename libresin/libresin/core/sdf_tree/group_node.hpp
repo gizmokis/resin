@@ -13,6 +13,7 @@
 #include <libresin/utils/logger.hpp>
 #include <list>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -32,6 +33,9 @@ class GroupNode final : public SDFTreeNode {
   inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override { visitor.visit_group(*this); }
   [[nodiscard]] std::unique_ptr<SDFTreeNode> copy() override;
   inline bool is_leaf() override { return nodes_.size() == 0; }
+  inline std::optional<IdView<MaterialId>> material_id() const override { return mat_id_; }
+  void set_material(IdView<MaterialId> mat_id) override;
+  void remove_material() override;
 
   inline size_t get_children_count() const { return nodes_.size(); }
 
@@ -122,6 +126,8 @@ class GroupNode final : public SDFTreeNode {
   }
 
   void push_dirty_primitives() override;
+  void set_ancestor_mat_id(IdView<MaterialId> mat_id) override;
+  void remove_ancestor_mat_id() override;
 
  private:
   void insert_leaves_up(const std::unique_ptr<SDFTreeNode>& source);
@@ -140,6 +146,8 @@ class GroupNode final : public SDFTreeNode {
       nodes_;
 
   std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>> leaves_;
+
+  std::optional<IdView<MaterialId>> mat_id_;
 };
 
 }  // namespace resin

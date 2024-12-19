@@ -1,5 +1,6 @@
 #include <libresin/core/sdf_shader_consts.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
+#include <libresin/core/sdf_tree/primitive_base_node.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
@@ -91,12 +92,18 @@ std::string GroupNode::gen_shader_code() const {
 void GroupNode::set_parent(std::unique_ptr<SDFTreeNode>& node_ptr) {
   node_ptr->set_parent(*this);
   node_ptr->transform().set_parent(transform_);
+  if (ancestor_mat_id_.has_value()) {
+    node_ptr->set_ancestor_mat_id(*ancestor_mat_id_);
+  }
   insert_leaves_up(node_ptr);
 }
 
 void GroupNode::remove_from_parent(std::unique_ptr<SDFTreeNode>& node_ptr) {
   node_ptr->remove_from_parent();
   node_ptr->transform().remove_from_parent();
+  if (ancestor_mat_id_.has_value()) {
+    node_ptr->remove_ancestor_mat_id();
+  }
   remove_leaves_up(node_ptr);
 }
 
@@ -111,6 +118,48 @@ SDFTreeNode& GroupNode::get_child(IdView<SDFTreeNodeId> node_id) const {
   }
 
   return tree_registry_.all_nodes[node_id.raw()]->get();
+}
+
+void GroupNode::set_ancestor_mat_id(IdView<MaterialId> mat_id) {
+  ancestor_mat_id_ = mat_id;
+
+  for (auto& it : *this) {
+    tree_registry_.all_nodes[it.raw()]->get().set_ancestor_mat_id(mat_id);
+  }
+}
+
+void GroupNode::remove_ancestor_mat_id() {
+  ancestor_mat_id_ = std::nullopt;
+
+  if (mat_id_.has_value()) {
+    for (auto& it : *this) {
+      tree_registry_.all_nodes[it.raw()]->get().set_ancestor_mat_id(*mat_id_);
+    }
+  } else {
+    for (auto& it : *this) {
+      tree_registry_.all_nodes[it.raw()]->get().remove_ancestor_mat_id();
+    }
+  }
+}
+
+void GroupNode::set_material(IdView<MaterialId> mat_id) {
+  mat_id_ = mat_id;
+
+  if (!ancestor_mat_id_.has_value()) {
+    for (auto& it : *this) {
+      tree_registry_.all_nodes[it.raw()]->get().set_ancestor_mat_id(mat_id);
+    }
+  }
+}
+
+void GroupNode::remove_material() {
+  mat_id_ = std::nullopt;
+
+  if (!ancestor_mat_id_.has_value()) {
+    for (auto& it : *this) {
+      tree_registry_.all_nodes[it.raw()]->get().remove_ancestor_mat_id();
+    }
+  }
 }
 
 void GroupNode::delete_child(IdView<SDFTreeNodeId> node_id) {

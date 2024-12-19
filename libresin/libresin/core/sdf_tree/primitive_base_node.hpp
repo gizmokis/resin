@@ -4,8 +4,11 @@
 #include <libresin/core/sdf_shader_consts.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
+#include <optional>
 
 namespace resin {
+class GroupNode;
+
 using SDFTreePrimitiveType = sdf_shader_consts::SDFShaderPrim;
 constexpr StringEnumMapping<SDFTreePrimitiveType> kSDFTreePrimitiveNames({"Sphere", "Cube"});
 
@@ -20,14 +23,21 @@ class BasePrimitiveNode : public SDFTreeNode {
   virtual std::string_view primitive_name() const     = 0;
   virtual size_t get_component_raw_id() const         = 0;
 
+  IdView<MaterialId> active_material_id() const { return ancestor_mat_id_.has_value() ? *ancestor_mat_id_ : mat_id_; }
+
+  inline std::optional<IdView<MaterialId>> material_id() const final { return mat_id_; }
+  inline void set_material(IdView<MaterialId> mat_id) final { mat_id_ = mat_id; }
+  inline void remove_material() final { mat_id_ = tree_registry_.default_material.mat_id(); }
+
   inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override { visitor.visit_primitive(*this); }
   bool is_leaf() final { return true; }
 
   inline IdView<PrimitiveNodeId> primitive_id() const { return prim_id_; }
 
-  ~BasePrimitiveNode() override = default;
   explicit BasePrimitiveNode(SDFTreeRegistry& tree, std::string_view name)
-      : SDFTreeNode(tree, name), prim_id_(tree.primitives_registry) {}
+      : SDFTreeNode(tree, name), prim_id_(tree.primitives_registry), mat_id_(tree.default_material.mat_id()) {}
+
+  ~BasePrimitiveNode() override = default;
 
   inline std::string gen_shader_code() const final {
     return std::format(
@@ -53,9 +63,12 @@ class BasePrimitiveNode : public SDFTreeNode {
   }
 
   inline void push_dirty_primitives() final { tree_registry_.dirty_primitives.emplace_back(node_id()); }
+  inline void set_ancestor_mat_id(IdView<MaterialId> mat_id) final { ancestor_mat_id_ = mat_id; }
+  inline void remove_ancestor_mat_id() final { ancestor_mat_id_ = std::nullopt; }
 
   PrimitiveNodeId prim_id_;
-};
+  IdView<MaterialId> mat_id_;
+};  // namespace resin
 
 template <SDFTreePrimitiveType PrimType>
 class PrimitiveNode : public BasePrimitiveNode {

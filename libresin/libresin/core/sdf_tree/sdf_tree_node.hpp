@@ -16,6 +16,9 @@ using SDFBinaryOperation = sdf_shader_consts::SDFShaderBinOp;
 struct SDFTreeRegistry;
 class SDFTree;
 
+struct Material;
+using MaterialId = Id<Material>;
+
 class SDFTreeNode;
 using SDFTreeNodeId = Id<SDFTreeNode>;
 
@@ -33,10 +36,15 @@ class SDFTreeNode {
 
   virtual ~SDFTreeNode();
 
-  virtual std::string gen_shader_code() const               = 0;
-  virtual void accept_visitor(ISDFTreeNodeVisitor& visitor) = 0;
-  [[nodiscard]] virtual std::unique_ptr<SDFTreeNode> copy() = 0;
-  virtual bool is_leaf()                                    = 0;
+  virtual std::string gen_shader_code() const                   = 0;
+  virtual void accept_visitor(ISDFTreeNodeVisitor& visitor)     = 0;
+  [[nodiscard]] virtual std::unique_ptr<SDFTreeNode> copy()     = 0;
+  virtual bool is_leaf()                                        = 0;
+  virtual std::optional<IdView<MaterialId>> material_id() const = 0;
+  virtual void set_material(IdView<MaterialId> mat_id)          = 0;
+  virtual void remove_material()                                = 0;
+
+  inline std::optional<IdView<MaterialId>> ancestor_material_id() const { return ancestor_mat_id_; }
 
   bool operator==(const SDFTreeNode& other) const { return node_id_ == other.node_id_; }
   bool operator!=(const SDFTreeNode& other) const { return node_id_ != other.node_id_; }
@@ -72,13 +80,16 @@ class SDFTreeNode {
   virtual void remove_leaves_from(
       std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& leaves) = 0;
 
-  virtual void push_dirty_primitives() = 0;
+  virtual void push_dirty_primitives()                        = 0;
+  virtual void set_ancestor_mat_id(IdView<MaterialId> mat_id) = 0;
+  virtual void remove_ancestor_mat_id()                       = 0;
 
  protected:
   SDFTreeNodeId node_id_;
   TransformId transform_id_;
   Transform transform_;
   SDFBinaryOperation bin_op_;
+  std::optional<IdView<MaterialId>> ancestor_mat_id_;
 
   std::optional<std::reference_wrapper<GroupNode>> parent_;
 
