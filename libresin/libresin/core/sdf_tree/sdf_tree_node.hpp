@@ -27,7 +27,9 @@ class SDFTreeNode {
   explicit SDFTreeNode(SDFTreeRegistry& tree, std::string_view name);
 
   SDFTreeNode(const SDFTreeNode&)            = delete;
+  SDFTreeNode(SDFTreeNode&&)                 = delete;
   SDFTreeNode& operator=(const SDFTreeNode&) = delete;
+  SDFTreeNode& operator=(SDFTreeNode&&)      = delete;
 
   virtual ~SDFTreeNode();
 

@@ -2,6 +2,7 @@
 #define RESIN_SDF_TREE_REGISTRY_HPP
 
 #include <libresin/core/id_registry.hpp>
+#include <libresin/core/material.hpp>
 #include <libresin/core/sdf_shader_consts.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/core/transform.hpp>
@@ -19,7 +20,8 @@ struct SDFTreeRegistry {
         transform_component_registry(IdRegistry<Transform>(2000)),
         primitives_registry(IdRegistry<BasePrimitiveNode>(2000)),
         nodes_registry(IdRegistry<SDFTreeNode>(5000)),
-        node_index(0) {
+        materials_registry(IdRegistry<Material>(2000)),
+        default_material(*this) {
     all_nodes.resize(nodes_registry.get_max_objs());
     all_group_nodes.resize(nodes_registry.get_max_objs());
     dirty_primitives.reserve(nodes_registry.get_max_objs());
@@ -49,7 +51,13 @@ struct SDFTreeRegistry {
 
   std::vector<IdView<SDFTreeNodeId>> dirty_primitives;
 
-  size_t node_index;
+  IdRegistry<Material> materials_registry;
+  std::vector<IdView<MaterialId>> dirty_materials;
+
+  MaterialSDFTreeComponent default_material;
+
+  size_t node_index{};
+  size_t material_index{};
 };
 
 }  // namespace resin

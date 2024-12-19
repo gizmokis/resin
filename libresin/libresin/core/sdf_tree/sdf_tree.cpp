@@ -1,14 +1,18 @@
 #include <libresin/core/id_registry.hpp>
+#include <libresin/core/material.hpp>
 #include <libresin/core/sdf_shader_consts.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/primitive_base_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/utils/exceptions.hpp>
+#include <optional>
 
 namespace resin {
 size_t SDFTree::curr_id_ = 0;
 
-SDFTree::SDFTree() : root_(std::make_unique<GroupNode>(sdf_tree_registry_)), tree_id_((curr_id_++)) {}
+SDFTree::SDFTree() : root_(std::make_unique<GroupNode>(sdf_tree_registry_)), tree_id_((curr_id_++)) {
+  materials_.resize(sdf_tree_registry_.materials_registry.get_max_objs());
+}
 
 std::optional<IdView<SDFTreeNodeId>> SDFTree::get_view_from_raw_id(size_t raw_id) {
   if (!sdf_tree_registry_.all_nodes[raw_id].has_value()) {
@@ -44,7 +48,7 @@ void SDFTree::visit_dirty_primitives(ISDFTreeNodeVisitor& visitor) {
   for (auto prim : sdf_tree_registry_.dirty_primitives) {
     sdf_tree_registry_.all_nodes[prim.raw()]->get().accept_visitor(visitor);
   }
-  clear_dirty();
+  clear_dirty_primitives();
 }
 
 void SDFTree::visit_all_primitives(ISDFTreeNodeVisitor& visitor) {
@@ -66,5 +70,29 @@ void SDFTree::delete_node(IdView<SDFTreeNodeId> node_id) {
 }
 
 std::string SDFTree::gen_shader_code() const { return root_->gen_shader_code(); }
+
+MaterialSDFTreeComponent& SDFTree::material(IdView<MaterialId> mat_id) {
+  if (!materials_[mat_id.raw()].has_value()) {
+    log_throw(MaterialSDFTreeComponentDoesNotExist(mat_id.raw()));
+  }
+
+  return *materials_[mat_id.raw()];
+}
+
+void SDFTree::add_material(Material mat) {
+  auto new_mat = MaterialSDFTreeComponent(sdf_tree_registry_, std::move(mat));
+  material_active_ids_.push_back(new_mat.mat_id());
+  materials_[new_mat.mat_id().raw()] = std::move(new_mat);
+}
+
+void SDFTree::delete_material(IdView<MaterialId> mat_id) { throw NotImplementedException(); }
+
+void SDFTree::visit_dirty_materials(const std::function<void(MaterialSDFTreeComponent&)>& mat_visitor) {
+  for (const auto& mat_id : sdf_tree_registry_.dirty_materials) {
+    if (materials_[mat_id.raw()].has_value()) {
+      mat_visitor(*materials_[mat_id.raw()]);
+    }
+  }
+}
 
 }  // namespace resin

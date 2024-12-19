@@ -252,6 +252,19 @@ class SDFTreeNodeDoesNotExist : public std::runtime_error {
   size_t id_;
 };
 
+class MaterialSDFTreeComponentDoesNotExist : public std::runtime_error {
+ public:
+  EXCEPTION_NAME(MaterialDoesNotExist)
+
+  explicit MaterialSDFTreeComponentDoesNotExist(size_t id)
+      : std::runtime_error(std::format(R"(Material with id {} does not exist)", id)), id_(id) {}
+
+  inline size_t get_id() const { return id_; }
+
+ private:
+  size_t id_;
+};
+
 class ObjectsOverflowException : public std::runtime_error {
  public:
   EXCEPTION_NAME(ObjectsOverflowException)

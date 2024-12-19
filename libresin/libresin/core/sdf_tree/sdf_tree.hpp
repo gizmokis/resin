@@ -1,7 +1,9 @@
 #ifndef RESIN_SDF_TREE_HPP
 #define RESIN_SDF_TREE_HPP
 
+#include <functional>
 #include <libresin/core/id_registry.hpp>
+#include <libresin/core/material.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node_visitor.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_registry.hpp>
@@ -18,11 +20,12 @@ class SDFTree {
 
   std::optional<IdView<SDFTreeNodeId>> get_view_from_raw_id(size_t raw_id);
 
-  void visit_node(IdView<SDFTreeNodeId> node_id, ISDFTreeNodeVisitor& visitor);
-
   // Visits all dirty primitives AND clears the dirty primitives collection.
   void visit_dirty_primitives(ISDFTreeNodeVisitor& visitor);
+  inline void clear_dirty_primitives() { sdf_tree_registry_.dirty_primitives.clear(); }
+
   void visit_all_primitives(ISDFTreeNodeVisitor& visitor);
+  void visit_node(IdView<SDFTreeNodeId> node_id, ISDFTreeNodeVisitor& visitor);
 
   inline std::vector<IdView<SDFTreeNodeId>> dirty_primitives() const { return sdf_tree_registry_.dirty_primitives; }
 
@@ -42,11 +45,19 @@ class SDFTree {
 
   std::string gen_shader_code() const;
 
-  inline void clear_dirty() { sdf_tree_registry_.dirty_primitives.clear(); }
-
   inline GroupNode& root() { return *root_; }
 
   inline size_t tree_id() const { return tree_id_; }
+
+  MaterialSDFTreeComponent& material(IdView<MaterialId> mat_id);
+  void add_material(Material mat);
+  void delete_material(IdView<MaterialId> mat_id);
+  inline void mark_material_dirty(IdView<MaterialId> mat_id) { sdf_tree_registry_.dirty_materials.push_back(mat_id); }
+  inline const std::vector<IdView<MaterialId>>& materials() const { return material_active_ids_; }
+
+  // Visits all dirty materials AND clears the dirty materials collection.
+  void visit_dirty_materials(const std::function<void(MaterialSDFTreeComponent&)>& mat_visitor);
+  inline void clear_dirty_materials() { sdf_tree_registry_.dirty_materials.clear(); }
 
  private:
   static size_t curr_id_;
@@ -54,6 +65,9 @@ class SDFTree {
   SDFTreeRegistry sdf_tree_registry_;
   std::unique_ptr<GroupNode> root_;
   size_t tree_id_;
+
+  std::vector<IdView<MaterialId>> material_active_ids_;
+  std::vector<std::optional<MaterialSDFTreeComponent>> materials_;
 };
 
 }  // namespace resin
