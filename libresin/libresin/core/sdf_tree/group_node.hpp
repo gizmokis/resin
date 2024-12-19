@@ -93,7 +93,7 @@ class GroupNode final : public SDFTreeNode {
   // WARNING: This function must not be called while the children are iterated.
   void delete_child(IdView<SDFTreeNodeId> node_id);
 
-  // Cost: Amortized O(1)
+  // Cost: O(1)
   SDFTreeNode& get_child(IdView<SDFTreeNodeId> node_id) const;
 
   // Cost: Amortized O(1)

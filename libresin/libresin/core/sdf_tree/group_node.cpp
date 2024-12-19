@@ -101,12 +101,16 @@ void GroupNode::remove_from_parent(std::unique_ptr<SDFTreeNode>& node_ptr) {
 }
 
 SDFTreeNode& GroupNode::get_child(IdView<SDFTreeNodeId> node_id) const {
-  auto it = nodes_.find(node_id);
-  if (it == nodes_.end()) {
+  if (!tree_registry_.all_nodes[node_id.raw()].has_value()) {
+    log_throw(SDFTreeNodeDoesNotExist(node_id.raw()));
+  }
+
+  if (!tree_registry_.all_nodes[node_id.raw()]->get().has_parent() ||
+      tree_registry_.all_nodes[node_id.raw()]->get().parent().node_id() != this->node_id()) {
     log_throw(SDFTreeNodeIsNotAChild(node_id.raw(), node_id_.raw()));
   }
 
-  return *it->second.second;
+  return tree_registry_.all_nodes[node_id.raw()]->get();
 }
 
 void GroupNode::delete_child(IdView<SDFTreeNodeId> node_id) {
