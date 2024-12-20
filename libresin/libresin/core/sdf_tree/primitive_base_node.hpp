@@ -27,7 +27,7 @@ class BasePrimitiveNode : public SDFTreeNode {
 
   inline std::optional<IdView<MaterialId>> material_id() const final { return mat_id_; }
   inline void set_material(IdView<MaterialId> mat_id) final { mat_id_ = mat_id; }
-  inline void remove_material() final { mat_id_ = tree_registry_.default_material.mat_id(); }
+  inline void remove_material() final { mat_id_ = tree_registry_.default_material.material_id(); }
 
   inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override { visitor.visit_primitive(*this); }
   bool is_leaf() final { return true; }
@@ -35,7 +35,7 @@ class BasePrimitiveNode : public SDFTreeNode {
   inline IdView<PrimitiveNodeId> primitive_id() const { return prim_id_; }
 
   explicit BasePrimitiveNode(SDFTreeRegistry& tree, std::string_view name)
-      : SDFTreeNode(tree, name), prim_id_(tree.primitives_registry), mat_id_(tree.default_material.mat_id()) {}
+      : SDFTreeNode(tree, name), prim_id_(tree.primitives_registry), mat_id_(tree.default_material.material_id()) {}
 
   ~BasePrimitiveNode() override = default;
 

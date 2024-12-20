@@ -41,7 +41,7 @@ class MaterialSDFTreeComponent {
   MaterialSDFTreeComponent(MaterialSDFTreeComponent&&)                  = default;
   MaterialSDFTreeComponent& operator=(MaterialSDFTreeComponent&& other) = default;
 
-  inline IdView<MaterialId> mat_id() const { return mat_id_; }
+  inline IdView<MaterialId> material_id() const { return mat_id_; }
   inline void rename(std::string&& new_name) { name_ = std::move(new_name); }
   inline std::string_view name() { return name_; }
 
