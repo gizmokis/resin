@@ -1,15 +1,15 @@
-#include "libresin/core/sdf_tree/sdf_tree.hpp"
-
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <libresin/core/material.hpp>
+#include <libresin/core/sdf_tree/group_node.hpp>
+#include <libresin/core/sdf_tree/primitive_node.hpp>
+#include <libresin/core/sdf_tree/sdf_tree.hpp>
+#include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/core/transform.hpp>
+#include <optional>
 #include <print>
 #include <tests/glm_helper.hpp>
-
-#include "libresin/core/sdf_tree/group_node.hpp"
-#include "libresin/core/sdf_tree/primitive_node.hpp"
-#include "libresin/core/sdf_tree/sdf_tree_node.hpp"
 
 class SDFTreeTest : public testing::Test {};
 
@@ -267,4 +267,95 @@ TEST_F(SDFTreeTest, DirtyPrimitivesAreCorrectlyAdded) {
     dirty_prims.push_back(elem);
   }
   ASSERT_TRUE(std::is_permutation(dirty_prims.begin(), dirty_prims.end(), group2.primitives().begin()));
+}
+
+TEST_F(SDFTreeTest, MaterialsAreProperlyDerivedWhenMaterialSetOrRemoved) {
+  // given
+  //       o
+  //    o     o
+  //  o   o o   o
+  //           o o
+  resin::SDFTree tree;
+  auto& group1 = tree.root().push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Union);
+  group1.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Union);
+  group1.push_back_child<resin::SphereNode>(resin::SDFBinaryOperation::Union);
+  auto& group2 = tree.root().push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Inter);
+  group2.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Xor);
+  auto& group3 = group2.push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Inter);
+  group3.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Xor);
+  group3.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Xor);
+
+  auto& mat1 = tree.add_material(resin::Material(glm::vec3(1.F)));
+  auto& mat2 = tree.add_material(resin::Material(glm::vec3(1.F)));
+
+  // when
+  group2.set_material(mat1.material_id());
+
+  // then
+  //       o
+  //    o     1
+  //  o   o 1   1
+  //           1 1
+  ASSERT_TRUE(group2.material_id() == mat1.material_id());
+  ASSERT_TRUE(group2.ancestor_material_id() == std::nullopt);
+
+  auto it = group2.begin();
+  ASSERT_TRUE(tree.node(*it).ancestor_material_id() == mat1.material_id());
+  ++it;
+  ASSERT_TRUE(tree.node(*it).ancestor_material_id() == mat1.material_id());
+
+  it = group3.begin();
+  ASSERT_TRUE(tree.node(*it).ancestor_material_id() == mat1.material_id());
+  ++it;
+  ASSERT_TRUE(tree.node(*it).ancestor_material_id() == mat1.material_id());
+
+  // when
+  group3.set_material(mat2.material_id());
+
+  // then
+  //       o
+  //    o     1
+  //  o   o 1   1
+  //           1 1
+  ASSERT_TRUE(group3.material_id() == mat2.material_id());
+
+  it = group2.begin();
+  ASSERT_TRUE(tree.node(*it).ancestor_material_id() == mat1.material_id());
+  ++it;
+  ASSERT_TRUE(tree.node(*it).ancestor_material_id() == mat1.material_id());
+
+  it = group3.begin();
+  ASSERT_TRUE(tree.node(*it).ancestor_material_id() == mat1.material_id());
+  ++it;
+  ASSERT_TRUE(tree.node(*it).ancestor_material_id() == mat1.material_id());
+
+  // when
+  group2.remove_material();
+
+  // then
+  //       0
+  //    0     0
+  //  0   0 0   2
+  //           2 2
+  ASSERT_TRUE(tree.root().ancestor_material_id() == std::nullopt);
+
+  it = tree.root().begin();
+  ASSERT_TRUE(tree.node(*it).ancestor_material_id() == std::nullopt);
+  ++it;
+  ASSERT_TRUE(tree.node(*it).ancestor_material_id() == std::nullopt);
+
+  it = group1.begin();
+  ASSERT_TRUE(tree.node(*it).ancestor_material_id() == std::nullopt);
+  ++it;
+  ASSERT_TRUE(tree.node(*it).ancestor_material_id() == std::nullopt);
+
+  it = group2.begin();
+  ASSERT_TRUE(tree.node(*it).ancestor_material_id() == std::nullopt);
+  ++it;
+  ASSERT_EQ(tree.node(*it).ancestor_material_id(), std::nullopt);
+  ASSERT_EQ(tree.node(*it).material_id(), mat2.material_id());
+  it = group3.begin();
+  ASSERT_TRUE(tree.node(*it).ancestor_material_id() == mat2.material_id());
+  ++it;
+  ASSERT_TRUE(tree.node(*it).ancestor_material_id() == mat2.material_id());
 }

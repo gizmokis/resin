@@ -50,7 +50,7 @@ class SDFTree {
   inline size_t tree_id() const { return tree_id_; }
 
   MaterialSDFTreeComponent& material(IdView<MaterialId> mat_id);
-  void add_material(Material mat);
+  MaterialSDFTreeComponent& add_material(Material mat);
   void delete_material(IdView<MaterialId> mat_id);
   inline void mark_material_dirty(IdView<MaterialId> mat_id) { sdf_tree_registry_.dirty_materials.push_back(mat_id); }
   inline const std::vector<IdView<MaterialId>>& materials() const { return material_active_ids_; }

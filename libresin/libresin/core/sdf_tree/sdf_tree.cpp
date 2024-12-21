@@ -79,10 +79,12 @@ MaterialSDFTreeComponent& SDFTree::material(IdView<MaterialId> mat_id) {
   return *materials_[mat_id.raw()];
 }
 
-void SDFTree::add_material(Material mat) {
+MaterialSDFTreeComponent& SDFTree::add_material(Material mat) {
   auto new_mat = MaterialSDFTreeComponent(sdf_tree_registry_, std::move(mat));
-  material_active_ids_.push_back(new_mat.mat_id());
-  materials_[new_mat.mat_id().raw()] = std::move(new_mat);
+  auto id      = new_mat.material_id();
+  material_active_ids_.push_back(id);
+  materials_[id.raw()] = std::move(new_mat);
+  return *materials_[id.raw()];
 }
 
 void SDFTree::delete_material(IdView<MaterialId> mat_id) { throw NotImplementedException(); }
