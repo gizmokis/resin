@@ -65,6 +65,13 @@ class BasePrimitiveNode : public SDFTreeNode {
   inline void push_dirty_primitives() final { tree_registry_.dirty_primitives.emplace_back(node_id()); }
   inline void set_ancestor_mat_id(IdView<MaterialId> mat_id) final { ancestor_mat_id_ = mat_id; }
   inline void remove_ancestor_mat_id() final { ancestor_mat_id_ = std::nullopt; }
+  inline void delete_material_from_subtree(IdView<MaterialId> mat_id) final {
+    if (mat_id == mat_id_) {
+      mat_id_ = tree_registry_.default_material.material_id();
+    }
+  }
+
+  void fix_material_ancestors() final;
 
   PrimitiveNodeId prim_id_;
   IdView<MaterialId> mat_id_;

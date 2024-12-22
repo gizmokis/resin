@@ -87,7 +87,22 @@ MaterialSDFTreeComponent& SDFTree::add_material(Material mat) {
   return *materials_[id.raw()];
 }
 
-void SDFTree::delete_material(IdView<MaterialId> mat_id) { throw NotImplementedException(); }
+void SDFTree::delete_material(IdView<MaterialId> mat_id) {
+  root_->remove_material_from_subtree(mat_id);
+
+  for (auto it = material_active_ids_.begin(); it != material_active_ids_.end(); ++it) {  // 😢
+    if (*it != mat_id) {
+      continue;
+    }
+
+    auto it2 = material_active_ids_.erase(it);  // 😢
+    if (it2 != it) {
+      break;
+    }
+  }
+
+  materials_[mat_id.raw()] = std::nullopt;
+}
 
 void SDFTree::visit_dirty_materials(const std::function<void(MaterialSDFTreeComponent&)>& mat_visitor) {
   for (const auto& mat_id : sdf_tree_registry_.dirty_materials) {

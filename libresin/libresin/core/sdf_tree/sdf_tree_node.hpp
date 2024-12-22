@@ -46,6 +46,11 @@ class SDFTreeNode {
 
   inline std::optional<IdView<MaterialId>> ancestor_material_id() const { return ancestor_mat_id_; }
 
+  inline void remove_material_from_subtree(IdView<MaterialId> mat_id) {
+    delete_material_from_subtree(mat_id);
+    fix_material_ancestors();
+  }
+
   bool operator==(const SDFTreeNode& other) const { return node_id_ == other.node_id_; }
   bool operator!=(const SDFTreeNode& other) const { return node_id_ != other.node_id_; }
 
@@ -80,9 +85,11 @@ class SDFTreeNode {
   virtual void remove_leaves_from(
       std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& leaves) = 0;
 
-  virtual void push_dirty_primitives()                        = 0;
-  virtual void set_ancestor_mat_id(IdView<MaterialId> mat_id) = 0;
-  virtual void remove_ancestor_mat_id()                       = 0;
+  virtual void push_dirty_primitives()                                 = 0;
+  virtual void set_ancestor_mat_id(IdView<MaterialId> mat_id)          = 0;
+  virtual void remove_ancestor_mat_id()                                = 0;
+  virtual void delete_material_from_subtree(IdView<MaterialId> mat_id) = 0;
+  virtual void fix_material_ancestors()                                = 0;
 
  protected:
   SDFTreeNodeId node_id_;

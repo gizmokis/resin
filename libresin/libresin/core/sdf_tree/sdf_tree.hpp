@@ -51,9 +51,16 @@ class SDFTree {
 
   MaterialSDFTreeComponent& material(IdView<MaterialId> mat_id);
   MaterialSDFTreeComponent& add_material(Material mat);
+
+  // Cost: O(nm), where n is a number of nodes and m is a number of materials
   void delete_material(IdView<MaterialId> mat_id);
+
   inline void mark_material_dirty(IdView<MaterialId> mat_id) { sdf_tree_registry_.dirty_materials.push_back(mat_id); }
+
+  // Note: The vector does not contain the default material.
   inline const std::vector<IdView<MaterialId>>& materials() const { return material_active_ids_; }
+
+  inline MaterialSDFTreeComponent& default_material() { return sdf_tree_registry_.default_material; }
 
   // Visits all dirty materials AND clears the dirty materials collection.
   void visit_dirty_materials(const std::function<void(MaterialSDFTreeComponent&)>& mat_visitor);

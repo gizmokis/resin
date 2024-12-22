@@ -128,6 +128,8 @@ class GroupNode final : public SDFTreeNode {
   void push_dirty_primitives() override;
   void set_ancestor_mat_id(IdView<MaterialId> mat_id) override;
   void remove_ancestor_mat_id() override;
+  void delete_material_from_subtree(IdView<MaterialId> mat_id) override;
+  void fix_material_ancestors() override;
 
  private:
   void insert_leaves_up(const std::unique_ptr<SDFTreeNode>& source);
