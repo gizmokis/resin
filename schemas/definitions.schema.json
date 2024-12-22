@@ -34,32 +34,50 @@
       },
       "additionalProperties": false
     },
-    "phong_material": {
+    "material": {
       "type": "object",
       "description": "Phong material properties",
+      "required": [
+        "id",
+        "name",
+        "albedo",
+        "ambient",
+        "diffuse",
+        "specular",
+        "specular_exponent"
+      ],
       "properties": {
-        "ambientFactor": {
+        "id": {
+          "type": "number"
+        },
+        "name": {
+          "type": "string"
+        },
+        "albedo": {
+          "$ref": "#/$defs/color"
+        },
+        "ambient": {
           "type": "number",
           "minimum": 0,
           "maximum": 1,
           "default": 0.5,
           "description": "Ambient light reflection factor"
         },
-        "diffuseFactor": {
+        "diffuse": {
           "type": "number",
           "minimum": 0,
           "maximum": 1,
           "default": 0.5,
           "description": "Diffuse light reflection factor"
         },
-        "specularFactor": {
+        "specular": {
           "type": "number",
           "minimum": 0,
           "maximum": 1,
           "default": 0.5,
           "description": "Specular light reflection factor"
         },
-        "specularExponent": {
+        "specular_exponent": {
           "type": "number",
           "minimum": 0,
           "default": 50.0,
@@ -68,107 +86,10 @@
       },
       "additionalProperties": false
     },
-    "material": {
-      "oneOf": [
-        {
-          "$ref": "#/$defs/phong_material"
-        }
-      ]
-    },
-    "material_component": {
-      "type": "object",
-      "required": [
-        "id",
-        "name",
-        "material"
-      ],
-      "properties": {
-        "id": {
-          "type": "number",
-          "description": "JSON file wide identifier of the material that may be referenced in nodes."
-        },
-        "name": {
-          "type": "string"
-        },
-        "material": {
-          "$ref": "#/$defs/phong_material"
-        }
-      },
-      "additionalProperties": false
-    },
     "transform": {
       "type": "object",
       "properties": {
-        "matrix": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "minItems": 16,
-          "maxItems": 16,
-          "description": "4x4 transformation matrix"
-        }
-      },
-      "additionalProperties": false
-    },
-    "group": {
-      "type": "object",
-      "required": [
-        "transform",
-        "name"
-      ],
-      "properties": {
-        "transform": {
-          "$ref": "#/$defs/transform"
-        },
-        "name": {
-          "type": "string"
-        },
-        "children": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/node"
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    "sphere": {
-      "type": "object",
-      "required": [
-        "transform",
-        "name",
-        "radius"
-      ],
-      "properties": {
-        "transform": {
-          "$ref": "#/$defs/transform"
-        },
-        "name": {
-          "type": "string"
-        },
-        "radius": {
-          "type": "number",
-          "minimum": 0
-        }
-      },
-      "additionalProperties": false
-    },
-    "box": {
-      "type": "object",
-      "required": [
-        "transform",
-        "name",
-        "size"
-      ],
-      "properties": {
-        "transform": {
-          "$ref": "#/$defs/transform"
-        },
-        "name": {
-          "type": "string"
-        },
-        "size": {
+        "position": {
           "type": "object",
           "required": [
             "x",
@@ -177,53 +98,169 @@
           ],
           "properties": {
             "x": {
-              "type": "number",
-              "minimum": 0
+              "type": "number"
             },
             "y": {
-              "type": "number",
-              "minimum": 0
+              "type": "number"
             },
             "z": {
-              "type": "number",
-              "minimum": 0
+              "type": "number"
             }
           },
           "additionalProperties": false
-        }
+        },
+        "rotation": {
+          "type": "object",
+          "required": [
+            "x",
+            "y",
+            "z",
+            "w"
+          ],
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            },
+            "z": {
+              "type": "number"
+            },
+            "w": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        },
+        "scale": {
+          "type": "number"
+        },
+        "additionalProperties": false
       },
-      "additionalProperties": false
-    },
-    "node": {
-      "oneOf": [
-        {
-          "$ref": "#/$defs/group"
-        },
-        {
-          "$ref": "#/$defs/sphere"
-        },
-        {
-          "$ref": "#/$defs/box"
-        }
-      ]
-    },
-    "tree": {
-      "type": "object",
-      "required": [
-        "root"
-      ],
-      "properties": {
-        "root": {
-          "$ref": "#/$defs/node"
-        },
-        "material_components": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/material_component"
+      "group": {
+        "type": "object",
+        "required": [
+          "transform",
+          "name"
+        ],
+        "properties": {
+          "transform": {
+            "$ref": "#/$defs/transform"
+          },
+          "name": {
+            "type": "string"
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/node"
+            }
+          },
+          "material_id": {
+            "type": "number"
           }
-        }
+        },
+        "additionalProperties": false
       },
-      "additionalProperties": false
+      "sphere": {
+        "type": "object",
+        "required": [
+          "transform",
+          "name",
+          "radius"
+        ],
+        "properties": {
+          "transform": {
+            "$ref": "#/$defs/transform"
+          },
+          "name": {
+            "type": "string"
+          },
+          "radius": {
+            "type": "number",
+            "minimum": 0
+          },
+          "material_id": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": false
+      },
+      "cube": {
+        "type": "object",
+        "required": [
+          "transform",
+          "name",
+          "size"
+        ],
+        "properties": {
+          "transform": {
+            "$ref": "#/$defs/transform"
+          },
+          "name": {
+            "type": "string"
+          },
+          "size": {
+            "type": "object",
+            "required": [
+              "x",
+              "y",
+              "z"
+            ],
+            "properties": {
+              "x": {
+                "type": "number",
+                "minimum": 0
+              },
+              "y": {
+                "type": "number",
+                "minimum": 0
+              },
+              "z": {
+                "type": "number",
+                "minimum": 0
+              }
+            },
+            "additionalProperties": false
+          },
+          "material_id": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": false
+      },
+      "node": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/group"
+          },
+          {
+            "$ref": "#/$defs/sphere"
+          },
+          {
+            "$ref": "#/$defs/cube"
+          }
+        ]
+      },
+      "tree": {
+        "type": "object",
+        "required": [
+          "root"
+        ],
+        "properties": {
+          "root": {
+            "$ref": "#/$defs/node"
+          },
+          "materials": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/material"
+            }
+          }
+        },
+        "additionalProperties": false
+      }
     }
   }
 }
