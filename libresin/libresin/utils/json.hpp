@@ -32,8 +32,7 @@ void sdf_tree_to_json(nlohmann::json& json, SDFTree& tree, IdView<SDFTreeNodeId>
                       bool ignore_unused_materials = true);
 void sdf_tree_to_json(nlohmann::json& json, SDFTree& tree, bool ignore_unused_materials = true);
 
-[[nodiscard]] std::string create_prefab_json(SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id,
-                                             bool ignore_unused_materials = true);
+[[nodiscard]] std::string create_prefab_json(SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id);
 
 }  // namespace resin
 
