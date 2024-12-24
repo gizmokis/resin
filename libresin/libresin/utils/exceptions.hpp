@@ -265,6 +265,13 @@ class MaterialSDFTreeComponentDoesNotExist : public std::runtime_error {
   size_t id_;
 };
 
+class DefaultMaterialDeletionAttempted : public std::runtime_error {
+ public:
+  EXCEPTION_NAME(DefaultMaterialDeletionAttempted)
+
+  DefaultMaterialDeletionAttempted() : std::runtime_error("Detected an attempt to delete the default material.") {}
+};
+
 class ObjectsOverflowException : public std::runtime_error {
  public:
   EXCEPTION_NAME(ObjectsOverflowException)

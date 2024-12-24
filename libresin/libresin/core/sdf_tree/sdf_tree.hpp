@@ -52,7 +52,8 @@ class SDFTree {
   MaterialSDFTreeComponent& material(IdView<MaterialId> mat_id);
   MaterialSDFTreeComponent& add_material(Material mat);
 
-  // Cost: O(nm), where n is a number of nodes and m is a number of materials
+  // Cost: O(nm), where n is a number of nodes and m is a number of materials.
+  // Note: Throws if the `mat_id` is the default material id.
   void delete_material(IdView<MaterialId> mat_id);
 
   inline void mark_material_dirty(IdView<MaterialId> mat_id) { sdf_tree_registry_.dirty_materials.push_back(mat_id); }

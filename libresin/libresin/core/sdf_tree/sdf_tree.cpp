@@ -72,6 +72,10 @@ void SDFTree::delete_node(IdView<SDFTreeNodeId> node_id) {
 std::string SDFTree::gen_shader_code() const { return root_->gen_shader_code(); }
 
 MaterialSDFTreeComponent& SDFTree::material(IdView<MaterialId> mat_id) {
+  if (mat_id == sdf_tree_registry_.default_material.material_id()) {
+    return sdf_tree_registry_.default_material;
+  }
+
   if (!materials_[mat_id.raw()].has_value()) {
     log_throw(MaterialSDFTreeComponentDoesNotExist(mat_id.raw()));
   }
@@ -88,6 +92,10 @@ MaterialSDFTreeComponent& SDFTree::add_material(Material mat) {
 }
 
 void SDFTree::delete_material(IdView<MaterialId> mat_id) {
+  if (mat_id == sdf_tree_registry_.default_material.material_id()) {
+    log_throw(DefaultMaterialDeletionAttempted());
+  }
+
   root_->remove_material_from_subtree(mat_id);
 
   for (auto it = material_active_ids_.begin(); it != material_active_ids_.end(); ++it) {  // 😢

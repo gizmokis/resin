@@ -427,7 +427,7 @@ TEST_F(SDFTreeTest, MaterialsAreProperlyDeletedFromTree) {
   ASSERT_EQ(tree.node(*it).material_id(), mat1);
   ASSERT_EQ(tree.node(*it).ancestor_material_id(), mat1);
   ++it;
-  ASSERT_EQ(tree.node(*it).material_id()->raw(), tree.default_material().material_id().raw());
+  ASSERT_EQ(tree.node(*it).material_id(), std::nullopt);
   ASSERT_EQ(tree.node(*it).ancestor_material_id(), mat1);
   ++it;
   ASSERT_EQ(tree.node(*it).material_id(), mat3);
@@ -441,7 +441,7 @@ TEST_F(SDFTreeTest, MaterialsAreProperlyDeletedFromTree) {
   ASSERT_EQ(tree.node(*it).ancestor_material_id(), mat3);
 
   it = group3.begin();
-  ASSERT_EQ(*tree.node(*it).material_id(), tree.default_material().material_id());
+  ASSERT_EQ(tree.node(*it).material_id(), std::nullopt);
   ASSERT_EQ(tree.node(*it).ancestor_material_id(), mat3);
   ++it;
   ASSERT_EQ(tree.node(*it).material_id(), mat1);

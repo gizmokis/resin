@@ -54,6 +54,7 @@ struct SDFTreeRegistry {
   IdRegistry<Material> materials_registry;
   std::vector<IdView<MaterialId>> dirty_materials;
 
+  // Required for shader generation
   MaterialSDFTreeComponent default_material;
 
   size_t node_index{};

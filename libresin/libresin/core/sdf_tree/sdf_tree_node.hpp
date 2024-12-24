@@ -36,14 +36,14 @@ class SDFTreeNode {
 
   virtual ~SDFTreeNode();
 
-  virtual std::string gen_shader_code() const                   = 0;
-  virtual void accept_visitor(ISDFTreeNodeVisitor& visitor)     = 0;
-  [[nodiscard]] virtual std::unique_ptr<SDFTreeNode> copy()     = 0;
-  virtual bool is_leaf()                                        = 0;
-  virtual std::optional<IdView<MaterialId>> material_id() const = 0;
-  virtual void set_material(IdView<MaterialId> mat_id)          = 0;
-  virtual void remove_material()                                = 0;
+  virtual std::string gen_shader_code() const               = 0;
+  virtual void accept_visitor(ISDFTreeNodeVisitor& visitor) = 0;
+  [[nodiscard]] virtual std::unique_ptr<SDFTreeNode> copy() = 0;
+  virtual bool is_leaf()                                    = 0;
+  virtual void set_material(IdView<MaterialId> mat_id)      = 0;
+  virtual void remove_material()                            = 0;
 
+  inline std::optional<IdView<MaterialId>> material_id() const { return mat_id_; }
   inline std::optional<IdView<MaterialId>> ancestor_material_id() const { return ancestor_mat_id_; }
 
   inline void remove_material_from_subtree(IdView<MaterialId> mat_id) {
@@ -96,6 +96,7 @@ class SDFTreeNode {
   TransformId transform_id_;
   Transform transform_;
   SDFBinaryOperation bin_op_;
+  std::optional<IdView<MaterialId>> mat_id_;
   std::optional<IdView<MaterialId>> ancestor_mat_id_;
 
   std::optional<std::reference_wrapper<GroupNode>> parent_;

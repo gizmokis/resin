@@ -33,7 +33,6 @@ class GroupNode final : public SDFTreeNode {
   inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override { visitor.visit_group(*this); }
   [[nodiscard]] std::unique_ptr<SDFTreeNode> copy() override;
   inline bool is_leaf() override { return nodes_.size() == 0; }
-  inline std::optional<IdView<MaterialId>> material_id() const override { return mat_id_; }
   void set_material(IdView<MaterialId> mat_id) override;
   void remove_material() override;
 
@@ -148,8 +147,6 @@ class GroupNode final : public SDFTreeNode {
       nodes_;
 
   std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>> leaves_;
-
-  std::optional<IdView<MaterialId>> mat_id_;
 };
 
 }  // namespace resin
