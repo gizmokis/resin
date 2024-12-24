@@ -247,11 +247,11 @@
     "tree": {
       "type": "object",
       "required": [
-        "root"
+        "group"
       ],
       "properties": {
-        "root": {
-          "$ref": "#/$defs/node"
+        "group": {
+          "$ref": "#/$defs/group"
         },
         "materials": {
           "type": "array",
