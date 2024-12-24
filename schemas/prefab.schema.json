@@ -11,6 +11,5 @@
     "tree": {
       "$ref": "https://raw.githubusercontent.com/gizmokis/resin/refs/heads/feature/SDF-46_group-export-import/schemas/definitions.schema.json#/$defs/tree"
     }
-  },
-  "additionalProperties": false
+  }
 }
