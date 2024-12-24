@@ -1,30 +1,34 @@
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/json.hpp>
+#include <libresin/utils/logger.hpp>
 #include <nlohmann/json.hpp>
 
 namespace resin {
+
+JSONSerializerSDFTreeNodeVisitor::JSONSerializerSDFTreeNodeVisitor(nlohmann::json& json) : json_(json) {}
+
 void JSONSerializerSDFTreeNodeVisitor::visit_group(GroupNode& node) {
-  json_["group"]["transform"] = transform_to_json(node.transform());
   if (node.material_id().has_value()) {
-    json_["group"]["material_id"] = node.material_id()->raw();
+    json_["group"]["materialId"] = node.material_id()->raw();
   }
   json_["group"]["name"] = node.name();
-  auto children          = json::array();
+  transform_to_json(json_["group"], node.transform());
+  auto children = nlohmann::json::array();
   for (auto child : node) {
-    json child_json;
+    nlohmann::json child_json;
     JSONSerializerSDFTreeNodeVisitor visitor(child_json);
     node.get_child(child).accept_visitor(visitor);
     children.push_back(child_json);
   }
-  json_["children"] = children;
+  json_["group"]["children"] = children;
 }
 
 void JSONSerializerSDFTreeNodeVisitor::visit_cube(CubeNode& node) {
-  json_["cube"]["transform"] = transform_to_json(node.transform());
-  json_["cube"]["name"]      = node.name();
+  json_["cube"]["name"] = node.name();
+  transform_to_json(json_["cube"], node.transform());
   if (node.material_id().has_value() && !node.is_material_default()) {
-    json_["cube"]["material_id"] = node.material_id()->raw();
+    json_["cube"]["materialId"] = node.material_id()->raw();
   }
   json_["cube"]["size"]["x"] = node.size;
   json_["cube"]["size"]["y"] = node.size;
@@ -32,77 +36,71 @@ void JSONSerializerSDFTreeNodeVisitor::visit_cube(CubeNode& node) {
 }
 
 void JSONSerializerSDFTreeNodeVisitor::visit_sphere(SphereNode& node) {
-  json_["sphere"]["transform"] = transform_to_json(node.transform());
-  json_["sphere"]["name"]      = node.name();
+  json_["sphere"]["name"] = node.name();
+  transform_to_json(json_["sphere"], node.transform());
   if (node.material_id().has_value() && !node.is_material_default()) {
-    json_["sphere"]["material_id"] = node.material_id()->raw();
+    json_["sphere"]["materialId"] = node.material_id()->raw();
   }
   json_["sphere"]["radius"] = node.radius;
 }
 
-[[nodiscard]] json node_to_json(SDFTreeNode& node) {
-  json json;
+void node_to_json(nlohmann::json& json, SDFTreeNode& node) {
   JSONSerializerSDFTreeNodeVisitor visitor(json);
   node.accept_visitor(visitor);
-  return json;
 }
 
-json transform_to_json(const Transform& transform) {
-  json trans;
-  trans["position"]["x"] = transform.pos().x;
-  trans["position"]["y"] = transform.pos().y;
-  trans["position"]["z"] = transform.pos().z;
+void transform_to_json(nlohmann::json& json, const Transform& transform) {
+  json["transform"]["position"]["x"] = transform.pos().x;
+  json["transform"]["position"]["y"] = transform.pos().y;
+  json["transform"]["position"]["z"] = transform.pos().z;
 
-  trans["rotation"]["x"] = transform.rot().x;
-  trans["rotation"]["y"] = transform.rot().y;
-  trans["rotation"]["z"] = transform.rot().z;
-  trans["rotation"]["w"] = transform.rot().w;
+  json["transform"]["rotation"]["x"] = transform.rot().x;
+  json["transform"]["rotation"]["y"] = transform.rot().y;
+  json["transform"]["rotation"]["z"] = transform.rot().z;
+  json["transform"]["rotation"]["w"] = transform.rot().w;
 
-  trans["scale"] = transform.scale();
-
-  json json;
-  json["transform"] = trans;
-  return json;
+  json["transform"]["scale"] = transform.scale();
 }
 
-json material_component_to_json(const MaterialSDFTreeComponent& material) {
-  json mat;
-
-  mat["id"]                = material.material_id().raw();
-  mat["name"]              = material.name();
-  mat["albedo"]["r"]       = material.material.albedo.r;
-  mat["albedo"]["g"]       = material.material.albedo.g;
-  mat["albedo"]["b"]       = material.material.albedo.b;
-  mat["ambient"]           = material.material.ambientFactor;
-  mat["diffuse"]           = material.material.diffuseFactor;
-  mat["specular"]          = material.material.specularFactor;
-  mat["specular_exponent"] = material.material.specularExponent;
-
-  json json;
-  json["material"] = mat;
-  return json;
+void material_component_to_json(nlohmann::json& json, const MaterialSDFTreeComponent& material) {
+  json["material"]["id"]               = material.material_id().raw();
+  json["material"]["name"]             = material.name();
+  json["material"]["albedo"]["r"]      = material.material.albedo.r;
+  json["material"]["albedo"]["g"]      = material.material.albedo.g;
+  json["material"]["albedo"]["b"]      = material.material.albedo.b;
+  json["material"]["ambient"]          = material.material.ambientFactor;
+  json["material"]["diffuse"]          = material.material.diffuseFactor;
+  json["material"]["specular"]         = material.material.specularFactor;
+  json["material"]["specularExponent"] = material.material.specularExponent;
 }
 
-json sdf_tree_to_json(SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id, bool ignore_unused_materials) {
-  json json;
-  json["prefab"]["tree"]["root"] = node_to_json(tree.node(subtree_root_id));
-  auto materials                 = json::array();
+void sdf_tree_to_json(nlohmann::json& json, SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id,
+                      bool ignore_unused_materials) {
+  node_to_json(json["tree"], tree.node(subtree_root_id));
+  auto materials = nlohmann::json::array();
 
   if (ignore_unused_materials) {
     // TODO(migoox)
-    throw NotImplementedException();
+    log_throw(NotImplementedException());
   } else {  // NOLINT
     for (auto mat : tree.materials()) {
-      materials.push_back(material_component_to_json(tree.material(mat)));
+      nlohmann::json mat_json;
+      material_component_to_json(mat_json, tree.material(mat));
+      materials.push_back(mat_json["material"]);
     }
   }
-  json["prefab"]["tree"]["materials"] = materials;
-
-  return json;
+  json["tree"]["materials"] = materials;
 }
 
-json sdf_tree_to_json(SDFTree& tree, bool ignore_unused_materials) {
-  return sdf_tree_to_json(tree, tree.root().node_id(), ignore_unused_materials);
+void sdf_tree_to_json(nlohmann::json& json, SDFTree& tree, bool ignore_unused_materials) {
+  sdf_tree_to_json(json, tree, tree.root().node_id(), ignore_unused_materials);
+}
+
+std::string create_prefab_json(SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id, bool ignore_unused_materials) {
+  nlohmann::json prefab_json;
+  prefab_json["version"] = kNewestResinPrefabJSONSchemaVersion;
+  sdf_tree_to_json(prefab_json, tree, subtree_root_id, ignore_unused_materials);
+  return prefab_json.dump(2);
 }
 
 }  // namespace resin

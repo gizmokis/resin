@@ -6,7 +6,7 @@
 #include <nlohmann/json_fwd.hpp>
 
 namespace resin {
-using json = nlohmann::json;
+constexpr int kNewestResinPrefabJSONSchemaVersion = 1;
 
 struct Transform;
 class MaterialSDFTreeComponent;
@@ -15,22 +15,25 @@ class GroupNode;
 
 class JSONSerializerSDFTreeNodeVisitor : public ISDFTreeNodeVisitor {
  public:
-  explicit JSONSerializerSDFTreeNodeVisitor(json& json);
+  explicit JSONSerializerSDFTreeNodeVisitor(nlohmann::json& json);
 
   void visit_sphere(SphereNode& node) override;
   void visit_cube(CubeNode& node) override;
   void visit_group(GroupNode& node) override;
 
  private:
-  json& json_;  // NOLINT
+  nlohmann::json& json_;  // NOLINT
 };
 
-[[nodiscard]] json node_to_json(SDFTreeNode& node);
-[[nodiscard]] json transform_to_json(const Transform& transform);
-[[nodiscard]] json material_component_to_json(const MaterialSDFTreeComponent& material);
-[[nodiscard]] json sdf_tree_to_json(SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id,
-                                    bool ignore_unused_materials = true);
-[[nodiscard]] json sdf_tree_to_json(SDFTree& tree, bool ignore_unused_materials = true);
+void node_to_json(nlohmann::json& json, SDFTreeNode& node);
+void transform_to_json(nlohmann::json& json, const Transform& transform);
+void material_component_to_json(nlohmann::json& json, const MaterialSDFTreeComponent& material);
+void sdf_tree_to_json(nlohmann::json& json, SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id,
+                      bool ignore_unused_materials = true);
+void sdf_tree_to_json(nlohmann::json& json, SDFTree& tree, bool ignore_unused_materials = true);
+
+[[nodiscard]] std::string create_prefab_json(SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id,
+                                             bool ignore_unused_materials = true);
 
 }  // namespace resin
 
