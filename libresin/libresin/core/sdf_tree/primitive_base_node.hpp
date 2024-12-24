@@ -17,7 +17,7 @@ using PrimitiveNodeId = Id<BasePrimitiveNode>;
 
 class BasePrimitiveNode : public SDFTreeNode {
  public:
-  constexpr static auto available_primitive_names() { return kSDFTreePrimitiveNames.names_; }
+  constexpr static auto available_primitive_names() { return kSDFTreePrimitiveNames; }
 
   virtual SDFTreePrimitiveType primitive_type() const = 0;
   virtual std::string_view primitive_name() const     = 0;

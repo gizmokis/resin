@@ -16,14 +16,12 @@ GroupNode::GroupNode(SDFTreeRegistry& tree) : SDFTreeNode(tree, "Group") {
 }
 GroupNode::~GroupNode() { tree_registry_.all_group_nodes[node_id_.raw()] = std::nullopt; }
 
-void GroupNode::push_back_primitive(SDFTreePrimitiveType type, SDFBinaryOperation bin_op) {
+SDFTreeNode& GroupNode::push_back_primitive(SDFTreePrimitiveType type, SDFBinaryOperation bin_op) {
   switch (type) {
     case SDFTreePrimitiveType::Sphere:
-      push_back_child<SphereNode>(bin_op);
-      return;
+      return push_back_child<SphereNode>(bin_op);
     case SDFTreePrimitiveType::Cube:
-      push_back_child<CubeNode>(bin_op);
-      return;
+      return push_back_child<CubeNode>(bin_op);
     case resin::SDFTreePrimitiveType::_Count:
       throw NonExhaustiveEnumException();
   }

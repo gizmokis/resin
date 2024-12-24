@@ -307,20 +307,16 @@ std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(
   }
 
   if (ImGui::BeginPopup("AddPopUp")) {
-    for (const auto [index, name] :
-         std::ranges::views::enumerate(::resin::BasePrimitiveNode::available_primitive_names())) {
+    for (const auto [prim, name] : ::resin::BasePrimitiveNode::available_primitive_names()) {
       if (ImGui::Selectable(name.data())) {
         if (selected.has_value()) {
           if (tree.is_group(*selected)) {
-            tree.group(*selected).push_back_primitive(static_cast<::resin::SDFTreePrimitiveType>(index),
-                                                      ::resin::SDFBinaryOperation::Union);
+            tree.group(*selected).push_back_primitive(prim, ::resin::SDFBinaryOperation::Union);
           } else {
-            tree.node(*selected).parent().push_back_primitive(static_cast<::resin::SDFTreePrimitiveType>(index),
-                                                              ::resin::SDFBinaryOperation::Union);
+            tree.node(*selected).parent().push_back_primitive(prim, ::resin::SDFBinaryOperation::Union);
           }
         } else {
-          tree.root().push_back_primitive(static_cast<::resin::SDFTreePrimitiveType>(index),
-                                          ::resin::SDFBinaryOperation::Union);
+          tree.root().push_back_primitive(prim, ::resin::SDFBinaryOperation::Union);
         }
       }
     }

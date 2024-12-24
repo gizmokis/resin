@@ -60,7 +60,7 @@ class GroupNode final : public SDFTreeNode {
     return result;
   }
 
-  void push_back_primitive(SDFTreePrimitiveType type, SDFBinaryOperation bin_op);
+  SDFTreeNode& push_back_primitive(SDFTreePrimitiveType type, SDFBinaryOperation bin_op);
 
   // Cost: O(h)
   void push_back_child(std::unique_ptr<SDFTreeNode> node_ptr);

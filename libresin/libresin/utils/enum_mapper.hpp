@@ -18,6 +18,39 @@ template <typename T>
 concept EnumMappingValueConcept = requires { std::is_move_assignable<T>(); };
 
 template <EnumWithCountConcept EnumType, EnumMappingValueConcept Value>
+struct EnumMapping;
+
+template <EnumWithCountConcept EnumType, typename Value>
+class EnumMappingIterator {
+ public:
+  using enum_type = typename EnumMapping<EnumType, Value>::enum_type;
+
+  EnumMappingIterator(const EnumMapping<EnumType, Value>& mapping, size_t index) : mapping_(mapping), index_(index) {}
+
+  std::pair<enum_type, Value> operator*() const {
+    return {static_cast<enum_type>(index_), mapping_.get_value(static_cast<enum_type>(index_))};
+  }
+
+  EnumMappingIterator& operator++() {
+    ++index_;
+    return *this;
+  }
+
+  EnumMappingIterator operator++(int) {
+    EnumMappingIterator temp = *this;
+    ++(*this);
+    return temp;
+  }
+
+  bool operator==(const EnumMappingIterator& other) const { return index_ == other.index_; }
+  bool operator!=(const EnumMappingIterator& other) const { return !(*this == other); }
+
+ private:
+  const EnumMapping<EnumType, Value>& mapping_;
+  size_t index_;
+};
+
+template <EnumWithCountConcept EnumType, EnumMappingValueConcept Value>
 struct EnumMapping {
   using enum_type = std::remove_cv_t<std::remove_reference_t<EnumType>>;
 
@@ -31,6 +64,10 @@ struct EnumMapping {
     }
     size = N;
   }
+
+  auto begin() const { return EnumMappingIterator<EnumType, Value>(*this, 0); }
+
+  auto end() const { return EnumMappingIterator<EnumType, Value>(*this, size); }
 
   constexpr Value get_value(enum_type enum_entry) const { return names_[static_cast<size_t>(enum_entry)]; }
 
