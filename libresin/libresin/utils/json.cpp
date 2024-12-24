@@ -1,12 +1,16 @@
+#include <glm/fwd.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/json.hpp>
 #include <libresin/utils/logger.hpp>
 #include <nlohmann/json.hpp>
+#include <unordered_map>
 #include <unordered_set>
 
 namespace resin {
+
+static bool property_exists(const nlohmann::json& j, std::string_view key) { return j.find(key) != j.end(); }
 
 JSONSerializerSDFTreeNodeVisitor::JSONSerializerSDFTreeNodeVisitor(nlohmann::json& json) : json_(json) {}
 
@@ -123,6 +127,99 @@ std::string create_prefab_json(SDFTree& tree, IdView<SDFTreeNodeId> subtree_root
   prefab_json["version"] = kNewestResinPrefabJSONSchemaVersion;
   sdf_tree_to_json(prefab_json, tree, subtree_root_id, true);
   return prefab_json.dump(2);
+}
+
+static void add_transform_to_node(SDFTreeNode& node, const nlohmann::json& node_json) {
+  node.transform().set_local_pos(
+      glm::vec3(node_json["transform"]["x"], node_json["transform"]["y"], node_json["transform"]["z"]));
+  node.transform().set_local_rot(
+      glm::quat(node_json["transform"]["rotation"]["x"], node_json["transform"]["rotation"]["y"],
+                node_json["transform"]["rotation"]["z"], node_json["transform"]["rotation"]["w"]));
+  node.transform().set_local_scale(node_json["transform"]["scale"]);
+}
+
+static void add_name_to_node(SDFTreeNode& node, const nlohmann::json& node_json) { node.rename(node_json["name"]); }
+
+static void add_material_to_node(SDFTreeNode& node, const nlohmann::json& node_json,
+                                 const std::unordered_map<size_t, IdView<MaterialId>>& material_ids_map) {
+  if (!property_exists(node_json, "materialId")) {
+    return;
+  }
+
+  size_t id   = node_json["materialId"];
+  auto mat_it = material_ids_map.find(id);
+  if (mat_it == material_ids_map.end()) {
+    log_throw(JSONDeserializationException(
+        std::format("Node with name references to non existing material with id {}.", id)));
+  }
+
+  node.set_material(mat_it->second);
+}
+
+static void add_data_to_node(SDFTreeNode& node, const nlohmann::json& node_json,
+                             const std::unordered_map<size_t, IdView<MaterialId>>& material_ids_map) {
+  add_material_to_node(node, node_json, material_ids_map);
+  add_name_to_node(node, node_json);
+  add_transform_to_node(node, node_json);
+}
+
+JSONDeserializerSDFTreeNodeVisitor::JSONDeserializerSDFTreeNodeVisitor(
+    const nlohmann::json& node_json, const std::unordered_map<size_t, IdView<MaterialId>>& material_ids_map)
+    : node_json_(node_json), material_ids_map_(material_ids_map) {}
+
+void JSONDeserializerSDFTreeNodeVisitor::visit_sphere(SphereNode& node) { node.radius = node_json_["radius"]; }
+
+void JSONDeserializerSDFTreeNodeVisitor::visit_cube(CubeNode& node) {
+  node.size = node_json_["size"]["x"];  // TODO(SDF-): update json deserializer for node
+}
+
+void JSONDeserializerSDFTreeNodeVisitor::visit_group(GroupNode& node) {
+  for (const auto& child_json : node_json_["children"]) {
+    for (auto [prim_type, name] : kSDFTreePrimitiveNodesJSONNames) {
+      if (property_exists(child_json, name)) {
+        auto& child_prim = node.push_back_primitive(prim_type, SDFBinaryOperation::Union);
+
+        add_data_to_node(child_prim, child_json[name], material_ids_map_);
+        auto visitor = JSONDeserializerSDFTreeNodeVisitor(child_json[name], material_ids_map_);
+        child_prim.accept_visitor(visitor);
+      }
+    }
+
+    if (property_exists(child_json, "group")) {
+      auto& child_group = node.push_back_child<GroupNode>(SDFBinaryOperation::Union);
+
+      add_data_to_node(child_group, child_json["group"], material_ids_map_);
+      auto visitor = JSONDeserializerSDFTreeNodeVisitor(child_json["group"], material_ids_map_);
+      child_group.accept_visitor(visitor);
+    }
+  }
+}
+
+std::unique_ptr<GroupNode> parse_prefab_json(SDFTree& tree, std::string_view prefab_json) {
+  auto json = nlohmann::json::parse(prefab_json)["tree"];
+
+  std::unordered_map<size_t, IdView<MaterialId>> material_ids_map;
+  for (const auto& mat_json : json["materials"]) {
+    auto& mat = tree.add_material(
+        Material(glm::vec3(mat_json["albedo"]["r"], mat_json["albedo"]["g"], mat_json["albedo"]["b"]),
+                 mat_json["ambient"], mat_json["diffuse"], mat_json["specular"], mat_json["specularExponent"]));
+    mat.rename(mat_json["name"]);
+
+    auto mat_it = material_ids_map.find(mat_json["id"]);
+    if (mat_it != material_ids_map.end()) {
+      log_throw(JSONDeserializationException(
+          std::format("More than one definition of a material with id {} found.", mat_it->first)));
+    }
+
+    material_ids_map[mat_json["id"]] = mat.material_id();
+  }
+
+  auto prefab_root = tree.create_detached_node<GroupNode>();
+  add_data_to_node(*prefab_root, json["group"], material_ids_map);
+  auto visitor = JSONDeserializerSDFTreeNodeVisitor(json["group"], material_ids_map);
+  prefab_root->accept_visitor(visitor);
+
+  return prefab_root;
 }
 
 }  // namespace resin

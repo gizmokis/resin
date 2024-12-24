@@ -47,6 +47,12 @@ class SDFTree {
 
   inline GroupNode& root() { return *root_; }
 
+  template <SDFTreeNodeConcept Node, typename... Args>
+    requires std::constructible_from<Node, SDFTreeRegistry&, Args...>
+  std::unique_ptr<Node> create_detached_node(Args&&... args) {
+    return std::make_unique<Node>(sdf_tree_registry_, std::forward<Args>(args)...);
+  }
+
   inline size_t tree_id() const { return tree_id_; }
 
   MaterialSDFTreeComponent& material(IdView<MaterialId> mat_id);

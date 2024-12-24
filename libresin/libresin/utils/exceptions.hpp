@@ -327,6 +327,13 @@ class SDFTreeReachedDirtyPrimitivesLimit : public std::runtime_error {
       : std::runtime_error(std::format(R"(SDF Tree reached the dirty primitives limit)")) {}
 };
 
+class JSONDeserializationException : public std::runtime_error {
+ public:
+  EXCEPTION_NAME(JSONDeserializationException)
+
+  explicit JSONDeserializationException(std::string&& msg) : std::runtime_error(std::move(msg)) {}
+};
+
 class NotImplementedException : public std::runtime_error {
  public:
   EXCEPTION_NAME(NotImplementedException)
