@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com/gizmokis/resin/schemas/prefab.schema.json",
+  "$id": "https://raw.githubusercontent.com/gizmokis/resin/refs/heads/feature/SDF-46_group-export-import/schemas/prefab.schema.json",
   "title": "Resin Prefab",
   "description": "Defines a resin SDF tree subtree with all materials used by the nodes of the subtree.",
   "type": "object",
@@ -9,7 +9,7 @@
   ],
   "properties": {
     "tree": {
-      "$ref": "https://raw.githubusercontent.com/gizmokis/resin/schemas/definitions.schema.json#/$defs/tree"
+      "$ref": "https://raw.githubusercontent.com/gizmokis/resin/refs/heads/feature/SDF-46_group-export-import/schemas/definitions.schema.json#/$defs/tree"
     }
   },
   "additionalProperties": false
