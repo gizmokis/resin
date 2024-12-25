@@ -4,14 +4,32 @@
   "title": "Definitions for Resin JSON schemas",
   "description": "Common definitions for Resin JSON schemas used by prefabs and scenes.",
   "$defs": {
+    "intId": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "binaryOperation": {
+      "type": "string",
+      "enum": [
+        "union",
+        "smoothUnion",
+        "diff",
+        "smoothDiff",
+        "inter",
+        "smoothInter",
+        "xor",
+        "smoothXor"
+      ]
+    },
     "color": {
       "type": "object",
+      "description": "Color in RGB format",
       "required": [
         "r",
         "g",
         "b"
       ],
-      "description": "Color in RGB format",
+      "additionalProperties": false,
       "properties": {
         "r": {
           "type": "number",
@@ -31,8 +49,212 @@
           "maximum": 1,
           "description": "Blue component"
         }
-      },
-      "additionalProperties": false
+      }
+    },
+    "transform": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "position": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "x",
+            "y",
+            "z"
+          ],
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            },
+            "z": {
+              "type": "number"
+            }
+          }
+        },
+        "rotation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "x",
+            "y",
+            "z",
+            "w"
+          ],
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            },
+            "z": {
+              "type": "number"
+            },
+            "w": {
+              "type": "number"
+            }
+          }
+        },
+        "scale": {
+          "type": "number"
+        }
+      }
+    },
+    "sphere": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "radius"
+      ],
+      "properties": {
+        "radius": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "cube": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "size"
+      ],
+      "properties": {
+        "size": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "x",
+            "y",
+            "z"
+          ],
+          "properties": {
+            "x": {
+              "type": "number",
+              "minimum": 0
+            },
+            "y": {
+              "type": "number",
+              "minimum": 0
+            },
+            "z": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "materialId": {
+          "type": "number"
+        }
+      }
+    },
+    "nodeCommon": {
+      "type": "object",
+      "required": [
+        "operation",
+        "name",
+        "transform"
+      ],
+      "properties": {
+        "operation": {
+          "$ref": "#/$defs/binaryOperation"
+        },
+        "name": {
+          "type": "string"
+        },
+        "materialId": {
+          "$ref": "#/$defs/intId"
+        },
+        "transform": {
+          "$ref": "#/$defs/transform"
+        }
+      }
+    },
+    "sphereNode": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/nodeCommon"
+        },
+        {
+          "type": "object",
+          "required": [
+            "sphere"
+          ],
+          "properties": {
+            "sphere": {
+              "$ref": "#/$defs/sphere"
+            }
+          }
+        }
+      ]
+    },
+    "cubeNode": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/nodeCommon"
+        },
+        {
+          "type": "object",
+          "required": [
+            "cube"
+          ],
+          "properties": {
+            "cube": {
+              "$ref": "#/$defs/cube"
+            }
+          }
+        }
+      ]
+    },
+    "group": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        }
+      }
+    },
+    "groupNode": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/nodeCommon"
+        },
+        {
+          "type": "object",
+          "required": [
+            "group"
+          ],
+          "properties": {
+            "group": {
+              "$ref": "#/$defs/group"
+            }
+          }
+        }
+      ]
+    },
+    "node": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/groupNode"
+        },
+        {
+          "$ref": "#/$defs/sphereNode"
+        },
+        {
+          "$ref": "#/$defs/cubeNode"
+        }
+      ]
     },
     "material": {
       "type": "object",
@@ -46,9 +268,10 @@
         "specular",
         "specularExponent"
       ],
+      "additionalProperties": false,
       "properties": {
         "id": {
-          "type": "#/$defs/intId"
+          "$ref": "#/$defs/intId"
         },
         "name": {
           "type": "string"
@@ -79,247 +302,25 @@
           "minimum": 0,
           "description": "Specular exponent (shininess)"
         }
-      },
-      "additionalProperties": false
-    },
-    "transform": {
-      "type": "object",
-      "properties": {
-        "position": {
-          "type": "object",
-          "required": [
-            "x",
-            "y",
-            "z"
-          ],
-          "properties": {
-            "x": {
-              "type": "number"
-            },
-            "y": {
-              "type": "number"
-            },
-            "z": {
-              "type": "number"
-            }
-          },
-          "additionalProperties": false
-        },
-        "rotation": {
-          "type": "object",
-          "required": [
-            "x",
-            "y",
-            "z",
-            "w"
-          ],
-          "properties": {
-            "x": {
-              "type": "number"
-            },
-            "y": {
-              "type": "number"
-            },
-            "z": {
-              "type": "number"
-            },
-            "w": {
-              "type": "number"
-            }
-          },
-          "additionalProperties": false
-        },
-        "scale": {
-          "type": "number"
-        }
-      },
-      "additionalProperties": false
-    },
-    "binaryOperation": {
-      "type": "string",
-      "enum": [
-        "union",
-        "smoothUnion",
-        "diff",
-        "smoothDiff",
-        "inter",
-        "smoothInter",
-        "xor",
-        "smoothXor"
-      ]
-    },
-    "intId": {
-      "type": "integer",
-      "minimum": 0
-    },
-    "group": {
-      "type": "object",
-      "properties": {
-        "children": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/node"
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    "sphere": {
-      "type": "object",
-      "required": [
-        "radius"
-      ],
-      "properties": {
-        "radius": {
-          "type": "number",
-          "minimum": 0
-        }
-      },
-      "additionalProperties": false
-    },
-    "cube": {
-      "type": "object",
-      "required": [
-        "size"
-      ],
-      "properties": {
-        "size": {
-          "type": "object",
-          "required": [
-            "x",
-            "y",
-            "z"
-          ],
-          "properties": {
-            "x": {
-              "type": "number",
-              "minimum": 0
-            },
-            "y": {
-              "type": "number",
-              "minimum": 0
-            },
-            "z": {
-              "type": "number",
-              "minimum": 0
-            }
-          },
-          "additionalProperties": false
-        },
-        "materialId": {
-          "type": "number"
-        }
-      },
-      "additionalProperties": false
-    },
-    "nodeCommon": {
-      "type": "object",
-      "required": [
-        "operation",
-        "name",
-        "materialId",
-        "transform"
-      ],
-      "properties": {
-        "operation": {
-          "$ref": "#/$defs/binaryOperation"
-        },
-        "name": {
-          "type": "string"
-        },
-        "materialId": {
-          "type": "#/$defs/intId"
-        },
-        "transform": {
-          "$ref": "#/$defs/transform"
-        }
-      },
-      "additionalProperties": false
-    },
-    "groupNode": {
-      "allOf": [
-        {
-          "$ref": "#/$defs/nodeCommon"
-        },
-        {
-          "type": "object",
-          "required": [
-            "group"
-          ],
-          "properties": {
-            "group": {
-              "$ref": "#/$defs/group"
-            }
-          }
-        }
-      ]
-    },
-    "sphereNode": {
-      "allOf": [
-        {
-          "$ref": "#/$defs/nodeCommon"
-        },
-        {
-          "type": "object",
-          "required": [
-            "sphere"
-          ],
-          "properties": {
-            "sphere": {
-              "$ref": "#/$defs/sphere"
-            }
-          }
-        }
-      ]
-    },
-    "cubeNode": {
-      "allOf": [
-        {
-          "$ref": "#/$defs/nodeCommon"
-        },
-        {
-          "type": "object",
-          "required": [
-            "cube"
-          ],
-          "properties": {
-            "cube": {
-              "$ref": "#/$defs/cube"
-            }
-          }
-        }
-      ]
-    },
-    "node": {
-      "oneOf": [
-        {
-          "$ref": "#/$defs/groupNode"
-        },
-        {
-          "$ref": "#/$defs/sphereNode"
-        },
-        {
-          "$ref": "#/$defs/cubeNode"
-        }
-      ]
-    }
-  },
-  "tree": {
-    "type": "object",
-    "required": [
-      "rootGroup"
-    ],
-    "properties": {
-      "rootGroup": {
-        "$ref": "#/$defs/groupNode"
-      },
-      "materials": {
-        "type": "array",
-        "items": {
-          "$ref": "#/$defs/material"
-        }
       }
     },
-    "additionalProperties": false
+    "tree": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rootGroup"
+      ],
+      "properties": {
+        "materials": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/material"
+          }
+        },
+        "rootGroup": {
+          "$ref": "#/$defs/groupNode"
+        }
+      }
+    }
   }
 }
