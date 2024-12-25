@@ -68,7 +68,7 @@ std::string GroupNode::gen_shader_code() const {
       continue;
     }
 
-    sdf += sdf_shader_consts::kSDFShaderBinOpFunctionNames.get_value(get_child(*it).bin_op());
+    sdf += sdf_shader_consts::kSDFShaderBinOpFunctionNames[get_child(*it).bin_op()];
     sdf += "(";
   }
   sdf += get_child(*first_non_shallow_node).gen_shader_code();

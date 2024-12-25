@@ -190,7 +190,7 @@ void SDFTreeComponentVisitor::render_op(::resin::SDFTreeNode& node) const {
   ImGui::SameLine(op_offset);
   if (is_first_ && node.bin_op() != ::resin::SDFBinaryOperation::Union) {
     ImGui::TextColored(ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled), " (%s)",
-                       kOperationSymbol.get_value(node.bin_op()).data());
+                       kOperationSymbol.value(node.bin_op()).data());
     if (ImGui::BeginItemTooltip()) {
       ImGui::PushTextWrapPos(ImGui::GetFontSize() * 36.0F);
       ImGui::TextUnformatted("This operation is ignored for the first element in the group");
@@ -198,7 +198,7 @@ void SDFTreeComponentVisitor::render_op(::resin::SDFTreeNode& node) const {
       ImGui::EndTooltip();
     }
   } else {
-    ImGui::Text(" (%s)", kOperationSymbol.get_value(node.bin_op()).data());
+    ImGui::Text(" (%s)", kOperationSymbol.value(node.bin_op()).data());
   }
 }
 

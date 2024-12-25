@@ -7,6 +7,8 @@
 #include <memory>
 #include <nlohmann/json_fwd.hpp>
 
+#include "libresin/core/sdf_tree/primitive_base_node.hpp"
+
 namespace resin {
 
 struct Transform;
@@ -18,10 +20,22 @@ namespace json {
 using json = nlohmann::json;
 
 constexpr int kNewestResinPrefabJSONSchemaVersion = 1;
-constexpr StringEnumMapping<SDFTreePrimitiveType> kSDFTreePrimitiveNodesJSONNames({"sphere", "cube"});
-constexpr StringEnumMapping<SDFBinaryOperation> kSDFBinaryOperationsJSONNames({"union", "smoothUnion", "diff",
-                                                                               "smoothDiff", "inter", "smoothInter",
-                                                                               "xor", "smoothXor"});
+
+constexpr StringEnumMapping<SDFTreePrimitiveType> kSDFTreePrimitiveNodesJSONNames({
+    {SDFTreePrimitiveType::Sphere, "sphere"},  //
+    {SDFTreePrimitiveType::Cube, "cube"}       //
+});
+
+constexpr StringEnumMapping<SDFBinaryOperation> kSDFBinaryOperationsJSONNames({
+    {SDFBinaryOperation::Union, "union"},              //
+    {SDFBinaryOperation::SmoothUnion, "smoothUnion"},  //
+    {SDFBinaryOperation::Diff, "diff"},                //
+    {SDFBinaryOperation::SmoothDiff, "smoothDiff"},    //
+    {SDFBinaryOperation::Inter, "inter"},              //
+    {SDFBinaryOperation::SmoothInter, "smoothInter"},  //
+    {SDFBinaryOperation::Xor, "xor"},                  //
+    {SDFBinaryOperation::SmoothXor, "smoothXor"},      //
+});
 
 void serialize_transform(json& target_json, const Transform& transform);
 void serialize_material(json& target_json, const MaterialSDFTreeComponent& material);
@@ -46,13 +60,13 @@ class JSONSerializerSDFTreeNodeVisitor : public ISDFTreeNodeVisitor {
   json& json_;
 };
 
-void serialzie_sdf_tree(json& target_json, const SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id,
+void serialize_sdf_tree(json& target_json, const SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id,
                         bool ignore_unused_materials = true);
-void serialzie_sdf_tree(json& target_json, const SDFTree& tree, bool ignore_unused_materials = true);
+void serialize_sdf_tree(json& target_json, const SDFTree& tree, bool ignore_unused_materials = true);
 
 [[nodiscard]] std::string serialize_prefab(const SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id);
 
-void deserialize_transform(Transform& transform, const json& node_json);
+void deserialize_transform(Transform& transform, const json& trans_json);
 void deserialize_material(MaterialSDFTreeComponent& material, const json& mat_json);
 
 void deserialize_node_material(SDFTreeNode& node, const json& node_json,

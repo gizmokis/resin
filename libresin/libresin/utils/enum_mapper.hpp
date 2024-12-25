@@ -18,7 +18,7 @@ template <typename T>
 concept EnumMappingValueConcept = requires { std::is_move_assignable<T>(); };
 
 template <EnumWithCountConcept EnumType, EnumMappingValueConcept Value>
-struct EnumMapping;
+class EnumMapping;
 
 template <EnumWithCountConcept EnumType, typename Value>
 class EnumMappingIterator {
@@ -28,7 +28,7 @@ class EnumMappingIterator {
   EnumMappingIterator(const EnumMapping<EnumType, Value>& mapping, size_t index) : mapping_(mapping), index_(index) {}
 
   std::pair<enum_type, Value> operator*() const {
-    return {static_cast<enum_type>(index_), mapping_.get_value(static_cast<enum_type>(index_))};
+    return {static_cast<enum_type>(index_), mapping_[static_cast<enum_type>(index_)]};
   }
 
   EnumMappingIterator& operator++() {
@@ -51,29 +51,50 @@ class EnumMappingIterator {
 };
 
 template <EnumWithCountConcept EnumType, EnumMappingValueConcept Value>
-struct EnumMapping {
-  using enum_type = std::remove_cv_t<std::remove_reference_t<EnumType>>;
+class EnumMapping {
+ public:
+  using enum_type                   = std::remove_cv_t<std::remove_reference_t<EnumType>>;
+  static constexpr size_t kEnumSize = static_cast<size_t>(EnumType::_Count);
 
-  constexpr EnumMapping() = default;
+  EnumMapping() = delete;
 
   template <size_t N>
-  constexpr explicit EnumMapping(const Value (&input_names)[N]) {
-    static_assert(N == static_cast<size_t>(EnumType::_Count), "Names count should be the same as enum entries count.");
-    for (size_t i = 0; i < N; ++i) {
-      names_[i] = std::move(input_names[i]);
+  consteval explicit EnumMapping(const std::pair<EnumType, Value> (&values_map)[N]) {
+    static_assert(N == kEnumSize, "Names count should be the same as enum entries count.");
+
+    for (size_t i = 0; i < kEnumSize; ++i) {
+      present_[i] = false;
     }
-    size = N;
+
+    for (size_t i = 0; i < N; ++i) {
+      auto idx      = static_cast<size_t>(values_map[i].first);
+      names_[idx]   = values_map[i].second;
+      present_[idx] = true;
+    }
+
+    validate_mapping(std::make_index_sequence<kEnumSize>{});
   }
 
-  auto begin() const { return EnumMappingIterator<EnumType, Value>(*this, 0); }
+  constexpr auto begin() const { return EnumMappingIterator<EnumType, Value>(*this, 0); }
+  constexpr auto end() const { return EnumMappingIterator<EnumType, Value>(*this, kEnumSize); }
 
-  auto end() const { return EnumMappingIterator<EnumType, Value>(*this, size); }
-
-  constexpr Value get_value(enum_type enum_entry) const { return names_[static_cast<size_t>(enum_entry)]; }
+  constexpr Value value(enum_type enum_entry) const { return names_[static_cast<size_t>(enum_entry)]; }
   constexpr Value operator[](enum_type enum_entry) const { return names_[static_cast<size_t>(enum_entry)]; }
 
-  std::array<Value, static_cast<size_t>(EnumType::_Count)> names_ = {};
-  size_t size                                                     = 0;
+ private:
+  template <size_t... Is>
+  consteval void validate_mapping(std::index_sequence<Is...>) const {
+    ((check_present(Is)), ...);
+  }
+
+  consteval void check_present(size_t idx) const {
+    if (!present_[idx]) {
+      throw "Missing mapping for enum value";
+    }
+  }
+
+  std::array<Value, kEnumSize> names_  = {};
+  std::array<bool, kEnumSize> present_ = {};
 };
 
 template <EnumWithCountConcept EnumType>

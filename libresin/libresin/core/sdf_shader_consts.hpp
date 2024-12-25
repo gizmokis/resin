@@ -18,19 +18,30 @@ enum class SDFShaderBinOp : uint8_t {
   SmoothXor   = 7,
   _Count      = 8  // NOLINT
 };
-constexpr StringEnumMapping<SDFShaderBinOp> kSDFShaderBinOpFunctionNames({"opUnion", "opSmoothUnion", "opDiff",
-                                                                          "opSmoothDiff", "opInter", "opSmoothInter",
-                                                                          "opXor", "opSmoothXor"});
+constexpr StringEnumMapping<SDFShaderBinOp> kSDFShaderBinOpFunctionNames({
+    {SDFShaderBinOp::Union, "opUnion"},              //
+    {SDFShaderBinOp::SmoothUnion, "opSmoothUnion"},  //
+    {SDFShaderBinOp::Diff, "opDiff"},                //
+    {SDFShaderBinOp::SmoothDiff, "opSmoothDiff"},    //
+    {SDFShaderBinOp::Inter, "opInter"},              //
+    {SDFShaderBinOp::SmoothInter, "opSmoothInter"},  //
+    {SDFShaderBinOp::Xor, "opXor"},                  //
+    {SDFShaderBinOp::SmoothXor, "opSmoothXor"},      //
+});
 
 enum class SDFShaderPrim : uint8_t {
   Sphere = 0,
   Cube   = 1,
   _Count = 2,  // NOLINT
 };
-constexpr StringEnumMapping<SDFShaderPrim> kSDFShaderPrimFunctionNames({"sdSphere", "sdCube"});
+constexpr StringEnumMapping<SDFShaderPrim> kSDFShaderPrimFunctionNames({
+    {SDFShaderPrim::Sphere, "sdSphere"},  //
+    {SDFShaderPrim::Cube, "sdCube"}       //
+});
+
 constexpr StringEnumMapping<SDFShaderPrim> kSDFShaderPrimComponentArrayNames({
-    "u_spheres",
-    "u_cubes",
+    {SDFShaderPrim::Sphere, "u_spheres"},  //
+    {SDFShaderPrim::Cube, "u_cubes"}       //
 });
 
 enum class SDFShaderCoreComponents : uint8_t {
@@ -39,15 +50,17 @@ enum class SDFShaderCoreComponents : uint8_t {
   _Count     = 2,  // NOLINT
 };
 constexpr StringEnumMapping<SDFShaderCoreComponents> kSDFShaderCoreComponentArrayNames({
-    "u_transforms",
-    "u_materials",
+    {SDFShaderCoreComponents::Transforms, "u_transforms"},  //
+    {SDFShaderCoreComponents::Materials, "u_materials"}     //
 });
 
 enum class SDFShaderVariable : uint8_t {
   Position = 0,
   _Count   = 1,  // NOLINT
 };
-constexpr StringEnumMapping<SDFShaderVariable> kSDFShaderVariableNames({"pos"});
+constexpr StringEnumMapping<SDFShaderVariable> kSDFShaderVariableNames({
+    {SDFShaderVariable::Position, "u_pos"},  //
+});
 
 }  // namespace sdf_shader_consts
 

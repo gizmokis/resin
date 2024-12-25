@@ -97,7 +97,7 @@ static void find_used_materials(
   }
 }
 
-void serialzie_sdf_tree(json& target_json, SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id,
+void serialize_sdf_tree(json& target_json, SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id,
                         bool ignore_unused_materials) {
   auto materials = json::array();
   if (ignore_unused_materials) {
@@ -123,14 +123,14 @@ void serialzie_sdf_tree(json& target_json, SDFTree& tree, IdView<SDFTreeNodeId> 
   root_group.accept_visitor(visitor);
 }
 
-void serialzie_sdf_tree(json& target_json, const SDFTree& tree, bool ignore_unused_materials) {
-  serialzie_sdf_tree(target_json, tree, tree.root().node_id(), ignore_unused_materials);
+void serialize_sdf_tree(json& target_json, const SDFTree& tree, bool ignore_unused_materials) {
+  serialize_sdf_tree(target_json, tree, tree.root().node_id(), ignore_unused_materials);
 }
 
 std::string serialize_prefab(SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id) {
   json prefab_json;
   prefab_json["version"] = kNewestResinPrefabJSONSchemaVersion;
-  serialzie_sdf_tree(prefab_json, tree, subtree_root_id, true);
+  serialize_sdf_tree(prefab_json, tree, subtree_root_id, true);
   return prefab_json.dump(2);
 }
 
@@ -152,12 +152,12 @@ void deserialize_node_material(SDFTreeNode& node, const json& node_json,
 
 void deserialize_node_name(SDFTreeNode& node, const json& node_json) { node.rename(node_json["name"]); }
 
-void deserialize_transform(Transform& transform, const json& node_json) {
+void deserialize_transform(Transform& transform, const json& trans_json) {
   transform.set_local_pos(
-      glm::vec3(node_json["position"]["x"], node_json["position"]["y"], node_json["position"]["z"]));
-  transform.set_local_rot(glm::quat(node_json["rotation"]["x"], node_json["rotation"]["y"], node_json["rotation"]["z"],
-                                    node_json["rotation"]["w"]));
-  transform.set_local_scale(node_json["scale"]);
+      glm::vec3(trans_json["position"]["x"], trans_json["position"]["y"], trans_json["position"]["z"]));
+  transform.set_local_rot(glm::quat(trans_json["rotation"]["w"], trans_json["rotation"]["x"],
+                                    trans_json["rotation"]["y"], trans_json["rotation"]["z"]));
+  transform.set_local_scale(trans_json["scale"]);
 }
 
 void deserialize_material(MaterialSDFTreeComponent& material, const json& mat_json) {
@@ -235,7 +235,7 @@ std::unique_ptr<GroupNode> deserialize_prefab(SDFTree& tree, std::string_view pr
           std::format("More than one definition of a material with id {} found.", mat_it->first)));
     }
 
-    material_ids_map[mat_json["id"]] = mat.material_id();
+    material_ids_map.insert(std::make_pair(mat_json["id"], mat.material_id()));
   }
 
   auto prefab_root = tree.create_detached_node<GroupNode>();

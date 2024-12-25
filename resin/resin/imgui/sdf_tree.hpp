@@ -48,7 +48,16 @@ class SDFTreeComponentVisitor : public ::resin::ISDFTreeNodeVisitor {
 
   std::string payload_type_;
   static constexpr ::resin::StringEnumMapping<::resin::SDFBinaryOperation> kOperationSymbol =
-      ::resin::StringEnumMapping<::resin::SDFBinaryOperation>({"+", "+'", "-", "-'", "&", "&'", "^", "^'"});
+      ::resin::StringEnumMapping<::resin::SDFBinaryOperation>({
+          {::resin::SDFBinaryOperation::Union, "+"},         //
+          {::resin::SDFBinaryOperation::SmoothUnion, "+'"},  //
+          {::resin::SDFBinaryOperation::Diff, "-'"},         //
+          {::resin::SDFBinaryOperation::SmoothDiff, "-'"},   //
+          {::resin::SDFBinaryOperation::Inter, "&"},         //
+          {::resin::SDFBinaryOperation::SmoothInter, "&'"},  //
+          {::resin::SDFBinaryOperation::Xor, "^"},           //
+          {::resin::SDFBinaryOperation::SmoothXor, "^'"}     //
+      });
 };
 
 std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(
