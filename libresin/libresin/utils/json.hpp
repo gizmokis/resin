@@ -93,7 +93,7 @@ class JSONDeserializerSDFTreeNodeVisitor : public ISDFTreeNodeVisitor {
   const std::unordered_map<size_t, IdView<MaterialId>>& material_ids_map_;
 };
 
-[[nodiscard]] std::unique_ptr<GroupNode> deserialize_prefab(SDFTree& tree, std::string_view prefab_json);
+[[nodiscard]] std::unique_ptr<GroupNode> deserialize_prefab(SDFTree& tree, std::string_view prefab_json_str);
 
 }  // namespace json
 

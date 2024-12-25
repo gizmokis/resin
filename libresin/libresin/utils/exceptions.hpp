@@ -327,11 +327,36 @@ class SDFTreeReachedDirtyPrimitivesLimit : public std::runtime_error {
       : std::runtime_error(std::format(R"(SDF Tree reached the dirty primitives limit)")) {}
 };
 
+class JSONSerializationException : public std::runtime_error {
+ public:
+  EXCEPTION_NAME(JSONSerializationException)
+
+  explicit JSONSerializationException(std::string_view msg)
+      : std::runtime_error(std::format("JSON serialization failed: {}", msg)) {}
+};
+
 class JSONDeserializationException : public std::runtime_error {
  public:
   EXCEPTION_NAME(JSONDeserializationException)
 
-  explicit JSONDeserializationException(std::string&& msg) : std::runtime_error(std::move(msg)) {}
+  explicit JSONDeserializationException(std::string_view msg)
+      : std::runtime_error(std::format("JSON deserialization failed: {}", msg)) {}
+};
+
+class InvalidJSONSchemaException : public std::runtime_error {
+ public:
+  EXCEPTION_NAME(InvalidJSONSchemaException)
+
+  explicit InvalidJSONSchemaException(std::string_view msg)
+      : std::runtime_error(std::format("Provided JSON Schema is invalid: {}", msg)) {}
+};
+
+class InvalidJSONException : public std::runtime_error {
+ public:
+  EXCEPTION_NAME(InvalidJSONException)
+
+  explicit InvalidJSONException(std::string_view msg)
+      : std::runtime_error(std::format("Provided JSON does not follow the rules defined in JSON schema: {}", msg)) {}
 };
 
 class NotImplementedException : public std::runtime_error {

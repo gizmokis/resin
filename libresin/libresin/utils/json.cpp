@@ -1,9 +1,12 @@
+#include <exception>
 #include <glm/fwd.hpp>
+#include <json_schemas/json_schemas.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/json.hpp>
 #include <libresin/utils/logger.hpp>
+#include <nlohmann/json-schema.hpp>
 #include <nlohmann/json.hpp>
 #include <unordered_map>
 #include <unordered_set>
@@ -128,10 +131,14 @@ void serialize_sdf_tree(json& target_json, const SDFTree& tree, bool ignore_unus
 }
 
 std::string serialize_prefab(SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id) {
-  json prefab_json;
-  prefab_json["version"] = kNewestResinPrefabJSONSchemaVersion;
-  serialize_sdf_tree(prefab_json, tree, subtree_root_id, true);
-  return prefab_json.dump(2);
+  try {
+    json prefab_json;
+    prefab_json["version"] = kNewestResinPrefabJSONSchemaVersion;
+    serialize_sdf_tree(prefab_json, tree, subtree_root_id, true);
+    return prefab_json.dump(2);
+  } catch (std::exception& e) {
+    log_throw(JSONSerializationException(e.what()));
+  }
 }
 
 void deserialize_node_material(SDFTreeNode& node, const json& node_json,
@@ -221,11 +228,23 @@ void JSONDeserializerSDFTreeNodeVisitor::visit_group(GroupNode& node) {
   }
 }
 
-std::unique_ptr<GroupNode> deserialize_prefab(SDFTree& tree, std::string_view prefab_json) {
-  auto json = json::parse(prefab_json)["tree"];
+std::unique_ptr<GroupNode> deserialize_prefab(SDFTree& tree, std::string_view prefab_json_str) {
+  nlohmann::json_schema::json_validator validator;
+  try {
+    validator.set_root_schema(RESIN_PREFAB_JSON_SCHEMA);
+  } catch (const std::exception& e) {
+    log_throw(InvalidJSONSchemaException(e.what()));
+  }
+  try {
+    validator.validate(prefab_json_str);
+  } catch (const std::exception& e) {
+    log_throw(InvalidJSONException(e.what()));
+  }
+
+  auto prefab_json = json::parse(prefab_json_str)["tree"];
 
   std::unordered_map<size_t, IdView<MaterialId>> material_ids_map;
-  for (const auto& mat_json : json["materials"]) {
+  for (const auto& mat_json : prefab_json["materials"]) {
     auto& mat = tree.add_material(Material());
     deserialize_material(mat, mat_json);
 
@@ -239,8 +258,8 @@ std::unique_ptr<GroupNode> deserialize_prefab(SDFTree& tree, std::string_view pr
   }
 
   auto prefab_root = tree.create_detached_node<GroupNode>();
-  deserialize_node_common(*prefab_root, json["rootGroup"], material_ids_map);
-  auto visitor = JSONDeserializerSDFTreeNodeVisitor(json["rootGroup"], material_ids_map);
+  deserialize_node_common(*prefab_root, prefab_json["rootGroup"], material_ids_map);
+  auto visitor = JSONDeserializerSDFTreeNodeVisitor(prefab_json["rootGroup"], material_ids_map);
   prefab_root->accept_visitor(visitor);
 
   return prefab_root;
