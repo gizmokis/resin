@@ -4,6 +4,12 @@ project(libresin)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 message(STATUS "Configuring " ${PROJECT_NAME})
 
+message(STATUS "Injecting JSON schemas")
+include(${PROJECT_SOURCE_DIR}/../cmake/inject_defs_into_schema.cmake)
+inject_defs_into_schema(PREFAB_JSON_SCHEMA ${PROJECT_SOURCE_DIR}/../schemas/definitions.schema.json ${PROJECT_SOURCE_DIR}/../schemas/prefab.schema.json)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/json_schemas.hpp.in
+               ${CMAKE_BINARY_DIR}/generated/json_schemas/json_schemas.hpp)
+
 set(CMAKE_CXX_STANDARD 23)
 
 file(GLOB_RECURSE SOURCES 
