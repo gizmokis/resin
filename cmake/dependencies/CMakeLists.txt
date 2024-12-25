@@ -121,17 +121,20 @@ list(POP_BACK CMAKE_MESSAGE_INDENT)
 message(CHECK_PASS "fetched")
 
 # ##############################################################################
-# nlohmann_json_schema_validator
+# valijson
 # ##############################################################################
-message(CHECK_START "Fetching nlohmann_json_schema_validator")
+message(CHECK_START "Fetching valijson")
 list(APPEND CMAKE_MESSAGE_INDENT "  ")
 
 FetchContent_Declare(
-    nlohmann_json_schema_validator 
-  GIT_REPOSITORY "https://github.com/pboettch/json-schema-validator.git"
-  GIT_TAG "2.3.0"
+    valijson 
+  GIT_REPOSITORY "https://github.com/tristanpenman/valijson.git"
+  GIT_TAG "v1.0.3"
+  GIT_SUBMODULES ""
+  PATCH_COMMAND git apply 
+                "${CMAKE_CURRENT_LIST_DIR}/../../patches/valijson.patch"
   UPDATE_DISCONNECTED 1)
-FetchContent_MakeAvailable(nlohmann_json_schema_validator)
+FetchContent_MakeAvailable(valijson)
 
 list(POP_BACK CMAKE_MESSAGE_INDENT)
 message(CHECK_PASS "fetched")

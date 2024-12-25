@@ -6,10 +6,14 @@
 #include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/json.hpp>
 #include <libresin/utils/logger.hpp>
-#include <nlohmann/json-schema.hpp>
 #include <nlohmann/json.hpp>
 #include <unordered_map>
 #include <unordered_set>
+#include <valijson/adapters/nlohmann_json_adapter.hpp>
+#include <valijson/schema.hpp>
+#include <valijson/schema_parser.hpp>
+#include <valijson/utils/nlohmann_json_utils.hpp>
+#include <valijson/validator.hpp>
 
 namespace resin {
 
@@ -229,19 +233,26 @@ void JSONDeserializerSDFTreeNodeVisitor::visit_group(GroupNode& node) {
 }
 
 std::unique_ptr<GroupNode> deserialize_prefab(SDFTree& tree, std::string_view prefab_json_str) {
-  nlohmann::json_schema::json_validator validator;
+  auto prefab_json    = json::parse(prefab_json_str);
+  auto prefab_adapter = valijson::adapters::NlohmannJsonAdapter(prefab_json);
+
+  auto schema_json    = json::parse(RESIN_PREFAB_JSON_SCHEMA);
+  auto schema_adapter = valijson::adapters::NlohmannJsonAdapter(schema_json);
+  auto schema         = valijson::Schema();
+  auto schema_parser  = valijson::SchemaParser();
+
   try {
-    validator.set_root_schema(RESIN_PREFAB_JSON_SCHEMA);
+    schema_parser.populateSchema(schema_adapter, schema);
   } catch (const std::exception& e) {
     log_throw(InvalidJSONSchemaException(e.what()));
   }
-  try {
-    validator.validate(prefab_json_str);
-  } catch (const std::exception& e) {
-    log_throw(InvalidJSONException(e.what()));
+
+  valijson::Validator validator;
+  if (!validator.validate(schema, prefab_adapter, NULL)) {
+    log_throw(InvalidJSONException("failed"));
   }
 
-  auto prefab_json = json::parse(prefab_json_str)["tree"];
+  auto tree_json = prefab_json["tree"];
 
   std::unordered_map<size_t, IdView<MaterialId>> material_ids_map;
   for (const auto& mat_json : prefab_json["materials"]) {

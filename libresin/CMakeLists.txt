@@ -23,7 +23,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
 
 target_include_directories(${PROJECT_NAME}
                            PUBLIC . "${CMAKE_BINARY_DIR}/generated")
-target_link_libraries(${PROJECT_NAME} PUBLIC glm::glm glad nlohmann_json nlohmann_json_schema_validator assimp)
+target_link_libraries(${PROJECT_NAME} PUBLIC glm::glm glad nlohmann_json valijson assimp)
 
 # Set compile options and properties of the target
 target_compile_options(${PROJECT_NAME} PRIVATE ${PROJ_CXX_FLAGS})
