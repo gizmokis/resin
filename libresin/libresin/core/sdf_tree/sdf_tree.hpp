@@ -46,6 +46,7 @@ class SDFTree {
   std::string gen_shader_code() const;
 
   inline GroupNode& root() { return *root_; }
+  inline const GroupNode& root() const { return *root_; }
 
   template <SDFTreeNodeConcept Node, typename... Args>
     requires std::constructible_from<Node, SDFTreeRegistry&, Args...>

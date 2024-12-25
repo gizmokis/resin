@@ -70,6 +70,7 @@ struct EnumMapping {
   auto end() const { return EnumMappingIterator<EnumType, Value>(*this, size); }
 
   constexpr Value get_value(enum_type enum_entry) const { return names_[static_cast<size_t>(enum_entry)]; }
+  constexpr Value operator[](enum_type enum_entry) const { return names_[static_cast<size_t>(enum_entry)]; }
 
   std::array<Value, static_cast<size_t>(EnumType::_Count)> names_ = {};
   size_t size                                                     = 0;

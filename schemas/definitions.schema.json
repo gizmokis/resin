@@ -154,17 +154,7 @@
     },
     "group": {
       "type": "object",
-      "required": [
-        "transform",
-        "name"
-      ],
       "properties": {
-        "transform": {
-          "$ref": "#/$defs/transform"
-        },
-        "name": {
-          "type": "string"
-        },
         "children": {
           "type": "array",
           "items": {
@@ -177,20 +167,12 @@
     "sphere": {
       "type": "object",
       "required": [
-        "transform",
-        "name",
         "radius"
       ],
       "properties": {
-        "transform": {
-          "$ref": "#/$defs/transform"
-        },
         "radius": {
           "type": "number",
           "minimum": 0
-        },
-        "materialId": {
-          "type": "number"
         }
       },
       "additionalProperties": false
@@ -198,17 +180,9 @@
     "cube": {
       "type": "object",
       "required": [
-        "transform",
-        "name",
         "size"
       ],
       "properties": {
-        "transform": {
-          "$ref": "#/$defs/transform"
-        },
-        "name": {
-          "type": "string"
-        },
         "size": {
           "type": "object",
           "required": [
@@ -243,7 +217,8 @@
       "required": [
         "operation",
         "name",
-        "materialId"
+        "materialId",
+        "transform"
       ],
       "properties": {
         "operation": {
@@ -254,6 +229,9 @@
         },
         "materialId": {
           "type": "#/$defs/intId"
+        },
+        "transform": {
+          "$ref": "#/$defs/transform"
         }
       },
       "additionalProperties": false
@@ -329,11 +307,11 @@
   "tree": {
     "type": "object",
     "required": [
-      "group"
+      "rootGroup"
     ],
     "properties": {
-      "group": {
-        "$ref": "#/$defs/group"
+      "rootGroup": {
+        "$ref": "#/$defs/groupNode"
       },
       "materials": {
         "type": "array",
