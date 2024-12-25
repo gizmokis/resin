@@ -169,7 +169,7 @@ void deserialize_material(MaterialSDFTreeComponent& material, const json& mat_js
 
 void deserialize_node_bin_op(SDFTreeNode& node, const json& node_json) {
   for (auto [op, name] : kSDFBinaryOperationsJSONNames) {
-    if (node_json["binaryOperation"] == name) {
+    if (node_json["binaryOperation"].get<std::string>() == name) {
       node.set_bin_op(op);
       break;
     }
@@ -235,7 +235,7 @@ std::unique_ptr<GroupNode> deserialize_prefab(SDFTree& tree, std::string_view pr
           std::format("More than one definition of a material with id {} found.", mat_it->first)));
     }
 
-    material_ids_map.insert(std::make_pair(mat_json["id"], mat.material_id()));
+    material_ids_map.emplace(mat_json["id"].get<size_t>(), mat.material_id());
   }
 
   auto prefab_root = tree.create_detached_node<GroupNode>();
