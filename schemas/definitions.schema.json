@@ -48,7 +48,7 @@
       ],
       "properties": {
         "id": {
-          "type": "number"
+          "type": "#/$defs/intId"
         },
         "name": {
           "type": "string"
@@ -60,27 +60,23 @@
           "type": "number",
           "minimum": 0,
           "maximum": 1,
-          "default": 0.5,
           "description": "Ambient light reflection factor"
         },
         "diffuse": {
           "type": "number",
           "minimum": 0,
           "maximum": 1,
-          "default": 0.5,
           "description": "Diffuse light reflection factor"
         },
         "specular": {
           "type": "number",
           "minimum": 0,
           "maximum": 1,
-          "default": 0.5,
           "description": "Specular light reflection factor"
         },
         "specularExponent": {
           "type": "number",
           "minimum": 0,
-          "default": 50.0,
           "description": "Specular exponent (shininess)"
         }
       },
@@ -139,6 +135,23 @@
       },
       "additionalProperties": false
     },
+    "binaryOperation": {
+      "type": "string",
+      "enum": [
+        "union",
+        "smoothUnion",
+        "diff",
+        "smoothDiff",
+        "inter",
+        "smoothInter",
+        "xor",
+        "smoothXor"
+      ]
+    },
+    "intId": {
+      "type": "integer",
+      "minimum": 0
+    },
     "group": {
       "type": "object",
       "required": [
@@ -157,9 +170,6 @@
           "items": {
             "$ref": "#/$defs/node"
           }
-        },
-        "materialId": {
-          "type": "number"
         }
       },
       "additionalProperties": false
@@ -174,9 +184,6 @@
       "properties": {
         "transform": {
           "$ref": "#/$defs/transform"
-        },
-        "name": {
-          "type": "string"
         },
         "radius": {
           "type": "number",
@@ -231,8 +238,31 @@
       },
       "additionalProperties": false
     },
-    "node": {
-      "oneOf": [
+    "nodeCommon": {
+      "type": "object",
+      "required": [
+        "operation",
+        "name",
+        "materialId"
+      ],
+      "properties": {
+        "operation": {
+          "$ref": "#/$defs/binaryOperation"
+        },
+        "name": {
+          "type": "string"
+        },
+        "materialId": {
+          "type": "#/$defs/intId"
+        }
+      },
+      "additionalProperties": false
+    },
+    "groupNode": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/nodeCommon"
+        },
         {
           "type": "object",
           "required": [
@@ -242,8 +272,14 @@
             "group": {
               "$ref": "#/$defs/group"
             }
-          },
-          "additionalProperties": false
+          }
+        }
+      ]
+    },
+    "sphereNode": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/nodeCommon"
         },
         {
           "type": "object",
@@ -254,8 +290,14 @@
             "sphere": {
               "$ref": "#/$defs/sphere"
             }
-          },
-          "additionalProperties": false
+          }
+        }
+      ]
+    },
+    "cubeNode": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/nodeCommon"
         },
         {
           "type": "object",
@@ -266,28 +308,40 @@
             "cube": {
               "$ref": "#/$defs/cube"
             }
-          },
-          "additionalProperties": false
+          }
         }
       ]
     },
-    "tree": {
-      "type": "object",
-      "required": [
-        "group"
-      ],
-      "properties": {
-        "group": {
-          "$ref": "#/$defs/group"
+    "node": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/groupNode"
         },
-        "materials": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/material"
-          }
+        {
+          "$ref": "#/$defs/sphereNode"
+        },
+        {
+          "$ref": "#/$defs/cubeNode"
         }
-      },
-      "additionalProperties": false
+      ]
     }
+  },
+  "tree": {
+    "type": "object",
+    "required": [
+      "group"
+    ],
+    "properties": {
+      "group": {
+        "$ref": "#/$defs/group"
+      },
+      "materials": {
+        "type": "array",
+        "items": {
+          "$ref": "#/$defs/material"
+        }
+      }
+    },
+    "additionalProperties": false
   }
 }
