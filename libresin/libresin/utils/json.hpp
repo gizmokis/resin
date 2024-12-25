@@ -7,8 +7,6 @@
 #include <memory>
 #include <nlohmann/json_fwd.hpp>
 
-#include "libresin/core/sdf_tree/primitive_base_node.hpp"
-
 namespace resin {
 
 struct Transform;
@@ -50,7 +48,7 @@ void serialize_node_common(json& target_json, const SDFTreeNode& node);
 // Serializes node specific data
 class JSONSerializerSDFTreeNodeVisitor : public ISDFTreeNodeVisitor {
  public:
-  explicit JSONSerializerSDFTreeNodeVisitor(json& json);
+  explicit JSONSerializerSDFTreeNodeVisitor(json& node_json);
 
   void visit_sphere(SphereNode& node) override;
   void visit_cube(CubeNode& node) override;
@@ -60,11 +58,11 @@ class JSONSerializerSDFTreeNodeVisitor : public ISDFTreeNodeVisitor {
   json& json_;
 };
 
-void serialize_sdf_tree(json& target_json, const SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id,
+void serialize_sdf_tree(json& target_json, SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id,
                         bool ignore_unused_materials = true);
-void serialize_sdf_tree(json& target_json, const SDFTree& tree, bool ignore_unused_materials = true);
+void serialize_sdf_tree(json& target_json, SDFTree& tree, bool ignore_unused_materials = true);
 
-[[nodiscard]] std::string serialize_prefab(const SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id);
+[[nodiscard]] std::string serialize_prefab(SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id);
 
 void deserialize_transform(Transform& transform, const json& trans_json);
 void deserialize_material(MaterialSDFTreeComponent& material, const json& mat_json);

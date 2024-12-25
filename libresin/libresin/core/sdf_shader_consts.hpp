@@ -59,7 +59,7 @@ enum class SDFShaderVariable : uint8_t {
   _Count   = 1,  // NOLINT
 };
 constexpr StringEnumMapping<SDFShaderVariable> kSDFShaderVariableNames({
-    {SDFShaderVariable::Position, "u_pos"},  //
+    {SDFShaderVariable::Position, "pos"},  //
 });
 
 }  // namespace sdf_shader_consts

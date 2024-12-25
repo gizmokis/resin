@@ -50,7 +50,7 @@ void serialize_node_material(json& target_json, const SDFTreeNode& node) {
 
 void serialize_node_name(json& target_json, const SDFTreeNode& node) { target_json["name"] = node.name(); }
 
-void serialize_bin_op(json& target_json, const SDFTreeNode& node) {
+void serialize_node_bin_op(json& target_json, const SDFTreeNode& node) {
   target_json["binaryOperation"] = kSDFBinaryOperationsJSONNames[node.bin_op()];
 }
 
@@ -62,7 +62,7 @@ void serialize_node_common(json& target_json, const SDFTreeNode& node) {
   serialize_node_bin_op(target_json, node);
 }
 
-JSONSerializerSDFTreeNodeVisitor::JSONSerializerSDFTreeNodeVisitor(json& json) : json_(json) {}
+JSONSerializerSDFTreeNodeVisitor::JSONSerializerSDFTreeNodeVisitor(json& node_json) : json_(node_json) {}
 
 void JSONSerializerSDFTreeNodeVisitor::visit_group(GroupNode& node) {
   auto children = json::array();
@@ -86,8 +86,8 @@ void JSONSerializerSDFTreeNodeVisitor::visit_cube(CubeNode& node) {
 void JSONSerializerSDFTreeNodeVisitor::visit_sphere(SphereNode& node) { json_["sphere"]["radius"] = node.radius; }
 
 static void find_used_materials(
-    std::unordered_set<IdView<MaterialId>, IdViewHash<MaterialId>, std::equal_to<>>& used_materials, SDFTree& tree,
-    IdView<SDFTreeNodeId> subtree_root_id) {
+    std::unordered_set<IdView<MaterialId>, IdViewHash<MaterialId>, std::equal_to<>>& used_materials,
+    const SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id) {
   if (tree.is_group(subtree_root_id)) {
     for (const auto& child_id : tree.group(subtree_root_id)) {
       find_used_materials(used_materials, tree, child_id);
@@ -126,7 +126,7 @@ void serialize_sdf_tree(json& target_json, SDFTree& tree, IdView<SDFTreeNodeId> 
   root_group.accept_visitor(visitor);
 }
 
-void serialize_sdf_tree(json& target_json, const SDFTree& tree, bool ignore_unused_materials) {
+void serialize_sdf_tree(json& target_json, SDFTree& tree, bool ignore_unused_materials) {
   serialize_sdf_tree(target_json, tree, tree.root().node_id(), ignore_unused_materials);
 }
 

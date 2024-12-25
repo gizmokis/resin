@@ -52,7 +52,7 @@ class SDFTreeComponentVisitor : public ::resin::ISDFTreeNodeVisitor {
           {::resin::SDFBinaryOperation::Union, "+"},         //
           {::resin::SDFBinaryOperation::SmoothUnion, "+'"},  //
           {::resin::SDFBinaryOperation::Diff, "-'"},         //
-          {::resin::SDFBinaryOperation::SmoothDiff, "-'"},   //
+          {::resin::SDFBinaryOperation::SmoothDiff, "-"},    //
           {::resin::SDFBinaryOperation::Inter, "&"},         //
           {::resin::SDFBinaryOperation::SmoothInter, "&'"},  //
           {::resin::SDFBinaryOperation::Xor, "^"},           //
