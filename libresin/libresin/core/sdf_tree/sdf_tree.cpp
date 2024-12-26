@@ -66,6 +66,9 @@ void SDFTree::delete_node(IdView<SDFTreeNodeId> node_id) {
   sdf_tree_registry_.all_nodes[node_id.raw()]->get().parent().delete_child(node_id);
 }
 
-std::string SDFTree::gen_shader_code(GenShaderMode mode) const { return root_->gen_shader_code(mode); }
+std::string SDFTree::gen_shader_code(GenShaderMode mode) const {
+  std::string root_code = root_->gen_shader_code(mode);
+  return root_code.empty() ? "vec2(u_farPlane,0)" : root_code;
+}
 
 }  // namespace resin

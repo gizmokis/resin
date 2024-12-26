@@ -177,9 +177,9 @@ void Resin::gui() {
     selected_node_ = result.first;
     if (result.second) {
       shader_->fragment_shader().set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
+      Logger::debug("{}", sdf_tree_.gen_shader_code());
       shader_->recompile();
       Logger::info("Refreshed the SDF Tree");
-      //   Logger::info("{}", shader_->fragment_shader().get_glsl());
     }
   }
   ImGui::End();

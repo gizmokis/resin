@@ -10,6 +10,9 @@
 #include <resin/imgui/node_edit.hpp>
 #include <resin/imgui/transform_edit.hpp>
 
+#define NODE_DIRTY(x) \
+  if (x) node.mark_dirty()
+
 namespace ImGui {
 static void edit_mat_tab(::resin::Material& mat) {
   // TODO(SDF-87)
@@ -41,7 +44,7 @@ static void edit_op(::resin::SDFTreeNode& node) {
 
 void resin::SDFNodeEditVisitor::visit_sphere(::resin::SphereNode& node) {
   if (ImGui::BeginTabItem("Properties")) {
-    ImGui::DragFloat("Radius", &node.radius, 0.01F, 0.0F, 1.0F, "%.2f");
+    NODE_DIRTY(ImGui::DragFloat("Radius", &node.radius, 0.01F, 0.0F, 1.0F, "%.2f"));
     edit_op(node);
     ImGui::EndTabItem();
   }
@@ -50,7 +53,7 @@ void resin::SDFNodeEditVisitor::visit_sphere(::resin::SphereNode& node) {
 
 void resin::SDFNodeEditVisitor::visit_cube(::resin::CubeNode& node) {
   if (ImGui::BeginTabItem("Properties")) {
-    ImGui::DragFloat("Size", &node.size, 0.01F, 0.0F, 1.0F, "%.2f");
+    NODE_DIRTY(ImGui::DragFloat("Size", &node.size, 0.01F, 0.0F, 1.0F, "%.2f"));
     edit_op(node);
     ImGui::EndTabItem();
   }
@@ -64,9 +67,7 @@ bool NodeEdit(::resin::SDFTreeNode& node) {
 
   if (ImGui::BeginTabBar("NodeTabBar", ImGuiTabBarFlags_None)) {
     if (ImGui::BeginTabItem("Transform")) {
-      if (ImGui::resin::TransformEdit(&node.transform())) {
-        node.mark_dirty();
-      }
+      NODE_DIRTY(ImGui::resin::TransformEdit(&node.transform()));
       ImGui::EndTabItem();
     }
     node.accept_visitor(vs);

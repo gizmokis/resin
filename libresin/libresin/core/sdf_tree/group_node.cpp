@@ -81,7 +81,7 @@ std::string GroupNode::gen_shader_code(GenShaderMode mode) const {
     }
 
     sdf += get_child(*it).gen_shader_code(mode);
-    sdf += ",0.5),";
+    sdf += ",0.5),";  // FIXME(SDF-117)
   }
   sdf.pop_back();
 

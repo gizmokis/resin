@@ -36,9 +36,7 @@ uniform material u_cubeMat;
 
 vec2 map( vec3 pos )
 {
-    //node cube = u_nodes[1];//node(u_iM, vec3(0.5), u_scale);
-    //node sphere = u_nodes[0];//node(mat4(1.0), vec3(1), 1);
-    return SDF_CODE;// opSmoothUnion(vec2(sdCube(pos, cube), 0), vec2(sdSphere(pos, sphere), 1), 0.5);
+    return SDF_CODE;
 }
 
 vec2 raycast( vec3 ray_origin, vec3 ray_direction )
