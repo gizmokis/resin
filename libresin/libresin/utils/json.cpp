@@ -103,6 +103,8 @@ void serialize_sdf_tree(json& target_json, SDFTree& tree, IdView<SDFTreeNodeId> 
                         bool ignore_unused_materials) {
   auto materials = json::array();
   if (ignore_unused_materials) {
+    Logger::info("Ignoring unused materials");
+
     std::unordered_set<IdView<MaterialId>, IdViewHash<MaterialId>, std::equal_to<>> used_materials;
     find_used_materials(used_materials, tree, subtree_root_id);
     for (auto mat : used_materials) {
@@ -130,10 +132,13 @@ void serialize_sdf_tree(json& target_json, SDFTree& tree, bool ignore_unused_mat
 }
 
 std::string serialize_prefab(SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id) {
+  Logger::info("JSON prefab serialization started");
   try {
     json prefab_json;
     prefab_json["version"] = kNewestResinPrefabJSONSchemaVersion;
     serialize_sdf_tree(prefab_json, tree, subtree_root_id, true);
+
+    Logger::info("JSON prefab serialization succceeded");
     return prefab_json.dump(2);
   } catch (const ResinException& e) {
     throw e;
@@ -263,8 +268,10 @@ void JSONDeserializerSDFTreeNodeVisitor::visit_group(GroupNode& node) {
       }
     }
   } catch (const ResinException& e) {
+    Logger::warn("JSON prefab serialization failed");
     throw e;
   } catch (...) {
+    Logger::warn("JSON prefab serialization failed");
     log_throw(JSONNodeDeserializationException(
         std::format("Group definition for node with name {} is invalid.", node.name())));
   }
@@ -274,6 +281,7 @@ std::unique_ptr<GroupNode> deserialize_prefab(SDFTree& tree, std::string_view pr
   if (!json::accept(prefab_json_str)) {
     log_throw(InvalidJSONException());
   }
+  Logger::info("JSON prefab deserialization started");
 
   try {
     auto tree_json = json::parse(prefab_json_str)["tree"];
@@ -292,15 +300,20 @@ std::unique_ptr<GroupNode> deserialize_prefab(SDFTree& tree, std::string_view pr
       material_ids_map.emplace(mat_json["id"].get<size_t>(), mat.material_id());
     }
 
+    Logger::info("Materials deserialization succeeded");
+
     auto prefab_root = tree.create_detached_node<GroupNode>();
     deserialize_node_common(*prefab_root, tree_json["rootGroup"], material_ids_map);
     auto visitor = JSONDeserializerSDFTreeNodeVisitor(tree_json["rootGroup"], material_ids_map);
     prefab_root->accept_visitor(visitor);
 
+    Logger::info("JSON prefab deserialization succeeded");
     return prefab_root;
   } catch (const ResinException& e) {
+    Logger::warn("JSON prefab deserialization failed");
     throw e;
   } catch (...) {
+    Logger::warn("JSON prefab deserialization failed");
     log_throw(JSONDeserializationException());
   }
 }
