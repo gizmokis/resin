@@ -19,12 +19,12 @@ using json = nlohmann::json;
 
 constexpr int kNewestResinPrefabJSONSchemaVersion = 1;
 
-constexpr StringEnumMapping<SDFTreePrimitiveType> kSDFTreePrimitiveNodesJSONNames({
+constexpr StringEnumMapper<SDFTreePrimitiveType> kSDFTreePrimitiveNodesJSONNames({
     {SDFTreePrimitiveType::Sphere, "sphere"},  //
     {SDFTreePrimitiveType::Cube, "cube"}       //
 });
 
-constexpr StringEnumMapping<SDFBinaryOperation> kSDFBinaryOperationsJSONNames({
+constexpr StringEnumMapper<SDFBinaryOperation> kSDFBinaryOperationsJSONNames({
     {SDFBinaryOperation::Union, "union"},              //
     {SDFBinaryOperation::SmoothUnion, "smoothUnion"},  //
     {SDFBinaryOperation::Diff, "diff"},                //

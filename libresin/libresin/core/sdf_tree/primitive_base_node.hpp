@@ -10,7 +10,7 @@ namespace resin {
 class GroupNode;
 
 using SDFTreePrimitiveType = sdf_shader_consts::SDFShaderPrim;
-constexpr StringEnumMapping<SDFTreePrimitiveType> kSDFTreePrimitiveNames({
+constexpr StringEnumMapper<SDFTreePrimitiveType> kSDFTreePrimitiveNames({
     {SDFTreePrimitiveType::Sphere, "Sphere"},  //
     {SDFTreePrimitiveType::Cube, "Cube"}       //
 });

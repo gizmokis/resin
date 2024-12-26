@@ -18,7 +18,7 @@ enum class SDFShaderBinOp : uint8_t {
   SmoothXor   = 7,
   _Count      = 8  // NOLINT
 };
-constexpr StringEnumMapping<SDFShaderBinOp> kSDFShaderBinOpFunctionNames({
+constexpr StringEnumMapper<SDFShaderBinOp> kSDFShaderBinOpFunctionNames({
     {SDFShaderBinOp::Union, "opUnion"},              //
     {SDFShaderBinOp::SmoothUnion, "opSmoothUnion"},  //
     {SDFShaderBinOp::Diff, "opDiff"},                //
@@ -34,12 +34,12 @@ enum class SDFShaderPrim : uint8_t {
   Cube   = 1,
   _Count = 2,  // NOLINT
 };
-constexpr StringEnumMapping<SDFShaderPrim> kSDFShaderPrimFunctionNames({
+constexpr StringEnumMapper<SDFShaderPrim> kSDFShaderPrimFunctionNames({
     {SDFShaderPrim::Sphere, "sdSphere"},  //
     {SDFShaderPrim::Cube, "sdCube"}       //
 });
 
-constexpr StringEnumMapping<SDFShaderPrim> kSDFShaderPrimComponentArrayNames({
+constexpr StringEnumMapper<SDFShaderPrim> kSDFShaderPrimComponentArrayNames({
     {SDFShaderPrim::Sphere, "u_spheres"},  //
     {SDFShaderPrim::Cube, "u_cubes"}       //
 });
@@ -49,7 +49,7 @@ enum class SDFShaderCoreComponents : uint8_t {
   Materials  = 1,
   _Count     = 2,  // NOLINT
 };
-constexpr StringEnumMapping<SDFShaderCoreComponents> kSDFShaderCoreComponentArrayNames({
+constexpr StringEnumMapper<SDFShaderCoreComponents> kSDFShaderCoreComponentArrayNames({
     {SDFShaderCoreComponents::Transforms, "u_transforms"},  //
     {SDFShaderCoreComponents::Materials, "u_materials"}     //
 });
@@ -58,7 +58,7 @@ enum class SDFShaderVariable : uint8_t {
   Position = 0,
   _Count   = 1,  // NOLINT
 };
-constexpr StringEnumMapping<SDFShaderVariable> kSDFShaderVariableNames({
+constexpr StringEnumMapper<SDFShaderVariable> kSDFShaderVariableNames({
     {SDFShaderVariable::Position, "pos"},  //
 });
 

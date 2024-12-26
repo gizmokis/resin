@@ -1,4 +1,3 @@
-#include <exception>
 #include <glm/fwd.hpp>
 #include <json_schemas/json_schemas.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>

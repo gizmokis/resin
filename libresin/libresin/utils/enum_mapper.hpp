@@ -18,14 +18,14 @@ template <typename T>
 concept EnumMappingValueConcept = requires { std::is_move_assignable<T>(); };
 
 template <EnumWithCountConcept EnumType, EnumMappingValueConcept Value>
-class EnumMapping;
+class EnumMapper;
 
 template <EnumWithCountConcept EnumType, typename Value>
 class EnumMappingIterator {
  public:
-  using enum_type = typename EnumMapping<EnumType, Value>::enum_type;
+  using enum_type = typename EnumMapper<EnumType, Value>::enum_type;
 
-  EnumMappingIterator(const EnumMapping<EnumType, Value>& mapping, size_t index) : mapping_(mapping), index_(index) {}
+  EnumMappingIterator(const EnumMapper<EnumType, Value>& mapping, size_t index) : mapping_(mapping), index_(index) {}
 
   std::pair<enum_type, Value> operator*() const {
     return {static_cast<enum_type>(index_), mapping_[static_cast<enum_type>(index_)]};
@@ -46,20 +46,20 @@ class EnumMappingIterator {
   bool operator!=(const EnumMappingIterator& other) const { return !(*this == other); }
 
  private:
-  const EnumMapping<EnumType, Value>& mapping_;
+  const EnumMapper<EnumType, Value>& mapping_;
   size_t index_;
 };
 
 template <EnumWithCountConcept EnumType, EnumMappingValueConcept Value>
-class EnumMapping {
+class EnumMapper {
  public:
   using enum_type                   = std::remove_cv_t<std::remove_reference_t<EnumType>>;
   static constexpr size_t kEnumSize = static_cast<size_t>(EnumType::_Count);
 
-  EnumMapping() = delete;
+  EnumMapper() = delete;
 
   template <size_t N>
-  consteval explicit EnumMapping(const std::pair<EnumType, Value> (&values_map)[N]) {
+  consteval explicit EnumMapper(const std::pair<EnumType, Value> (&values_map)[N]) {
     static_assert(N == kEnumSize, "Names count should be the same as enum entries count.");
 
     for (size_t i = 0; i < kEnumSize; ++i) {
@@ -98,7 +98,7 @@ class EnumMapping {
 };
 
 template <EnumWithCountConcept EnumType>
-using StringEnumMapping = EnumMapping<EnumType, std::string_view>;
+using StringEnumMapper = EnumMapper<EnumType, std::string_view>;
 
 }  // namespace resin
 
