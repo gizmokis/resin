@@ -9,11 +9,6 @@
 #include <nlohmann/json.hpp>
 #include <unordered_map>
 #include <unordered_set>
-#include <valijson/adapters/nlohmann_json_adapter.hpp>
-#include <valijson/schema.hpp>
-#include <valijson/schema_parser.hpp>
-#include <valijson/utils/nlohmann_json_utils.hpp>
-#include <valijson/validator.hpp>
 
 namespace resin {
 
@@ -113,13 +108,13 @@ void serialize_sdf_tree(json& target_json, SDFTree& tree, IdView<SDFTreeNodeId> 
     for (auto mat : used_materials) {
       json mat_json;
       serialize_material(mat_json, tree.material(mat));
-      materials.push_back(mat_json["material"]);
+      materials.push_back(mat_json);
     }
   } else {
     for (auto mat : tree.materials()) {
       json mat_json;
       serialize_material(mat_json, tree.material(mat));
-      materials.push_back(mat_json["material"]);
+      materials.push_back(mat_json);
     }
   }
   target_json["tree"]["materials"] = materials;
@@ -140,7 +135,9 @@ std::string serialize_prefab(SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_i
     prefab_json["version"] = kNewestResinPrefabJSONSchemaVersion;
     serialize_sdf_tree(prefab_json, tree, subtree_root_id, true);
     return prefab_json.dump(2);
-  } catch (std::exception& e) {
+  } catch (const ResinException& e) {
+    throw e;
+  } catch (const std::exception& e) {
     log_throw(JSONSerializationException(e.what()));
   }
 }
@@ -233,47 +230,38 @@ void JSONDeserializerSDFTreeNodeVisitor::visit_group(GroupNode& node) {
 }
 
 std::unique_ptr<GroupNode> deserialize_prefab(SDFTree& tree, std::string_view prefab_json_str) {
-  auto prefab_json    = json::parse(prefab_json_str);
-  auto prefab_adapter = valijson::adapters::NlohmannJsonAdapter(prefab_json);
-
-  auto schema_json    = json::parse(RESIN_PREFAB_JSON_SCHEMA);
-  auto schema_adapter = valijson::adapters::NlohmannJsonAdapter(schema_json);
-  auto schema         = valijson::Schema();
-  auto schema_parser  = valijson::SchemaParser();
+  if (!json::accept(prefab_json_str)) {
+    log_throw(InvalidJSONException());
+  }
 
   try {
-    schema_parser.populateSchema(schema_adapter, schema);
-  } catch (const std::exception& e) {
-    log_throw(InvalidJSONSchemaException(e.what()));
-  }
+    auto tree_json = json::parse(prefab_json_str)["tree"];
 
-  valijson::Validator validator;
-  if (!validator.validate(schema, prefab_adapter, NULL)) {
-    log_throw(InvalidJSONException("failed"));
-  }
+    std::unordered_map<size_t, IdView<MaterialId>> material_ids_map;
+    for (const auto& mat_json : tree_json["materials"]) {
+      auto& mat = tree.add_material(Material());
+      deserialize_material(mat, mat_json);
 
-  auto tree_json = prefab_json["tree"];
+      auto mat_it = material_ids_map.find(mat_json["id"]);
+      if (mat_it != material_ids_map.end()) {
+        log_throw(JSONDeserializationException(
+            std::format("More than one definition of a material with id {} found.", mat_it->first)));
+      }
 
-  std::unordered_map<size_t, IdView<MaterialId>> material_ids_map;
-  for (const auto& mat_json : prefab_json["materials"]) {
-    auto& mat = tree.add_material(Material());
-    deserialize_material(mat, mat_json);
-
-    auto mat_it = material_ids_map.find(mat_json["id"]);
-    if (mat_it != material_ids_map.end()) {
-      log_throw(JSONDeserializationException(
-          std::format("More than one definition of a material with id {} found.", mat_it->first)));
+      material_ids_map.emplace(mat_json["id"].get<size_t>(), mat.material_id());
     }
 
-    material_ids_map.emplace(mat_json["id"].get<size_t>(), mat.material_id());
+    auto prefab_root = tree.create_detached_node<GroupNode>();
+    deserialize_node_common(*prefab_root, tree_json["rootGroup"], material_ids_map);
+    auto visitor = JSONDeserializerSDFTreeNodeVisitor(tree_json["rootGroup"], material_ids_map);
+    prefab_root->accept_visitor(visitor);
+
+    return prefab_root;
+  } catch (const ResinException& e) {
+    throw e;
+  } catch (const std::exception& e) {
+    log_throw(JSONDeserializationException(e.what()));
   }
-
-  auto prefab_root = tree.create_detached_node<GroupNode>();
-  deserialize_node_common(*prefab_root, prefab_json["rootGroup"], material_ids_map);
-  auto visitor = JSONDeserializerSDFTreeNodeVisitor(prefab_json["rootGroup"], material_ids_map);
-  prefab_root->accept_visitor(visitor);
-
-  return prefab_root;
 }
 
 }  // namespace json
