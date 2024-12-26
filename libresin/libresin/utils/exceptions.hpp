@@ -334,25 +334,44 @@ class SDFTreeReachedDirtyPrimitivesLimit : public ResinException {
 class JSONSerializationException : public ResinException {
  public:
   EXCEPTION_NAME(JSONSerializationException)
-
-  explicit JSONSerializationException(std::string_view msg)
+  explicit JSONSerializationException(const std::string& msg)
       : ResinException(std::format("JSON serialization failed: {}", msg)) {}
+  explicit JSONSerializationException() : ResinException("JSON serialization failed: {}") {}
 };
 
 class JSONDeserializationException : public ResinException {
  public:
   EXCEPTION_NAME(JSONDeserializationException)
 
-  explicit JSONDeserializationException(std::string_view msg)
+  explicit JSONDeserializationException() : ResinException("JSON deserialization failed.") {}
+  explicit JSONDeserializationException(const std::string& msg)
       : ResinException(std::format("JSON deserialization failed: {}", msg)) {}
 };
 
-class InvalidJSONSchemaException : public ResinException {
+class JSONMaterialDeserializationException : public JSONDeserializationException {
  public:
-  EXCEPTION_NAME(InvalidJSONSchemaException)
+  EXCEPTION_NAME(JSONMaterialDeserializationException)
 
-  explicit InvalidJSONSchemaException(std::string_view msg)
-      : ResinException(std::format("Provided JSON Schema is invalid: {}", msg)) {}
+  explicit JSONMaterialDeserializationException()
+      : JSONDeserializationException("Expected a valid material definition.") {}
+};
+
+class JSONTransformDeserializationException : public JSONDeserializationException {
+ public:
+  EXCEPTION_NAME(JSONTransformDeserializationException)
+
+  explicit JSONTransformDeserializationException()
+      : JSONDeserializationException("Expected a valid transform definition.") {}
+};
+
+class JSONNodeDeserializationException : public JSONDeserializationException {
+ public:
+  EXCEPTION_NAME(JSONNodeDeserializationException)
+
+  explicit JSONNodeDeserializationException()
+      : JSONDeserializationException(std::format("Expected a valid node definition.")) {}
+  explicit JSONNodeDeserializationException(const std::string& msg)
+      : JSONDeserializationException(std::format("Expected a valid node definition: {}", msg)) {}
 };
 
 class InvalidJSONException : public ResinException {

@@ -137,51 +137,75 @@ std::string serialize_prefab(SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_i
     return prefab_json.dump(2);
   } catch (const ResinException& e) {
     throw e;
-  } catch (const std::exception& e) {
-    log_throw(JSONSerializationException(e.what()));
+  } catch (...) {
+    log_throw(JSONSerializationException());
   }
 }
 
 void deserialize_node_material(SDFTreeNode& node, const json& node_json,
                                const std::unordered_map<size_t, IdView<MaterialId>>& material_ids_map) {
-  if (!property_exists(node_json, "materialId")) {
-    return;
-  }
+  try {
+    if (!property_exists(node_json, "materialId")) {
+      return;
+    }
 
-  size_t id   = node_json["materialId"];
-  auto mat_it = material_ids_map.find(id);
-  if (mat_it == material_ids_map.end()) {
-    log_throw(JSONDeserializationException(
-        std::format("Node with name references to non existing material with id {}.", id)));
-  }
+    size_t id   = node_json["materialId"];
+    auto mat_it = material_ids_map.find(id);
+    if (mat_it == material_ids_map.end()) {
+      log_throw(JSONDeserializationException(
+          std::format("Node with name references to non existing material with id {}.", id)));
+    }
 
-  node.set_material(mat_it->second);
+    node.set_material(mat_it->second);
+  } catch (...) {
+    log_throw(JSONNodeDeserializationException());
+  }
 }
 
-void deserialize_node_name(SDFTreeNode& node, const json& node_json) { node.rename(node_json["name"]); }
+void deserialize_node_name(SDFTreeNode& node, const json& node_json) {
+  try {
+    node.rename(node_json["name"]);
+  } catch (...) {
+    log_throw(JSONNodeDeserializationException());
+  }
+}
 
 void deserialize_transform(Transform& transform, const json& trans_json) {
-  transform.set_local_pos(
-      glm::vec3(trans_json["position"]["x"], trans_json["position"]["y"], trans_json["position"]["z"]));
-  transform.set_local_rot(glm::quat(trans_json["rotation"]["w"], trans_json["rotation"]["x"],
-                                    trans_json["rotation"]["y"], trans_json["rotation"]["z"]));
-  transform.set_local_scale(trans_json["scale"]);
+  try {
+    transform.set_local_pos(
+        glm::vec3(trans_json["position"]["x"], trans_json["position"]["y"], trans_json["position"]["z"]));
+    transform.set_local_rot(glm::quat(trans_json["rotation"]["w"], trans_json["rotation"]["x"],
+                                      trans_json["rotation"]["y"], trans_json["rotation"]["z"]));
+    transform.set_local_scale(trans_json["scale"]);
+  } catch (...) {
+    log_throw(JSONTransformDeserializationException());
+  }
 }
 
 void deserialize_material(MaterialSDFTreeComponent& material, const json& mat_json) {
-  material.material =
-      Material(glm::vec3(mat_json["albedo"]["r"], mat_json["albedo"]["g"], mat_json["albedo"]["b"]),
-               mat_json["ambient"], mat_json["diffuse"], mat_json["specular"], mat_json["specularExponent"]);
-  material.rename(mat_json["name"]);
+  try {
+    material.material =
+        Material(glm::vec3(mat_json["albedo"]["r"], mat_json["albedo"]["g"], mat_json["albedo"]["b"]),
+                 mat_json["ambient"], mat_json["diffuse"], mat_json["specular"], mat_json["specularExponent"]);
+    material.rename(mat_json["name"]);
+  } catch (...) {
+    log_throw(JSONMaterialDeserializationException());
+  }
 }
 
 void deserialize_node_bin_op(SDFTreeNode& node, const json& node_json) {
-  for (auto [op, name] : kSDFBinaryOperationsJSONNames) {
-    if (node_json["binaryOperation"].get<std::string>() == name) {
-      node.set_bin_op(op);
-      break;
+  try {
+    for (auto [op, name] : kSDFBinaryOperationsJSONNames) {
+      if (node_json["binaryOperation"].get<std::string>() == name) {
+        node.set_bin_op(op);
+        return;
+      }
     }
+  } catch (...) {
+    log_throw(JSONNodeDeserializationException());
   }
+  log_throw(JSONNodeDeserializationException(
+      std::format("Provided binary operation '{}' is invalid.", node_json["binaryOperation"].get<std::string>())));
 }
 
 void deserialize_node_common(SDFTreeNode& node, const json& node_json,
@@ -198,34 +222,51 @@ JSONDeserializerSDFTreeNodeVisitor::JSONDeserializerSDFTreeNodeVisitor(
     : node_json_(node_json), material_ids_map_(material_ids_map) {}
 
 void JSONDeserializerSDFTreeNodeVisitor::visit_sphere(SphereNode& node) {
-  node.radius = node_json_["sphere"]["radius"];
+  try {
+    node.radius = node_json_["sphere"]["radius"];
+  } catch (...) {
+    log_throw(JSONNodeDeserializationException(
+        std::format("Sphere definition for node with name {} is invalid.", node.name())));
+  }
 }
 
 void JSONDeserializerSDFTreeNodeVisitor::visit_cube(CubeNode& node) {
-  node.size = node_json_["cube"]["size"]["x"];  // TODO(SDF-29): update json deserializer for node
+  try {
+    node.size = node_json_["cube"]["size"]["x"];  // TODO(SDF-29): update json deserializer for node
+  } catch (...) {
+    log_throw(JSONNodeDeserializationException(
+        std::format("Cube definition for node with name {} is invalid.", node.name())));
+  }
 }
 
 void JSONDeserializerSDFTreeNodeVisitor::visit_group(GroupNode& node) {
-  for (const auto& child_json : node_json_["group"]["children"]) {
-    for (auto [prim_type, name] : kSDFTreePrimitiveNodesJSONNames) {
-      if (property_exists(child_json, name)) {
-        auto& child_prim = node.push_back_primitive(prim_type, SDFBinaryOperation::Union);
+  try {
+    for (const auto& child_json : node_json_["group"]["children"]) {
+      for (auto [prim_type, name] : kSDFTreePrimitiveNodesJSONNames) {
+        if (property_exists(child_json, name)) {
+          auto& child_prim = node.push_back_primitive(prim_type, SDFBinaryOperation::Union);
 
-        deserialize_node_common(child_prim, child_json, material_ids_map_);
+          deserialize_node_common(child_prim, child_json, material_ids_map_);
+          auto visitor = JSONDeserializerSDFTreeNodeVisitor(child_json, material_ids_map_);
+          child_prim.accept_visitor(visitor);
+
+          break;
+        }
+      }
+
+      if (property_exists(child_json, "group")) {
+        auto& child_group = node.push_back_child<GroupNode>(SDFBinaryOperation::Union);
+
+        deserialize_node_common(child_group, child_json, material_ids_map_);
         auto visitor = JSONDeserializerSDFTreeNodeVisitor(child_json, material_ids_map_);
-        child_prim.accept_visitor(visitor);
-
-        break;
+        child_group.accept_visitor(visitor);
       }
     }
-
-    if (property_exists(child_json, "group")) {
-      auto& child_group = node.push_back_child<GroupNode>(SDFBinaryOperation::Union);
-
-      deserialize_node_common(child_group, child_json, material_ids_map_);
-      auto visitor = JSONDeserializerSDFTreeNodeVisitor(child_json, material_ids_map_);
-      child_group.accept_visitor(visitor);
-    }
+  } catch (const ResinException& e) {
+    throw e;
+  } catch (...) {
+    log_throw(JSONNodeDeserializationException(
+        std::format("Group definition for node with name {} is invalid.", node.name())));
   }
 }
 
@@ -259,8 +300,8 @@ std::unique_ptr<GroupNode> deserialize_prefab(SDFTree& tree, std::string_view pr
     return prefab_root;
   } catch (const ResinException& e) {
     throw e;
-  } catch (const std::exception& e) {
-    log_throw(JSONDeserializationException(e.what()));
+  } catch (...) {
+    log_throw(JSONDeserializationException());
   }
 }
 
