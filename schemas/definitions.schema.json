@@ -155,12 +155,12 @@
     "nodeCommon": {
       "type": "object",
       "required": [
-        "operation",
+        "binaryOperation",
         "name",
         "transform"
       ],
       "properties": {
-        "operation": {
+        "binaryOperation": {
           "$ref": "#/$defs/binaryOperation"
         },
         "name": {
