@@ -34,18 +34,16 @@ TEST_F(SDFTreeTest, SDFShaderIsCorrectlyGenerated) {
 
   // then
   ASSERT_EQ(
-      "opDiff(sdCube(u_transforms[1]*pos,u_cubes[0]),opDiff(opInter(sdCube(u_transforms[3]*pos,"
-      "u_cubes[1]),opDiff(sdSphere(u_transforms[6]*pos,u_spheres[1]),sdCube(u_transforms[7]*pos,"
-      "u_cubes[2]))),sdSphere(u_transforms[5]*pos,u_spheres[0])))",
+      "opDiff(sdCube(pos,u_cubes[0]),opDiff(opInter(sdCube(pos,u_cubes[1]),opDiff(sdSphere(pos,u_spheres[1]),sdCube("
+      "pos,u_cubes[2]),0.5),0.5),sdSphere(pos,u_spheres[0]),0.5),0.5)",
       sh_code_arr_per_prim);
   ASSERT_EQ(
-      "opDiff(sdCube(u_transforms[1]*pos,u_sdf_primitives[0]),opDiff(opInter(sdCube(u_transforms[3]*pos,"
-      "u_sdf_primitives[1]),opDiff(sdSphere(u_transforms[6]*pos,u_sdf_primitives[1]),sdCube(u_transforms[7]*pos,"
-      "u_sdf_primitives[2]))),sdSphere(u_transforms[5]*pos,u_sdf_primitives[0])))",
+      "opDiff(sdCube(pos,u_sdf_primitives[0]),opDiff(opInter(sdCube(pos,u_sdf_primitives[1]),opDiff(sdSphere(pos,u_sdf_"
+      "primitives[3]),sdCube(pos,u_sdf_primitives[4]),0.5),0.5),sdSphere(pos,u_sdf_primitives[2]),0.5),0.5)",
       sh_code_single_prim_arr);
 }
 
-TEST_F(SDFTreeTest, SDFShaderGenerationOmmitsShallowNodes) {
+TEST_F(SDFTreeTest, SDFShaderGenerationOmitsShallowNodes) {
   // given
   //      +
   // +          -
@@ -77,16 +75,12 @@ TEST_F(SDFTreeTest, SDFShaderGenerationOmmitsShallowNodes) {
 
   // then
   ASSERT_EQ(
-      "opDiff(sdCube(u_transforms[1]*pos,u_cubes[0]),opDiff(opInter(sdCube(u_transforms[3]*pos,u_cubes[1]),opDiff("
-      "sdSphere(u_transforms[6]*pos,u_spheres[1]),sdCube(u_transforms[13]*pos,u_cubes[2]))),sdSphere(u_transforms[5]*"
-      "pos,u_spheres[0])))",
+      "opDiff(sdCube(pos,u_cubes[0]),opDiff(opInter(sdCube(pos,u_cubes[1]),opDiff(sdSphere(pos,u_spheres[1]),sdCube("
+      "pos,u_cubes[2]),0.5),0.5),sdSphere(pos,u_spheres[0]),0.5),0.5)",
       sh_code_arr_per_prim);
   ASSERT_EQ(
-      "opDiff(sdCube(u_transforms[1]*pos,u_sdf_primitives[0]),opDiff(opInter(sdCube(u_transforms[3]*pos,u_sdf_"
-      "primitives[1]),opDiff("
-      "sdSphere(u_transforms[6]*pos,u_sdf_primitives[1]),sdCube(u_transforms[13]*pos,u_sdf_primitives[2]))),sdSphere(u_"
-      "transforms[5]*"
-      "pos,u_sdf_primitives[0])))",
+      "opDiff(sdCube(pos,u_sdf_primitives[0]),opDiff(opInter(sdCube(pos,u_sdf_primitives[1]),opDiff(sdSphere(pos,u_sdf_"
+      "primitives[3]),sdCube(pos,u_sdf_primitives[4]),0.5),0.5),sdSphere(pos,u_sdf_primitives[2]),0.5),0.5)",
       sh_code_single_prim_arr);
 }
 
