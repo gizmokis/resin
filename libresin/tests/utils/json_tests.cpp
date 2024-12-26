@@ -65,3 +65,105 @@ TEST_F(JSONTest, SerializedPrefabSatisfiesPrefabJSONSchema) {
   valijson::Validator validator;
   ASSERT_TRUE(validator.validate(schema, prefab_adapter, nullptr));
 }
+
+TEST_F(JSONTest, PrefabIsProperlySerializedAndDeserialized) {
+  auto assert_nodes_common_eq = [](const resin::SDFTreeNode& node1, const resin::SDFTreeNode& node2) {
+    EXPECT_GLM_VEC_NEAR(node1.transform().local_pos(), node2.transform().local_pos(), 1e-4F);
+    EXPECT_GLM_ROT_NEAR(node1.transform().local_rot(), node2.transform().local_rot(), 1e-4F);
+    EXPECT_NEAR(node1.transform().scale(), node2.transform().scale(), 1e-4F);
+    ASSERT_EQ(node1.bin_op(), node2.bin_op());
+    ASSERT_EQ(node1.name(), node2.name());
+  };
+
+  auto assert_materials_eq = [](const resin::MaterialSDFTreeComponent& material1,
+                                const resin::MaterialSDFTreeComponent& material2) {
+    EXPECT_GLM_VEC_NEAR(material1.material.albedo, material2.material.albedo, 1e-4F);
+    EXPECT_NEAR(material1.material.ambientFactor, material2.material.ambientFactor, 1e-4F);
+    EXPECT_NEAR(material1.material.diffuseFactor, material2.material.diffuseFactor, 1e-4F);
+    EXPECT_NEAR(material1.material.specularFactor, material2.material.specularFactor, 1e-4F);
+    EXPECT_NEAR(material1.material.specularExponent, material2.material.specularExponent, 1e-4F);
+    ASSERT_EQ(material1.name(), material2.name());
+  };
+
+  // given
+  //      o
+  //   o      o
+  //  o o  o  o  o
+  //            o o
+  //
+  resin::SDFTree tree;
+  auto& mat1 = tree.add_material(resin::Material(glm::vec3(1.F)));
+  auto& mat2 = tree.add_material(resin::Material(glm::vec3(1.F)));
+  randomize_material(mat1.material);
+  randomize_material(mat2.material);
+
+  auto& group1 = tree.root().push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Union);
+  group1.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Union);
+  group1.push_back_child<resin::SphereNode>(resin::SDFBinaryOperation::Union).set_material(mat2.material_id());
+  auto& group2 = tree.root().push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Inter);
+  group2.set_material(mat1.material_id());
+  randomize_transform(group2.transform());
+  randomize_transform(group2.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Xor).transform());
+  randomize_transform(
+      group2.push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Diff).transform());  // empty group
+  auto& group3 = group2.push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Inter);
+  randomize_transform(group3.transform());
+  randomize_transform(group3.push_back_child<resin::SphereNode>(resin::SDFBinaryOperation::SmoothXor).transform());
+  randomize_transform(group3.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Xor).transform());
+
+  // when
+  auto prefab_json_str = resin::json::serialize_prefab(tree, group2.node_id());
+  auto prefab          = resin::json::deserialize_prefab(tree, prefab_json_str);
+
+  // then
+  assert_nodes_common_eq(*prefab, group2);
+  assert_materials_eq(tree.material(*prefab->material_id()), mat1);
+
+  auto it        = group2.begin();
+  auto prefab_it = prefab->begin();
+  ASSERT_TRUE(tree.node(*it).is_leaf());
+  ASSERT_EQ(prefab->get_child(*prefab_it).material_id(), std::nullopt);
+  assert_nodes_common_eq(group2.get_child(*it), prefab->get_child(*prefab_it));
+  ASSERT_NO_THROW({
+    auto& prim        = static_cast<resin::CubeNode&>(group2.get_child(*it));          // NOLINT
+    auto& prefab_prim = static_cast<resin::CubeNode&>(prefab->get_child(*prefab_it));  // NOLINT
+    ASSERT_NEAR(prim.size, prefab_prim.size, 1e-4F);
+  });
+
+  it++;
+  prefab_it++;
+  assert_nodes_common_eq(tree.node(*it), prefab->get_child(*prefab_it));
+  ASSERT_EQ(prefab->get_child(*prefab_it).material_id(), std::nullopt);
+  ASSERT_TRUE(tree.node(*prefab_it).is_leaf());
+  ASSERT_NO_THROW({
+    static_cast<resin::GroupNode&>(tree.node(*prefab_it));  // NOLINT
+  });
+
+  it++;
+  prefab_it++;
+  assert_nodes_common_eq(tree.node(*it), prefab->get_child(*prefab_it));
+  ASSERT_EQ(prefab->get_child(*prefab_it).material_id(), std::nullopt);
+  ASSERT_FALSE(tree.node(*prefab_it).is_leaf());
+
+  it        = group3.begin();
+  prefab_it = tree.group(*prefab_it).begin();
+  assert_nodes_common_eq(tree.node(*it), tree.node(*prefab_it));
+  ASSERT_EQ(tree.node(*prefab_it).material_id(), std::nullopt);
+  ASSERT_TRUE(tree.node(*prefab_it).is_leaf());
+  ASSERT_NO_THROW({
+    auto& prim        = static_cast<resin::SphereNode&>(tree.node(*it));         // NOLINT
+    auto& prefab_prim = static_cast<resin::SphereNode&>(tree.node(*prefab_it));  // NOLINT
+    ASSERT_NEAR(prim.radius, prefab_prim.radius, 1e-4F);
+  });
+
+  it++;
+  prefab_it++;
+  assert_nodes_common_eq(tree.node(*it), tree.node(*prefab_it));
+  ASSERT_EQ(tree.node(*prefab_it).material_id(), std::nullopt);
+  ASSERT_TRUE(tree.node(*prefab_it).is_leaf());
+  ASSERT_NO_THROW({
+    auto& prim        = static_cast<resin::CubeNode&>(tree.node(*it));         // NOLINT
+    auto& prefab_prim = static_cast<resin::CubeNode&>(tree.node(*prefab_it));  // NOLINT
+    ASSERT_NEAR(prim.size, prefab_prim.size, 1e-4F);
+  });
+}

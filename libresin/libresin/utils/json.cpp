@@ -17,16 +17,16 @@ namespace json {
 static bool property_exists(const json& j, std::string_view key) { return j.find(key) != j.end(); }
 
 void serialize_transform(json& target_json, const Transform& transform) {
-  target_json["position"]["x"] = transform.pos().x;
-  target_json["position"]["y"] = transform.pos().y;
-  target_json["position"]["z"] = transform.pos().z;
+  target_json["position"]["x"] = transform.local_pos().x;
+  target_json["position"]["y"] = transform.local_pos().y;
+  target_json["position"]["z"] = transform.local_pos().z;
 
-  target_json["rotation"]["x"] = transform.rot().x;
-  target_json["rotation"]["y"] = transform.rot().y;
-  target_json["rotation"]["z"] = transform.rot().z;
-  target_json["rotation"]["w"] = transform.rot().w;
+  target_json["rotation"]["w"] = transform.local_rot().w;
+  target_json["rotation"]["x"] = transform.local_rot().x;
+  target_json["rotation"]["y"] = transform.local_rot().y;
+  target_json["rotation"]["z"] = transform.local_rot().z;
 
-  target_json["scale"] = transform.scale();
+  target_json["scale"] = transform.local_scale();
 }
 
 void serialize_material(json& target_json, const MaterialSDFTreeComponent& material) {
@@ -202,7 +202,7 @@ void JSONDeserializerSDFTreeNodeVisitor::visit_sphere(SphereNode& node) {
 }
 
 void JSONDeserializerSDFTreeNodeVisitor::visit_cube(CubeNode& node) {
-  node.size = node_json_["cube"]["size"]["x"];  // TODO(SDF-): update json deserializer for node
+  node.size = node_json_["cube"]["size"]["x"];  // TODO(SDF-29): update json deserializer for node
 }
 
 void JSONDeserializerSDFTreeNodeVisitor::visit_group(GroupNode& node) {
