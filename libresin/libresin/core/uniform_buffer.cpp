@@ -1,8 +1,7 @@
 #include <glad/gl.h>
 
+#include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/uniform_buffer.hpp>
-
-#include "libresin/core/sdf_tree/sdf_tree.hpp"
 
 namespace resin {
 

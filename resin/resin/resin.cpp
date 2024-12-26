@@ -11,6 +11,7 @@
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
+#include <libresin/core/transform.hpp>
 #include <libresin/core/uniform_buffer.hpp>
 #include <libresin/utils/logger.hpp>
 #include <memory>
@@ -21,7 +22,6 @@
 #include <resin/imgui/sdf_tree.hpp>
 #include <resin/imgui/transform_edit.hpp>
 #include <resin/resin.hpp>
-#include "libresin/core/transform.hpp"
 
 namespace resin {
 
@@ -83,8 +83,7 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
 
   // Example tree
   sdf_tree_.root().push_back_child<SphereNode>(SDFBinaryOperation::Union);
-  sdf_tree_.root().push_back_child<CubeNode>(SDFBinaryOperation::Union)
-    .transform().set_local_pos(glm::vec3(1, 1, 0));
+  sdf_tree_.root().push_back_child<CubeNode>(SDFBinaryOperation::Union).transform().set_local_pos(glm::vec3(1, 1, 0));
 
   ubo_->bind();
   ubo_->set(sdf_tree_);
