@@ -61,6 +61,7 @@ class Resin {
 
   std::unique_ptr<Window> window_;
   std::unique_ptr<RenderingShaderProgram> shader_;
+  std::unique_ptr<ComputeShaderProgram> marching_cubes_shader_;
 
   std::unique_ptr<Camera> camera_;
   std::unique_ptr<PointLight> point_light_;
