@@ -4,8 +4,11 @@
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
-layout (binding = 0) buffer vertBuffer { vec3 vertexBuffer[]; };
+layout (binding = 0) buffer vertBuffer { vec4 vertexBuffer[]; };
 layout (binding = 1) buffer indBuffer { uint indexBuffer[]; };
+layout (binding = 2) buffer vertexCountBuffer { uint vertex_size; };
+layout (binding = 3) buffer indexCountBuffer { uint index_size; };
+
 
 shared uint vertexCount;
 shared uint indexCount;
@@ -336,7 +339,7 @@ ivec2(3, 7)  // Edge 11
 float sdf(vec3 p) {
     // example sdf: a sphere centered at (0.5, 0.5, 0.5) with radius 0.4
     vec3 center = vec3(0.5, 0.5, 0.5);
-    float radius = 0.45;
+    float radius = 0.4;
     return length(p - center) - radius;
 }
 
@@ -403,12 +406,14 @@ void main() {
         vec3 v2 = edgeVertices[triTable[cubeIndex * 16 + i + 2]];
 
         // Write vertices to output buffer
+        atomicAdd(vertex_size, 3);
         uint index = atomicAdd(vertexCount, 3);
-        vertexBuffer[index + 0] = v0;
-        vertexBuffer[index + 1] = v1;
-        vertexBuffer[index + 2] = v2;
+        vertexBuffer[index + 0] = vec4(v0, 1.0);
+        vertexBuffer[index + 1] = vec4(v1, 1.0);
+        vertexBuffer[index + 2] = vec4(v2, 1.0);
 
         // Write indices to output buffer
+        atomicAdd(index_size, 1);
         uint triangleIndex = atomicAdd(indexCount, 1);
         indexBuffer[triangleIndex] = index;
     }

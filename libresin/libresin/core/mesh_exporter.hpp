@@ -13,23 +13,22 @@ namespace resin {
 
 class MeshExporter {
 public:
-    MeshExporter(const std::string& compute_shader_path);
+    MeshExporter(const ComputeShaderProgram& compute_shader_program);
     ~MeshExporter();
 
     void export_to_obj(const std::string& output_path, const glm::vec3& grid_origin,
-                       const glm::vec3& voxel_size, const glm::ivec3& grid_resolution);
+                       const glm::vec3& voxel_size, const unsigned int march_res);
 
 private:
-    ShaderResourceManager shader_resource_manager_;
-    ComputeShaderProgram compute_shader_program;
+    ComputeShaderProgram compute_shader_program_;
     GLuint vertex_buffer;
     GLuint index_buffer;
     GLuint vertex_count_buffer;
     GLuint index_count_buffer;
 
     void initialize_buffers();
-    void read_buffers(std::vector<glm::vec3>& vertices, std::vector<unsigned int>& indices);
-    void write_obj(const std::string& output_path, const std::vector<glm::vec3>& vertices,
+    void read_buffers(std::vector<glm::vec4>& vertices, std::vector<unsigned int>& indices) const;
+    void write_obj(const std::string& output_path, const std::vector<glm::vec4>& vertices,
                    const std::vector<unsigned int>& indices);
 };
 }

@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <format>
+#include <libresin/core/mesh_exporter.hpp>
 #include <libresin/core/resources/shader_resource.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
@@ -57,56 +58,10 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
                                                      *shader_resource_manager_.get_res(path / "test.frag"));
   marching_cubes_shader_ = std::make_unique<ComputeShaderProgram>("marching_cubes", *shader_resource_manager_.get_res(path / "marching_cubes.comp"));
 
-  const int march_res = 8;
-  const size_t buffer_size = march_res * march_res * march_res * 5;
-  std::vector<glm::vec3> march_vertices(buffer_size);
-  std::vector<GLuint> march_indices(buffer_size, 0);
-  std::vector<glm::vec3> debug_vec(8);
-  // Create a buffer
-  GLuint buffer;
-  glGenBuffers(1, &buffer);
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, buffer);
-  glBufferData(GL_SHADER_STORAGE_BUFFER, buffer_size * sizeof(glm::vec3), march_vertices.data(), GL_DYNAMIC_COPY);
+  const unsigned int march_res = 8;
 
-
-  // Run the compute shader
-  marching_cubes_shader_->bind();
-  marching_cubes_shader_->set_uniform("gridOrigin", glm::vec3(0, 0, 0));
-  marching_cubes_shader_->set_uniform("voxelSize", glm::vec3(1.0f / march_res, 1.0f / march_res, 1.0f / march_res));
-  //marching_cubes_shader_->set_uniform("gridResolution", glm::vec3(8, 8, 8));
-
-  resin::Logger::debug("max: {0}", GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS);
-  glDispatchCompute(march_res / 8, march_res / 8, march_res / 8);
-  glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
-
-  marching_cubes_shader_->unbind();
-
-  // Retrieve data from the buffer
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer);
-  glm::vec3* mapped_data = static_cast<glm::vec3*>(glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY));
-
-  std::ofstream output_file("output2.obj");
-  if (mapped_data) {
-    output_file << "o Sphere\n";
-    for (size_t i = 0; i < buffer_size; ++i) {
-      output_file << "v " << mapped_data[i].x << " "
-                  << mapped_data[i].y << " "
-                  << mapped_data[i].z << "\n";
-    }
-
-    output_file.close();
-    // for (size_t i = 0; i < 8; ++i) {
-    //   resin::Logger::debug("x: {0}, y: {1}, z: {2}", debug_vec[i].x, debug_vec[i].y, debug_vec[i].z);
-    // }
-    glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-  } else {
-    resin::Logger::err("Failed to map buffer data.");
-  }
-
-  // Cleanup
-  glDeleteBuffers(1, &buffer);
-
+  MeshExporter exporter(*marching_cubes_shader_);
+  exporter.export_to_obj("test.obj", glm::vec3(0,0,0), glm::vec3(1.0f / march_res), march_res);
 
   // TODO(anyone): temporary, move out somewhere else
   float vertices[4 * 3]   = {-1.F, -1.F, 0.F, 1.F, -1.F, 0.F, -1.F, 1.F, 0.F, 1.F, 1.F, 0.F};
