@@ -10,9 +10,6 @@ layout (binding = 2) buffer vertexCountBuffer { uint vertex_size; };
 layout (binding = 3) buffer indexCountBuffer { uint index_size; };
 
 
-shared uint vertexCount;
-shared uint indexCount;
-
 // marching cubes parameters
 uniform vec3 gridOrigin;       // World-space origin of the grid
 uniform vec3 voxelSize;        // Size of each voxel
@@ -339,22 +336,12 @@ ivec2(3, 7)  // Edge 11
 float sdf(vec3 p) {
     // example sdf: a sphere centered at (0.5, 0.5, 0.5) with radius 0.4
     vec3 center = vec3(0.5, 0.5, 0.5);
-    float radius = 0.4;
+    float radius = 0.45;
     return length(p - center) - radius;
 }
 
 void main() {
     ivec3 globalID = ivec3(gl_GlobalInvocationID);
-
-    if(globalID.x == 0 && globalID.y == 0 && globalID.z == 0)
-    {
-        vertexCount = 0;
-        indexCount = 0;
-    }
-
-
-    memoryBarrierShared();
-    barrier();
 
     // Calculate world-space positions for cube corners
     vec3 cornerPositions[8];
@@ -407,15 +394,11 @@ void main() {
 
         // Write vertices to output buffer
         atomicAdd(vertex_size, 3);
-        uint index = atomicAdd(vertexCount, 3);
+        uint index = atomicAdd(vertex_size, 3);
         vertexBuffer[index + 0] = vec4(v0, 1.0);
         vertexBuffer[index + 1] = vec4(v1, 1.0);
         vertexBuffer[index + 2] = vec4(v2, 1.0);
 
-        // Write indices to output buffer
-        atomicAdd(index_size, 1);
-        uint triangleIndex = atomicAdd(indexCount, 1);
-        indexBuffer[triangleIndex] = index;
     }
 
 }

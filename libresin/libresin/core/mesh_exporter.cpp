@@ -18,7 +18,6 @@ MeshExporter::MeshExporter(const ComputeShaderProgram& compute_shader_program):
 
 MeshExporter::~MeshExporter() {
   glDeleteBuffers(1, &vertex_buffer);
-  glDeleteBuffers(1, &index_buffer);
 }
 
 void MeshExporter::export_to_obj(const std::string& output_path, const glm::vec3& grid_origin,
@@ -35,65 +34,42 @@ void MeshExporter::export_to_obj(const std::string& output_path, const glm::vec3
 
   // Read back data.
   std::vector<glm::vec4> vertices;
-  std::vector<unsigned int> indices;
-  read_buffers(vertices, indices);
+  read_buffers(vertices);
 
   // Export mesh.
-  write_obj(output_path, vertices, indices);
+  write_obj(output_path, vertices);
 }
 
 void MeshExporter::initialize_buffers() {
-  // Create buffers for vertices and indices.
+  // Create buffers
   glGenBuffers(1, &vertex_buffer);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, vertex_buffer);
   glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::vec4) * 1000000, nullptr, GL_STREAM_READ);
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, vertex_buffer);
-
-  glGenBuffers(1, &index_buffer);
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, index_buffer);
-  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(unsigned int) * 1000000, nullptr, GL_STREAM_READ);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, index_buffer);
 
   // Create buffers for vertex and index counts.
   glGenBuffers(1, &vertex_count_buffer);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, vertex_count_buffer);
   glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(unsigned int), nullptr, GL_DYNAMIC_DRAW);
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, vertex_count_buffer);
-
-  glGenBuffers(1, &index_count_buffer);
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, index_count_buffer);
-  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(unsigned int), nullptr, GL_DYNAMIC_DRAW);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, index_count_buffer);
 }
 
-void MeshExporter::read_buffers(std::vector<glm::vec4>& vertices, std::vector<unsigned int>& indices) const {
+void MeshExporter::read_buffers(std::vector<glm::vec4>& vertices) const {
   unsigned int vertex_count = 0;
-  unsigned int index_count = 0;
 
   // Read vertex count.
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, vertex_count_buffer);
   glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(unsigned int), &vertex_count);
 
-  // Read index count.
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, index_count_buffer);
-  glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(unsigned int), &index_count);
-
   // Resize output vectors.
-  //if (index_count % 3 != 0) {index_count = index_count - index_count % 3;}
   vertices.resize(vertex_count);
-  indices.resize(index_count);
 
   // Read vertex data.
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, vertex_buffer);
   glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(glm::vec4) * vertex_count, vertices.data());
-
-  // Read index data.
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, index_buffer);
-  glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(unsigned int) * index_count, indices.data());
 }
 
-void MeshExporter::write_obj(const std::string& output_path, const std::vector<glm::vec4>& vertices,
-                              const std::vector<unsigned int>& indices) {
+void MeshExporter::write_obj(const std::string& output_path, const std::vector<glm::vec4>& vertices) {
   // Create ASSIMP scene.
   aiScene scene;
   scene.mRootNode = new aiNode();
@@ -120,17 +96,8 @@ void MeshExporter::write_obj(const std::string& output_path, const std::vector<g
     mesh->mVertices[i] = aiVector3D(vertices[i].x, vertices[i].y, vertices[i].z);
   }
 
-  // Fill faces.
-  // mesh->mFaces = new aiFace[indices.size() / 3];
-  // mesh->mNumFaces = indices.size() / 3;
-  // for (size_t i = 0; i < indices.size(); i += 3) {
-  //   aiFace& face = mesh->mFaces[i / 3];
-  //   face.mIndices = new unsigned int[3]{ indices[i], indices[i + 1], indices[i + 2] };
-  //   face.mNumIndices = 3;
-  // }
-
-  mesh->mFaces = new aiFace[indices.size()];
-  mesh->mNumFaces = indices.size();
+  mesh->mFaces = new aiFace[vertices.size() / 3];
+  mesh->mNumFaces = vertices.size() / 3;
   for (unsigned int i = 0; i < vertices.size(); i += 3) {
     aiFace& face = mesh->mFaces[i / 3];
     face.mIndices = new unsigned int[3]{ i, i + 1, i + 2 };

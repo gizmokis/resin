@@ -56,12 +56,24 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
 
   shader_ = std::make_unique<RenderingShaderProgram>("default", *shader_resource_manager_.get_res(path / "test.vert"),
                                                      *shader_resource_manager_.get_res(path / "test.frag"));
+
+  const unsigned int march_res = 32;
+  int invoc = 0;
+  int workGroupSizes[3] = { 0 };
+  glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, &workGroupSizes[0]);
+  glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 1, &workGroupSizes[1]);
+  glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 2, &workGroupSizes[2]);
+  glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &invoc);
+
+  Logger::debug("Max compute work group size X: {}", workGroupSizes[0]);
+  Logger::debug("Max compute work group size Y: {}", workGroupSizes[1]);
+  Logger::debug("Max compute work group size Z: {}", workGroupSizes[2]);
+
+  Logger::debug("Max invocations: {}", invoc);
   marching_cubes_shader_ = std::make_unique<ComputeShaderProgram>("marching_cubes", *shader_resource_manager_.get_res(path / "marching_cubes.comp"));
 
-  const unsigned int march_res = 8;
-
   MeshExporter exporter(*marching_cubes_shader_);
-  exporter.export_to_obj("test.obj", glm::vec3(0,0,0), glm::vec3(1.0f / march_res), march_res);
+  exporter.export_to_obj("test32.obj", glm::vec3(0,0,0), glm::vec3(1.0f / march_res), march_res);
 
   // TODO(anyone): temporary, move out somewhere else
   float vertices[4 * 3]   = {-1.F, -1.F, 0.F, 1.F, -1.F, 0.F, -1.F, 1.F, 0.F, 1.F, 1.F, 0.F};

@@ -22,14 +22,11 @@ public:
 private:
     ComputeShaderProgram compute_shader_program_;
     GLuint vertex_buffer;
-    GLuint index_buffer;
     GLuint vertex_count_buffer;
-    GLuint index_count_buffer;
 
     void initialize_buffers();
-    void read_buffers(std::vector<glm::vec4>& vertices, std::vector<unsigned int>& indices) const;
-    void write_obj(const std::string& output_path, const std::vector<glm::vec4>& vertices,
-                   const std::vector<unsigned int>& indices);
+    void read_buffers(std::vector<glm::vec4>& vertices) const;
+    void write_obj(const std::string& output_path, const std::vector<glm::vec4>& vertices);
 };
 }
 #endif //MESH_EXPORTER_HPP
