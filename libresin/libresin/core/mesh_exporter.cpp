@@ -18,6 +18,7 @@ MeshExporter::MeshExporter(const ComputeShaderProgram& compute_shader_program):
 
 MeshExporter::~MeshExporter() {
   glDeleteBuffers(1, &vertex_buffer);
+  glDeleteBuffers(1, &vertex_count_buffer);
 }
 
 void MeshExporter::export_to_obj(const std::string& output_path, const glm::vec3& grid_origin,
@@ -50,8 +51,8 @@ void MeshExporter::initialize_buffers() {
   // Create buffers for vertex and index counts.
   glGenBuffers(1, &vertex_count_buffer);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, vertex_count_buffer);
-  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(unsigned int), nullptr, GL_DYNAMIC_DRAW);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, vertex_count_buffer);
+  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(unsigned int), nullptr, GL_STREAM_READ);
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, vertex_count_buffer);
 }
 
 void MeshExporter::read_buffers(std::vector<glm::vec4>& vertices) const {
