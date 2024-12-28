@@ -16,10 +16,11 @@ uniform float u_camSize;
 #include "blinn_phong.glsl"
 #include "sdf.glsl"
 #external_definition SDF_CODE
+#external_definition MAX_UBO_NODE_COUNT
 
 // rendering
 const vec3 u_Ambient = vec3(0.25,0.25,0.25);
-const int kMaxNodeCount = 10;
+const int kMaxNodeCount = MAX_UBO_NODE_COUNT;
 layout (std140) uniform Data 
 {
     node u_sdf_primitives[kMaxNodeCount];
