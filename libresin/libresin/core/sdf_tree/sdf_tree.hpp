@@ -48,6 +48,8 @@ class SDFTree {
 
   inline size_t tree_id() const { return tree_id_; }
 
+  inline size_t max_nodes_count() const { return sdf_tree_registry_.nodes_registry.get_max_objs(); }
+
  private:
   static size_t curr_id_;
 
