@@ -215,6 +215,29 @@ void Resin::gui() {
   }
   ImGui::End();
 
+  ImGui::Begin("[TEMP] Materials");
+  if (ImGui::BeginTabBar("MaterialTabBar", ImGuiTabBarFlags_None)) {
+    // TODO(SDF-87)
+    if (ImGui::BeginTabItem("CubeMat")) {
+      ImGui::ColorEdit3("Color", glm::value_ptr(cube_mat_->albedo));
+      ImGui::DragFloat("Ambient", &cube_mat_->ambientFactor, 0.01F, 0.0F, 1.0F, "%.2f");
+      ImGui::DragFloat("Diffuse", &cube_mat_->diffuseFactor, 0.01F, 0.0F, 1.0F, "%.2f");
+      ImGui::DragFloat("Specular", &cube_mat_->specularFactor, 0.01F, 0.0F, 1.0F, "%.2f");
+      ImGui::DragFloat("Exponent", &cube_mat_->specularExponent, 0.1F, 0.0F, 100.0F, "%.1f");
+      ImGui::EndTabItem();
+    }
+    if (ImGui::BeginTabItem("SphereMat")) {
+      ImGui::ColorEdit3("Color", glm::value_ptr(sphere_mat_->albedo));
+      ImGui::DragFloat("Ambient", &sphere_mat_->ambientFactor, 0.01F, 0.0F, 1.0F, "%.2f");
+      ImGui::DragFloat("Diffuse", &sphere_mat_->diffuseFactor, 0.01F, 0.0F, 1.0F, "%.2f");
+      ImGui::DragFloat("Specular", &sphere_mat_->specularFactor, 0.01F, 0.0F, 1.0F, "%.2f");
+      ImGui::DragFloat("Exponent", &sphere_mat_->specularExponent, 0.1F, 0.0F, 100.0F, "%.1f");
+      ImGui::EndTabItem();
+    }
+    ImGui::EndTabBar();
+  }
+  ImGui::End();
+
   ImGui::SetNextWindowSizeConstraints(ImVec2(350.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
   ImGui::Begin("Selection");
   if (selected_node_.has_value()) {
