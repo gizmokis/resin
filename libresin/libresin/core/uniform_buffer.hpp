@@ -23,10 +23,7 @@ class UniformBuffer {
         : transform(_transform.world_to_local_matrix()), size(_size), scale(_transform.scale()) {}
   };
 
-  static constexpr size_t kMaxNodeCount = 10;
-  static constexpr size_t kBufferSize   = kMaxNodeCount * sizeof(Node);
-
-  explicit UniformBuffer(size_t binding = 0);
+  explicit UniformBuffer(size_t max_count, size_t binding = 0);
   ~UniformBuffer();
 
   void bind() const;
@@ -35,6 +32,9 @@ class UniformBuffer {
 
   void set(SDFTree& tree);
   void update_dirty(SDFTree& tree);
+
+  size_t max_count() const { return max_count_; }
+  size_t buffer_size() const { return buffer_size_; }
 
   UniformBuffer(const UniformBuffer&)            = delete;
   UniformBuffer(UniformBuffer&&)                 = delete;
@@ -48,7 +48,8 @@ class UniformBuffer {
   };
 
   GLuint buffer_id_;
-  size_t binding_;
+  const size_t binding_;
+  const size_t max_count_, buffer_size_;
 };
 
 }  // namespace resin

@@ -9,6 +9,7 @@
 #include <libresin/core/light.hpp>
 #include <libresin/core/material.hpp>
 #include <libresin/core/resources/shader_resource.hpp>
+#include <libresin/core/uniform_buffer.hpp>
 #include <libresin/utils/string_hash.hpp>
 #include <span>
 #include <string>
@@ -66,7 +67,7 @@ class ShaderProgram {
     }
   }
 
-  void bind_uniform_buffer(std::string_view name, size_t binding) const;
+  void bind_uniform_buffer(std::string_view name, const UniformBuffer& ubo) const;
 
  protected:
   static std::optional<std::string> get_shader_status(GLuint shader, GLenum type);

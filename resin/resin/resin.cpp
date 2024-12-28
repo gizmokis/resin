@@ -84,19 +84,21 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
       .set_local_pos(glm::vec3(1, 1, 0));
   sdf_tree_.root().push_back_child<SphereNode>(SDFBinaryOperation::SmoothUnion);
 
+  // SDF Shader
   ShaderResource frag_shader = *shader_resource_manager_.get_res(path / "test.frag");
+
   frag_shader.set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
-  frag_shader.set_ext_defi("MAX_UBO_NODE_COUNT", std::to_string(UniformBuffer::kMaxNodeCount));
   Logger::info("{}", frag_shader.get_glsl());
 
-  shader_ = std::make_unique<RenderingShaderProgram>("default", *shader_resource_manager_.get_res(path / "test.vert"),
-                                                     std::move(frag_shader));
-  ubo_    = std::make_unique<UniformBuffer>();
-  shader_->bind_uniform_buffer("Data", ubo_->binding());
-
+  ubo_ = std::make_unique<UniformBuffer>(10);  // TODO: TEMP!
+  frag_shader.set_ext_defi("MAX_UBO_NODE_COUNT", std::to_string(ubo_->max_count()));
   ubo_->bind();
   ubo_->set(sdf_tree_);
   ubo_->unbind();
+
+  shader_ = std::make_unique<RenderingShaderProgram>("default", *shader_resource_manager_.get_res(path / "test.vert"),
+                                                     std::move(frag_shader));
+  shader_->bind_uniform_buffer("Data", *ubo_);
 }
 
 void Resin::run() {
