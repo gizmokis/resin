@@ -27,7 +27,9 @@ class BasePrimitiveNode : public SDFTreeNode {
 
   ~BasePrimitiveNode() override = default;
   explicit BasePrimitiveNode(SDFTreeRegistry& tree, std::string_view name)
-      : SDFTreeNode(tree, name), prim_id_(tree.primitives_registry) {}
+      : SDFTreeNode(tree, name), prim_id_(tree.primitives_registry) {
+    this->mark_dirty();
+  }
 
   inline std::string gen_shader_code(GenShaderMode mode) const final {
     switch (mode) {
