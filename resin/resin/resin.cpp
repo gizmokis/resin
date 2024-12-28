@@ -90,7 +90,7 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
   frag_shader.set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
   Logger::info("{}", frag_shader.get_glsl());
 
-  ubo_ = std::make_unique<UniformBuffer>(10);  // TODO: TEMP!
+  ubo_ = std::make_unique<UniformBuffer>(sdf_tree_.max_nodes_count());
   frag_shader.set_ext_defi("MAX_UBO_NODE_COUNT", std::to_string(ubo_->max_count()));
   ubo_->bind();
   ubo_->set(sdf_tree_);

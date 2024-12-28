@@ -256,16 +256,25 @@ TEST_F(SDFTreeTest, DirtyPrimitivesAreCorrectlyAdded) {
   //  o   o o   o
   //           o o
   resin::SDFTree tree;
-  auto& group1 = tree.root().push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Union);
-  group1.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Union);
-  group1.push_back_child<resin::SphereNode>(resin::SDFBinaryOperation::Union);
-  auto& group2 = tree.root().push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Inter);
-  group2.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Xor);
-  auto& group3 = group2.push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Inter);
-  group3.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Xor);
-  group3.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Xor);
+  auto& group1    = tree.root().push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Union);
+  auto cube1_id   = group1.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Union).node_id();
+  auto sphere1_id = group1.push_back_child<resin::SphereNode>(resin::SDFBinaryOperation::Union).node_id();
+  auto& group2    = tree.root().push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Inter);
+  auto cube2_id   = group2.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Xor).node_id();
+  auto& group3    = group2.push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Inter);
+  auto cube3_id   = group3.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Xor).node_id();
+  auto cube4_id   = group3.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Xor).node_id();
+
+  // then
+  const auto& dirty = tree.dirty_primitives();
+  ASSERT_NE(std::find(dirty.begin(), dirty.end(), cube1_id), dirty.end());
+  ASSERT_NE(std::find(dirty.begin(), dirty.end(), cube2_id), dirty.end());
+  ASSERT_NE(std::find(dirty.begin(), dirty.end(), cube3_id), dirty.end());
+  ASSERT_NE(std::find(dirty.begin(), dirty.end(), cube4_id), dirty.end());
+  ASSERT_NE(std::find(dirty.begin(), dirty.end(), sphere1_id), dirty.end());
 
   // when
+  tree.clear_dirty();
   group2.mark_dirty();
 
   // then
