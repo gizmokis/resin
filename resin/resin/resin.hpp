@@ -9,6 +9,7 @@
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/core/shader.hpp>
+#include <libresin/core/uniform_buffer.hpp>
 #include <memory>
 #include <resin/core/window.hpp>
 #include <resin/event/event.hpp>
@@ -61,12 +62,13 @@ class Resin {
 
   std::unique_ptr<Window> window_;
   std::unique_ptr<RenderingShaderProgram> shader_;
+  std::unique_ptr<UniformBuffer> ubo_;
 
   std::unique_ptr<Camera> camera_;
   std::unique_ptr<PointLight> point_light_;
   std::unique_ptr<DirectionalLight> directional_light_;
   std::unique_ptr<Material> cube_mat_, sphere_mat_;
-  Transform cube_transform_, camera_rig_;
+  Transform camera_rig_;
 
   bool running_   = true;
   bool minimized_ = false;

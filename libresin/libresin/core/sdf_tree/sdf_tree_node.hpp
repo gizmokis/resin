@@ -1,6 +1,7 @@
 #ifndef RESIN_SDF_TREE_NODE_HPP
 #define RESIN_SDF_TREE_NODE_HPP
 
+#include <cstdint>
 #include <functional>
 #include <libresin/core/id_registry.hpp>
 #include <libresin/core/sdf_shader_consts.hpp>
@@ -19,6 +20,11 @@ class SDFTree;
 class SDFTreeNode;
 using SDFTreeNodeId = Id<SDFTreeNode>;
 
+enum class GenShaderMode : uint8_t {
+  SinglePrimitiveArray,
+  ArrayPerPrimitiveType,
+};
+
 class SDFTreeNode {
  public:
   SDFTreeNode() = delete;
@@ -31,10 +37,10 @@ class SDFTreeNode {
 
   virtual ~SDFTreeNode();
 
-  virtual std::string gen_shader_code() const               = 0;
-  virtual void accept_visitor(ISDFTreeNodeVisitor& visitor) = 0;
-  [[nodiscard]] virtual std::unique_ptr<SDFTreeNode> copy() = 0;
-  virtual bool is_leaf()                                    = 0;
+  virtual std::string gen_shader_code(GenShaderMode mode) const = 0;
+  virtual void accept_visitor(ISDFTreeNodeVisitor& visitor)     = 0;
+  [[nodiscard]] virtual std::unique_ptr<SDFTreeNode> copy()     = 0;
+  virtual bool is_leaf()                                        = 0;
 
   bool operator==(const SDFTreeNode& other) const { return node_id_ == other.node_id_; }
   bool operator!=(const SDFTreeNode& other) const { return node_id_ != other.node_id_; }

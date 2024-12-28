@@ -40,13 +40,15 @@ class SDFTree {
   // WARNING: This function must not be called while children of the the provided node's parent are iterated.
   void delete_node(IdView<SDFTreeNodeId> node_id);
 
-  std::string gen_shader_code() const;
+  std::string gen_shader_code(GenShaderMode mode = GenShaderMode::SinglePrimitiveArray) const;
 
   inline void clear_dirty() { sdf_tree_registry_.dirty_primitives.clear(); }
 
   inline GroupNode& root() { return *root_; }
 
   inline size_t tree_id() const { return tree_id_; }
+
+  inline size_t max_nodes_count() const { return sdf_tree_registry_.nodes_registry.get_max_objs(); }
 
  private:
   static size_t curr_id_;

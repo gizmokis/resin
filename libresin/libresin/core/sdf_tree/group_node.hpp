@@ -27,7 +27,7 @@ class GroupNode final : public SDFTreeNode {
   explicit GroupNode(SDFTreeRegistry& tree);
   ~GroupNode() override;
 
-  std::string gen_shader_code() const override;
+  std::string gen_shader_code(GenShaderMode mode) const override;
 
   inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override { visitor.visit_group(*this); }
   [[nodiscard]] std::unique_ptr<SDFTreeNode> copy() override;

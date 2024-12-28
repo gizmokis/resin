@@ -29,17 +29,21 @@ TEST_F(SDFTreeTest, SDFShaderIsCorrectlyGenerated) {
   tree.group(group2).push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Diff);
 
   // when
-  auto sh_code = tree.gen_shader_code();
+  auto sh_code_arr_per_prim    = tree.gen_shader_code(resin::GenShaderMode::ArrayPerPrimitiveType);
+  auto sh_code_single_prim_arr = tree.gen_shader_code(resin::GenShaderMode::SinglePrimitiveArray);
 
   // then
-  auto expected_sh_code = std::string_view(
-      "opDiff(sdCube(u_transforms[1]*pos,u_cubes[0]),opDiff(opInter(sdCube(u_transforms[3]*pos,"
-      "u_cubes[1]),opDiff(sdSphere(u_transforms[6]*pos,u_spheres[1]),sdCube(u_transforms[7]*pos,"
-      "u_cubes[2]))),sdSphere(u_transforms[5]*pos,u_spheres[0])))");
-  ASSERT_EQ(expected_sh_code, sh_code);
+  ASSERT_EQ(
+      "opDiff(sdCube(pos,u_cubes[0]),opDiff(opInter(sdCube(pos,u_cubes[1]),opDiff(sdSphere(pos,u_spheres[1]),sdCube("
+      "pos,u_cubes[2]),0.5),0.5),sdSphere(pos,u_spheres[0]),0.5),0.5)",
+      sh_code_arr_per_prim);
+  ASSERT_EQ(
+      "opDiff(sdCube(pos,u_sdf_primitives[0]),opDiff(opInter(sdCube(pos,u_sdf_primitives[1]),opDiff(sdSphere(pos,u_sdf_"
+      "primitives[3]),sdCube(pos,u_sdf_primitives[4]),0.5),0.5),sdSphere(pos,u_sdf_primitives[2]),0.5),0.5)",
+      sh_code_single_prim_arr);
 }
 
-TEST_F(SDFTreeTest, SDFShaderGenerationOmmitsShallowNodes) {
+TEST_F(SDFTreeTest, SDFShaderGenerationOmitsShallowNodes) {
   // given
   //      +
   // +          -
@@ -66,14 +70,18 @@ TEST_F(SDFTreeTest, SDFShaderGenerationOmmitsShallowNodes) {
   group4.push_front_child<resin::GroupNode>(resin::SDFBinaryOperation::Union);
 
   // when
-  auto sh_code = tree.gen_shader_code();
+  auto sh_code_arr_per_prim    = tree.gen_shader_code(resin::GenShaderMode::ArrayPerPrimitiveType);
+  auto sh_code_single_prim_arr = tree.gen_shader_code(resin::GenShaderMode::SinglePrimitiveArray);
 
   // then
-  auto expected_sh_code = std::string_view(
-      "opDiff(sdCube(u_transforms[1]*pos,u_cubes[0]),opDiff(opInter(sdCube(u_transforms[3]*pos,u_cubes[1]),opDiff("
-      "sdSphere(u_transforms[6]*pos,u_spheres[1]),sdCube(u_transforms[13]*pos,u_cubes[2]))),sdSphere(u_transforms[5]*"
-      "pos,u_spheres[0])))");
-  ASSERT_EQ(expected_sh_code, sh_code);
+  ASSERT_EQ(
+      "opDiff(sdCube(pos,u_cubes[0]),opDiff(opInter(sdCube(pos,u_cubes[1]),opDiff(sdSphere(pos,u_spheres[1]),sdCube("
+      "pos,u_cubes[2]),0.5),0.5),sdSphere(pos,u_spheres[0]),0.5),0.5)",
+      sh_code_arr_per_prim);
+  ASSERT_EQ(
+      "opDiff(sdCube(pos,u_sdf_primitives[0]),opDiff(opInter(sdCube(pos,u_sdf_primitives[1]),opDiff(sdSphere(pos,u_sdf_"
+      "primitives[3]),sdCube(pos,u_sdf_primitives[4]),0.5),0.5),sdSphere(pos,u_sdf_primitives[2]),0.5),0.5)",
+      sh_code_single_prim_arr);
 }
 
 TEST_F(SDFTreeTest, NodesAreCorrectlyMoved) {
@@ -248,16 +256,25 @@ TEST_F(SDFTreeTest, DirtyPrimitivesAreCorrectlyAdded) {
   //  o   o o   o
   //           o o
   resin::SDFTree tree;
-  auto& group1 = tree.root().push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Union);
-  group1.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Union);
-  group1.push_back_child<resin::SphereNode>(resin::SDFBinaryOperation::Union);
-  auto& group2 = tree.root().push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Inter);
-  group2.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Xor);
-  auto& group3 = group2.push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Inter);
-  group3.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Xor);
-  group3.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Xor);
+  auto& group1    = tree.root().push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Union);
+  auto cube1_id   = group1.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Union).node_id();
+  auto sphere1_id = group1.push_back_child<resin::SphereNode>(resin::SDFBinaryOperation::Union).node_id();
+  auto& group2    = tree.root().push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Inter);
+  auto cube2_id   = group2.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Xor).node_id();
+  auto& group3    = group2.push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Inter);
+  auto cube3_id   = group3.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Xor).node_id();
+  auto cube4_id   = group3.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Xor).node_id();
+
+  // then
+  const auto& dirty = tree.dirty_primitives();
+  ASSERT_NE(std::find(dirty.begin(), dirty.end(), cube1_id), dirty.end());
+  ASSERT_NE(std::find(dirty.begin(), dirty.end(), cube2_id), dirty.end());
+  ASSERT_NE(std::find(dirty.begin(), dirty.end(), cube3_id), dirty.end());
+  ASSERT_NE(std::find(dirty.begin(), dirty.end(), cube4_id), dirty.end());
+  ASSERT_NE(std::find(dirty.begin(), dirty.end(), sphere1_id), dirty.end());
 
   // when
+  tree.clear_dirty();
   group2.mark_dirty();
 
   // then
