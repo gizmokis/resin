@@ -180,6 +180,9 @@ void Resin::gui() {
       shader_->fragment_shader().set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
       Logger::debug("{}", sdf_tree_.gen_shader_code());
       shader_->recompile();
+      ubo_->bind();
+      ubo_->update_dirty(sdf_tree_);
+      ubo_->unbind();
       Logger::info("Refreshed the SDF Tree");
     }
   }
