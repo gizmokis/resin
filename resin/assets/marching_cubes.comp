@@ -6,13 +6,12 @@ layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
 layout (binding = 0) buffer vertBuffer { vec4 vertexBuffer[]; };
 layout (binding = 1) buffer vertexCountBuffer { uint vertex_size; };
+layout (binding = 2) buffer normalBuffer { vec4 normal_buffer[];};
 
 
-// marching cubes parameters
 uniform vec3 gridOrigin;       // World-space origin of the grid
 uniform vec3 voxelSize;        // Size of each voxel
 
-// marching cubes data
 shared int edgeTable[256] = {
 0x0, 0x109, 0x203, 0x30a, 0x406, 0x50f, 0x605, 0x70c,
 0x80c, 0x905, 0xa0f, 0xb06, 0xc0a, 0xd03, 0xe09, 0xf00,
@@ -338,6 +337,21 @@ float sdf(vec3 p) {
     return length(p - center) - radius;
 }
 
+// https://iquilezles.org/articles/normalsSDF
+vec3 calcNormal(vec3 pos )
+{
+    // inspired by tdhooper and klems - a way to prevent the compiler from inlining map() 4 times
+    vec3 n = vec3(0.0);
+    for( int i=0; i<4; i++ )
+    {
+        vec3 e = 0.5773*(2.0*vec3((((i+3)>>1)&1),((i>>1)&1),(i&1))-1.0);
+        n += e*sdf(pos+0.0005*e);
+        //if( n.x+n.y+n.z>100.0 ) break;
+    }
+    return normalize(n);
+}
+
+
 void main() {
     ivec3 globalID = ivec3(gl_GlobalInvocationID);
 
@@ -391,11 +405,14 @@ void main() {
         vec3 v2 = edgeVertices[triTable[cubeIndex * 16 + i + 2]];
 
         // Write vertices to output buffer
-        atomicAdd(vertex_size, 3);
         uint index = atomicAdd(vertex_size, 3);
         vertexBuffer[index + 0] = vec4(v0, 1.0);
         vertexBuffer[index + 1] = vec4(v1, 1.0);
         vertexBuffer[index + 2] = vec4(v2, 1.0);
+
+        normal_buffer[index + 0] = vec4(calcNormal(v0), 1.0);
+        normal_buffer[index + 1] = vec4(calcNormal(v1), 1.0);
+        normal_buffer[index + 2] = vec4(calcNormal(v2), 1.0);
 
     }
 

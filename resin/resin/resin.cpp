@@ -57,7 +57,7 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
   shader_ = std::make_unique<RenderingShaderProgram>("default", *shader_resource_manager_.get_res(path / "test.vert"),
                                                      *shader_resource_manager_.get_res(path / "test.frag"));
 
-  const unsigned int march_res = 32;
+  const unsigned int march_res = 16;
   int invoc = 0;
   int workGroupSizes[3] = { 0 };
   glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, &workGroupSizes[0]);
