@@ -25,15 +25,15 @@ class FileDialog {
 
   inline bool is_active() const { return dialog_task_.has_value(); }
 
-  inline void open(std::vector<nfdfilteritem_t> filters) { start_file_dialog(std::move(filters), true); }
-  inline void save(std::vector<nfdfilteritem_t> filters) { start_file_dialog(std::move(filters), false); }
-
-  inline void on_save(const std::function<void(std::filesystem::path)>& on_save_function) {
-    on_save_function_ = on_save_function;
+  inline void open(std::vector<nfdfilteritem_t> filters,
+                   const std::function<void(const std::filesystem::path&)>& on_open_function) {
+    on_finish_ = on_open_function;
+    start_file_dialog(std::move(filters), true);
   }
-
-  inline void on_open(const std::function<void(std::filesystem::path)>& on_open_function) {
-    on_save_function_ = on_open_function;
+  inline void save(std::vector<nfdfilteritem_t> filters,
+                   const std::function<void(const std::filesystem::path&)>& on_save_function) {
+    on_finish_ = on_save_function;
+    start_file_dialog(std::move(filters), false);
   }
 
   void update();
@@ -44,8 +44,7 @@ class FileDialog {
  private:
   std::optional<std::future<std::optional<std::string>>> dialog_task_;
   std::thread dialog_thread_;
-  std::optional<std::function<void(std::filesystem::path)>> on_save_function_;
-  std::optional<std::function<void(std::filesystem::path)>> on_open_function_;
+  std::optional<std::function<void(const std::filesystem::path&)>> on_finish_;
 };
 
 }  // namespace resin

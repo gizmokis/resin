@@ -32,9 +32,6 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
   dispatcher_.subscribe<WindowResizeEvent>(BIND_EVENT_METHOD(on_window_resize));
   dispatcher_.subscribe<WindowTestEvent>(BIND_EVENT_METHOD(on_test));
 
-  file_dialog_.on_save([](std::filesystem::path path) { Logger::info("SAVE target path: {}", path.string()); });
-  file_dialog_.on_open([](std::filesystem::path path) { Logger::info("SAVE target path: {}", path.string()); });
-
   {
     WindowProperties properties;
     properties.eventDispatcher = dispatcher_;
@@ -188,8 +185,8 @@ void Resin::gui() {
     ImGui::BeginDisabled();
   }
   if (ImGui::Button("Save as...")) {
-    file_dialog_.save({{"Cpp files", "cpp,c"}});
-    // file_dialog_.open({{"Cpp files", "cpp,c"}});
+    file_dialog_.save({{"Cpp files", "cpp,c"}},
+                      [](const std::filesystem::path& path) { Logger::info("Save target: {}", path.string()); });
   }
   if (disable_save) {
     ImGui::EndDisabled();

@@ -23,8 +23,8 @@ void FileDialog::update() {
   // the task is ready
   auto result = dialog_task_->get();
   if (result.has_value()) {
-    if (on_save_function_.has_value()) {
-      (*on_save_function_)(std::filesystem::path(*result));
+    if (on_finish_.has_value()) {
+      (*on_finish_)(std::filesystem::path(*result));
     } else {
       Logger::warn(R"(Obtained save path target, but no "on save" function is set)");
     }
