@@ -17,17 +17,16 @@ namespace resin {
 
 class SDFTreeComponentVisitor : public ::resin::ISDFTreeNodeVisitor {
  public:
-  explicit SDFTreeComponentVisitor(std::optional<::resin::IdView<::resin::SDFTreeNodeId>> selected,
-                                   size_t sdf_tree_comp_id)
-      : selected_(selected), payload_type_(std::format("SDF_TREE_DND_PAYLOAD_{}", sdf_tree_comp_id)) {}
+  explicit SDFTreeComponentVisitor(::resin::SDFTree& tree,
+                                   std::optional<::resin::IdView<::resin::SDFTreeNodeId>> selected)
+      : selected_(selected), payload_type_(std::format("SDF_TREE_DND_PAYLOAD_{}", tree.tree_id())), sdf_tree_(tree) {}
   void visit_group(::resin::GroupNode& node) override;
   void visit_primitive(::resin::BasePrimitiveNode& node) override;
 
-  void render_tree(::resin::SDFTree& tree);
+  void render_tree();
+  void apply_move_operation();
 
   inline std::optional<::resin::IdView<::resin::SDFTreeNodeId>> selected() const { return selected_; }
-
-  void apply_move_operation(::resin::SDFTree& tree);
 
   inline bool is_tree_edited() const { return is_tree_edited_; }
 
@@ -61,6 +60,8 @@ class SDFTreeComponentVisitor : public ::resin::ISDFTreeNodeVisitor {
           {::resin::SDFBinaryOperation::Xor, "^"},           //
           {::resin::SDFBinaryOperation::SmoothXor, "^'"}     //
       });
+
+  ::resin::SDFTree& sdf_tree_;  // NOLINT
 };
 
 std::pair<std::optional<::resin::IdView<::resin::SDFTreeNodeId>>, bool> SDFTreeView(

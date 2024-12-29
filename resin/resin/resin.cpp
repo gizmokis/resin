@@ -180,21 +180,6 @@ void Resin::update(duration_t delta) {
 void Resin::gui() {
   // ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
   // TODO(SDF-81): Proper rendering to framebuffer
-  ImGui::Begin("debug");
-  bool disable_save = !selected_node_.has_value() || !sdf_tree_.is_group(*selected_node_);
-  if (disable_save) {
-    ImGui::BeginDisabled();
-  }
-  if (ImGui::Button("Save as...")) {
-    FileDialog::instance().save({{"Cpp files", "cpp,c"}}, [](const std::filesystem::path& path) {
-      Logger::info("Save target: {}", path.string());
-    });
-  }
-  if (disable_save) {
-    ImGui::EndDisabled();
-  }
-  ImGui::End();
-
   ImGui::SetNextWindowSizeConstraints(ImVec2(280.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
   if (ImGui::Begin("SDF Tree")) {
     auto result    = ImGui::resin::SDFTreeView(sdf_tree_, selected_node_);

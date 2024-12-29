@@ -1,16 +1,20 @@
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
 
+#include <fstream>
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/primitive_base_node.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
+#include <libresin/utils/json.hpp>
 #include <libresin/utils/logger.hpp>
 #include <memory>
 #include <optional>
 #include <ranges>
+#include <resin/dialog/file_dialog.hpp>
 #include <resin/imgui/sdf_tree.hpp>
+#include <utility>
 
 namespace ImGui {  // NOLINT
 
@@ -116,6 +120,38 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
     is_any_node_clicked_ = true;
   }
 
+  if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
+    ImGui::OpenPopup("GroupPopUpMenu");
+  }
+
+  if (ImGui::BeginPopup("GroupPopUpMenu")) {
+    if (ImGui::Selectable("Save as prefab")) {
+      auto curr_id                                                                   = node.node_id();
+      auto name                                                                      = node.name();
+      auto& sdf_tree                                                                 = sdf_tree_;
+      std::vector<std::pair<const std::string_view, const std::string_view>> filters = {
+          std::make_pair("Resin prefab", "json")};
+
+      ::resin::FileDialog::instance().save(
+          [curr_id, &sdf_tree, name = std::move(name),
+           filters = std::move(filters)](const std::filesystem::path& path) {
+            std::ofstream file(path);
+            file << ::resin::json::serialize_prefab(sdf_tree, curr_id);
+            ::resin::Logger::info("Saved prefab to {}", path.string());
+          },
+          std::move(filters), std::string(name) += ".json");
+    }
+
+    if (ImGui::Selectable("Rename")) {
+    }
+    if (ImGui::Selectable("Copy")) {
+    }
+    if (ImGui::Selectable("Delete")) {
+    }
+
+    ImGui::EndPopup();
+  }
+
   if (!is_node_dragged) {
     drag_and_drop(node, false);
   }
@@ -202,13 +238,13 @@ void SDFTreeComponentVisitor::render_op(::resin::SDFTreeNode& node) const {
   }
 }
 
-void SDFTreeComponentVisitor::render_tree(::resin::SDFTree& tree) {
+void SDFTreeComponentVisitor::render_tree() {
   ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {0.0F, 0.0F});
   is_first_ = true;
-  for (auto child_it = tree.root().begin(); child_it != tree.root().end(); ++child_it) {
+  for (auto child_it = sdf_tree_.root().begin(); child_it != sdf_tree_.root().end(); ++child_it) {
     is_parent_selected_ = false;
     is_parent_dragged_  = false;
-    tree.root().get_child(*child_it).accept_visitor(*this);
+    sdf_tree_.root().get_child(*child_it).accept_visitor(*this);
     is_first_ = false;
   }
   ImGui::PopStyleVar();
@@ -216,7 +252,7 @@ void SDFTreeComponentVisitor::render_tree(::resin::SDFTree& tree) {
   auto source_id = get_curr_payload();
   if (source_id.has_value()) {
     ImGui::BeginTooltipEx(ImGuiTooltipFlags_OverridePrevious, ImGuiWindowFlags_None);
-    ImGui::Text("%s", tree.node(*source_id).name().data());
+    ImGui::Text("%s", sdf_tree_.node(*source_id).name().data());
     ImGui::EndTooltip();
   }
   auto child_rect = ImGui::GetCurrentWindow()->Rect();
@@ -226,20 +262,20 @@ void SDFTreeComponentVisitor::render_tree(::resin::SDFTree& tree) {
   }
 }
 
-void SDFTreeComponentVisitor::apply_move_operation(::resin::SDFTree& tree) {
+void SDFTreeComponentVisitor::apply_move_operation() {
   if (!move_source_target_.has_value()) {
     return;
   }
 
-  if (move_into_target_.has_value() && tree.node(*move_source_target_).parent().node_id() != *move_into_target_) {
-    auto node_ptr = tree.node(*move_source_target_).parent().detach_child(*move_source_target_);
-    tree.group(*move_into_target_).push_back_child(std::move(node_ptr));
+  if (move_into_target_.has_value() && sdf_tree_.node(*move_source_target_).parent().node_id() != *move_into_target_) {
+    auto node_ptr = sdf_tree_.node(*move_source_target_).parent().detach_child(*move_source_target_);
+    sdf_tree_.group(*move_into_target_).push_back_child(std::move(node_ptr));
   } else if (move_before_target_.has_value()) {
-    auto node_ptr = tree.node(*move_source_target_).parent().detach_child(*move_source_target_);
-    tree.node(*move_before_target_).parent().insert_before_child(*move_before_target_, std::move(node_ptr));
+    auto node_ptr = sdf_tree_.node(*move_source_target_).parent().detach_child(*move_source_target_);
+    sdf_tree_.node(*move_before_target_).parent().insert_before_child(*move_before_target_, std::move(node_ptr));
   } else if (move_after_target_.has_value()) {
-    auto node_ptr = tree.node(*move_source_target_).parent().detach_child(*move_source_target_);
-    tree.node(*move_after_target_).parent().insert_after_child(*move_after_target_, std::move(node_ptr));
+    auto node_ptr = sdf_tree_.node(*move_source_target_).parent().detach_child(*move_source_target_);
+    sdf_tree_.node(*move_after_target_).parent().insert_after_child(*move_after_target_, std::move(node_ptr));
   }
 
   is_tree_edited_ = true;
@@ -262,16 +298,17 @@ std::pair<std::optional<::resin::IdView<::resin::SDFTreeNodeId>>, bool> SDFTreeV
 
   ImGui::PushID(static_cast<int>(tree.tree_id()));
 
-  auto comp_vs = resin::SDFTreeComponentVisitor(old_selected, tree.tree_id());
+  auto comp_vs = resin::SDFTreeComponentVisitor(tree, old_selected);
 
   ImGui::BeginChild("ResizableInnerChild", ImVec2(-FLT_MIN, ImGui::GetWindowHeight() - buttons_section_height));
 
-  comp_vs.render_tree(tree);
+  comp_vs.render_tree();
   auto selected = comp_vs.selected();
-  comp_vs.apply_move_operation(tree);
   bool is_tree_edited = comp_vs.is_tree_edited();
 
   ImGui::EndChild();
+
+  comp_vs.apply_move_operation();
 
   ImGui::IsItemClicked();
   ImGui::GetMouseDragDelta();
