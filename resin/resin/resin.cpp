@@ -15,6 +15,8 @@
 #include <libresin/core/uniform_buffer.hpp>
 #include <libresin/utils/logger.hpp>
 #include <memory>
+#include <nfd/nfd.hpp>
+#include <optional>
 #include <resin/core/window.hpp>
 #include <resin/event/event.hpp>
 #include <resin/event/window_events.hpp>
@@ -188,6 +190,33 @@ void Resin::gui() {
       Logger::info("Refreshed the SDF Tree");
     }
   }
+  if (ImGui::Button("Save as...")) {
+    if (!dialog_task_.has_value()) {
+      std::promise<std::optional<std::string>> promise;
+      dialog_task_ = promise.get_future();
+
+      dialog_thread_ = std::thread(
+          [](std::promise<std::optional<std::string>> promise) {
+            NFD::Guard nfd_guard;
+            NFD::UniquePath out_path;
+            nfdfilteritem_t filter_item[2] = {{"Source code", "c,cpp,cc"}, {"Headers", "h,hpp"}};
+            nfdresult_t result             = NFD::OpenDialog(out_path, filter_item, 2);
+
+            if (result == NFD_OKAY) {
+              Logger::info("Success!");
+              promise.set_value(std::string(out_path.get()));
+              out_path.release();  // NOLINT
+            } else if (result == NFD_CANCEL) {
+              Logger::info("Cancel!");
+              promise.set_value(std::nullopt);
+            } else {
+              Logger::info("Error!");
+              promise.set_value(std::nullopt);
+            }
+          },
+          std::move(promise));
+    }
+  }
   ImGui::End();
 
   ImGui::SetNextWindowSizeConstraints(ImVec2(350.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
@@ -266,6 +295,19 @@ void Resin::render() {
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
   window_->on_update();
+
+  if (dialog_task_.has_value()) {
+    if (dialog_task_->wait_for(std::chrono::milliseconds(0)) == std::future_status::ready) {
+      auto success = dialog_task_->get();
+      if (success.has_value()) {
+        Logger::info("{}", success.value());
+      } else {
+        Logger::info("siema");
+      }
+      dialog_task_ = std::nullopt;
+      dialog_thread_.join();
+    }
+  }
 }
 
 bool Resin::on_window_close(WindowCloseEvent&) {

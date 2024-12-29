@@ -3,6 +3,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <future>
 #include <libresin/core/camera.hpp>
 #include <libresin/core/resources/shader_resource.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
@@ -69,6 +70,9 @@ class Resin {
   std::unique_ptr<DirectionalLight> directional_light_;
   std::unique_ptr<Material> cube_mat_, sphere_mat_;
   Transform camera_rig_;
+
+  std::optional<std::future<std::optional<std::string>>> dialog_task_;
+  std::thread dialog_thread_;
 
   bool running_   = true;
   bool minimized_ = false;
