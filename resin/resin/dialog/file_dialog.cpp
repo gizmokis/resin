@@ -1,3 +1,4 @@
+#include <optional>
 #include <resin/dialog/file_dialog.hpp>
 
 namespace resin {
@@ -36,7 +37,9 @@ void FileDialog::update() {
   dialog_thread_.join();
 }
 
-void FileDialog::start_file_dialog(std::vector<nfdfilteritem_t> filters, bool is_open) {
+void FileDialog::start_file_dialog(
+    bool is_open, std::optional<std::vector<std::pair<const std::string_view, const std::string_view>>> filters,
+    std::optional<std::string> default_name) {
   if (dialog_task_.has_value()) {
     Logger::warn("Detected attempt to open second file dialog");
     return;
@@ -45,19 +48,30 @@ void FileDialog::start_file_dialog(std::vector<nfdfilteritem_t> filters, bool is
   std::promise<std::optional<std::string>> curr_promise;
   dialog_task_   = curr_promise.get_future();
   dialog_thread_ = std::thread(
-      [is_open](std::promise<std::optional<std::string>> promise, std::vector<nfdfilteritem_t> dialog_filters) {
+      [is_open](std::promise<std::optional<std::string>> promise,
+                std::optional<std::vector<std::pair<const std::string_view, const std::string_view>>> _dialog_filters,
+                std::optional<std::string> _default_name) {
         NFD::Guard nfd_guard;
         NFD::UniquePath out_path;
         nfdresult_t result = NFD_ERROR;
 
-        if (is_open) {
-          result =
-              NFD::OpenDialog(out_path, dialog_filters.data(), static_cast<nfdfiltersize_t>(dialog_filters.size()));
-        } else {
-          result =
-              NFD::SaveDialog(out_path, dialog_filters.data(), static_cast<nfdfiltersize_t>(dialog_filters.size()));
+        std::vector<nfdnfilteritem_t> nfd_filters;
+        if (_dialog_filters.has_value() && !_dialog_filters->empty()) {
+          nfd_filters.resize(_dialog_filters->size());
+          std::transform(
+              _dialog_filters->begin(), _dialog_filters->end(), nfd_filters.begin(),
+              [](const auto& filter) -> nfdnfilteritem_t { return {filter.first.data(), filter.second.data()}; });
         }
 
+        if (is_open) {
+          result = NFD::OpenDialog(out_path, _dialog_filters ? nfd_filters.data() : nullptr,
+                                   _dialog_filters ? static_cast<nfdfiltersize_t>(nfd_filters.size()) : 0);
+        } else {
+          result = NFD::SaveDialog(out_path, _dialog_filters ? nfd_filters.data() : nullptr,
+                                   _dialog_filters ? static_cast<nfdfiltersize_t>(nfd_filters.size()) : 0,
+                                   nullptr,  // defaultPath
+                                   _default_name ? _default_name->data() : nullptr);
+        }
         if (result == NFD_OKAY) {
           promise.set_value(std::string(out_path.get()));
           out_path.release();  // NOLINT
@@ -65,7 +79,7 @@ void FileDialog::start_file_dialog(std::vector<nfdfilteritem_t> filters, bool is
           promise.set_value(std::nullopt);
         }
       },
-      std::move(curr_promise), std::move(filters));
+      std::move(curr_promise), std::move(filters), std::move(default_name));
 }
 
 }  // namespace resin
