@@ -18,6 +18,7 @@
 #include <nfd/nfd.hpp>
 #include <optional>
 #include <resin/core/window.hpp>
+#include <resin/dialog/file_dialog.hpp>
 #include <resin/event/event.hpp>
 #include <resin/event/window_events.hpp>
 #include <resin/imgui/node_edit.hpp>
@@ -173,7 +174,7 @@ void Resin::update(duration_t delta) {
   shader_->set_uniform("u_cubeMat", *cube_mat_);
   shader_->set_uniform("u_sphereMat", *sphere_mat_);
 
-  file_dialog_.update();
+  FileDialog::instance().update();
 }
 
 void Resin::gui() {
@@ -185,8 +186,9 @@ void Resin::gui() {
     ImGui::BeginDisabled();
   }
   if (ImGui::Button("Save as...")) {
-    file_dialog_.save({{"Cpp files", "cpp,c"}},
-                      [](const std::filesystem::path& path) { Logger::info("Save target: {}", path.string()); });
+    FileDialog::instance().save({{"Cpp files", "cpp,c"}}, [](const std::filesystem::path& path) {
+      Logger::info("Save target: {}", path.string());
+    });
   }
   if (disable_save) {
     ImGui::EndDisabled();

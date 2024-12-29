@@ -12,7 +12,6 @@
 #include <libresin/core/uniform_buffer.hpp>
 #include <memory>
 #include <resin/core/window.hpp>
-#include <resin/dialog/file_dialog.hpp>
 #include <resin/event/event.hpp>
 #include <resin/event/window_events.hpp>
 
@@ -70,8 +69,6 @@ class Resin {
   std::unique_ptr<DirectionalLight> directional_light_;
   std::unique_ptr<Material> cube_mat_, sphere_mat_;
   Transform camera_rig_;
-
-  FileDialog file_dialog_;
 
   bool running_   = true;
   bool minimized_ = false;
