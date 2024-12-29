@@ -225,8 +225,9 @@ void Window::imgui_set_style() {
   constexpr ImVec4 primary =
       ImVec4(0.9803921580314636f, 0.6627451181411743f, 0.07450980693101883f, 0.7450980544090271f);
   constexpr ImVec4 gui_background = ImVec4(0.09803921729326248f, 0.09803921729326248f, 0.09803921729326248f, 1.0f);
-  constexpr ImVec4 grey           = ImVec4(0.1568627506494522f, 0.1568627506494522f, 0.1568627506494522f, 1.0f);
-  constexpr ImVec4 white          = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+  constexpr ImVec4 gui_light_background = ImVec4(0.2588235437870026f, 0.2588235437870026f, 0.2588235437870026f, 1.0f);
+  constexpr ImVec4 grey                 = ImVec4(0.1568627506494522f, 0.1568627506494522f, 0.1568627506494522f, 1.0f);
+  constexpr ImVec4 white                = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 
   style.Colors[ImGuiCol_Text] = white;
 
@@ -257,18 +258,21 @@ void Window::imgui_set_style() {
 
   style.Colors[ImGuiCol_WindowBg]     = gui_background;
   style.Colors[ImGuiCol_PopupBg]      = gui_background;
+  style.Colors[ImGuiCol_Header]       = gui_background;
   style.Colors[ImGuiCol_HeaderActive] = gui_background;
 
   style.Colors[ImGuiCol_FrameBg]       = grey;
   style.Colors[ImGuiCol_ScrollbarGrab] = grey;
 
+  style.Colors[ImGuiCol_TitleBgCollapsed] = gui_light_background;
+  style.Colors[ImGuiCol_PopupBg]          = gui_light_background;
+
   // Misc
   style.Colors[ImGuiCol_TextDisabled] = ImVec4(1.0f, 1.0f, 1.0f, 0.3605149984359741f);
   style.Colors[ImGuiCol_FrameBgHovered] =
       ImVec4(0.3803921639919281f, 0.4235294163227081f, 0.572549045085907f, 0.5490196347236633f);
-  style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.2588235437870026f, 0.2588235437870026f, 0.2588235437870026f, 0.0f);
-  style.Colors[ImGuiCol_MenuBarBg]        = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
-  style.Colors[ImGuiCol_ScrollbarBg]      = ImVec4(0.1568627506494522f, 0.1568627506494522f, 0.1568627506494522f, 0.0f);
+  style.Colors[ImGuiCol_MenuBarBg]   = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+  style.Colors[ImGuiCol_ScrollbarBg] = ImVec4(0.1568627506494522f, 0.1568627506494522f, 0.1568627506494522f, 0.0f);
   style.Colors[ImGuiCol_ScrollbarGrabHovered] =
       ImVec4(0.2352941185235977f, 0.2352941185235977f, 0.2352941185235977f, 1.0f);
   style.Colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.294117659330368f, 0.294117659330368f, 0.294117659330368f, 1.0f);
