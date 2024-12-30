@@ -48,13 +48,13 @@ class FileDialog {
   struct FilterItem {
     const wchar_t* name;
     const wchar_t* spec;
-    FilterItem(const std::wstring_view _name, const std::wstring_view _spec) : name(_name.data()), spec(_spec.data()) {}
+    FilterItem(const wchar_t* _name, const wchar_t* _spec) : name(_name), spec(_spec) {}
   };
 #else
   struct FilterItem {
     const char* name;
     const char* spec;
-    FilterItem(const std::string_view _name, const std::string_view _spec) : name(_name.data()), spec(_spec.data()) {}
+    FilterItem(const char* _name, const char* _spec) : name(_name), spec(_spec) {}
   };
 #endif
 
