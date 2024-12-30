@@ -10,6 +10,8 @@
 #include <optional>
 #include <string>
 #include <thread>
+#include <cstdint>
+#include <span>
 
 namespace resin {
 
@@ -27,7 +29,7 @@ class FileDialog {
     const nfdnchar_t* spec;
 
     FilterItem() = delete;
-    FilterItem(const std::string_view _name, const std::string_view _spec) : name(_name.data()), spec(_spec.data()) {}
+    FilterItem(const std::string_view _name, const std::string_view _spec) : name(reinterpret_cast<const nfdnchar_t*>(_name.data())), spec(reinterpret_cast<const nfdnchar_t*>(_spec.data())) {}
   };
 
   static FileDialog& instance() {
@@ -58,7 +60,7 @@ class FileDialog {
   void update();
 
  private:
-  enum class DialogType : u_int8_t { OpenFile = 0, SaveFile, PickFolder };
+  enum class DialogType : uint8_t { OpenFile = 0, SaveFile, PickFolder };
 
   FileDialog() = default;
 

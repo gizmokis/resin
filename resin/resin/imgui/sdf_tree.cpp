@@ -22,7 +22,10 @@ namespace ImGui {  // NOLINT
 namespace resin {
 
 static const std::array<::resin::FileDialog::FilterItem, 1> kPrefabFiltersArray = {
-    ::resin::FileDialog::FilterItem("Resin prefab", "json")};
+    ::resin::FileDialog::FilterItem(
+        "Resin prefab",
+        "json")};
+
 
 std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeComponentVisitor::get_curr_payload() {
   std::optional<::resin::IdView<::resin::SDFTreeNodeId>> source_id;

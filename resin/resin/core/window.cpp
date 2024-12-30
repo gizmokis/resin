@@ -178,12 +178,12 @@ void Window::imgui_setup() const {
 void Window::imgui_set_style() {
   ImGuiIO& io = ImGui::GetIO();
 
-  std::filesystem::path path = std::filesystem::current_path() / "assets/fonts";
-  if (std::filesystem::exists(path / "OpenSans-Regular.ttf")) {
-    ImFont* sans_regular = io.Fonts->AddFontFromFileTTF((path / "OpenSans-Regular.ttf").string().c_str(), 18.0f);
-  } else {
-    Logger::warn("Failed to load font. Using ImGui's default.");
-  }
+//   std::filesystem::path path = std::filesystem::current_path() / "assets/fonts";
+//   if (std::filesystem::exists(path / "OpenSans-Regular.ttf")) {
+//     ImFont* sans_regular = io.Fonts->AddFontFromFileTTF((path / "OpenSans-Regular.ttf").string().c_str(), 18.0f);
+//   } else {
+//     Logger::warn("Failed to load font. Using ImGui's default.");
+//   }
 
   io.Fonts->Build();
 
