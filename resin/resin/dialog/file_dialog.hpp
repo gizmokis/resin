@@ -1,7 +1,6 @@
 #ifndef RESIN_FILE_DIALOG_HPP
 #define RESIN_FILE_DIALOG_HPP
 
-#include <nfd/nfd.h>
 #include <sys/types.h>
 
 #include <cstdint>
@@ -24,15 +23,40 @@ class FileDialog {
 
   ~FileDialog();
 
-  struct FilterItem {
-    const nfdnchar_t* name;
-    const nfdnchar_t* spec;
+  // According to the nfd.h char definitions:
+  //
+  // typedef char nfdu8char_t;
+  // #ifdef _WIN32
+  // /** @typedef UTF-16 character */
+  // typedef wchar_t nfdnchar_t;
+  // #else
+  // /** @typedef UTF-8 character */
+  // typedef nfdu8char_t nfdnchar_t;
+  // #endif  // _WIN32
+  //
+  // And filter item strucuture definition:
+  //
+  // typedef struct {
+  //     const nfdnchar_t* name;
+  //     const nfdnchar_t* spec;
+  // } nfdnfilteritem_t;
+  //
+  // The wchar_t is used on windows and char on linux, so
+  // the struct defined below can be reinterpreted as nfdnfilteritem_t.
 
-    FilterItem() = delete;
-    FilterItem(const std::string_view _name, const std::string_view _spec)
-        : name(reinterpret_cast<const nfdnchar_t*>(_name.data())),
-          spec(reinterpret_cast<const nfdnchar_t*>(_spec.data())) {}
+#ifdef _WIN32
+  struct FilterItem {
+    const wchar_t* name;
+    const wchar_t* spec;
+    FilterItem(const std::wstring_view _name, const std::wstring_view _spec) : name(_name.data()), spec(_spec.data()) {}
   };
+#else
+  struct FilterItem {
+    const char* name;
+    const char* spec;
+    FilterItem(const std::string_view _name, const std::string_view _spec) : name(_name.data()), spec(_spec.data()) {}
+  };
+#endif
 
   static FileDialog& instance() {
     static FileDialog instance;
