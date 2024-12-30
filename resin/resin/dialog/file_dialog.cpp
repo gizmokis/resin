@@ -1,3 +1,5 @@
+#include <nfd/nfd.h>
+
 #include <filesystem>
 #include <libresin/utils/exceptions.hpp>
 #include <nfd/nfd.hpp>
@@ -45,10 +47,8 @@ void FileDialog::update() {
   dialog_thread_.join();
 }
 
-void FileDialog::start_file_dialog(
-    FileDialog::DialogType type,
-    std::optional<std::vector<std::pair<const std::string_view, const std::string_view>>> filters,
-    std::optional<std::string> default_name) {
+void FileDialog::start_file_dialog(FileDialog::DialogType type, std::optional<std::span<const FilterItem>> filters,
+                                   std::optional<std::string> default_name) {
   if (dialog_task_.has_value()) {
     Logger::warn("Detected an attempt to open second file dialog");
     return;
@@ -58,28 +58,21 @@ void FileDialog::start_file_dialog(
   dialog_task_   = curr_promise.get_future();
   dialog_thread_ = std::thread(
       [type](std::promise<std::optional<std::string>> promise,
-             std::optional<std::vector<std::pair<const std::string_view, const std::string_view>>> _dialog_filters,
-             std::optional<std::string> _default_name) {
+             std::optional<std::span<const FilterItem>> _dialog_filters, std::optional<std::string> _default_name) {
         NFD::Guard nfd_guard;
         NFD::UniquePath out_path;
         nfdresult_t result = NFD_ERROR;
 
-        std::vector<nfdnfilteritem_t> nfd_filters;
-        if (_dialog_filters.has_value() && !_dialog_filters->empty()) {
-          nfd_filters.resize(_dialog_filters->size());
-          std::transform(
-              _dialog_filters->begin(), _dialog_filters->end(), nfd_filters.begin(),
-              [](const auto& filter) -> nfdnfilteritem_t { return {filter.first.data(), filter.second.data()}; });
-        }
-
         if (type == DialogType::OpenFile) {
-          result = NFD::OpenDialog(out_path, _dialog_filters ? nfd_filters.data() : nullptr,
-                                   _dialog_filters ? static_cast<nfdfiltersize_t>(nfd_filters.size()) : 0);
+          result = NFD::OpenDialog(
+              out_path, _dialog_filters ? reinterpret_cast<const nfdfilteritem_t*>(_dialog_filters->data()) : nullptr,
+              _dialog_filters ? static_cast<nfdfiltersize_t>(_dialog_filters->size()) : 0);
         } else if (type == DialogType::SaveFile) {
-          result = NFD::SaveDialog(out_path, _dialog_filters ? nfd_filters.data() : nullptr,
-                                   _dialog_filters ? static_cast<nfdfiltersize_t>(nfd_filters.size()) : 0,
-                                   nullptr,  // defaultPath
-                                   _default_name ? _default_name->data() : nullptr);
+          result = NFD::SaveDialog(
+              out_path, _dialog_filters ? reinterpret_cast<const nfdfilteritem_t*>(_dialog_filters->data()) : nullptr,
+              _dialog_filters ? static_cast<nfdfiltersize_t>(_dialog_filters->size()) : 0,
+              nullptr,  // defaultPath
+              _default_name ? _default_name->data() : nullptr);
         } else {
           result = NFD::PickFolder(out_path);
         }

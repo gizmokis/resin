@@ -21,6 +21,9 @@ namespace ImGui {  // NOLINT
 
 namespace resin {
 
+static const std::array<::resin::FileDialog::FilterItem, 1> kPrefabFiltersArray = {
+    ::resin::FileDialog::FilterItem("Resin prefab", "json")};
+
 std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeComponentVisitor::get_curr_payload() {
   std::optional<::resin::IdView<::resin::SDFTreeNodeId>> source_id;
   if (const ImGuiPayload* payload = ImGui::GetDragDropPayload()) {
@@ -79,11 +82,11 @@ void SDFTreeComponentVisitor::drag_and_drop(::resin::SDFTreeNode& node, bool ign
 }
 
 void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
-  static ImGuiTreeNodeFlags base_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick |
-                                         ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_FramePadding |
-                                         ImGuiTreeNodeFlags_Selected;
+  static const ImGuiTreeNodeFlags kBaseFlags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick |
+                                               ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_FramePadding |
+                                               ImGuiTreeNodeFlags_Selected;
 
-  auto tree_flags = base_flags;
+  auto tree_flags = kBaseFlags;
 
   bool is_node_dragged = is_parent_dragged_;
   if (!is_node_dragged) {
@@ -127,15 +130,12 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
 
   if (ImGui::BeginPopup("GroupPopUpMenu")) {
     if (ImGui::Selectable("Save as prefab")) {
-      auto curr_id                                                                   = node.node_id();
-      auto name                                                                      = node.name();
-      auto& sdf_tree                                                                 = sdf_tree_;
-      std::vector<std::pair<const std::string_view, const std::string_view>> filters = {
-          std::make_pair("Resin prefab", "json")};
+      auto curr_id   = node.node_id();
+      auto name      = node.name();
+      auto& sdf_tree = sdf_tree_;
 
       ::resin::FileDialog::instance().save_file(
-          [curr_id, &sdf_tree, name = std::move(name),
-           filters = std::move(filters)](const std::filesystem::path& path) {
+          [curr_id, &sdf_tree](const std::filesystem::path& path) {
             std::ofstream file(path);
             if (!file.is_open()) {
               ::resin::Logger::warn("Could not save to path {}", path.string());
@@ -146,7 +146,7 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
             file << ::resin::json::serialize_prefab(sdf_tree, curr_id);
             ::resin::Logger::info("Saved prefab to {}", path.string());
           },
-          std::move(filters), std::string(name) += ".json");
+          std::span<const ::resin::FileDialog::FilterItem>(kPrefabFiltersArray), std::string(name) += ".json");
     }
     ImGui::EndPopup();
   }
@@ -353,7 +353,7 @@ std::pair<std::optional<::resin::IdView<::resin::SDFTreeNodeId>>, bool> SDFTreeV
       auto& sdf_tree = tree;
 
       ::resin::FileDialog::instance().open_file(
-          [&sdf_tree, filters = std::move(filters), selected](const std::filesystem::path& path) {
+          [&sdf_tree, selected](const std::filesystem::path& path) {
             std::string json_content;
             std::ifstream file(path);
             if (!file.is_open()) {
@@ -377,7 +377,8 @@ std::pair<std::optional<::resin::IdView<::resin::SDFTreeNodeId>>, bool> SDFTreeV
               sdf_tree.root().push_back_child(std::move(group));
             }
             ::resin::Logger::info("Loaded prefab from {}", path.string());
-          });
+          },
+          std::span<const ::resin::FileDialog::FilterItem>(kPrefabFiltersArray));
     }
     ImGui::EndPopup();
   }
