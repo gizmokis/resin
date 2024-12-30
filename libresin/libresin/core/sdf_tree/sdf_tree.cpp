@@ -6,6 +6,7 @@
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/utils/exceptions.hpp>
 #include <optional>
+#include <utility>
 
 namespace resin {
 size_t SDFTree::curr_id_ = 0;
@@ -28,7 +29,7 @@ void SDFTree::visit_node(IdView<SDFTreeNodeId> node_id, ISDFTreeNodeVisitor& vis
   sdf_tree_registry_.all_nodes[node_id.raw()]->get().accept_visitor(visitor);
 }
 
-SDFTreeNode& SDFTree::node(IdView<SDFTreeNodeId> node_id) {
+const SDFTreeNode& SDFTree::node(IdView<SDFTreeNodeId> node_id) const {
   if (!sdf_tree_registry_.all_nodes[node_id.raw()].has_value()) {
     log_throw(SDFTreeNodeDoesNotExist(node_id.raw()));
   }
@@ -36,12 +37,20 @@ SDFTreeNode& SDFTree::node(IdView<SDFTreeNodeId> node_id) {
   return sdf_tree_registry_.all_nodes[node_id.raw()].value();
 }
 
-GroupNode& SDFTree::group(IdView<SDFTreeNodeId> node_id) {
+SDFTreeNode& SDFTree::node(IdView<SDFTreeNodeId> node_id) {
+  return const_cast<SDFTreeNode&>(std::as_const(*this).node(node_id));  // NOLINT
+}
+
+const GroupNode& SDFTree::group(IdView<SDFTreeNodeId> node_id) const {
   if (!is_group(node_id)) {
     log_throw(SDFTreeNodeDoesNotExist(node_id.raw()));
   }
 
   return sdf_tree_registry_.all_group_nodes[node_id.raw()].value();
+}
+
+GroupNode& SDFTree::group(IdView<SDFTreeNodeId> node_id) {
+  return const_cast<GroupNode&>(std::as_const(*this).group(node_id));  // NOLINT
 }
 
 void SDFTree::visit_dirty_primitives(ISDFTreeNodeVisitor& visitor) {
@@ -71,16 +80,18 @@ void SDFTree::delete_node(IdView<SDFTreeNodeId> node_id) {
 
 std::string SDFTree::gen_shader_code() const { return root_->gen_shader_code(); }
 
-MaterialSDFTreeComponent& SDFTree::material(IdView<MaterialId> mat_id) {
+const MaterialSDFTreeComponent& SDFTree::material(IdView<MaterialId> mat_id) const {
   if (mat_id == sdf_tree_registry_.default_material.material_id()) {
     return sdf_tree_registry_.default_material;
   }
-
   if (!materials_[mat_id.raw()].has_value()) {
     log_throw(MaterialSDFTreeComponentDoesNotExist(mat_id.raw()));
   }
-
   return *materials_[mat_id.raw()];
+}
+
+MaterialSDFTreeComponent& SDFTree::material(IdView<MaterialId> mat_id) {
+  return const_cast<MaterialSDFTreeComponent&>(std::as_const(*this).material(mat_id));  // NOLINT
 }
 
 MaterialSDFTreeComponent& SDFTree::add_material(Material mat) {

@@ -10,7 +10,7 @@ struct Material;
 using MaterialId = Id<Material>;
 
 struct Material {
-  explicit Material(const glm::vec3& color, float _ambientFactor = 0.5F, float _diffuseFactor = 0.5F,
+  explicit Material(const glm::vec3& color = glm::vec3(1.F), float _ambientFactor = 0.5F, float _diffuseFactor = 0.5F,
                     float _specularFactor = 0.5F, float _specularExponent = 50.F)
       : albedo(color),
         ambientFactor(_ambientFactor),
@@ -46,7 +46,7 @@ class MaterialSDFTreeComponent {
 
   inline IdView<MaterialId> material_id() const { return mat_id_; }
   inline void rename(std::string&& new_name) { name_ = std::move(new_name); }
-  inline std::string_view name() { return name_; }
+  inline std::string_view name() const { return name_; }
 
  public:
   Material material;

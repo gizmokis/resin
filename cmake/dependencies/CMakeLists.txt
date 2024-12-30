@@ -194,3 +194,24 @@ if(BUILD_TESTING)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
 endif()
+
+# ##############################################################################
+# valijson
+# ##############################################################################
+if(BUILD_TESTING)
+  message(CHECK_START "Fetching valijson")
+  list(APPEND CMAKE_MESSAGE_INDENT "  ")
+
+  FetchContent_Declare(
+      valijson 
+  GIT_REPOSITORY "https://github.com/tristanpenman/valijson.git"
+  GIT_TAG "v1.0.3"
+  GIT_SUBMODULES ""
+  PATCH_COMMAND git apply 
+                  "${CMAKE_CURRENT_LIST_DIR}/../../patches/valijson.patch"
+  UPDATE_DISCONNECTED 1)
+  FetchContent_MakeAvailable(valijson)
+
+  list(POP_BACK CMAKE_MESSAGE_INDENT)
+  message(CHECK_PASS "fetched")
+endif()

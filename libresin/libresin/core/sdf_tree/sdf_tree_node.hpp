@@ -57,6 +57,7 @@ class SDFTreeNode {
   inline IdView<SDFTreeNodeId> node_id() const { return node_id_; }
   inline IdView<TransformId> transform_component_id() const { return transform_id_; }
   inline Transform& transform() { return transform_; }
+  inline const Transform& transform() const { return transform_; }
 
   // TODO(SDF-96): add material component
 

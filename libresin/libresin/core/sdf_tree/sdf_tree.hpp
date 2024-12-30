@@ -31,6 +31,7 @@ class SDFTree {
 
   // Cost O(1)
   SDFTreeNode& node(IdView<SDFTreeNodeId> node_id);
+  const SDFTreeNode& node(IdView<SDFTreeNodeId> node_id) const;
 
   // Cost O(1)
   inline bool is_group(IdView<SDFTreeNodeId> node_id) const {
@@ -39,6 +40,7 @@ class SDFTree {
 
   // Cost O(1)
   GroupNode& group(IdView<SDFTreeNodeId> node_id);
+  const GroupNode& group(IdView<SDFTreeNodeId> node_id) const;
 
   // WARNING: This function must not be called while children of the the provided node's parent are iterated.
   void delete_node(IdView<SDFTreeNodeId> node_id);
@@ -46,10 +48,18 @@ class SDFTree {
   std::string gen_shader_code() const;
 
   inline GroupNode& root() { return *root_; }
+  inline const GroupNode& root() const { return *root_; }
+
+  template <SDFTreeNodeConcept Node, typename... Args>
+    requires std::constructible_from<Node, SDFTreeRegistry&, Args...>
+  std::unique_ptr<Node> create_detached_node(Args&&... args) {
+    return std::make_unique<Node>(sdf_tree_registry_, std::forward<Args>(args)...);
+  }
 
   inline size_t tree_id() const { return tree_id_; }
 
   MaterialSDFTreeComponent& material(IdView<MaterialId> mat_id);
+  const MaterialSDFTreeComponent& material(IdView<MaterialId> mat_id) const;
   MaterialSDFTreeComponent& add_material(Material mat);
 
   // Cost: O(nm), where n is a number of nodes and m is a number of materials.
@@ -62,6 +72,7 @@ class SDFTree {
   inline const std::vector<IdView<MaterialId>>& materials() const { return material_active_ids_; }
 
   inline MaterialSDFTreeComponent& default_material() { return sdf_tree_registry_.default_material; }
+  inline const MaterialSDFTreeComponent& default_material() const { return sdf_tree_registry_.default_material; }
 
   // Visits all dirty materials AND clears the dirty materials collection.
   void visit_dirty_materials(const std::function<void(MaterialSDFTreeComponent&)>& mat_visitor);

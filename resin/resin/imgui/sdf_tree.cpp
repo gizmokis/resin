@@ -190,7 +190,7 @@ void SDFTreeComponentVisitor::render_op(::resin::SDFTreeNode& node) const {
   ImGui::SameLine(op_offset);
   if (is_first_ && node.bin_op() != ::resin::SDFBinaryOperation::Union) {
     ImGui::TextColored(ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled), " (%s)",
-                       kOperationSymbol.get_value(node.bin_op()).data());
+                       kOperationSymbol.value(node.bin_op()).data());
     if (ImGui::BeginItemTooltip()) {
       ImGui::PushTextWrapPos(ImGui::GetFontSize() * 36.0F);
       ImGui::TextUnformatted("This operation is ignored for the first element in the group");
@@ -198,7 +198,7 @@ void SDFTreeComponentVisitor::render_op(::resin::SDFTreeNode& node) const {
       ImGui::EndTooltip();
     }
   } else {
-    ImGui::Text(" (%s)", kOperationSymbol.get_value(node.bin_op()).data());
+    ImGui::Text(" (%s)", kOperationSymbol.value(node.bin_op()).data());
   }
 }
 
@@ -307,20 +307,16 @@ std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(
   }
 
   if (ImGui::BeginPopup("AddPopUp")) {
-    for (const auto [index, name] :
-         std::ranges::views::enumerate(::resin::BasePrimitiveNode::available_primitive_names())) {
+    for (const auto [prim, name] : ::resin::BasePrimitiveNode::available_primitive_names()) {
       if (ImGui::Selectable(name.data())) {
         if (selected.has_value()) {
           if (tree.is_group(*selected)) {
-            tree.group(*selected).push_back_primitive(static_cast<::resin::SDFTreePrimitiveType>(index),
-                                                      ::resin::SDFBinaryOperation::Union);
+            tree.group(*selected).push_back_primitive(prim, ::resin::SDFBinaryOperation::Union);
           } else {
-            tree.node(*selected).parent().push_back_primitive(static_cast<::resin::SDFTreePrimitiveType>(index),
-                                                              ::resin::SDFBinaryOperation::Union);
+            tree.node(*selected).parent().push_back_primitive(prim, ::resin::SDFBinaryOperation::Union);
           }
         } else {
-          tree.root().push_back_primitive(static_cast<::resin::SDFTreePrimitiveType>(index),
-                                          ::resin::SDFBinaryOperation::Union);
+          tree.root().push_back_primitive(prim, ::resin::SDFBinaryOperation::Union);
         }
       }
     }
