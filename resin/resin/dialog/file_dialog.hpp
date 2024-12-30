@@ -44,19 +44,11 @@ class FileDialog {
   // The wchar_t is used on windows and char on linux, so
   // the struct defined below can be reinterpreted as nfdnfilteritem_t.
 
-#ifdef _WIN32
-  struct FilterItem {
-    const wchar_t* name;
-    const wchar_t* spec;
-    FilterItem(const wchar_t* _name, const wchar_t* _spec) : name(_name), spec(_spec) {}
-  };
-#else
   struct FilterItem {
     const char* name;
     const char* spec;
     FilterItem(const char* _name, const char* _spec) : name(_name), spec(_spec) {}
   };
-#endif
 
   static FileDialog& instance() {
     static FileDialog instance;

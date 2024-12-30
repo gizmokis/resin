@@ -59,30 +59,42 @@ void FileDialog::start_file_dialog(FileDialog::DialogType type, std::optional<st
   dialog_thread_ = std::thread(
       [type](std::promise<std::optional<std::string>> promise,
              std::optional<std::span<const FilterItem>> _dialog_filters, std::optional<std::string> _default_name) {
-        NFD::Guard nfd_guard;
-        NFD::UniquePath out_path;
+        auto res = NFD_Init();
+        if (res == NFD_ERROR) {
+          resin::Logger::err("Failed to open the file dialog");
+        }
+
+        nfdu8char_t* out_path;
         nfdresult_t result = NFD_ERROR;
 
         if (type == DialogType::OpenFile) {
-          result = NFD::OpenDialog(
-              out_path, _dialog_filters ? reinterpret_cast<const nfdfilteritem_t*>(_dialog_filters->data()) : nullptr,
-              _dialog_filters ? static_cast<nfdfiltersize_t>(_dialog_filters->size()) : 0);
+          result = NFD_OpenDialogU8(
+              &out_path,
+              _dialog_filters ? reinterpret_cast<const nfdu8filteritem_t*>(_dialog_filters->data()) : nullptr,
+              _dialog_filters ? static_cast<nfdfiltersize_t>(_dialog_filters->size()) : 0, nullptr);
         } else if (type == DialogType::SaveFile) {
-          result = NFD::SaveDialog(
-              out_path, _dialog_filters ? reinterpret_cast<const nfdfilteritem_t*>(_dialog_filters->data()) : nullptr,
-              _dialog_filters ? static_cast<nfdfiltersize_t>(_dialog_filters->size()) : 0,
-              nullptr,  // defaultPath
+          result = NFD_SaveDialogU8(
+              &out_path,
+              _dialog_filters ? reinterpret_cast<const nfdu8filteritem_t*>(_dialog_filters->data()) : nullptr,
+              _dialog_filters ? static_cast<nfdfiltersize_t>(_dialog_filters->size()) : 0, nullptr,
               _default_name ? _default_name->data() : nullptr);
+
+          //   result = NFD::SaveDialog(
+          //       out_path, _dialog_filters ? reinterpret_cast<const nfdu8filteritem_t*>(_dialog_filters->data()) :
+          //       nullptr, _dialog_filters ? static_cast<nfdfiltersize_t>(_dialog_filters->size()) : 0, nullptr,  //
+          //       defaultPath _default_name ? _default_name->data() : nullptr);
         } else {
-          result = NFD::PickFolder(out_path);
+          result = NFD_PickFolderU8(&out_path, nullptr);
         }
 
         if (result == NFD_OKAY) {
-          promise.set_value(std::string(out_path.get()));
-          out_path.release();  // NOLINT
+          promise.set_value(std::string(out_path));
+          //   out_path.release();  // NOLINT
         } else {
           promise.set_value(std::nullopt);
         }
+
+        NFD_Quit();
       },
       std::move(curr_promise), std::move(filters), std::move(default_name));
 }
