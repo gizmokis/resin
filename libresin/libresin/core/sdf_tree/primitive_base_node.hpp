@@ -41,19 +41,31 @@ class BasePrimitiveNode : public SDFTreeNode {
   inline IdView<PrimitiveNodeId> primitive_id() const { return prim_id_; }
 
   explicit BasePrimitiveNode(SDFTreeRegistry& tree, std::string_view name)
-      : SDFTreeNode(tree, name), prim_id_(tree.primitives_registry) {}
+      : SDFTreeNode(tree, name), prim_id_(tree.primitives_registry) {
+    this->mark_dirty();
+  }
 
   ~BasePrimitiveNode() override = default;
 
-  inline std::string gen_shader_code() const final {
-    return std::format("{}({}[{}]*{},{}[{}])", sdf_shader_consts::kSDFShaderPrimFunctionNames[primitive_type()],
-                       sdf_shader_consts::kSDFShaderCoreComponentArrayNames
-                           [sdf_shader_consts::SDFShaderCoreComponents::Transforms],                                //
-                       transform_id_.raw(),                                                                         //
-                       sdf_shader_consts::kSDFShaderVariableNames[sdf_shader_consts::SDFShaderVariable::Position],  //
-                       sdf_shader_consts::kSDFShaderPrimComponentArrayNames[primitive_type()],                      //
-                       get_component_raw_id()                                                                       //
-    );
+  inline std::string gen_shader_code(GenShaderMode mode) const final {
+    switch (mode) {
+      case resin::GenShaderMode::SinglePrimitiveArray:
+        return std::format(
+            "{}({},{}[{}])", sdf_shader_consts::kSDFShaderPrimFunctionNames[primitive_type()],
+            sdf_shader_consts::kSDFShaderVariableNames[sdf_shader_consts::SDFShaderVariable::Position],  //
+            sdf_shader_consts::kSDFPrimitivesArrayName,                                                  //
+            prim_id_.raw()                                                                               //
+        );
+      case resin::GenShaderMode::ArrayPerPrimitiveType:
+        return std::format(
+            "{}({},{}[{}])", sdf_shader_consts::kSDFShaderPrimFunctionNames[primitive_type()],
+            sdf_shader_consts::kSDFShaderVariableNames[sdf_shader_consts::SDFShaderVariable::Position],  //
+            sdf_shader_consts::kSDFShaderPrimComponentArrayNames[primitive_type()],                      //
+            get_component_raw_id()                                                                       //
+        );
+    }
+
+    throw NonExhaustiveEnumException();
   }
 
  protected:

@@ -15,11 +15,11 @@ class PrimitiveNode;
 struct SDFTreeRegistry {
   // TODO(SDF-98): allow specifying the sizes
   SDFTreeRegistry()
-      : sphere_components_registry(IdRegistry<PrimitiveNode<sdf_shader_consts::SDFShaderPrim::Sphere>>(1000)),
-        cubes_components_registry(IdRegistry<PrimitiveNode<sdf_shader_consts::SDFShaderPrim::Cube>>(1000)),
-        transform_component_registry(IdRegistry<Transform>(2000)),
-        primitives_registry(IdRegistry<BasePrimitiveNode>(2000)),
-        nodes_registry(IdRegistry<SDFTreeNode>(5000)),
+      : sphere_components_registry(IdRegistry<PrimitiveNode<sdf_shader_consts::SDFShaderPrim::Sphere>>(100)),
+        cubes_components_registry(IdRegistry<PrimitiveNode<sdf_shader_consts::SDFShaderPrim::Cube>>(100)),
+        transform_component_registry(IdRegistry<Transform>(100)),
+        primitives_registry(IdRegistry<BasePrimitiveNode>(100)),
+        nodes_registry(IdRegistry<SDFTreeNode>(100)),
         materials_registry(IdRegistry<Material>(2000)),
         default_material(*this) {
     all_nodes.resize(nodes_registry.get_max_objs());

@@ -4,6 +4,7 @@
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/primitive_base_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
+#include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/utils/exceptions.hpp>
 #include <optional>
 #include <utility>
@@ -78,7 +79,10 @@ void SDFTree::delete_node(IdView<SDFTreeNodeId> node_id) {
   sdf_tree_registry_.all_nodes[node_id.raw()]->get().parent().delete_child(node_id);
 }
 
-std::string SDFTree::gen_shader_code() const { return root_->gen_shader_code(); }
+std::string SDFTree::gen_shader_code(GenShaderMode mode) const {
+  std::string root_code = root_->gen_shader_code(mode);
+  return root_code.empty() ? "vec2(u_farPlane,0)" : root_code;
+}
 
 const MaterialSDFTreeComponent& SDFTree::material(IdView<MaterialId> mat_id) const {
   if (mat_id == sdf_tree_registry_.default_material.material_id()) {

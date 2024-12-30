@@ -1,6 +1,7 @@
 #ifndef RESIN_SDF_TREE_NODE_HPP
 #define RESIN_SDF_TREE_NODE_HPP
 
+#include <cstdint>
 #include <functional>
 #include <libresin/core/id_registry.hpp>
 #include <libresin/core/sdf_shader_consts.hpp>
@@ -22,6 +23,11 @@ using MaterialId = Id<Material>;
 class SDFTreeNode;
 using SDFTreeNodeId = Id<SDFTreeNode>;
 
+enum class GenShaderMode : uint8_t {
+  SinglePrimitiveArray,
+  ArrayPerPrimitiveType,
+};
+
 class SDFTreeNode {
  public:
   SDFTreeNode() = delete;
@@ -36,12 +42,12 @@ class SDFTreeNode {
 
   virtual ~SDFTreeNode();
 
-  virtual std::string gen_shader_code() const               = 0;
-  virtual void accept_visitor(ISDFTreeNodeVisitor& visitor) = 0;
-  [[nodiscard]] virtual std::unique_ptr<SDFTreeNode> copy() = 0;
-  virtual bool is_leaf()                                    = 0;
-  virtual void set_material(IdView<MaterialId> mat_id)      = 0;
-  virtual void remove_material()                            = 0;
+  virtual std::string gen_shader_code(GenShaderMode mode) const = 0;
+  virtual void accept_visitor(ISDFTreeNodeVisitor& visitor)     = 0;
+  [[nodiscard]] virtual std::unique_ptr<SDFTreeNode> copy()     = 0;
+  virtual bool is_leaf()                                        = 0;
+  virtual void set_material(IdView<MaterialId> mat_id)          = 0;
+  virtual void remove_material()                                = 0;
 
   inline std::optional<IdView<MaterialId>> material_id() const { return mat_id_; }
   inline std::optional<IdView<MaterialId>> ancestor_material_id() const { return ancestor_mat_id_; }
@@ -50,7 +56,6 @@ class SDFTreeNode {
     delete_material_from_subtree(mat_id);
     fix_material_ancestors();
   }
-
   bool operator==(const SDFTreeNode& other) const { return node_id_ == other.node_id_; }
   bool operator!=(const SDFTreeNode& other) const { return node_id_ != other.node_id_; }
 

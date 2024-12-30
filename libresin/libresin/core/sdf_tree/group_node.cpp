@@ -34,7 +34,7 @@ bool GroupNode::is_node_shallow(IdView<SDFTreeNodeId> id) const {
          tree_registry_.all_group_nodes[id.raw()].value().get().primitives().size() == 0;
 }
 
-std::string GroupNode::gen_shader_code() const {
+std::string GroupNode::gen_shader_code(GenShaderMode mode) const {
   size_t non_shallow_nodes_count = 0;
   auto first_non_shallow_node    = nodes_order_.begin();
   auto second_non_shallow_node   = nodes_order_.begin();
@@ -59,7 +59,7 @@ std::string GroupNode::gen_shader_code() const {
 
   if (non_shallow_nodes_count == 1) {
     // If there is one node only, the operation is ignored
-    return get_child(*last_non_shallow_node).gen_shader_code();
+    return get_child(*last_non_shallow_node).gen_shader_code(mode);
   }
 
   std::string sdf;
@@ -71,7 +71,7 @@ std::string GroupNode::gen_shader_code() const {
     sdf += sdf_shader_consts::kSDFShaderBinOpFunctionNames[get_child(*it).bin_op()];
     sdf += "(";
   }
-  sdf += get_child(*first_non_shallow_node).gen_shader_code();
+  sdf += get_child(*first_non_shallow_node).gen_shader_code(mode);
   sdf += ",";
 
   for (auto it = second_non_shallow_node; it != nodes_order_.end(); ++it) {
@@ -79,8 +79,8 @@ std::string GroupNode::gen_shader_code() const {
       continue;
     }
 
-    sdf += get_child(*it).gen_shader_code();
-    sdf += "),";
+    sdf += get_child(*it).gen_shader_code(mode);
+    sdf += ",0.5),";  // FIXME(SDF-117)
   }
   sdf.pop_back();
 

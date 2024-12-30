@@ -45,7 +45,7 @@ class SDFTree {
   // WARNING: This function must not be called while children of the the provided node's parent are iterated.
   void delete_node(IdView<SDFTreeNodeId> node_id);
 
-  std::string gen_shader_code() const;
+  std::string gen_shader_code(GenShaderMode mode = GenShaderMode::SinglePrimitiveArray) const;
 
   inline GroupNode& root() { return *root_; }
   inline const GroupNode& root() const { return *root_; }
@@ -77,6 +77,8 @@ class SDFTree {
   // Visits all dirty materials AND clears the dirty materials collection.
   void visit_dirty_materials(const std::function<void(MaterialSDFTreeComponent&)>& mat_visitor);
   inline void clear_dirty_materials() { sdf_tree_registry_.dirty_materials.clear(); }
+
+  inline size_t max_nodes_count() const { return sdf_tree_registry_.nodes_registry.get_max_objs(); }
 
  private:
   static size_t curr_id_;
