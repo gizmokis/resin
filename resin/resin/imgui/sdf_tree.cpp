@@ -22,10 +22,7 @@ namespace ImGui {  // NOLINT
 namespace resin {
 
 static const std::array<::resin::FileDialog::FilterItem, 1> kPrefabFiltersArray = {
-    ::resin::FileDialog::FilterItem(
-        "Resin prefab",
-        "json")};
-
+    ::resin::FileDialog::FilterItem("Resin prefab", "json")};
 
 std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeComponentVisitor::get_curr_payload() {
   std::optional<::resin::IdView<::resin::SDFTreeNodeId>> source_id;
@@ -350,9 +347,6 @@ std::pair<std::optional<::resin::IdView<::resin::SDFTreeNodeId>>, bool> SDFTreeV
     }
 
     if (ImGui::Selectable("Load from prefab")) {
-      std::vector<std::pair<const std::string_view, const std::string_view>> filters = {
-          std::make_pair("Resin prefab", "json")};
-
       auto& sdf_tree = tree;
 
       ::resin::FileDialog::instance().open_file(

@@ -4,14 +4,14 @@
 #include <nfd/nfd.h>
 #include <sys/types.h>
 
+#include <cstdint>
 #include <future>
 #include <glm/ext/scalar_uint_sized.hpp>
 #include <libresin/utils/logger.hpp>
 #include <optional>
+#include <span>
 #include <string>
 #include <thread>
-#include <cstdint>
-#include <span>
 
 namespace resin {
 
@@ -29,7 +29,9 @@ class FileDialog {
     const nfdnchar_t* spec;
 
     FilterItem() = delete;
-    FilterItem(const std::string_view _name, const std::string_view _spec) : name(reinterpret_cast<const nfdnchar_t*>(_name.data())), spec(reinterpret_cast<const nfdnchar_t*>(_spec.data())) {}
+    FilterItem(const std::string_view _name, const std::string_view _spec)
+        : name(reinterpret_cast<const nfdnchar_t*>(_name.data())),
+          spec(reinterpret_cast<const nfdnchar_t*>(_spec.data())) {}
   };
 
   static FileDialog& instance() {
