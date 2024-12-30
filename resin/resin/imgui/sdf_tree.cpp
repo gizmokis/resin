@@ -133,7 +133,7 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
       std::vector<std::pair<const std::string_view, const std::string_view>> filters = {
           std::make_pair("Resin prefab", "json")};
 
-      ::resin::FileDialog::instance().save(
+      ::resin::FileDialog::instance().save_file(
           [curr_id, &sdf_tree, name = std::move(name),
            filters = std::move(filters)](const std::filesystem::path& path) {
             std::ofstream file(path);
@@ -352,7 +352,7 @@ std::pair<std::optional<::resin::IdView<::resin::SDFTreeNodeId>>, bool> SDFTreeV
 
       auto& sdf_tree = tree;
 
-      ::resin::FileDialog::instance().open(
+      ::resin::FileDialog::instance().open_file(
           [&sdf_tree, filters = std::move(filters), selected](const std::filesystem::path& path) {
             std::string json_content;
             std::ifstream file(path);

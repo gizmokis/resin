@@ -1,5 +1,6 @@
 #include <filesystem>
 #include <libresin/utils/exceptions.hpp>
+#include <nfd/nfd.hpp>
 #include <optional>
 #include <resin/dialog/file_dialog.hpp>
 
@@ -45,19 +46,20 @@ void FileDialog::update() {
 }
 
 void FileDialog::start_file_dialog(
-    bool is_open, std::optional<std::vector<std::pair<const std::string_view, const std::string_view>>> filters,
+    FileDialog::DialogType type,
+    std::optional<std::vector<std::pair<const std::string_view, const std::string_view>>> filters,
     std::optional<std::string> default_name) {
   if (dialog_task_.has_value()) {
-    Logger::warn("Detected attempt to open second file dialog");
+    Logger::warn("Detected an attempt to open second file dialog");
     return;
   }
 
   std::promise<std::optional<std::string>> curr_promise;
   dialog_task_   = curr_promise.get_future();
   dialog_thread_ = std::thread(
-      [is_open](std::promise<std::optional<std::string>> promise,
-                std::optional<std::vector<std::pair<const std::string_view, const std::string_view>>> _dialog_filters,
-                std::optional<std::string> _default_name) {
+      [type](std::promise<std::optional<std::string>> promise,
+             std::optional<std::vector<std::pair<const std::string_view, const std::string_view>>> _dialog_filters,
+             std::optional<std::string> _default_name) {
         NFD::Guard nfd_guard;
         NFD::UniquePath out_path;
         nfdresult_t result = NFD_ERROR;
@@ -70,15 +72,18 @@ void FileDialog::start_file_dialog(
               [](const auto& filter) -> nfdnfilteritem_t { return {filter.first.data(), filter.second.data()}; });
         }
 
-        if (is_open) {
+        if (type == DialogType::OpenFile) {
           result = NFD::OpenDialog(out_path, _dialog_filters ? nfd_filters.data() : nullptr,
                                    _dialog_filters ? static_cast<nfdfiltersize_t>(nfd_filters.size()) : 0);
-        } else {
+        } else if (type == DialogType::SaveFile) {
           result = NFD::SaveDialog(out_path, _dialog_filters ? nfd_filters.data() : nullptr,
                                    _dialog_filters ? static_cast<nfdfiltersize_t>(nfd_filters.size()) : 0,
                                    nullptr,  // defaultPath
                                    _default_name ? _default_name->data() : nullptr);
+        } else {
+          result = NFD::PickFolder(out_path);
         }
+
         if (result == NFD_OKAY) {
           promise.set_value(std::string(out_path.get()));
           out_path.release();  // NOLINT
