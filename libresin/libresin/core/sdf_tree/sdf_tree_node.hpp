@@ -17,6 +17,9 @@ using SDFBinaryOperation = sdf_shader_consts::SDFShaderBinOp;
 struct SDFTreeRegistry;
 class SDFTree;
 
+struct Material;
+using MaterialId = Id<Material>;
+
 class SDFTreeNode;
 using SDFTreeNodeId = Id<SDFTreeNode>;
 
@@ -33,7 +36,9 @@ class SDFTreeNode {
   explicit SDFTreeNode(SDFTreeRegistry& tree, std::string_view name);
 
   SDFTreeNode(const SDFTreeNode&)            = delete;
+  SDFTreeNode(SDFTreeNode&&)                 = delete;
   SDFTreeNode& operator=(const SDFTreeNode&) = delete;
+  SDFTreeNode& operator=(SDFTreeNode&&)      = delete;
 
   virtual ~SDFTreeNode();
 
@@ -41,13 +46,23 @@ class SDFTreeNode {
   virtual void accept_visitor(ISDFTreeNodeVisitor& visitor)     = 0;
   [[nodiscard]] virtual std::unique_ptr<SDFTreeNode> copy()     = 0;
   virtual bool is_leaf()                                        = 0;
+  virtual void set_material(IdView<MaterialId> mat_id)          = 0;
+  virtual void remove_material()                                = 0;
 
+  inline std::optional<IdView<MaterialId>> material_id() const { return mat_id_; }
+  inline std::optional<IdView<MaterialId>> ancestor_material_id() const { return ancestor_mat_id_; }
+
+  inline void remove_material_from_subtree(IdView<MaterialId> mat_id) {
+    delete_material_from_subtree(mat_id);
+    fix_material_ancestors();
+  }
   bool operator==(const SDFTreeNode& other) const { return node_id_ == other.node_id_; }
   bool operator!=(const SDFTreeNode& other) const { return node_id_ != other.node_id_; }
 
   inline IdView<SDFTreeNodeId> node_id() const { return node_id_; }
   inline IdView<TransformId> transform_component_id() const { return transform_id_; }
   inline Transform& transform() { return transform_; }
+  inline const Transform& transform() const { return transform_; }
 
   // TODO(SDF-96): add material component
 
@@ -76,13 +91,19 @@ class SDFTreeNode {
   virtual void remove_leaves_from(
       std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& leaves) = 0;
 
-  virtual void push_dirty_primitives() = 0;
+  virtual void push_dirty_primitives()                                 = 0;
+  virtual void set_ancestor_mat_id(IdView<MaterialId> mat_id)          = 0;
+  virtual void remove_ancestor_mat_id()                                = 0;
+  virtual void delete_material_from_subtree(IdView<MaterialId> mat_id) = 0;
+  virtual void fix_material_ancestors()                                = 0;
 
  protected:
   SDFTreeNodeId node_id_;
   TransformId transform_id_;
   Transform transform_;
   SDFBinaryOperation bin_op_;
+  std::optional<IdView<MaterialId>> mat_id_;
+  std::optional<IdView<MaterialId>> ancestor_mat_id_;
 
   std::optional<std::reference_wrapper<GroupNode>> parent_;
 

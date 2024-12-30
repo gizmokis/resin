@@ -12,8 +12,17 @@ class SDFNodeEditVisitor : public ::resin::ISDFTreeNodeVisitor {
   void visit_sphere(::resin::SphereNode& node) override;
   void visit_cube(::resin::CubeNode& node) override;
 
-  static constexpr ::resin::StringEnumMapping<::resin::SDFBinaryOperation> kOperationSymbol =
-      ::resin::StringEnumMapping<::resin::SDFBinaryOperation>({"+", "+'", "-", "-'", "&", "&'", "^", "^'"});
+  static constexpr ::resin::StringEnumMapper<::resin::SDFBinaryOperation> kOperationSymbol =
+      ::resin::StringEnumMapper<::resin::SDFBinaryOperation>({
+          {::resin::SDFBinaryOperation::Union, "+"},         //
+          {::resin::SDFBinaryOperation::SmoothUnion, "+'"},  //
+          {::resin::SDFBinaryOperation::Diff, "-"},          //
+          {::resin::SDFBinaryOperation::SmoothDiff, "-'"},   //
+          {::resin::SDFBinaryOperation::Inter, "&"},         //
+          {::resin::SDFBinaryOperation::SmoothInter, "&'"},  //
+          {::resin::SDFBinaryOperation::Xor, "^"},           //
+          {::resin::SDFBinaryOperation::SmoothXor, "^'"}     //
+      });
 };
 
 bool NodeEdit(::resin::SDFTreeNode& node);

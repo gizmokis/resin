@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 #include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/logger.hpp>
+#include <limits>
 #include <stack>
 
 namespace resin {
@@ -14,7 +15,9 @@ class IdRegistry {
  public:
   IdRegistry()                             = delete;
   IdRegistry(const IdRegistry&)            = delete;
+  IdRegistry(IdRegistry&&)                 = delete;
   IdRegistry& operator=(const IdRegistry&) = delete;
+  IdRegistry& operator=(IdRegistry&&)      = delete;
 
   explicit IdRegistry(size_t max_objs) : max_objs_(max_objs) {
     for (size_t i = max_objs_; i-- > 0;) {
@@ -68,8 +71,8 @@ class IdRegistry {
   size_t max_objs_;
 };
 
-// Strongly typed id, with similar behavior to unique_ptr -- it unregisters in the provided registry when destructor is
-// called.
+// Strongly typed id, with similar behavior to unique_ptr -- it unregisters from the provided registry when destructor
+// is called.
 template <typename Obj>
 struct Id {
  public:
@@ -77,23 +80,40 @@ struct Id {
 
   Id() = delete;
   // It is the programmer's responsibility to assert that Id class will not outlive the provided registry!
-  explicit Id(IdRegistry<Obj>& registry) : registry_(registry) { raw_id_ = registry_.register_id(); }
+  explicit Id(IdRegistry<Obj>& registry) : registry_(registry) { raw_id_ = registry_.get().register_id(); }
 
-  ~Id() { registry_.unregister_id(raw_id_); }
+  ~Id() {
+    if (raw_id_ != std::numeric_limits<size_t>::max()) {
+      registry_.get().unregister_id(raw_id_);
+    }
+  }
 
   Id(const Id<Obj>& other)                 = delete;
   Id<Obj>& operator=(const Id<Obj>& other) = delete;
+
+  Id(Id<Obj>&& other) noexcept : raw_id_(other.raw_id_), registry_(other.registry_) {
+    other.raw_id_ = std::numeric_limits<size_t>::max();
+  }
+
+  Id<Obj>& operator=(Id<Obj>&& other) noexcept {
+    if (this != &other) {
+      raw_id_       = other.raw_id_;
+      registry_     = other.registry_;
+      other.raw_id_ = std::numeric_limits<size_t>::max();
+    }
+    return *this;
+  }
 
   bool operator==(const Id<Obj>& other) const { return raw_id_ == other.raw(); }
   bool operator!=(const Id<Obj>& other) const { return raw_id_ != other.raw(); }
 
   inline size_t raw() const { return raw_id_; }
 
-  const IdRegistry<Obj>& registry() const { return registry_; }
+  const IdRegistry<Obj>& registry() const { return registry_.get(); }
 
  private:
   size_t raw_id_;
-  IdRegistry<Obj>& registry_;
+  std::reference_wrapper<IdRegistry<Obj>> registry_;
 };
 
 // Strongly typed id observer. It does not ensure that the observed Id is still registered.

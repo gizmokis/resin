@@ -1,5 +1,6 @@
 #include <libresin/core/sdf_shader_consts.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
+#include <libresin/core/sdf_tree/primitive_base_node.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
@@ -15,14 +16,12 @@ GroupNode::GroupNode(SDFTreeRegistry& tree) : SDFTreeNode(tree, "Group") {
 }
 GroupNode::~GroupNode() { tree_registry_.all_group_nodes[node_id_.raw()] = std::nullopt; }
 
-void GroupNode::push_back_primitive(SDFTreePrimitiveType type, SDFBinaryOperation bin_op) {
+SDFTreeNode& GroupNode::push_back_primitive(SDFTreePrimitiveType type, SDFBinaryOperation bin_op) {
   switch (type) {
     case SDFTreePrimitiveType::Sphere:
-      push_back_child<SphereNode>(bin_op);
-      return;
+      return push_back_child<SphereNode>(bin_op);
     case SDFTreePrimitiveType::Cube:
-      push_back_child<CubeNode>(bin_op);
-      return;
+      return push_back_child<CubeNode>(bin_op);
     case resin::SDFTreePrimitiveType::_Count:
       throw NonExhaustiveEnumException();
   }
@@ -69,7 +68,7 @@ std::string GroupNode::gen_shader_code(GenShaderMode mode) const {
       continue;
     }
 
-    sdf += sdf_shader_consts::kSDFShaderBinOpFunctionNames.get_value(get_child(*it).bin_op());
+    sdf += sdf_shader_consts::kSDFShaderBinOpFunctionNames[get_child(*it).bin_op()];
     sdf += "(";
   }
   sdf += get_child(*first_non_shallow_node).gen_shader_code(mode);
@@ -91,22 +90,100 @@ std::string GroupNode::gen_shader_code(GenShaderMode mode) const {
 void GroupNode::set_parent(std::unique_ptr<SDFTreeNode>& node_ptr) {
   node_ptr->set_parent(*this);
   node_ptr->transform().set_parent(transform_);
+  if (ancestor_mat_id_.has_value()) {
+    node_ptr->set_ancestor_mat_id(*ancestor_mat_id_);
+  }
   insert_leaves_up(node_ptr);
 }
 
 void GroupNode::remove_from_parent(std::unique_ptr<SDFTreeNode>& node_ptr) {
   node_ptr->remove_from_parent();
   node_ptr->transform().remove_from_parent();
+  if (ancestor_mat_id_.has_value()) {
+    node_ptr->remove_ancestor_mat_id();
+  }
   remove_leaves_up(node_ptr);
 }
 
 SDFTreeNode& GroupNode::get_child(IdView<SDFTreeNodeId> node_id) const {
-  auto it = nodes_.find(node_id);
-  if (it == nodes_.end()) {
+  if (!tree_registry_.all_nodes[node_id.raw()].has_value()) {
+    log_throw(SDFTreeNodeDoesNotExist(node_id.raw()));
+  }
+
+  if (!tree_registry_.all_nodes[node_id.raw()]->get().has_parent() ||
+      tree_registry_.all_nodes[node_id.raw()]->get().parent().node_id() != this->node_id()) {
     log_throw(SDFTreeNodeIsNotAChild(node_id.raw(), node_id_.raw()));
   }
 
-  return *it->second.second;
+  return tree_registry_.all_nodes[node_id.raw()]->get();
+}
+
+void GroupNode::set_ancestor_mat_id(IdView<MaterialId> mat_id) {
+  ancestor_mat_id_ = mat_id;
+
+  for (auto& it : *this) {
+    get_child(it).set_ancestor_mat_id(mat_id);
+  }
+}
+
+void GroupNode::remove_ancestor_mat_id() {
+  ancestor_mat_id_ = std::nullopt;
+
+  if (mat_id_.has_value()) {
+    for (auto& it : *this) {
+      get_child(it).set_ancestor_mat_id(*mat_id_);
+    }
+  } else {
+    for (auto& it : *this) {
+      get_child(it).remove_ancestor_mat_id();
+    }
+  }
+}
+void GroupNode::fix_material_ancestors() {
+  if (!parent_.has_value()) {
+    ancestor_mat_id_ = std::nullopt;
+  } else {
+    auto ancestor = parent_->get().ancestor_material_id();
+    if (ancestor.has_value()) {
+      ancestor_mat_id_ = ancestor;
+    } else {
+      ancestor_mat_id_ = parent_->get().material_id();
+    }
+  }
+
+  for (auto& it : *this) {
+    get_child(it).fix_material_ancestors();
+  }
+}
+
+void GroupNode::set_material(IdView<MaterialId> mat_id) {
+  mat_id_ = mat_id;
+
+  if (!ancestor_mat_id_.has_value()) {
+    for (auto& it : *this) {
+      get_child(it).set_ancestor_mat_id(mat_id);
+    }
+  }
+}
+
+void GroupNode::remove_material() {
+  mat_id_ = std::nullopt;
+
+  if (!ancestor_mat_id_.has_value()) {
+    for (auto& it : *this) {
+      get_child(it).remove_ancestor_mat_id();
+    }
+  }
+}
+
+void GroupNode::delete_material_from_subtree(IdView<MaterialId> mat_id) {
+  if (mat_id == mat_id_) {
+    mat_id_ = std::nullopt;
+  }
+
+  for (auto it : *this) {
+    get_child(it).delete_material_from_subtree(mat_id);
+  }
 }
 
 void GroupNode::delete_child(IdView<SDFTreeNodeId> node_id) {

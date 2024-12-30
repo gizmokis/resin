@@ -4,48 +4,64 @@
 #include <libresin/core/sdf_shader_consts.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
+#include <optional>
 
 namespace resin {
+class GroupNode;
+
 using SDFTreePrimitiveType = sdf_shader_consts::SDFShaderPrim;
-constexpr StringEnumMapping<SDFTreePrimitiveType> kSDFTreePrimitiveNames({"Sphere", "Cube"});
+constexpr StringEnumMapper<SDFTreePrimitiveType> kSDFTreePrimitiveNames({
+    {SDFTreePrimitiveType::Sphere, "Sphere"},  //
+    {SDFTreePrimitiveType::Cube, "Cube"}       //
+});
 
 class BasePrimitiveNode;
 using PrimitiveNodeId = Id<BasePrimitiveNode>;
 
 class BasePrimitiveNode : public SDFTreeNode {
  public:
-  constexpr static auto available_primitive_names() { return kSDFTreePrimitiveNames.names_; }
+  constexpr static auto available_primitive_names() { return kSDFTreePrimitiveNames; }
 
   virtual SDFTreePrimitiveType primitive_type() const = 0;
   virtual std::string_view primitive_name() const     = 0;
   virtual size_t get_component_raw_id() const         = 0;
+
+  std::optional<IdView<MaterialId>> active_material_id() const {
+    return ancestor_mat_id_.has_value() ? *ancestor_mat_id_ : mat_id_;
+  }
+
+  inline void set_material(IdView<MaterialId> mat_id) final { mat_id_ = mat_id; }
+  inline void remove_material() final { mat_id_ = std::nullopt; }
+
+  inline bool is_material_default() const { return mat_id_ == tree_registry_.default_material.material_id(); }
 
   inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override { visitor.visit_primitive(*this); }
   bool is_leaf() final { return true; }
 
   inline IdView<PrimitiveNodeId> primitive_id() const { return prim_id_; }
 
-  ~BasePrimitiveNode() override = default;
   explicit BasePrimitiveNode(SDFTreeRegistry& tree, std::string_view name)
       : SDFTreeNode(tree, name), prim_id_(tree.primitives_registry) {
     this->mark_dirty();
   }
 
+  ~BasePrimitiveNode() override = default;
+
   inline std::string gen_shader_code(GenShaderMode mode) const final {
     switch (mode) {
       case resin::GenShaderMode::SinglePrimitiveArray:
         return std::format(
-            "{}({},{}[{}])", sdf_shader_consts::kSDFShaderPrimFunctionNames.get_value(primitive_type()),
-            sdf_shader_consts::kSDFShaderVariableNames.get_value(sdf_shader_consts::SDFShaderVariable::Position),  //
-            sdf_shader_consts::kSDFPrimitivesArrayName,                                                            //
-            prim_id_.raw()                                                                                         //
+            "{}({},{}[{}])", sdf_shader_consts::kSDFShaderPrimFunctionNames[primitive_type()],
+            sdf_shader_consts::kSDFShaderVariableNames[sdf_shader_consts::SDFShaderVariable::Position],  //
+            sdf_shader_consts::kSDFPrimitivesArrayName,                                                  //
+            prim_id_.raw()                                                                               //
         );
       case resin::GenShaderMode::ArrayPerPrimitiveType:
         return std::format(
-            "{}({},{}[{}])", sdf_shader_consts::kSDFShaderPrimFunctionNames.get_value(primitive_type()),
-            sdf_shader_consts::kSDFShaderVariableNames.get_value(sdf_shader_consts::SDFShaderVariable::Position),  //
-            sdf_shader_consts::kSDFShaderPrimComponentArrayNames.get_value(primitive_type()),                      //
-            get_component_raw_id()                                                                                 //
+            "{}({},{}[{}])", sdf_shader_consts::kSDFShaderPrimFunctionNames[primitive_type()],
+            sdf_shader_consts::kSDFShaderVariableNames[sdf_shader_consts::SDFShaderVariable::Position],  //
+            sdf_shader_consts::kSDFShaderPrimComponentArrayNames[primitive_type()],                      //
+            get_component_raw_id()                                                                       //
         );
     }
 
@@ -64,9 +80,18 @@ class BasePrimitiveNode : public SDFTreeNode {
   }
 
   inline void push_dirty_primitives() final { tree_registry_.dirty_primitives.emplace_back(node_id()); }
+  inline void set_ancestor_mat_id(IdView<MaterialId> mat_id) final { ancestor_mat_id_ = mat_id; }
+  inline void remove_ancestor_mat_id() final { ancestor_mat_id_ = std::nullopt; }
+  inline void delete_material_from_subtree(IdView<MaterialId> mat_id) final {
+    if (mat_id == mat_id_) {
+      mat_id_ = std::nullopt;
+    }
+  }
+
+  void fix_material_ancestors() final;
 
   PrimitiveNodeId prim_id_;
-};
+};  // namespace resin
 
 template <SDFTreePrimitiveType PrimType>
 class PrimitiveNode : public BasePrimitiveNode {
@@ -76,7 +101,7 @@ class PrimitiveNode : public BasePrimitiveNode {
 
   constexpr static SDFTreePrimitiveType type() { return PrimType; }
   constexpr SDFTreePrimitiveType primitive_type() const final { return PrimType; }
-  constexpr std::string_view primitive_name() const final { return kSDFTreePrimitiveNames.get_value(PrimType); }
+  constexpr std::string_view primitive_name() const final { return kSDFTreePrimitiveNames[PrimType]; }
 
   inline IdView<Id<PrimitiveNode<PrimType>>> component_id() { return comp_id_; }
 

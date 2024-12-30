@@ -27,15 +27,11 @@ static void edit_mat_tab(::resin::Material& mat) {
 }
 
 static void edit_op(::resin::SDFTreeNode& node) {
-  auto curr_item = static_cast<int>(node.bin_op());
-
-  if (ImGui::BeginCombo("Operation",
-                        ::resin::sdf_shader_consts::kSDFShaderBinOpFunctionNames.get_value(node.bin_op()).data())) {
-    for (const auto [index, name] :
-         std::ranges::views::enumerate(::resin::sdf_shader_consts::kSDFShaderBinOpFunctionNames.names_)) {
-      const bool is_selected = (index == curr_item);
+  if (ImGui::BeginCombo("Operation", ::resin::sdf_shader_consts::kSDFShaderBinOpFunctionNames[node.bin_op()].data())) {
+    for (const auto [current_op, name] : ::resin::sdf_shader_consts::kSDFShaderBinOpFunctionNames) {
+      const bool is_selected = (current_op == node.bin_op());
       if (ImGui::Selectable(name.data(), is_selected)) {
-        node.set_bin_op(static_cast<::resin::SDFBinaryOperation>(index));
+        node.set_bin_op(current_op);
       }
     }
     ImGui::EndCombo();
