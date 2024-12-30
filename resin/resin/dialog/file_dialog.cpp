@@ -1,3 +1,5 @@
+#include <filesystem>
+#include <libresin/utils/exceptions.hpp>
 #include <optional>
 #include <resin/dialog/file_dialog.hpp>
 
@@ -21,16 +23,21 @@ void FileDialog::update() {
     return;
   }
 
-  // the task is ready
   auto result = dialog_task_->get();
   if (result.has_value()) {
     if (on_finish_.has_value()) {
-      (*on_finish_)(std::filesystem::path(*result));
+      auto path = std::filesystem::path(*result);
+      if (std::filesystem::exists(path.root_directory())) {
+        (*on_finish_)(std::move(path));
+      } else {
+        Logger::warn("Incorrect path {} obtained from file dialog", path.string());
+        log_throw(DirectoryDoesNotExistException(path.root_directory().string()));
+      }
     } else {
-      Logger::warn(R"(Obtained save path target, but no "on save" function is set)");
+      Logger::warn(R"(Obtained path target, but no handler is set)");
     }
   } else {
-    Logger::info("Save dialog cancelled");
+    Logger::info("File dialog cancelled");
   }
 
   dialog_task_ = std::nullopt;

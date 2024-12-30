@@ -7,6 +7,7 @@
 #include <libresin/core/sdf_tree/primitive_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
+#include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/json.hpp>
 #include <libresin/utils/logger.hpp>
 #include <memory>
@@ -136,19 +137,17 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
           [curr_id, &sdf_tree, name = std::move(name),
            filters = std::move(filters)](const std::filesystem::path& path) {
             std::ofstream file(path);
+            if (!file.is_open()) {
+              ::resin::Logger::warn("Could not save to path {}", path.string());
+              ::resin::log_throw(::resin::FileStreamNotAvailableException(path.string()));
+              return;
+            }
+
             file << ::resin::json::serialize_prefab(sdf_tree, curr_id);
             ::resin::Logger::info("Saved prefab to {}", path.string());
           },
           std::move(filters), std::string(name) += ".json");
     }
-
-    if (ImGui::Selectable("Rename")) {
-    }
-    if (ImGui::Selectable("Copy")) {
-    }
-    if (ImGui::Selectable("Delete")) {
-    }
-
     ImGui::EndPopup();
   }
 
@@ -224,7 +223,7 @@ void SDFTreeComponentVisitor::render_op(::resin::SDFTreeNode& node) const {
 
   // TODO(SDF-100): Use operation icons
   ImGui::SameLine(op_offset);
-  if (is_first_ && node.bin_op() != ::resin::SDFBinaryOperation::Union) {
+  if (is_first_ && node.bin_op() != ::resin::SDFBinaryOperation::SmoothUnion) {
     ImGui::TextColored(ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled), " (%s)",
                        kOperationSymbol.value(node.bin_op()).data());
     if (ImGui::BeginItemTooltip()) {
@@ -330,24 +329,65 @@ std::pair<std::optional<::resin::IdView<::resin::SDFTreeNodeId>>, bool> SDFTreeV
 
   ImGui::SameLine(ImGui::GetWindowWidth() - add_buttons_section_width);
   if (ImGui::Button(add_group_label.data())) {
-    if (comp_vs.selected().has_value()) {
-      if (tree.is_group(*selected)) {
-        tree.group(*selected).push_back_child<::resin::GroupNode>(::resin::SDFBinaryOperation::SmoothUnion);
+    ImGui::OpenPopup("AddGroupPopUp");
+  }
+
+  if (ImGui::BeginPopup("AddGroupPopUp")) {
+    if (ImGui::Selectable("New")) {
+      if (selected.has_value()) {
+        if (tree.is_group(*selected)) {
+          tree.group(*selected).push_back_child<::resin::GroupNode>(::resin::SDFBinaryOperation::SmoothUnion);
+        } else {
+          tree.node(*selected).parent().push_back_child<::resin::GroupNode>(::resin::SDFBinaryOperation::SmoothUnion);
+        }
       } else {
-        tree.node(*selected).parent().push_back_child<::resin::GroupNode>(::resin::SDFBinaryOperation::SmoothUnion);
+        tree.root().push_back_child<::resin::GroupNode>(::resin::SDFBinaryOperation::SmoothUnion);
       }
-    } else {
-      tree.root().push_back_child<::resin::GroupNode>(::resin::SDFBinaryOperation::SmoothUnion);
+      is_tree_edited = true;
     }
-    is_tree_edited = true;
+
+    if (ImGui::Selectable("Load from prefab")) {
+      std::vector<std::pair<const std::string_view, const std::string_view>> filters = {
+          std::make_pair("Resin prefab", "json")};
+
+      auto& sdf_tree = tree;
+
+      ::resin::FileDialog::instance().open(
+          [&sdf_tree, filters = std::move(filters), selected](const std::filesystem::path& path) {
+            std::string json_content;
+            std::ifstream file(path);
+            if (!file.is_open()) {
+              ::resin::Logger::warn("Could not open a file with path {}", path.string());
+              ::resin::log_throw(::resin::FileStreamNotAvailableException(path.string()));
+              return;
+            }
+
+            std::ostringstream ss;
+            ss << file.rdbuf();
+            json_content = ss.str();
+
+            auto group = ::resin::json::deserialize_prefab(sdf_tree, json_content);
+            if (selected.has_value()) {
+              if (sdf_tree.is_group(*selected)) {
+                sdf_tree.group(*selected).push_back_child(std::move(group));
+              } else {
+                sdf_tree.node(*selected).parent().push_back_child(std::move(group));
+              }
+            } else {
+              sdf_tree.root().push_back_child(std::move(group));
+            }
+            ::resin::Logger::info("Loaded prefab from {}", path.string());
+          });
+    }
+    ImGui::EndPopup();
   }
 
   ImGui::SameLine(ImGui::GetWindowWidth() - add_prim_button_width);
   if (ImGui::Button(add_prim_label.data())) {
-    ImGui::OpenPopup("AddPopUp");
+    ImGui::OpenPopup("AddPrimitivePopUp");
   }
 
-  if (ImGui::BeginPopup("AddPopUp")) {
+  if (ImGui::BeginPopup("AddPrimitivePopUp")) {
     for (const auto [prim, name] : ::resin::BasePrimitiveNode::available_primitive_names()) {
       if (ImGui::Selectable(name.data())) {
         if (selected.has_value()) {
