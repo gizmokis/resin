@@ -244,6 +244,19 @@ class ShaderCreationException : public ResinException {
   std::string reason_;
 };
 
+class FramebufferCreationException : public ResinException {
+ public:
+  EXCEPTION_NAME(FramebufferCreationException)
+
+  explicit FramebufferCreationException(std::string&& reason)
+      : ResinException(std::format(R"(Framebuffer creation failed! Reason: {})", reason)), reason_(std::move(reason)) {}
+
+  inline const std::string& get_reason() const { return reason_; }
+
+ private:
+  std::string reason_;
+};
+
 class SDFTreeNodeDoesNotExist : public ResinException {
  public:
   EXCEPTION_NAME(SDFTreeNodeDoesNotExist)

@@ -21,6 +21,7 @@
 #include <resin/imgui/node_edit.hpp>
 #include <resin/imgui/sdf_tree.hpp>
 #include <resin/imgui/transform_edit.hpp>
+#include <resin/imgui/viewport.hpp>
 #include <resin/resin.hpp>
 
 namespace resin {
@@ -42,7 +43,7 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
   cube_mat_   = std::make_unique<Material>(glm::vec3(0.96F, 0.25F, 0.25F));
   sphere_mat_ = std::make_unique<Material>(glm::vec3(0.25F, 0.25F, 0.96F));
 
-  camera_       = std::make_unique<Camera>(true, 90.F, 16.F / 9.F, 0.75F, 100.F);
+  camera_       = std::make_unique<Camera>(false, 90.F, 16.F / 9.F, 0.75F, 100.F);
   glm::vec3 pos = glm::vec3(0, 2, 3);
   camera_->transform.set_local_pos(pos);
   glm::vec3 direction = glm::normalize(-pos);
@@ -99,6 +100,14 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
   shader_ = std::make_unique<RenderingShaderProgram>("default", *shader_resource_manager_.get_res(path / "test.vert"),
                                                      std::move(frag_shader));
   shader_->bind_uniform_buffer("Data", *ubo_);
+  shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
+  shader_->set_uniform("u_resolution", glm::vec2(window_->dimensions()));
+  shader_->set_uniform("u_nearPlane", camera_->near_plane());
+  shader_->set_uniform("u_farPlane", camera_->far_plane());
+  shader_->set_uniform("u_ortho", camera_->is_orthographic);
+  shader_->set_uniform("u_camSize", camera_->height());
+
+  framebuffer_ = std::make_unique<Framebuffer>(window_->dimensions().x, window_->dimensions().y);
 }
 
 void Resin::run() {
@@ -160,19 +169,21 @@ void Resin::update(duration_t delta) {
   shader_->set_uniform("u_cubeMat", *cube_mat_);
   shader_->set_uniform("u_sphereMat", *sphere_mat_);
 
-  shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
-  shader_->set_uniform("u_resolution", glm::vec2(window_->dimensions()));
-  shader_->set_uniform("u_nearPlane", camera_->near_plane());
-  shader_->set_uniform("u_farPlane", camera_->far_plane());
-  shader_->set_uniform("u_ortho", camera_->is_orthographic);
-  shader_->set_uniform("u_camSize", camera_->height());
   shader_->set_uniform("u_dirLight", *directional_light_);
   shader_->set_uniform("u_pointLight", *point_light_);
 }
 
 void Resin::gui() {
-  // ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
-  // TODO(SDF-81): Proper rendering to framebuffer
+  ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
+
+  if (ImGui::resin::Viewport(*framebuffer_)) {
+    auto width  = static_cast<float>(framebuffer_->width());
+    auto height = static_cast<float>(framebuffer_->height());
+    camera_->set_aspect_ratio(width / height);
+
+    shader_->set_uniform("u_resolution", glm::vec2(width, height));
+    shader_->set_uniform("u_camSize", camera_->height());
+  }
 
   ImGui::SetNextWindowSizeConstraints(ImVec2(280.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
   if (ImGui::Begin("SDF Tree")) {
@@ -252,10 +263,13 @@ void Resin::render() {
   glClear(GL_COLOR_BUFFER_BIT);
 
   {
+    framebuffer_->bind();
     glBindVertexArray(vertex_array_);
     shader_->bind();
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
     shader_->unbind();
+    framebuffer_->unbind();
+    glViewport(0, 0, static_cast<GLint>(window_->dimensions().x), static_cast<GLint>(window_->dimensions().y));
   }
 
   ImGui_ImplOpenGL3_NewFrame();
@@ -282,10 +296,8 @@ bool Resin::on_window_resize(WindowResizeEvent& e) {
 
   minimized_ = false;
   glViewport(0, 0, static_cast<GLint>(e.width()), static_cast<GLint>(e.height()));
-  auto width  = static_cast<float>(e.width());
-  auto height = static_cast<float>(e.height());
-  camera_->set_aspect_ratio(width / height);
-
+  auto width     = static_cast<float>(e.width());
+  auto height    = static_cast<float>(e.height());
   ImGuiIO& io    = ImGui::GetIO();
   io.DisplaySize = ImVec2(width, height);
   return false;
@@ -293,6 +305,7 @@ bool Resin::on_window_resize(WindowResizeEvent& e) {
 
 bool Resin::on_test(WindowTestEvent&) {
   camera_->is_orthographic = !camera_->is_orthographic;
+  shader_->set_uniform("u_ortho", camera_->is_orthographic);
 
   return false;
 }
