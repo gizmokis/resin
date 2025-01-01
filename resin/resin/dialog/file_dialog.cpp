@@ -2,12 +2,10 @@
 
 #include <filesystem>
 #include <libresin/utils/exceptions.hpp>
+#include <libresin/utils/path_utf.hpp>
 #include <nfd/nfd.hpp>
 #include <optional>
 #include <resin/dialog/file_dialog.hpp>
-#ifdef _WIN32
-#include <windows.h>
-#endif
 
 namespace resin {
 
@@ -32,14 +30,8 @@ void FileDialog::update() {
   auto result = dialog_task_->get();
   if (result.has_value()) {
     if (on_finish_.has_value()) {
-#ifdef _WIN32
-    int size = MultiByteToWideChar(CP_UTF8, 0, result->c_str(), -1, nullptr, 0);
-    std::wstring widePath(size, 0);
-    MultiByteToWideChar(CP_UTF8, 0, result->c_str(), -1, &widePath[0], size);
-    auto path = std::filesystem::path(widePath);
-#else
-    auto path = std::filesystem::path(*result);
-#endif
+      auto path = utf8str_to_path(*result);
+
       if (std::filesystem::exists(path.parent_path())) {
         (*on_finish_)(std::move(path));
       } else {
@@ -88,18 +80,13 @@ void FileDialog::start_file_dialog(FileDialog::DialogType type, std::optional<st
               _dialog_filters ? reinterpret_cast<const nfdu8filteritem_t*>(_dialog_filters->data()) : nullptr,
               _dialog_filters ? static_cast<nfdfiltersize_t>(_dialog_filters->size()) : 0, nullptr,
               _default_name ? _default_name->data() : nullptr);
-
-          //   result = NFD::SaveDialog(
-          //       out_path, _dialog_filters ? reinterpret_cast<const nfdu8filteritem_t*>(_dialog_filters->data()) :
-          //       nullptr, _dialog_filters ? static_cast<nfdfiltersize_t>(_dialog_filters->size()) : 0, nullptr,  //
-          //       defaultPath _default_name ? _default_name->data() : nullptr);
         } else {
           result = NFD_PickFolderU8(&out_path, nullptr);
         }
 
         if (result == NFD_OKAY) {
           promise.set_value(std::string(out_path));
-          //   out_path.release();  // NOLINT
+          NFD_FreePathU8(out_path);
         } else {
           promise.set_value(std::nullopt);
         }

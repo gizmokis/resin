@@ -4,15 +4,14 @@
 #include <imgui/imgui_impl_opengl3.h>
 #include <imgui/imgui_impl_opengl3_loader.h>
 
+#include <cstdlib>
 #include <libresin/utils/logger.hpp>
+#include <libresin/utils/path_utf.hpp>
 #include <resin/core/graphics_context.hpp>
 #include <resin/core/window.hpp>
 #include <resin/event/event.hpp>
 #include <resin/event/window_events.hpp>
-#include <cstdlib>
-#ifdef _WIN32
-#include <windows.h>
-#endif
+#include <string>
 
 namespace resin {
 
@@ -179,50 +178,13 @@ void Window::imgui_setup() const {
   ImGui_ImplGlfw_InitForOpenGL(window_ptr_, true);
   ImGui_ImplOpenGL3_Init("#version 150");
 }
-#include <string>
-#include <locale>
-#include <vector>
-#include <cstdlib>
-
-std::string wstring_to_string(const std::wstring& wstr) {
-    // Set the locale to handle wide characters properly
-    std::setlocale(LC_ALL, "");
-    
-    // Get the required buffer size
-    size_t required_size = 0;
-    errno_t err = wcstombs_s(&required_size, nullptr, 0, wstr.c_str(), 0);
-    if (err != 0) {
-        throw std::runtime_error("Error getting required buffer size");
-    }
-    
-    // Create a buffer for the converted string
-    std::vector<char> buffer(required_size);
-    
-    // Perform the actual conversion
-    size_t converted_size = 0;
-    err = wcstombs_s(&converted_size, buffer.data(), required_size, wstr.c_str(), _TRUNCATE);
-    if (err != 0) {
-        throw std::runtime_error("Error converting wstring: conversion failed");
-    }
-    
-    // Create string from buffer (subtract 1 to exclude null terminator)
-    return std::string(buffer.data(), converted_size - 1);
-}
 
 void Window::imgui_set_style() {
   ImGuiIO& io = ImGui::GetIO();
 
   std::filesystem::path path = std::filesystem::current_path() / "assets" / "fonts" / "OpenSans-Regular.ttf";
   if (std::filesystem::exists(path)) {
-#ifdef _WIN32
-    std::wstring widePath = path.wstring();
-    int size = WideCharToMultiByte(CP_UTF8, 0, widePath.c_str(), -1, nullptr, 0, nullptr, nullptr);
-    std::string utf8Path(size, 0);
-    WideCharToMultiByte(CP_UTF8, 0, widePath.c_str(), -1, &utf8Path[0], size, nullptr, nullptr);
-    ImFont* sans_regular = io.Fonts->AddFontFromFileTTF(utf8Path.c_str(), 18.0f);
-#else
-    ImFont* sans_regular = io.Fonts->AddFontFromFileTTF(path.string().c_str(), 18.0f);
-#endif
+    io.Fonts->AddFontFromFileTTF(path_to_utf8str(path).c_str(), 18.0f);
   } else {
     Logger::warn("Failed to load font. Using ImGui's default.");
   }
