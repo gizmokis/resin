@@ -5,6 +5,9 @@
 #include <nfd/nfd.hpp>
 #include <optional>
 #include <resin/dialog/file_dialog.hpp>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 namespace resin {
 
@@ -29,8 +32,15 @@ void FileDialog::update() {
   auto result = dialog_task_->get();
   if (result.has_value()) {
     if (on_finish_.has_value()) {
-      auto path = std::filesystem::path(*result);
-      if (std::filesystem::exists(path.root_directory())) {
+#ifdef _WIN32
+    int size = MultiByteToWideChar(CP_UTF8, 0, result->c_str(), -1, nullptr, 0);
+    std::wstring widePath(size, 0);
+    MultiByteToWideChar(CP_UTF8, 0, result->c_str(), -1, &widePath[0], size);
+    auto path = std::filesystem::path(widePath);
+#else
+    auto path = std::filesystem::path(*result);
+#endif
+      if (std::filesystem::exists(path.parent_path())) {
         (*on_finish_)(std::move(path));
       } else {
         Logger::warn("Incorrect path {} obtained from file dialog", path.string());

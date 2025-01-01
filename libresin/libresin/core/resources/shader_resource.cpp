@@ -77,6 +77,7 @@ static std::string load_content(const std::filesystem::path& path) {
   }
 
   std::ifstream file_stream(path.string());
+  Logger::info("dupa {}", path.string());
   if (!file_stream.is_open()) {
     log_throw(FileStreamNotAvailableException(path.string()));
   }
