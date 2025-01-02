@@ -23,27 +23,8 @@ class FileDialog {
 
   ~FileDialog();
 
-  // According to the nfd.h char definitions:
-  //
-  // typedef char nfdu8char_t;
-  // #ifdef _WIN32
-  // /** @typedef UTF-16 character */
-  // typedef wchar_t nfdnchar_t;
-  // #else
-  // /** @typedef UTF-8 character */
-  // typedef nfdu8char_t nfdnchar_t;
-  // #endif  // _WIN32
-  //
-  // And filter item strucuture definition:
-  //
-  // typedef struct {
-  //     const nfdnchar_t* name;
-  //     const nfdnchar_t* spec;
-  // } nfdnfilteritem_t;
-  //
-  // The wchar_t is used on windows and char on linux, so
-  // the struct defined below can be reinterpreted as nfdnfilteritem_t.
-
+  // As the UTF8 version of the nfd is used on all platforms, the
+  // following struct can be reinterpereted to match the nfdu8filteritem_t.
   struct FilterItem {
     const char* name;
     const char* spec;
