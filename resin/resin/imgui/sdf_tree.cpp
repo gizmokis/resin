@@ -276,11 +276,9 @@ void SDFTreeComponentVisitor::apply_move_operation() {
     auto node_ptr = sdf_tree_.node(*move_source_target_).parent().detach_child(*move_source_target_);
     sdf_tree_.node(*move_after_target_).parent().insert_after_child(*move_after_target_, std::move(node_ptr));
   }
-
-  is_tree_edited_ = true;
 }
 
-std::pair<std::optional<::resin::IdView<::resin::SDFTreeNodeId>>, bool> SDFTreeView(
+std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(
     ::resin::SDFTree& tree, const std::optional<::resin::IdView<::resin::SDFTreeNodeId>>& old_selected) {
   static std::string_view delete_label    = "Delete";
   static std::string_view add_prim_label  = "Add Primitive";
@@ -303,7 +301,6 @@ std::pair<std::optional<::resin::IdView<::resin::SDFTreeNodeId>>, bool> SDFTreeV
 
   comp_vs.render_tree();
   auto selected = comp_vs.selected();
-  bool is_tree_edited = comp_vs.is_tree_edited();
 
   ImGui::EndChild();
 
@@ -319,8 +316,7 @@ std::pair<std::optional<::resin::IdView<::resin::SDFTreeNodeId>>, bool> SDFTreeV
 
   if (ImGui::Button(delete_label.data())) {
     tree.delete_node(selected.value());
-    selected       = std::nullopt;
-    is_tree_edited = true;
+    selected = std::nullopt;
   }
 
   if (delete_disabled) {
@@ -343,7 +339,6 @@ std::pair<std::optional<::resin::IdView<::resin::SDFTreeNodeId>>, bool> SDFTreeV
       } else {
         tree.root().push_back_child<::resin::GroupNode>(::resin::SDFBinaryOperation::SmoothUnion);
       }
-      is_tree_edited = true;
     }
 
     if (ImGui::Selectable("Load from prefab")) {
@@ -397,7 +392,6 @@ std::pair<std::optional<::resin::IdView<::resin::SDFTreeNodeId>>, bool> SDFTreeV
         } else {
           tree.root().push_back_primitive(prim, ::resin::SDFBinaryOperation::SmoothUnion);
         }
-        is_tree_edited = true;
       }
     }
     ImGui::EndPopup();
@@ -405,7 +399,7 @@ std::pair<std::optional<::resin::IdView<::resin::SDFTreeNodeId>>, bool> SDFTreeV
 
   ImGui::PopID();
 
-  return std::make_pair(selected, is_tree_edited);
+  return selected;
 }
 
 }  // namespace resin

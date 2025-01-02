@@ -155,6 +155,14 @@ void Resin::update(duration_t delta) {
 
   directional_light_->transform.rotate(glm::angleAxis(std::chrono::duration<float>(delta).count(), glm::vec3(0, 1, 0)));
 
+  if (sdf_tree_.is_dirty()) {
+    shader_->fragment_shader().set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
+    Logger::debug("{}", sdf_tree_.gen_shader_code());
+    shader_->recompile();
+    Logger::info("Refreshed the SDF Tree");
+    sdf_tree_.mark_clean();
+  }
+
   ubo_->bind();
   ubo_->update_dirty(sdf_tree_);
   ubo_->unbind();
@@ -182,17 +190,7 @@ void Resin::gui() {
   // TODO(SDF-81): Proper rendering to framebuffer
   ImGui::SetNextWindowSizeConstraints(ImVec2(280.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
   if (ImGui::Begin("SDF Tree")) {
-    auto result    = ImGui::resin::SDFTreeView(sdf_tree_, selected_node_);
-    selected_node_ = result.first;
-    if (result.second) {
-      shader_->fragment_shader().set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
-      Logger::debug("{}", sdf_tree_.gen_shader_code());
-      shader_->recompile();
-      ubo_->bind();
-      ubo_->update_dirty(sdf_tree_);
-      ubo_->unbind();
-      Logger::info("Refreshed the SDF Tree");
-    }
+    selected_node_ = ImGui::resin::SDFTreeView(sdf_tree_, selected_node_);
   }
   ImGui::End();
 
