@@ -20,9 +20,11 @@ std::string path_to_utf8str(const std::filesystem::path& path) {
 
 std::filesystem::path utf8str_to_path(std::string_view str_path) {
 #ifdef _WIN32
-  int size = MultiByteToWideChar(CP_UTF8, 0, str_path.c_str(), -1, nullptr, 0);
+  const char* raw_path = str_path.data();
+  int raw_length       = static_cast<int>(str_path.length());
+  int size             = MultiByteToWideChar(CP_UTF8, 0, raw_path, raw_length, nullptr, 0);
   std::wstring wide_path(size, 0);
-  MultiByteToWideChar(CP_UTF8, 0, str_path.c_str(), -1, &wide_path[0], size);
+  MultiByteToWideChar(CP_UTF8, 0, raw_path, raw_length, &wide_path[0], size);
   return std::filesystem::path(wide_path);
 #else
   return std::filesystem::path(str_path);
