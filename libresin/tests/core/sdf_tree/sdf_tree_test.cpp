@@ -274,7 +274,7 @@ TEST_F(SDFTreeTest, DirtyPrimitivesAreCorrectlyAdded) {
   ASSERT_NE(std::find(dirty.begin(), dirty.end(), sphere1_id), dirty.end());
 
   // when
-  tree.clear_dirty_primitives();
+  tree.mark_primitives_clean();
   group2.mark_dirty();
 
   // then
