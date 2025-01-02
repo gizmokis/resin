@@ -259,7 +259,6 @@ void Window::imgui_set_style() {
   style.Colors[ImGuiCol_TableBorderStrong] = primary;
   style.Colors[ImGuiCol_TextSelectedBg]    = primary;
   style.Colors[ImGuiCol_Header]            = primary;
-  style.Colors[ImGuiCol_Header]            = primary;
 
   style.Colors[ImGuiCol_WindowBg]     = gui_background;
   style.Colors[ImGuiCol_PopupBg]      = gui_background;
