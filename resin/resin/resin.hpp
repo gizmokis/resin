@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cstdint>
 #include <libresin/core/camera.hpp>
+#include <libresin/core/framebuffer.hpp>
 #include <libresin/core/resources/shader_resource.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
@@ -39,10 +40,12 @@ class Resin {
   Resin();
   ~Resin() = default;
 
+  void setup_shader();
+
   void run();
   void update(duration_t delta);
-  void render();
   void gui();
+  void render();
 
   bool on_window_close(WindowCloseEvent& e);
   bool on_window_resize(WindowResizeEvent& e);
@@ -63,6 +66,7 @@ class Resin {
   std::unique_ptr<Window> window_;
   std::unique_ptr<RenderingShaderProgram> shader_;
   std::unique_ptr<UniformBuffer> ubo_;
+  std::unique_ptr<Framebuffer> framebuffer_;
 
   std::unique_ptr<Camera> camera_;
   std::unique_ptr<PointLight> point_light_;
