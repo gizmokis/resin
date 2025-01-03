@@ -91,22 +91,23 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
   frag_shader.set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
   Logger::info("{}", frag_shader.get_glsl());
 
-  ubo_ = std::make_unique<UniformBuffer>(sdf_tree_.max_nodes_count());
-  frag_shader.set_ext_defi("MAX_UBO_NODE_COUNT", std::to_string(ubo_->max_count()));
-  ubo_->bind();
-  ubo_->set(sdf_tree_);
-  ubo_->unbind();
+  primitive_ubo_ = std::make_unique<PrimitiveUniformBuffer>(sdf_tree_.max_nodes_count());
+  frag_shader.set_ext_defi("MAX_UBO_NODE_COUNT", std::to_string(sdf_tree_.max_nodes_count()));
+
+  primitive_ubo_->bind();
+  primitive_ubo_->set(sdf_tree_);
+  primitive_ubo_->unbind();
 
   shader_ = std::make_unique<RenderingShaderProgram>("default", *shader_resource_manager_.get_res(path / "test.vert"),
                                                      std::move(frag_shader));
+  shader_->bind_uniform_buffer("Data", *primitive_ubo_);
 
   framebuffer_ = std::make_unique<Framebuffer>(window_->dimensions().x, window_->dimensions().y);
-  
-  setup_shader();
+
+  setup_shader_uniforms();
 }
 
-void Resin::setup_shader() {
-  shader_->bind_uniform_buffer("Data", *ubo_);
+void Resin::setup_shader_uniforms() {
   shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
   shader_->set_uniform("u_resolution", glm::vec2(framebuffer_->width(), framebuffer_->height()));
   shader_->set_uniform("u_nearPlane", camera_->near_plane());
@@ -175,9 +176,9 @@ void Resin::update(duration_t delta) {
 
   directional_light_->transform.rotate(glm::angleAxis(std::chrono::duration<float>(delta).count(), glm::vec3(0, 1, 0)));
 
-  ubo_->bind();
-  ubo_->update_dirty(sdf_tree_);
-  ubo_->unbind();
+  primitive_ubo_->bind();
+  primitive_ubo_->update_dirty(sdf_tree_);
+  primitive_ubo_->unbind();
 
   // TODO(SDF-87)
   shader_->set_uniform("u_cubeMat", *cube_mat_);
@@ -219,10 +220,7 @@ void Resin::gui() {
       shader_->fragment_shader().set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
       Logger::debug("{}", sdf_tree_.gen_shader_code());
       shader_->recompile();
-      setup_shader();
-      ubo_->bind();
-      ubo_->update_dirty(sdf_tree_);
-      ubo_->unbind();
+      setup_shader_uniforms();
       Logger::info("Refreshed the SDF Tree");
     }
   }

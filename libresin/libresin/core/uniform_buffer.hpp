@@ -14,26 +14,13 @@ namespace resin {
 
 class UniformBuffer {
  public:
-  struct Node {
-    glm::mat4 transform;
-    glm::vec3 size;
-    float scale;
-
-    Node(const Transform& _transform, const glm::vec3& _size)
-        : transform(_transform.world_to_local_matrix()), size(_size), scale(_transform.scale()) {}
-  };
-
-  explicit UniformBuffer(size_t max_count, size_t binding = 0);
-  ~UniformBuffer();
+  explicit UniformBuffer(size_t binding, size_t buffer_size);
+  virtual ~UniformBuffer();
 
   void bind() const;
-  size_t binding() const { return binding_; }
   void unbind() const;
 
-  void set(SDFTree& tree);
-  void update_dirty(SDFTree& tree);
-
-  size_t max_count() const { return max_count_; }
+  size_t binding() const { return binding_; }
   size_t buffer_size() const { return buffer_size_; }
 
   UniformBuffer(const UniformBuffer&)            = delete;
@@ -42,14 +29,41 @@ class UniformBuffer {
   UniformBuffer& operator=(UniformBuffer&&)      = delete;
 
  private:
-  class UBONodeVisitor : public ISDFTreeNodeVisitor {
+  GLuint buffer_id_;
+  const size_t binding_, buffer_size_;
+};
+
+class PrimitiveUniformBuffer : public UniformBuffer {
+ public:
+  struct PrimitiveNode {
+    glm::mat4 transform;
+    glm::vec3 size;
+    float scale;
+
+    PrimitiveNode(const Transform& _transform, const glm::vec3& _size)
+        : transform(_transform.world_to_local_matrix()), size(_size), scale(_transform.scale()) {}
+  };
+
+  explicit PrimitiveUniformBuffer(size_t max_count);
+  ~PrimitiveUniformBuffer() override = default;
+
+  size_t max_count() const { return max_count_; }
+
+  void set(SDFTree& tree);
+  void update_dirty(SDFTree& tree);
+
+  PrimitiveUniformBuffer(const PrimitiveUniformBuffer&)            = delete;
+  PrimitiveUniformBuffer(PrimitiveUniformBuffer&&)                 = delete;
+  PrimitiveUniformBuffer& operator=(const PrimitiveUniformBuffer&) = delete;
+  PrimitiveUniformBuffer& operator=(PrimitiveUniformBuffer&&)      = delete;
+
+ private:
+  class PrimitiveNodeVisitor : public ISDFTreeNodeVisitor {
     void visit_sphere(SphereNode& node) override;
     void visit_cube(CubeNode& node) override;
   };
 
-  GLuint buffer_id_;
-  const size_t binding_;
-  const size_t max_count_, buffer_size_;
+  const size_t max_count_;
 };
 
 }  // namespace resin

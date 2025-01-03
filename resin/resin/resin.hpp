@@ -40,7 +40,7 @@ class Resin {
   Resin();
   ~Resin() = default;
 
-  void setup_shader();
+  void setup_shader_uniforms();
 
   void run();
   void update(duration_t delta);
@@ -65,7 +65,7 @@ class Resin {
 
   std::unique_ptr<Window> window_;
   std::unique_ptr<RenderingShaderProgram> shader_;
-  std::unique_ptr<UniformBuffer> ubo_;
+  std::unique_ptr<PrimitiveUniformBuffer> primitive_ubo_;
   std::unique_ptr<Framebuffer> framebuffer_;
 
   std::unique_ptr<Camera> camera_;
