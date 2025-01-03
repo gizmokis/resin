@@ -1,0 +1,112 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+new file mode 100644
+index 0000000..73513a9
+--- /dev/null
++++ b/CMakeLists.txt
+@@ -0,0 +1,14 @@
++cmake_minimum_required(VERSION 3.20)
++
++project(imguizmo)
++message(STATUS "Configuring " ${PROJECT_NAME})
++
++set(CMAKE_CXX_STANDARD 11)
++set(CMAKE_DISABLE_IN_SOURCE_BUILD TRUE)
++
++file(GLOB IMGUI_SOURCE_FILES
++  "src/imguizmo/*.cpp")
++
++add_library(${PROJECT_NAME} STATIC ${IMGUI_SOURCE_FILES})
++target_link_libraries(${PROJECT_NAME} PUBLIC imgui)
++target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC src)
+diff --git a/ImGuizmo.cpp b/src/imguizmo/ImGuizmo.cpp
+similarity index 99%
+rename from ImGuizmo.cpp
+rename to src/imguizmo/ImGuizmo.cpp
+index ed05fd8..82e503f 100644
+--- a/ImGuizmo.cpp
++++ b/src/imguizmo/ImGuizmo.cpp
+@@ -23,12 +23,9 @@
+ // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ // SOFTWARE.
+ //
+-
+-#include "imgui.h"
+-#ifndef IMGUI_DEFINE_MATH_OPERATORS
+ #define IMGUI_DEFINE_MATH_OPERATORS
+-#endif
+-#include "imgui_internal.h"
++#include <imgui/imgui.h>
++#include <imgui/imgui_internal.h>
+ #include "ImGuizmo.h"
+ 
+ #if defined(_MSC_VER) || defined(__MINGW32__)
+@@ -1878,7 +1875,7 @@ namespace ImGuizmo
+       // move
+       if (gContext.mbUsing && (gContext.mActualID == -1 || gContext.mActualID == gContext.mEditingID) && IsTranslateType(gContext.mCurrentOperation))
+       {
+-         ImGui::CaptureMouseFromApp();
++         
+          const float len = fabsf(IntersectRayPlane(gContext.mRayOrigin, gContext.mRayVector, gContext.mTranslationPlan)); // near plan
+          vec_t newPos = gContext.mRayOrigin + gContext.mRayVector * len;
+ 
+@@ -1948,7 +1945,7 @@ namespace ImGuizmo
+          type = GetMoveType(op, &gizmoHitProportion);
+          if (type != MT_NONE)
+          {
+-            ImGui::CaptureMouseFromApp();
++            
+          }
+          if (CanActivate() && type != MT_NONE)
+          {
+@@ -1993,7 +1990,7 @@ namespace ImGuizmo
+          type = GetScaleType(op);
+          if (type != MT_NONE)
+          {
+-            ImGui::CaptureMouseFromApp();
++            
+          }
+          if (CanActivate() && type != MT_NONE)
+          {
+@@ -2016,7 +2013,7 @@ namespace ImGuizmo
+       // scale
+       if (gContext.mbUsing && (gContext.mActualID == -1 || gContext.mActualID == gContext.mEditingID) && IsScaleType(gContext.mCurrentOperation))
+       {
+-         ImGui::CaptureMouseFromApp();
++         
+          const float len = IntersectRayPlane(gContext.mRayOrigin, gContext.mRayVector, gContext.mTranslationPlan);
+          vec_t newPos = gContext.mRayOrigin + gContext.mRayVector * len;
+          vec_t newOrigin = newPos - gContext.mRelativeOrigin * gContext.mScreenFactor;
+@@ -2107,7 +2104,7 @@ namespace ImGuizmo
+ 
+          if (type != MT_NONE)
+          {
+-            ImGui::CaptureMouseFromApp();
++            
+          }
+ 
+          if (type == MT_ROTATE_SCREEN)
+@@ -2141,7 +2138,7 @@ namespace ImGuizmo
+       // rotation
+       if (gContext.mbUsing && (gContext.mActualID == -1 || gContext.mActualID == gContext.mEditingID) && IsRotateType(gContext.mCurrentOperation))
+       {
+-         ImGui::CaptureMouseFromApp();
++         
+          gContext.mRotationAngle = ComputeAngleOnPlan();
+          if (snap)
+          {
+diff --git a/ImGuizmo.h b/src/imguizmo/ImGuizmo.h
+similarity index 97%
+rename from ImGuizmo.h
+rename to src/imguizmo/ImGuizmo.h
+index 155202d..d494ec1 100644
+--- a/ImGuizmo.h
++++ b/src/imguizmo/ImGuizmo.h
+@@ -105,7 +105,7 @@ void EditTransform(const Camera& camera, matrix_t& matrix)
+ #pragma once
+ 
+ #ifdef USE_IMGUI_API
+-#include "imconfig.h"
++#include <imgui/imconfig.h>
+ #endif
+ #ifndef IMGUI_API
+ #define IMGUI_API

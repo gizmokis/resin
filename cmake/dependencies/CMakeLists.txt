@@ -85,6 +85,24 @@ list(POP_BACK CMAKE_MESSAGE_INDENT)
 message(CHECK_PASS "fetched")
 
 # ##############################################################################
+# ImGuizmo (depends on ImGui)
+# ##############################################################################
+message(CHECK_START "Fetching ImGuizmo")
+list(APPEND CMAKE_MESSAGE_INDENT "  ")
+
+FetchContent_Declare(
+  imguizmo 
+  GIT_REPOSITORY "https://github.com/CedricGuillemet/ImGuizmo.git"
+  GIT_TAG "1.83"
+  PATCH_COMMAND git apply --ignore-whitespace
+                "${CMAKE_CURRENT_LIST_DIR}/../../patches/imguizmo.patch"
+  UPDATE_DISCONNECTED 1)
+FetchContent_MakeAvailable(imguizmo)
+
+list(POP_BACK CMAKE_MESSAGE_INDENT)
+message(CHECK_PASS "fetched")
+
+# ##############################################################################
 # GLM
 # ##############################################################################
 if(BUILD_GLM)
