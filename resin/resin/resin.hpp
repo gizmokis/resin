@@ -40,6 +40,8 @@ class Resin {
   Resin();
   ~Resin() = default;
 
+  void setup_shader();
+
   void run();
   void update(duration_t delta);
   void gui();

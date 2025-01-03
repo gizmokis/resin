@@ -99,15 +99,20 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
 
   shader_ = std::make_unique<RenderingShaderProgram>("default", *shader_resource_manager_.get_res(path / "test.vert"),
                                                      std::move(frag_shader));
+
+  framebuffer_ = std::make_unique<Framebuffer>(window_->dimensions().x, window_->dimensions().y);
+  
+  setup_shader();
+}
+
+void Resin::setup_shader() {
   shader_->bind_uniform_buffer("Data", *ubo_);
   shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
-  shader_->set_uniform("u_resolution", glm::vec2(window_->dimensions()));
+  shader_->set_uniform("u_resolution", glm::vec2(framebuffer_->width(), framebuffer_->height()));
   shader_->set_uniform("u_nearPlane", camera_->near_plane());
   shader_->set_uniform("u_farPlane", camera_->far_plane());
   shader_->set_uniform("u_ortho", camera_->is_orthographic);
   shader_->set_uniform("u_camSize", camera_->height());
-
-  framebuffer_ = std::make_unique<Framebuffer>(window_->dimensions().x, window_->dimensions().y);
 }
 
 void Resin::run() {
@@ -214,6 +219,7 @@ void Resin::gui() {
       shader_->fragment_shader().set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
       Logger::debug("{}", sdf_tree_.gen_shader_code());
       shader_->recompile();
+      setup_shader();
       ubo_->bind();
       ubo_->update_dirty(sdf_tree_);
       ubo_->unbind();
