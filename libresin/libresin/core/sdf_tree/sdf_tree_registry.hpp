@@ -59,6 +59,8 @@ struct SDFTreeRegistry {
 
   size_t node_index{};
   size_t material_index{};
+
+  bool is_tree_dirty{true};
 };
 
 }  // namespace resin

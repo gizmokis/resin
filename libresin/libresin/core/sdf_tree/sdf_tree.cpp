@@ -58,7 +58,7 @@ void SDFTree::visit_dirty_primitives(ISDFTreeNodeVisitor& visitor) {
   for (auto prim : sdf_tree_registry_.dirty_primitives) {
     sdf_tree_registry_.all_nodes[prim.raw()]->get().accept_visitor(visitor);
   }
-  clear_dirty_primitives();
+  mark_primitives_clean();
 }
 
 void SDFTree::visit_all_primitives(ISDFTreeNodeVisitor& visitor) {

@@ -15,7 +15,10 @@
 #include <libresin/core/uniform_buffer.hpp>
 #include <libresin/utils/logger.hpp>
 #include <memory>
+#include <nfd/nfd.hpp>
+#include <optional>
 #include <resin/core/window.hpp>
+#include <resin/dialog/file_dialog.hpp>
 #include <resin/event/event.hpp>
 #include <resin/event/window_events.hpp>
 #include <resin/imgui/node_edit.hpp>
@@ -101,7 +104,7 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
                                                      std::move(frag_shader));
 
   framebuffer_ = std::make_unique<Framebuffer>(window_->dimensions().x, window_->dimensions().y);
-  
+
   setup_shader();
 }
 
@@ -175,6 +178,15 @@ void Resin::update(duration_t delta) {
 
   directional_light_->transform.rotate(glm::angleAxis(std::chrono::duration<float>(delta).count(), glm::vec3(0, 1, 0)));
 
+  if (sdf_tree_.is_dirty()) {
+    shader_->fragment_shader().set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
+    Logger::debug("{}", sdf_tree_.gen_shader_code());
+    shader_->recompile();
+    setup_shader();
+    Logger::info("Refreshed the SDF Tree");
+    sdf_tree_.mark_clean();
+  }
+
   ubo_->bind();
   ubo_->update_dirty(sdf_tree_);
   ubo_->unbind();
@@ -185,6 +197,10 @@ void Resin::update(duration_t delta) {
 
   shader_->set_uniform("u_dirLight", *directional_light_);
   shader_->set_uniform("u_pointLight", *point_light_);
+  shader_->set_uniform("u_cubeMat", *cube_mat_);
+  shader_->set_uniform("u_sphereMat", *sphere_mat_);
+
+  FileDialog::instance().update();
 }
 
 void Resin::gui() {
@@ -213,18 +229,7 @@ void Resin::gui() {
 
   ImGui::SetNextWindowSizeConstraints(ImVec2(280.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
   if (ImGui::Begin("SDF Tree")) {
-    auto result    = ImGui::resin::SDFTreeView(sdf_tree_, selected_node_);
-    selected_node_ = result.first;
-    if (result.second) {
-      shader_->fragment_shader().set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
-      Logger::debug("{}", sdf_tree_.gen_shader_code());
-      shader_->recompile();
-      setup_shader();
-      ubo_->bind();
-      ubo_->update_dirty(sdf_tree_);
-      ubo_->unbind();
-      Logger::info("Refreshed the SDF Tree");
-    }
+    selected_node_ = ImGui::resin::SDFTreeView(sdf_tree_, selected_node_);
   }
   ImGui::End();
 

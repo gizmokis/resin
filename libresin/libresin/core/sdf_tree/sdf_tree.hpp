@@ -22,7 +22,7 @@ class SDFTree {
 
   // Visits all dirty primitives AND clears the dirty primitives collection.
   void visit_dirty_primitives(ISDFTreeNodeVisitor& visitor);
-  inline void clear_dirty_primitives() { sdf_tree_registry_.dirty_primitives.clear(); }
+  inline void mark_primitives_clean() { sdf_tree_registry_.dirty_primitives.clear(); }
 
   void visit_all_primitives(ISDFTreeNodeVisitor& visitor);
   void visit_node(IdView<SDFTreeNodeId> node_id, ISDFTreeNodeVisitor& visitor);
@@ -57,6 +57,9 @@ class SDFTree {
   }
 
   inline size_t tree_id() const { return tree_id_; }
+
+  inline bool is_dirty() const { return sdf_tree_registry_.is_tree_dirty; }
+  inline void mark_clean() { sdf_tree_registry_.is_tree_dirty = false; }
 
   MaterialSDFTreeComponent& material(IdView<MaterialId> mat_id);
   const MaterialSDFTreeComponent& material(IdView<MaterialId> mat_id) const;

@@ -17,7 +17,7 @@ vec2 sdCube(vec3 pos, node prop)
     return vec2(prop.scale == 0 ? u_farPlane : prop.scale * (min(max(d.x,max(d.y,d.z)),0.0) + length(max(d,0.0))),0);
 }
 
-vec2 opUnion(vec2 d1, vec2 d2)
+vec2 opUnion(vec2 d1, vec2 d2, float k) // FIXME(SDF-117)
 {
 	return (d1.x<d2.x) ? d1 : d2;
 }

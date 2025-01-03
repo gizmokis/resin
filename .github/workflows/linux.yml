@@ -33,7 +33,7 @@ jobs:
       id: install-deps
       run: |
         sudo apt-get update
-        sudo apt-get install python3 gcc-14 g++-14 git libwayland-dev libxkbcommon-dev cppcheck xorg-dev cmake cmake-format clangd clang clang-tidy git
+        sudo apt-get install python3 gcc-14 g++-14 git libwayland-dev libxkbcommon-dev cppcheck xorg-dev cmake cmake-format clangd clang clang-tidy git libdbus-1-dev
 
     - run: git fetch --tags --force origin # WA: https://github.com/actions/checkout/issues/882
 

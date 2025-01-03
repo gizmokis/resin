@@ -30,8 +30,14 @@ class BasePrimitiveNode : public SDFTreeNode {
     return ancestor_mat_id_.has_value() ? *ancestor_mat_id_ : mat_id_;
   }
 
-  inline void set_material(IdView<MaterialId> mat_id) final { mat_id_ = mat_id; }
-  inline void remove_material() final { mat_id_ = std::nullopt; }
+  inline void set_material(IdView<MaterialId> mat_id) final {
+    tree_registry_.is_tree_dirty = true;
+    mat_id_                      = mat_id;
+  }
+  inline void remove_material() final {
+    tree_registry_.is_tree_dirty = true;
+    mat_id_                      = std::nullopt;
+  }
 
   inline bool is_material_default() const { return mat_id_ == tree_registry_.default_material.material_id(); }
 
@@ -83,6 +89,7 @@ class BasePrimitiveNode : public SDFTreeNode {
   inline void set_ancestor_mat_id(IdView<MaterialId> mat_id) final { ancestor_mat_id_ = mat_id; }
   inline void remove_ancestor_mat_id() final { ancestor_mat_id_ = std::nullopt; }
   inline void delete_material_from_subtree(IdView<MaterialId> mat_id) final {
+    tree_registry_.is_tree_dirty = true;
     if (mat_id == mat_id_) {
       mat_id_ = std::nullopt;
     }
