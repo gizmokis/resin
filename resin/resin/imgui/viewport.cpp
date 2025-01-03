@@ -20,13 +20,12 @@ bool Viewport(::resin::Framebuffer& framebuffer, bool& resized) {
   auto height = static_cast<size_t>(view.y);
 
   if (width != framebuffer.width() || height != framebuffer.height()) {
-    resized = true;
-
     if (width == 0 || height == 0) {
       return false;
     }
 
     framebuffer.resize(width, height);
+    resized = true;
   }
 
   return true;
