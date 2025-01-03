@@ -42,8 +42,8 @@ class Resin {
 
   void run();
   void update(duration_t delta);
-  void render();
   void gui();
+  void render();
 
   bool on_window_close(WindowCloseEvent& e);
   bool on_window_resize(WindowResizeEvent& e);

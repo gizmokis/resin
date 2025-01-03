@@ -140,7 +140,16 @@ void Resin::run() {
 
     ++frames;
     if (!minimized_) {
-      render();
+      ImGui_ImplOpenGL3_NewFrame();
+      ImGui_ImplGlfw_NewFrame();
+      ImGui::NewFrame();
+
+      gui();
+
+      ImGui::Render();
+      ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+      window_->on_update();
     }
 
     if (second > 1s) {
@@ -176,14 +185,26 @@ void Resin::update(duration_t delta) {
 void Resin::gui() {
   ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
 
-  if (ImGui::resin::Viewport(*framebuffer_)) {
+  bool resized = false;
+  if (ImGui::resin::Viewport(*framebuffer_, resized)) {
     auto width  = static_cast<float>(framebuffer_->width());
     auto height = static_cast<float>(framebuffer_->height());
-    camera_->set_aspect_ratio(width / height);
 
-    shader_->set_uniform("u_resolution", glm::vec2(width, height));
-    shader_->set_uniform("u_camSize", camera_->height());
+    if (resized) {
+      camera_->set_aspect_ratio(width / height);
+      shader_->set_uniform("u_resolution", glm::vec2(width, height));
+      shader_->set_uniform("u_camSize", camera_->height());
+    }
+
+    framebuffer_->bind();
+    render();
+    framebuffer_->unbind();
+    glViewport(0, 0, static_cast<GLint>(window_->dimensions().x), static_cast<GLint>(window_->dimensions().y));
+
+    ImGui::Image((ImTextureID)(intptr_t)framebuffer_->color_texture(), ImVec2(width, height), ImVec2(0, 1),  // NOLINT
+                 ImVec2(1, 0));
   }
+  ImGui::End();
 
   ImGui::SetNextWindowSizeConstraints(ImVec2(280.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
   if (ImGui::Begin("SDF Tree")) {
@@ -259,27 +280,10 @@ void Resin::gui() {
 }
 
 void Resin::render() {
-  glClearColor(0.1F, 0.1F, 0.1F, 1.F);
-  glClear(GL_COLOR_BUFFER_BIT);
-
-  {
-    framebuffer_->bind();
-    glBindVertexArray(vertex_array_);
-    shader_->bind();
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-    shader_->unbind();
-    framebuffer_->unbind();
-    glViewport(0, 0, static_cast<GLint>(window_->dimensions().x), static_cast<GLint>(window_->dimensions().y));
-  }
-
-  ImGui_ImplOpenGL3_NewFrame();
-  ImGui_ImplGlfw_NewFrame();
-  ImGui::NewFrame();
-  gui();
-  ImGui::Render();
-  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-  window_->on_update();
+  glBindVertexArray(vertex_array_);
+  shader_->bind();
+  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+  shader_->unbind();
 }
 
 bool Resin::on_window_close(WindowCloseEvent&) {

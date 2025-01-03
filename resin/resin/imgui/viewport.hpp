@@ -9,7 +9,7 @@ namespace ImGui {  // NOLINT
 
 namespace resin {
 
-bool Viewport(::resin::Framebuffer& framebuffer);
+bool Viewport(::resin::Framebuffer& framebuffer, bool& resized);
 
 }  // namespace resin
 
