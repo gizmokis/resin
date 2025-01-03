@@ -38,8 +38,7 @@ TEST_F(SDFTreeTest, SDFShaderIsCorrectlyGenerated) {
       "pos,u_cubes[2]),0.5),0.5),sdSphere(pos,u_spheres[0]),0.5),0.5)",
       sh_code_arr_per_prim);
   ASSERT_EQ(
-      "opDiff(sdCube(pos,u_sdf_primitives[0]),opDiff(opInter(sdCube(pos,u_sdf_primitives[1]),opDiff(sdSphere(pos,u_sdf_"
-      "primitives[3]),sdCube(pos,u_sdf_primitives[4]),0.5),0.5),sdSphere(pos,u_sdf_primitives[2]),0.5),0.5)",
+      "opDiff(sdCube(pos,0),opDiff(opInter(sdCube(pos,1),opDiff(sdSphere(pos,3),sdCube(pos,4),0.5),0.5),sdSphere(pos,2),0.5),0.5)",
       sh_code_single_prim_arr);
 }
 
@@ -79,8 +78,7 @@ TEST_F(SDFTreeTest, SDFShaderGenerationOmitsShallowNodes) {
       "pos,u_cubes[2]),0.5),0.5),sdSphere(pos,u_spheres[0]),0.5),0.5)",
       sh_code_arr_per_prim);
   ASSERT_EQ(
-      "opDiff(sdCube(pos,u_sdf_primitives[0]),opDiff(opInter(sdCube(pos,u_sdf_primitives[1]),opDiff(sdSphere(pos,u_sdf_"
-      "primitives[3]),sdCube(pos,u_sdf_primitives[4]),0.5),0.5),sdSphere(pos,u_sdf_primitives[2]),0.5),0.5)",
+      "opDiff(sdCube(pos,0),opDiff(opInter(sdCube(pos,1),opDiff(sdSphere(pos,3),sdCube(pos,4),0.5),0.5),sdSphere(pos,2),0.5),0.5)",
       sh_code_single_prim_arr);
 }
 
