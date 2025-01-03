@@ -43,7 +43,7 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
   cube_mat_   = std::make_unique<Material>(glm::vec3(0.96F, 0.25F, 0.25F));
   sphere_mat_ = std::make_unique<Material>(glm::vec3(0.25F, 0.25F, 0.96F));
 
-  camera_       = std::make_unique<Camera>(false, 90.F, 16.F / 9.F, 0.75F, 100.F);
+  camera_       = std::make_unique<Camera>(false, 70.F, 16.F / 9.F, 0.75F, 100.F);
   glm::vec3 pos = glm::vec3(0, 2, 3);
   camera_->transform.set_local_pos(pos);
   glm::vec3 direction = glm::normalize(-pos);
@@ -223,7 +223,7 @@ void Resin::gui() {
   ImGui::End();
 
   ImGui::SetNextWindowSizeConstraints(ImVec2(350.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
-  ImGui::Begin("Lights");
+  ImGui::Begin("[TEMP] Lights");
   if (ImGui::BeginTabBar("LightsTabBar", ImGuiTabBarFlags_None)) {
     // TODO(SDF-88): i don't want to design GUI please save me guys 🤲🙏
     if (ImGui::BeginTabItem("DirLight")) {
