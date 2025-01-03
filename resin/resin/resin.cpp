@@ -181,8 +181,8 @@ void Resin::update(duration_t delta) {
   primitive_ubo_->unbind();
 
   // TODO(SDF-87)
-  shader_->set_uniform("u_cubeMat", *cube_mat_);
-  shader_->set_uniform("u_sphereMat", *sphere_mat_);
+  shader_->set_uniform("u_sdf_materials[0]", *sphere_mat_);
+  shader_->set_uniform("u_sdf_materials[1]", *cube_mat_);
 
   shader_->set_uniform("u_dirLight", *directional_light_);
   shader_->set_uniform("u_pointLight", *point_light_);
