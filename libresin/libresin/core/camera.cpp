@@ -1,3 +1,5 @@
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <libresin/core/camera.hpp>
 
 namespace resin {
@@ -38,5 +40,13 @@ void Camera::update_dimensions() {
 
 glm::mat4 Camera::view_matrix() const { return transform.world_to_local_matrix(); }
 glm::mat4 Camera::inverse_view_matrix() const { return transform.local_to_world_matrix(); }
+
+glm::mat4 Camera::proj_matrix() const {
+  if (is_orthographic) {
+    return glm::ortho(-width_ / 2.0F, width_ / 2.0F, -height_ / 2.0F, height_ / 2.0F, near_plane_, far_plane_);
+  }
+
+  return glm::perspective(glm::radians(fov_), aspect_ratio_, near_plane_, far_plane_);
+}
 
 }  // namespace resin
