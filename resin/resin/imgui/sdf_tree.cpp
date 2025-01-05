@@ -2,6 +2,9 @@
 #include <imgui/imgui_internal.h>
 
 #include <fstream>
+#include <glm/fwd.hpp>
+#include <glm/geometric.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/primitive_base_node.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
@@ -261,20 +264,64 @@ void SDFTreeComponentVisitor::render_tree() {
   }
 }
 
+std::unique_ptr<::resin::SDFTreeNode> SDFTreeComponentVisitor::fix_transform_and_detach(
+    ::resin::IdView<::resin::SDFTreeNodeId> source, ::resin::IdView<::resin::SDFTreeNodeId> new_parent) {
+  // this way from the user point of view transform of the node will not change
+  const auto& old_world_mat            = sdf_tree_.node(source).transform().local_to_world_matrix();
+  const auto& new_parent_world_inv_mat = sdf_tree_.node(new_parent).transform().world_to_local_matrix();
+  auto new_loc_mat                     = new_parent_world_inv_mat * old_world_mat;
+
+  // decompose new mat
+  auto new_loc_pos    = glm::vec3(new_loc_mat[3]);
+  auto new_loc_rot    = glm::normalize(glm::quat_cast(new_loc_mat));
+  float new_loc_scale = glm::length(glm::vec3(new_loc_mat[0][0], new_loc_mat[1][0], new_loc_mat[2][0]));
+
+  auto node_ptr = sdf_tree_.node(source).parent().detach_child(source);
+  node_ptr->transform().set_local_pos(new_loc_pos);
+  node_ptr->transform().set_local_rot(new_loc_rot);
+  node_ptr->transform().set_local_scale(new_loc_scale);
+
+  return node_ptr;
+}
+
 void SDFTreeComponentVisitor::apply_move_operation() {
-  if (!move_source_target_.has_value()) {
+  if (!move_source_target_.has_value() || move_source_target_->expired()) {
     return;
   }
 
-  if (move_into_target_.has_value() && sdf_tree_.node(*move_source_target_).parent().node_id() != *move_into_target_) {
-    auto node_ptr = sdf_tree_.node(*move_source_target_).parent().detach_child(*move_source_target_);
+  if (move_into_target_.has_value()                                                     //
+      && !move_into_target_->expired()                                                  //
+      && sdf_tree_.node(*move_source_target_).parent().node_id() != *move_into_target_  //
+      && sdf_tree_.node(*move_source_target_).node_id() != *move_into_target_           //
+      && sdf_tree_.is_group(*move_into_target_)                                         //
+  ) {
+    auto node_ptr = fix_transform_and_detach(*move_source_target_, *move_into_target_);
     sdf_tree_.group(*move_into_target_).push_back_child(std::move(node_ptr));
-  } else if (move_before_target_.has_value()) {
-    auto node_ptr = sdf_tree_.node(*move_source_target_).parent().detach_child(*move_source_target_);
-    sdf_tree_.node(*move_before_target_).parent().insert_before_child(*move_before_target_, std::move(node_ptr));
-  } else if (move_after_target_.has_value()) {
-    auto node_ptr = sdf_tree_.node(*move_source_target_).parent().detach_child(*move_source_target_);
-    sdf_tree_.node(*move_after_target_).parent().insert_after_child(*move_after_target_, std::move(node_ptr));
+    return;
+  }
+
+  if (move_before_target_.has_value() && !move_before_target_->expired()) {
+    if (sdf_tree_.node(*move_source_target_).parent() != sdf_tree_.node(*move_before_target_).parent()) {
+      auto node_ptr =
+          fix_transform_and_detach(*move_source_target_, sdf_tree_.node(*move_before_target_).parent().node_id());
+      sdf_tree_.node(*move_before_target_).parent().insert_before_child(*move_before_target_, std::move(node_ptr));
+    } else {
+      auto node_ptr = sdf_tree_.node(*move_source_target_).parent().detach_child(*move_source_target_);
+      sdf_tree_.node(*move_before_target_).parent().insert_before_child(*move_before_target_, std::move(node_ptr));
+    }
+    return;
+  }
+
+  if (move_after_target_.has_value() && !move_after_target_->expired()) {
+    if (sdf_tree_.node(*move_source_target_).parent() != sdf_tree_.node(*move_after_target_).parent()) {
+      auto node_ptr =
+          fix_transform_and_detach(*move_source_target_, sdf_tree_.node(*move_after_target_).parent().node_id());
+      sdf_tree_.node(*move_after_target_).parent().insert_after_child(*move_after_target_, std::move(node_ptr));
+    } else {
+      auto node_ptr = sdf_tree_.node(*move_source_target_).parent().detach_child(*move_source_target_);
+      sdf_tree_.node(*move_after_target_).parent().insert_after_child(*move_after_target_, std::move(node_ptr));
+    }
+    return;
   }
 }
 
