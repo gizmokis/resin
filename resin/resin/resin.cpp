@@ -35,6 +35,7 @@
 #include <resin/imgui/node_edit.hpp>
 #include <resin/imgui/sdf_tree.hpp>
 #include <resin/imgui/transform_edit.hpp>
+#include <resin/imgui/transform_gizmo.hpp>
 #include <resin/imgui/viewport.hpp>
 #include <resin/resin.hpp>
 
@@ -311,22 +312,19 @@ void Resin::gui() {
                  ImVec2(1, 0));
     if (selected_node_ && !selected_node_->expired()) {
       auto& node = sdf_tree_.node(*selected_node_);
-      auto mat   = node.transform().local_to_world_matrix();
-
-      glm::mat4 view = camera_->view_matrix();
-      glm::mat4 proj = camera_->proj_matrix();
-
-      ImGuizmo::BeginFrame();
-      ImGuizmo::SetDrawlist();
-      ImGuizmo::SetOrthographic(camera_->is_orthographic);  // Perspective mode
-      ImGuizmo::SetRect(ImGui::GetWindowPos().x + ImGui::GetCursorStartPos().x,
-                        ImGui::GetWindowPos().y + ImGui::GetCursorStartPos().y, width, height);
-
-      ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(proj), ImGuizmo::OPERATION::TRANSLATE,
-                           ImGuizmo::MODE::LOCAL, glm::value_ptr(mat));
-
-      node.transform().set_local_pos(glm::vec3(mat[3][0], mat[3][1], mat[3][2]));
-      node.mark_dirty();
+      if (show_rotation_gizmo_) {
+        if (ImGui::resin::RotationGizmo(
+                node.transform(), *camera_,
+                use_local_gimos_ ? ImGui::resin::GizmoMode::Local : ImGui::resin::GizmoMode::World, width, height)) {
+          node.mark_dirty();
+        }
+      } else {
+        if (ImGui::resin::TranslationGizmo(
+                node.transform(), *camera_,
+                use_local_gimos_ ? ImGui::resin::GizmoMode::Local : ImGui::resin::GizmoMode::World, width, height)) {
+          node.mark_dirty();
+        }
+      }
     }
   }
 
@@ -338,13 +336,16 @@ void Resin::gui() {
   }
   ImGui::End();
 
-  if (ImGui::Begin("Camera")) {
+  if (ImGui::Begin("Tools [TEMP]")) {
     float fov = camera_->fov();
-    if (ImGui::DragFloat("FOV", &fov, 0.5F, 10.0F, 140.0F, "%.2f")) {
+    if (ImGui::DragFloat("Camera FOV", &fov, 0.5F, 10.0F, 140.0F, "%.2f")) {
       camera_->set_fov(fov);
       shader_->set_uniform("u_camSize", camera_->height());
       shader_->set_uniform("u_iP", glm::inverse(camera_->proj_matrix()));
     }
+    ImGui::Checkbox("Local", &use_local_gimos_);
+    ImGui::Checkbox("Rotation", &show_rotation_gizmo_);
+
     ImGui::End();
   }
 

@@ -75,6 +75,9 @@ class Resin {
   Transform camera_rig_;
   bool is_viewport_focused_;
 
+  bool use_local_gimos_;
+  bool show_rotation_gizmo_;
+
   bool running_   = true;
   bool minimized_ = false;
 

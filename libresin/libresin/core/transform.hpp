@@ -21,6 +21,8 @@ struct Transform final {
   const Transform& parent() const { return *parent_; }
   void set_parent(std::optional<std::reference_wrapper<Transform>> parent);
 
+  void move_local(const glm::vec3& delta);
+
   void rotate(const glm::vec3& axis, float angle);
   void rotate(const glm::quat& rotation);
   void rotate_local(const glm::quat& rotation);
