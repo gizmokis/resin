@@ -188,9 +188,10 @@ void Resin::run() {
 }
 
 static bool update_camera_controls(Camera& camera, GLFWwindow* window, float dt) {
-  static glm::vec2 last_mouse_pos = glm::vec2(0.0f);
-  const float sensitivity         = 0.06f;
-  const float speed               = 5.0f;
+  // TODO(SDF-82): move out of the resin.cpp
+  static auto last_mouse_pos = glm::vec2(0.0F);
+  const float sensitivity    = 0.06F;
+  const float speed          = 5.0F;
 
   double mouse_x = NAN;
   double mouse_y = NAN;
@@ -295,6 +296,38 @@ void Resin::gui() {
 
   bool resized = false;
   if (ImGui::resin::Viewport(*framebuffer_, resized)) {
+    if (ImGui::BeginMenuBar()) {
+      ImGui::Text("Local Transform:");
+      ImGui::Checkbox("##LocalCheckbox", &use_local_gimos_);
+
+      static constexpr resin::StringEnumMapper<ImGui::resin::GizmoOperation> kOps({
+          {ImGui::resin::GizmoOperation::Translation, "Translation"},  //
+          {ImGui::resin::GizmoOperation::Rotation, "Rotation"},        //
+          {ImGui::resin::GizmoOperation::Scale, "Scale"}               //
+      });
+
+      ImGui::Text("Operation:");
+      ImGui::SetNextItemWidth(ImGui::CalcTextSize("Translation").x + 12.0F);
+      if (ImGui::BeginCombo("##OperationCombo", kOps[gizmo_operation_].data(), ImGuiComboFlags_NoArrowButton)) {
+        for (const auto [current_op, name] : kOps) {
+          bool disable = selected_node_ && !selected_node_->expired() && sdf_tree_.is_group(*selected_node_) &&
+                         current_op == ImGui::resin::GizmoOperation::Scale;
+          if (disable) {
+            ImGui::BeginDisabled();
+          }
+          if (ImGui::Selectable(kOps[current_op].data())) {
+            gizmo_operation_ = current_op;
+          }
+          if (disable) {
+            ImGui::EndDisabled();
+          }
+        }
+        ImGui::EndCombo();
+      }
+
+      ImGui::EndMenuBar();
+    }
+
     is_viewport_focused_ = ImGui::IsWindowFocused();
     auto width           = static_cast<float>(framebuffer_->width());
     auto height          = static_cast<float>(framebuffer_->height());
@@ -342,32 +375,6 @@ void Resin::gui() {
       shader_->set_uniform("u_camSize", camera_->height());
       shader_->set_uniform("u_iP", glm::inverse(camera_->proj_matrix()));
     }
-
-    ImGui::Checkbox("Local", &use_local_gimos_);
-
-    static constexpr resin::StringEnumMapper<ImGui::resin::GizmoOperation> kOps({
-        {ImGui::resin::GizmoOperation::Translation, "Translation"},  //
-        {ImGui::resin::GizmoOperation::Rotation, "Rotation"},        //
-        {ImGui::resin::GizmoOperation::Scale, "Scale"}               //
-    });
-
-    if (ImGui::BeginCombo("Transform Operation", kOps[gizmo_operation_].data())) {
-      for (const auto [current_op, name] : kOps) {
-        bool disable = selected_node_ && !selected_node_->expired() && sdf_tree_.is_group(*selected_node_) &&
-                       current_op == ImGui::resin::GizmoOperation::Scale;
-        if (disable) {
-          ImGui::BeginDisabled();
-        }
-        if (ImGui::Selectable(kOps[current_op].data())) {
-          gizmo_operation_ = current_op;
-        }
-        if (disable) {
-          ImGui::EndDisabled();
-        }
-      }
-      ImGui::EndCombo();
-    }
-
     ImGui::End();
   }
 
