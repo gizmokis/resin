@@ -6,7 +6,6 @@
 #include <imguizmo/ImGuizmo.h>
 #include <math.h>
 
-#include <array>
 #include <chrono>
 #include <cstdint>
 #include <filesystem>
@@ -65,7 +64,7 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
   glm::vec3 pos = glm::vec3(0, 2, 3);
   camera_->transform.set_local_pos(pos);
   glm::vec3 direction = glm::normalize(-pos);
-  //   camera_->transform.set_local_rot(glm::quatLookAt(direction, glm::vec3(0, 1, 0)));
+  camera_->transform.set_local_rot(glm::quatLookAt(direction, glm::vec3(0, 1, 0)));
   camera_->transform.set_parent(camera_rig_);
 
   point_light_       = std::make_unique<PointLight>(glm::vec3(0.57F, 0.38F, 0.04F), glm::vec3(0.0F, 1.0F, 0.5F),
@@ -100,7 +99,6 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
   auto& group = sdf_tree_.root().push_back_child<GroupNode>(SDFBinaryOperation::SmoothUnion);
   group.push_back_child<CubeNode>(SDFBinaryOperation::SmoothUnion).transform().set_local_pos(glm::vec3(1, 1, 0));
   group.push_back_child<CubeNode>(SDFBinaryOperation::SmoothUnion).transform().set_local_pos(glm::vec3(-1, -1, 0));
-  sdf_tree_.root().push_back_child<SphereNode>(SDFBinaryOperation::SmoothUnion);
 
   // SDF Shader
   ShaderResource frag_shader = *shader_resource_manager_.get_res(path / "test.frag");
@@ -130,7 +128,6 @@ void Resin::setup_shader() {
   shader_->set_uniform("u_farPlane", camera_->far_plane());
   shader_->set_uniform("u_ortho", camera_->is_orthographic);
   shader_->set_uniform("u_camSize", camera_->height());
-  shader_->set_uniform("u_iP", glm::inverse(camera_->proj_matrix()));
 }
 
 void Resin::run() {
@@ -278,14 +275,12 @@ void Resin::update(duration_t delta) {
   shader_->set_uniform("u_sphereMat", *sphere_mat_);
 
   shader_->set_uniform("u_camSize", camera_->height());
-  shader_->set_uniform("u_iP", glm::inverse(camera_->proj_matrix()));
   shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
 
   FileDialog::instance().update();
   if (is_viewport_focused_) {
     if (update_camera_controls(*camera_, window_->native_window(), static_cast<float>(delta.count()) * 1e-9F)) {
       shader_->set_uniform("u_camSize", camera_->height());
-      shader_->set_uniform("u_iP", glm::inverse(camera_->proj_matrix()));
       shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
     }
   }
@@ -373,7 +368,6 @@ void Resin::gui() {
     if (ImGui::DragFloat("Camera FOV", &fov, 0.5F, 10.0F, 140.0F, "%.2f")) {
       camera_->set_fov(fov);
       shader_->set_uniform("u_camSize", camera_->height());
-      shader_->set_uniform("u_iP", glm::inverse(camera_->proj_matrix()));
     }
     ImGui::End();
   }

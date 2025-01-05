@@ -4,14 +4,12 @@ layout(location = 0) out vec4 fragColor;
 
 // fragment
 in vec2 v_Pos;
-in vec2 v_ndcPos;
 
 // camera
 uniform mat4 u_iV;
 uniform bool u_ortho;
 uniform float u_nearPlane;
 uniform float u_farPlane;
-uniform mat4 u_iP; //temp
 
 #include "blinn_phong.glsl"
 #include "sdf.glsl"
@@ -110,16 +108,9 @@ void main() {
         ray_origin = vec4(vec3(pos, 0), 1);
         ray_direction = vec4(0, 0, -1, 0);
     } else {
-        
-        vec2 pos = v_ndcPos;
+        vec2 pos = v_Pos;
         ray_origin = vec4(0, 0, 0, 1); 
         ray_direction = vec4(normalize(vec3(pos, -u_nearPlane)), 0);
-
-        // begin: temp
-        vec4 temp = u_iP * vec4(pos, 1.0, 1.0); 
-        temp /= temp.w;
-        ray_direction = vec4(normalize(temp.xyz), 0);
-        // end: temp
     }
     
     vec3 color = render((u_iV * ray_origin).xyz, ((u_iV * ray_direction).xyz));

@@ -6,13 +6,10 @@ uniform vec2 u_resolution;
 uniform float u_camSize;
 
 out vec2 v_Pos;
-out vec2 v_ndcPos;
 
 void main() {
-    v_Pos = a_Position.xy * u_camSize;
+    v_Pos = a_Position.xy * u_camSize / 2.0;
     v_Pos.x *= u_resolution.x / u_resolution.y;
-
-    v_ndcPos = a_Position.xy;
 
     gl_Position = vec4(a_Position, 1.0);
 }
