@@ -1,16 +1,19 @@
 #version 450
 
 #include "sdf.glsl"
+#define LOCAL_SIZE 8
 
-layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
+layout (local_size_x = LOCAL_SIZE, local_size_y = LOCAL_SIZE, local_size_z = LOCAL_SIZE) in;
 
 layout (binding = 0) buffer vertBuffer { vec4 vertexBuffer[]; };
 layout (binding = 1) buffer vertexCountBuffer { uint vertex_size; };
 layout (binding = 2) buffer normalBuffer { vec4 normal_buffer[];};
+layout (std430, binding = 3) buffer uvBuffer { vec2 uv_buffer[];};
 
 
-uniform vec3 gridOrigin;       // World-space origin of the grid
-uniform vec3 voxelSize;        // Size of each voxel
+uniform vec3 boundingBoxStart;
+uniform vec3 boundingBoxEnd;
+uniform uint marchRes;
 
 shared int edgeTable[256] = {
 0x0, 0x109, 0x203, 0x30a, 0x406, 0x50f, 0x605, 0x70c,
@@ -333,7 +336,7 @@ ivec2(3, 7)  // Edge 11
 float sdf(vec3 p) {
     // example sdf: a sphere centered at (0.5, 0.5, 0.5) with radius 0.4
     vec3 center = vec3(0.5, 0.5, 0.5);
-    float radius = 0.45;
+    float radius = 0.4;
     return length(p - center) - radius;
 }
 
@@ -352,8 +355,37 @@ vec3 calcNormal(vec3 pos )
 }
 
 
+vec2 computeTriplanarUV(vec3 position, vec3 normal) {
+    vec2 xy = position.xy;
+    vec2 yz = position.yz;
+    vec2 xz = position.xz;
+
+    vec3 blendWeights = abs(normal) / (abs(normal.x) + abs(normal.y) + abs(normal.z));
+
+    return xy * blendWeights.x + yz * blendWeights.y + xz * blendWeights.z;
+}
+
+// For temporary UVs
+vec2 planarProjection(vec3 position, vec3 voxelSize) {
+    return position.xy / vec2(marchRes * voxelSize.x, marchRes * voxelSize.y);
+}
+
+
 void main() {
     ivec3 globalID = ivec3(gl_GlobalInvocationID);
+
+//    if(globalID.x <= 1 && globalID.y <= 1 && globalID.z <= 1)
+//    {
+//        for(int i = 0; i < texSize.x; i++)
+//                for(int y = 0; y < texSize.y; y++)
+//                    imageStore(output_texture, ivec2(i, y), ivec4(0.5));
+//    }
+//
+//    barrier();
+//    memoryBarrier();
+//    memoryBarrierImage();
+
+    vec3 voxelSize = (boundingBoxEnd - boundingBoxStart) / marchRes;
 
     // Calculate world-space positions for cube corners
     vec3 cornerPositions[8];
@@ -363,7 +395,7 @@ void main() {
 
     for (int i = 0; i < 8; ++i) {
         vec3 gridPos = vec3(globalID + offsets[i]) * voxelSize;
-        cornerPositions[i] = gridOrigin + gridPos;
+        cornerPositions[i] = boundingBoxStart + gridPos;
     }
 
     // Evaluate the SDF at the corners
@@ -410,9 +442,29 @@ void main() {
         vertexBuffer[index + 1] = vec4(v1, 1.0);
         vertexBuffer[index + 2] = vec4(v2, 1.0);
 
-        normal_buffer[index + 0] = vec4(calcNormal(v0), 1.0);
-        normal_buffer[index + 1] = vec4(calcNormal(v1), 1.0);
-        normal_buffer[index + 2] = vec4(calcNormal(v2), 1.0);
+        vec3 v0_normal = calcNormal(v0);
+        vec3 v1_normal = calcNormal(v1);
+        vec3 v2_normal = calcNormal(v2);
+
+        normal_buffer[index + 0] = vec4(v0_normal, 1.0);
+        normal_buffer[index + 1] = vec4(v1_normal, 1.0);
+        normal_buffer[index + 2] = vec4(v2_normal, 1.0);
+
+
+        // Planar
+        uv_buffer[index] = planarProjection(v0, voxelSize);
+        uv_buffer[index + 1] = planarProjection(v1, voxelSize);
+        uv_buffer[index + 2] = planarProjection(v2, voxelSize);
+
+
+        //vec2 uv0 = computeTriplanarUV(v0, v0_normal) * texSize;
+        //vec2 uv1 = computeTriplanarUV(v1, v1_normal) * texSize;
+        //vec2 uv2 = computeTriplanarUV(v2, v2_normal) * texSize;
+
+        // Convert UVs to integer texture coordinates
+        //ivec2 tex_uv0 = ivec2(uv0);
+        //ivec2 tex_uv1 = ivec2(uv1);
+        //ivec2 tex_uv2 = ivec2(uv2);
 
     }
 

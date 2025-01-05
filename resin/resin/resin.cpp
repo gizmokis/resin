@@ -73,7 +73,7 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
   marching_cubes_shader_ = std::make_unique<ComputeShaderProgram>("marching_cubes", *shader_resource_manager_.get_res(path / "marching_cubes.comp"));
 
   MeshExporter exporter(*marching_cubes_shader_);
-  exporter.export_to_obj("test32.obj", glm::vec3(0,0,0), glm::vec3(1.0f / march_res), march_res);
+  exporter.export_mesh("test32.gltf", "gltf2", glm::vec3(0,0,0), glm::vec3(1, 1, 1), march_res);
 
   // TODO(anyone): temporary, move out somewhere else
   float vertices[4 * 3]   = {-1.F, -1.F, 0.F, 1.F, -1.F, 0.F, -1.F, 1.F, 0.F, 1.F, 1.F, 0.F};
