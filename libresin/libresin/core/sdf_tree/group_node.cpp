@@ -327,7 +327,7 @@ void GroupNode::insert_after_child(std::optional<IdView<SDFTreeNodeId>> after_ch
 
 void GroupNode::push_dirty_primitives() {
   for (auto prim : leaves_) {
-    tree_registry_.dirty_primitives.push_back(std::move(prim));
+    tree_registry_.dirty_primitives.emplace(std::move(prim));
   }
 }
 
