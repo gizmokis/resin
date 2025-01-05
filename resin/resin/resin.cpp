@@ -6,6 +6,7 @@
 #include <imguizmo/ImGuizmo.h>
 #include <math.h>
 
+#include <array>
 #include <chrono>
 #include <cstdint>
 #include <filesystem>
@@ -24,6 +25,7 @@
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/core/transform.hpp>
 #include <libresin/core/uniform_buffer.hpp>
+#include <libresin/utils/enum_mapper.hpp>
 #include <libresin/utils/logger.hpp>
 #include <memory>
 #include <nfd/nfd.hpp>
@@ -38,6 +40,7 @@
 #include <resin/imgui/transform_gizmo.hpp>
 #include <resin/imgui/viewport.hpp>
 #include <resin/resin.hpp>
+#include <string_view>
 
 namespace resin {
 
@@ -94,10 +97,9 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
 
   // Example tree
   sdf_tree_.root().push_back_child<SphereNode>(SDFBinaryOperation::SmoothUnion);
-  sdf_tree_.root()
-      .push_back_child<CubeNode>(SDFBinaryOperation::SmoothUnion)
-      .transform()
-      .set_local_pos(glm::vec3(1, 1, 0));
+  auto& group = sdf_tree_.root().push_back_child<GroupNode>(SDFBinaryOperation::SmoothUnion);
+  group.push_back_child<CubeNode>(SDFBinaryOperation::SmoothUnion).transform().set_local_pos(glm::vec3(1, 1, 0));
+  group.push_back_child<CubeNode>(SDFBinaryOperation::SmoothUnion).transform().set_local_pos(glm::vec3(-1, -1, 0));
   sdf_tree_.root().push_back_child<SphereNode>(SDFBinaryOperation::SmoothUnion);
 
   // SDF Shader
@@ -311,19 +313,16 @@ void Resin::gui() {
     ImGui::Image((ImTextureID)(intptr_t)framebuffer_->color_texture(), ImVec2(width, height), ImVec2(0, 1),  // NOLINT
                  ImVec2(1, 0));
     if (selected_node_ && !selected_node_->expired()) {
+      if (sdf_tree_.is_group(*selected_node_) && gizmo_operation_ == ImGui::resin::GizmoOperation::Scale) {
+        gizmo_operation_ = ImGui::resin::GizmoOperation::Translation;
+      }
+
       auto& node = sdf_tree_.node(*selected_node_);
-      if (show_rotation_gizmo_) {
-        if (ImGui::resin::RotationGizmo(
-                node.transform(), *camera_,
-                use_local_gimos_ ? ImGui::resin::GizmoMode::Local : ImGui::resin::GizmoMode::World, width, height)) {
-          node.mark_dirty();
-        }
-      } else {
-        if (ImGui::resin::TranslationGizmo(
-                node.transform(), *camera_,
-                use_local_gimos_ ? ImGui::resin::GizmoMode::Local : ImGui::resin::GizmoMode::World, width, height)) {
-          node.mark_dirty();
-        }
+      if (ImGui::resin::TransformGizmo(
+              node.transform(), *camera_,
+              use_local_gimos_ ? ImGui::resin::GizmoMode::Local : ImGui::resin::GizmoMode::World, gizmo_operation_,
+              width, height)) {
+        node.mark_dirty();
       }
     }
   }
@@ -343,8 +342,31 @@ void Resin::gui() {
       shader_->set_uniform("u_camSize", camera_->height());
       shader_->set_uniform("u_iP", glm::inverse(camera_->proj_matrix()));
     }
+
     ImGui::Checkbox("Local", &use_local_gimos_);
-    ImGui::Checkbox("Rotation", &show_rotation_gizmo_);
+
+    static constexpr resin::StringEnumMapper<ImGui::resin::GizmoOperation> kOps({
+        {ImGui::resin::GizmoOperation::Translation, "Translation"},  //
+        {ImGui::resin::GizmoOperation::Rotation, "Rotation"},        //
+        {ImGui::resin::GizmoOperation::Scale, "Scale"}               //
+    });
+
+    if (ImGui::BeginCombo("Transform Operation", kOps[gizmo_operation_].data())) {
+      for (const auto [current_op, name] : kOps) {
+        bool disable = selected_node_ && !selected_node_->expired() && sdf_tree_.is_group(*selected_node_) &&
+                       current_op == ImGui::resin::GizmoOperation::Scale;
+        if (disable) {
+          ImGui::BeginDisabled();
+        }
+        if (ImGui::Selectable(kOps[current_op].data())) {
+          gizmo_operation_ = current_op;
+        }
+        if (disable) {
+          ImGui::EndDisabled();
+        }
+      }
+      ImGui::EndCombo();
+    }
 
     ImGui::End();
   }

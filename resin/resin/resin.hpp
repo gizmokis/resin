@@ -15,6 +15,7 @@
 #include <resin/core/window.hpp>
 #include <resin/event/event.hpp>
 #include <resin/event/window_events.hpp>
+#include <resin/imgui/transform_gizmo.hpp>
 
 int main();
 
@@ -76,7 +77,7 @@ class Resin {
   bool is_viewport_focused_;
 
   bool use_local_gimos_;
-  bool show_rotation_gizmo_;
+  ImGui::resin::GizmoOperation gizmo_operation_;
 
   bool running_   = true;
   bool minimized_ = false;

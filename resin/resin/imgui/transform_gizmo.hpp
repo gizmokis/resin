@@ -9,12 +9,11 @@ namespace ImGui {  // NOLINT
 
 namespace resin {
 
-enum class GizmoMode : uint8_t { Local = 0, World };
+enum class GizmoMode : uint8_t { Local = 0, World = 1, _Count = 2 };                           // NOLINT
+enum class GizmoOperation : uint8_t { Translation = 0, Rotation = 1, Scale = 2, _Count = 3 };  // NOLINT
 
-bool TranslationGizmo(::resin::Transform& trans, const ::resin::Camera& camera, GizmoMode mode, float width,
-                      float height);
-
-bool RotationGizmo(::resin::Transform& trans, const ::resin::Camera& camera, GizmoMode mode, float width, float height);
+bool TransformGizmo(::resin::Transform& trans, const ::resin::Camera& camera, GizmoMode mode, GizmoOperation operation,
+                    float width, float height);
 
 }  // namespace resin
 

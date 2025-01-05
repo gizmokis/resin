@@ -3,6 +3,7 @@
 #include <imgui/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_opengl3.h>
 #include <imgui/imgui_impl_opengl3_loader.h>
+#include <imguizmo/ImGuizmo.h>
 
 #include <cstdlib>
 #include <libresin/utils/logger.hpp>
@@ -36,6 +37,7 @@ void Window::api_init() {
   io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
   imgui_set_style();
+  ImGuizmo::SetImGuiContext(ImGui::GetCurrentContext());
 
   Logger::debug("Api init");
 }
