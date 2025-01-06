@@ -11,8 +11,7 @@
 
 namespace resin {
 MeshExporter::MeshExporter(const ComputeShaderProgram& compute_shader_program)
-    : compute_shader_program_(compute_shader_program), scene_(new aiScene()) {
-}
+    : compute_shader_program_(compute_shader_program), scene_(new aiScene()) {}
 
 MeshExporter::~MeshExporter() {
   glDeleteBuffers(1, &vertex_buffer);
@@ -23,7 +22,7 @@ MeshExporter::~MeshExporter() {
 }
 
 void MeshExporter::export_mesh(const std::string& output_path, const std::string& format, const glm::vec3& bb_start,
-                                 const glm::vec3& bb_end, const unsigned int march_res) {
+                               const glm::vec3& bb_end, const unsigned int march_res) {
   initialize_buffers(march_res);
   execute_shader(bb_start, bb_end, march_res);
   read_buffers();
@@ -31,7 +30,8 @@ void MeshExporter::export_mesh(const std::string& output_path, const std::string
   export_scene(output_path, format);
 }
 
-void MeshExporter::execute_shader(const glm::vec3 bb_start, const glm::vec3 bb_end, const unsigned int march_res) const {
+void MeshExporter::execute_shader(const glm::vec3 bb_start, const glm::vec3 bb_end,
+                                  const unsigned int march_res) const {
   // Set up compute shader
   compute_shader_program_.bind();
   compute_shader_program_.set_uniform("boundingBoxStart", bb_start);
@@ -41,10 +41,9 @@ void MeshExporter::execute_shader(const glm::vec3 bb_start, const glm::vec3 bb_e
   // Dispatch compute shader.
   glDispatchCompute(march_res / 8, march_res / 8, march_res / 8);
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);  // add GL_SHADER_IMAGE_ACCESS_BARRIER_BIT later for texture
-
 }
 void MeshExporter::initialize_buffers(const unsigned int march_res) {
-  const size_t max_vertices = std::pow(march_res, 3) * 3 * 5; // max 5 triangles in each cuboid
+  const size_t max_vertices = std::pow(march_res, 3) * 3 * 5;  // max 5 triangles in each cuboid
   glGenBuffers(1, &vertex_buffer);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, vertex_buffer);
   glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::vec4) * max_vertices, nullptr, GL_STREAM_READ);
@@ -102,7 +101,7 @@ void MeshExporter::create_scene() {
   scene_->mNumMaterials = 1;
   scene_->mMaterials[0] = new aiMaterial();
 
-  aiMesh* mesh = scene_->mMeshes[0];
+  aiMesh* mesh          = scene_->mMeshes[0];
   mesh->mPrimitiveTypes = aiPrimitiveType_TRIANGLE;
 
   // Fill vertices.

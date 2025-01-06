@@ -55,27 +55,9 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
   camera_->transform.set_parent(camera_rig_);
 
   point_light_       = std::make_unique<PointLight>(glm::vec3(0.57F, 0.38F, 0.04F), glm::vec3(0.0F, 1.0F, 0.5F),
-                                                    PointLight::Attenuation(1.0F, 0.7F, 1.8F));
+                                              PointLight::Attenuation(1.0F, 0.7F, 1.8F));
   directional_light_ = std::make_unique<DirectionalLight>(glm::vec3(0.5F, 0.5F, 0.5F), 1.0F);
   directional_light_->transform.set_local_rot(glm::quatLookAt(direction, glm::vec3(0, 1, 0)));
-
-  const unsigned int march_res = 16;
-  int invoc = 0;
-  int workGroupSizes[3] = { 0 };
-  glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, &workGroupSizes[0]);
-  glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 1, &workGroupSizes[1]);
-  glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 2, &workGroupSizes[2]);
-  glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &invoc);
-
-  Logger::debug("Max compute work group size X: {}", workGroupSizes[0]);
-  Logger::debug("Max compute work group size Y: {}", workGroupSizes[1]);
-  Logger::debug("Max compute work group size Z: {}", workGroupSizes[2]);
-
-  Logger::debug("Max invocations: {}", invoc);
-  marching_cubes_shader_ = std::make_unique<ComputeShaderProgram>("marching_cubes", *shader_resource_manager_.get_res(path / "marching_cubes.comp"));
-
-  MeshExporter exporter(*marching_cubes_shader_);
-  exporter.export_mesh("test32.gltf", "gltf2", glm::vec3(0,0,0), glm::vec3(1, 1, 1), march_res);
 
   // TODO(anyone): temporary, move out somewhere else
   float vertices[4 * 3]   = {-1.F, -1.F, 0.F, 1.F, -1.F, 0.F, -1.F, 1.F, 0.F, 1.F, 1.F, 0.F};
@@ -118,6 +100,35 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
   ubo_->bind();
   ubo_->set(sdf_tree_);
   ubo_->unbind();
+
+  const unsigned int march_res = 32;
+  int invoc                    = 0;
+  int workGroupSizes[3]        = {0};
+  glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, &workGroupSizes[0]);
+  glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 1, &workGroupSizes[1]);
+  glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 2, &workGroupSizes[2]);
+  glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &invoc);
+
+  Logger::debug("Max compute work group size X: {}", workGroupSizes[0]);
+  Logger::debug("Max compute work group size Y: {}", workGroupSizes[1]);
+  Logger::debug("Max compute work group size Z: {}", workGroupSizes[2]);
+
+  Logger::debug("Max invocations: {}", invoc);
+
+  // Compute
+
+  ShaderResource compute_shader = *shader_resource_manager_.get_res(path / "marching_cubes.comp");
+  compute_shader.set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
+  compute_shader.set_ext_defi("MAX_UBO_NODE_COUNT", std::to_string(ubo_->max_count()));
+  marching_cubes_shader_ = std::make_unique<ComputeShaderProgram>("marching_cubes", std::move(compute_shader));
+  marching_cubes_shader_->set_uniform("u_farPlane", camera_->far_plane());
+
+  ubo_->bind();
+  ubo_->set(sdf_tree_);
+  ubo_->unbind();
+  marching_cubes_shader_->bind_uniform_buffer("Data", *ubo_);
+  MeshExporter exporter(*marching_cubes_shader_);
+  exporter.export_mesh("test.obj", "obj", glm::vec3(-2, -2, -2), glm::vec3(3, 3, 3), march_res);
 
   shader_ = std::make_unique<RenderingShaderProgram>("default", *shader_resource_manager_.get_res(path / "test.vert"),
                                                      std::move(frag_shader));
