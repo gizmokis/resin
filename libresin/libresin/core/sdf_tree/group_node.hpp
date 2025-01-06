@@ -13,6 +13,7 @@
 #include <libresin/utils/logger.hpp>
 #include <list>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -27,11 +28,13 @@ class GroupNode final : public SDFTreeNode {
   explicit GroupNode(SDFTreeRegistry& tree);
   ~GroupNode() override;
 
-  std::string gen_shader_code() const override;
+  std::string gen_shader_code(GenShaderMode mode) const override;
 
   inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override { visitor.visit_group(*this); }
   [[nodiscard]] std::unique_ptr<SDFTreeNode> copy() override;
   inline bool is_leaf() override { return nodes_.size() == 0; }
+  void set_material(IdView<MaterialId> mat_id) override;
+  void remove_material() override;
 
   inline size_t get_children_count() const { return nodes_.size(); }
 
@@ -57,7 +60,7 @@ class GroupNode final : public SDFTreeNode {
     return result;
   }
 
-  void push_back_primitive(SDFTreePrimitiveType type, SDFBinaryOperation bin_op);
+  SDFTreeNode& push_back_primitive(SDFTreePrimitiveType type, SDFBinaryOperation bin_op);
 
   // Cost: O(h)
   void push_back_child(std::unique_ptr<SDFTreeNode> node_ptr);
@@ -93,11 +96,14 @@ class GroupNode final : public SDFTreeNode {
   // WARNING: This function must not be called while the children are iterated.
   void delete_child(IdView<SDFTreeNodeId> node_id);
 
-  // Cost: Amortized O(1)
+  // Cost: O(1)
   SDFTreeNode& get_child(IdView<SDFTreeNodeId> node_id) const;
 
-  // Cost: Amortized O(1)
-  inline bool is_child(IdView<SDFTreeNodeId> node_id) const { return nodes_.find(node_id) == nodes_.end(); }
+  // Cost: O(1)
+  inline bool is_child(IdView<SDFTreeNodeId> node_id) const {
+    return tree_registry_.all_nodes[node_id.raw()]->get().has_parent() &&
+           tree_registry_.all_nodes[node_id.raw()]->get().parent().node_id() == this->node_id();
+  }
 
   inline const std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& primitives() {
     return leaves_;
@@ -122,6 +128,10 @@ class GroupNode final : public SDFTreeNode {
   }
 
   void push_dirty_primitives() override;
+  void set_ancestor_mat_id(IdView<MaterialId> mat_id) override;
+  void remove_ancestor_mat_id() override;
+  void delete_material_from_subtree(IdView<MaterialId> mat_id) override;
+  void fix_material_ancestors() override;
 
  private:
   void insert_leaves_up(const std::unique_ptr<SDFTreeNode>& source);

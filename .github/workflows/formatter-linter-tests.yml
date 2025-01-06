@@ -16,7 +16,7 @@ jobs:
         id: install-deps
         run: |
           sudo apt-get update
-          sudo apt-get install python3 gcc-14 g++-14 git libwayland-dev libxkbcommon-dev xorg-dev cmake cmake-format clangd clang clang-tidy git
+          sudo apt-get install python3 gcc-14 g++-14 git libwayland-dev libxkbcommon-dev xorg-dev cmake cmake-format clangd clang clang-tidy git libdbus-1-dev
           curl https://raw.githubusercontent.com/llvm/llvm-project/refs/heads/main/clang-tools-extra/clang-tidy/tool/run-clang-tidy.py > run-clang-tidy.py
           
       - name: CMake Configure

@@ -1,15 +1,15 @@
-#include "libresin/core/sdf_tree/sdf_tree.hpp"
-
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <libresin/core/material.hpp>
+#include <libresin/core/sdf_tree/group_node.hpp>
+#include <libresin/core/sdf_tree/primitive_node.hpp>
+#include <libresin/core/sdf_tree/sdf_tree.hpp>
+#include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/core/transform.hpp>
+#include <optional>
 #include <print>
 #include <tests/glm_helper.hpp>
-
-#include "libresin/core/sdf_tree/group_node.hpp"
-#include "libresin/core/sdf_tree/primitive_node.hpp"
-#include "libresin/core/sdf_tree/sdf_tree_node.hpp"
 
 class SDFTreeTest : public testing::Test {};
 
@@ -29,17 +29,21 @@ TEST_F(SDFTreeTest, SDFShaderIsCorrectlyGenerated) {
   tree.group(group2).push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Diff);
 
   // when
-  auto sh_code = tree.gen_shader_code();
+  auto sh_code_arr_per_prim    = tree.gen_shader_code(resin::GenShaderMode::ArrayPerPrimitiveType);
+  auto sh_code_single_prim_arr = tree.gen_shader_code(resin::GenShaderMode::SinglePrimitiveArray);
 
   // then
-  auto expected_sh_code = std::string_view(
-      "opDiff(sdCube(u_transforms[1]*pos,u_cubes[0]),opDiff(opInter(sdCube(u_transforms[3]*pos,"
-      "u_cubes[1]),opDiff(sdSphere(u_transforms[6]*pos,u_spheres[1]),sdCube(u_transforms[7]*pos,"
-      "u_cubes[2]))),sdSphere(u_transforms[5]*pos,u_spheres[0])))");
-  ASSERT_EQ(expected_sh_code, sh_code);
+  ASSERT_EQ(
+      "opDiff(sdCube(pos,u_cubes[0]),opDiff(opInter(sdCube(pos,u_cubes[1]),opDiff(sdSphere(pos,u_spheres[1]),sdCube("
+      "pos,u_cubes[2]),0.5),0.5),sdSphere(pos,u_spheres[0]),0.5),0.5)",
+      sh_code_arr_per_prim);
+  ASSERT_EQ(
+      "opDiff(sdCube(pos,u_sdf_primitives[0]),opDiff(opInter(sdCube(pos,u_sdf_primitives[1]),opDiff(sdSphere(pos,u_sdf_"
+      "primitives[3]),sdCube(pos,u_sdf_primitives[4]),0.5),0.5),sdSphere(pos,u_sdf_primitives[2]),0.5),0.5)",
+      sh_code_single_prim_arr);
 }
 
-TEST_F(SDFTreeTest, SDFShaderGenerationOmmitsShallowNodes) {
+TEST_F(SDFTreeTest, SDFShaderGenerationOmitsShallowNodes) {
   // given
   //      +
   // +          -
@@ -66,14 +70,18 @@ TEST_F(SDFTreeTest, SDFShaderGenerationOmmitsShallowNodes) {
   group4.push_front_child<resin::GroupNode>(resin::SDFBinaryOperation::Union);
 
   // when
-  auto sh_code = tree.gen_shader_code();
+  auto sh_code_arr_per_prim    = tree.gen_shader_code(resin::GenShaderMode::ArrayPerPrimitiveType);
+  auto sh_code_single_prim_arr = tree.gen_shader_code(resin::GenShaderMode::SinglePrimitiveArray);
 
   // then
-  auto expected_sh_code = std::string_view(
-      "opDiff(sdCube(u_transforms[1]*pos,u_cubes[0]),opDiff(opInter(sdCube(u_transforms[3]*pos,u_cubes[1]),opDiff("
-      "sdSphere(u_transforms[6]*pos,u_spheres[1]),sdCube(u_transforms[13]*pos,u_cubes[2]))),sdSphere(u_transforms[5]*"
-      "pos,u_spheres[0])))");
-  ASSERT_EQ(expected_sh_code, sh_code);
+  ASSERT_EQ(
+      "opDiff(sdCube(pos,u_cubes[0]),opDiff(opInter(sdCube(pos,u_cubes[1]),opDiff(sdSphere(pos,u_spheres[1]),sdCube("
+      "pos,u_cubes[2]),0.5),0.5),sdSphere(pos,u_spheres[0]),0.5),0.5)",
+      sh_code_arr_per_prim);
+  ASSERT_EQ(
+      "opDiff(sdCube(pos,u_sdf_primitives[0]),opDiff(opInter(sdCube(pos,u_sdf_primitives[1]),opDiff(sdSphere(pos,u_sdf_"
+      "primitives[3]),sdCube(pos,u_sdf_primitives[4]),0.5),0.5),sdSphere(pos,u_sdf_primitives[2]),0.5),0.5)",
+      sh_code_single_prim_arr);
 }
 
 TEST_F(SDFTreeTest, NodesAreCorrectlyMoved) {
@@ -248,16 +256,25 @@ TEST_F(SDFTreeTest, DirtyPrimitivesAreCorrectlyAdded) {
   //  o   o o   o
   //           o o
   resin::SDFTree tree;
-  auto& group1 = tree.root().push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Union);
-  group1.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Union);
-  group1.push_back_child<resin::SphereNode>(resin::SDFBinaryOperation::Union);
-  auto& group2 = tree.root().push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Inter);
-  group2.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Xor);
-  auto& group3 = group2.push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Inter);
-  group3.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Xor);
-  group3.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Xor);
+  auto& group1    = tree.root().push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Union);
+  auto cube1_id   = group1.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Union).node_id();
+  auto sphere1_id = group1.push_back_child<resin::SphereNode>(resin::SDFBinaryOperation::Union).node_id();
+  auto& group2    = tree.root().push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Inter);
+  auto cube2_id   = group2.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Xor).node_id();
+  auto& group3    = group2.push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Inter);
+  auto cube3_id   = group3.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Xor).node_id();
+  auto cube4_id   = group3.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Xor).node_id();
+
+  // then
+  const auto& dirty = tree.dirty_primitives();
+  ASSERT_NE(std::find(dirty.begin(), dirty.end(), cube1_id), dirty.end());
+  ASSERT_NE(std::find(dirty.begin(), dirty.end(), cube2_id), dirty.end());
+  ASSERT_NE(std::find(dirty.begin(), dirty.end(), cube3_id), dirty.end());
+  ASSERT_NE(std::find(dirty.begin(), dirty.end(), cube4_id), dirty.end());
+  ASSERT_NE(std::find(dirty.begin(), dirty.end(), sphere1_id), dirty.end());
 
   // when
+  tree.mark_primitives_clean();
   group2.mark_dirty();
 
   // then
@@ -267,4 +284,183 @@ TEST_F(SDFTreeTest, DirtyPrimitivesAreCorrectlyAdded) {
     dirty_prims.push_back(elem);
   }
   ASSERT_TRUE(std::is_permutation(dirty_prims.begin(), dirty_prims.end(), group2.primitives().begin()));
+}
+
+TEST_F(SDFTreeTest, MaterialsAreProperlyDerivedWhenMaterialSetOrRemoved) {
+  // given
+  //       o
+  //    o     o
+  //  o   o o   o
+  //           o o
+  resin::SDFTree tree;
+  auto& group1 = tree.root().push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Union);
+  group1.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Union);
+  group1.push_back_child<resin::SphereNode>(resin::SDFBinaryOperation::Union);
+  auto& group2 = tree.root().push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Inter);
+  group2.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Xor);
+  auto& group3 = group2.push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Inter);
+  group3.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Xor);
+  group3.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Xor);
+
+  auto& mat1 = tree.add_material(resin::Material(glm::vec3(1.F)));
+  auto& mat2 = tree.add_material(resin::Material(glm::vec3(1.F)));
+
+  // when
+  group2.set_material(mat1.material_id());
+
+  // then
+  //
+  //   materials        materials derivation
+  //       o                    o
+  //    o     1              o     1
+  //  o   o o   o          o   o 1   1
+  //           o o                  1 1
+  //
+  ASSERT_EQ(group2.material_id(), mat1.material_id());
+  ASSERT_EQ(group2.ancestor_material_id(), std::nullopt);
+
+  auto it = group2.begin();
+  ASSERT_EQ(tree.node(*it).ancestor_material_id(), mat1.material_id());
+  ++it;
+  ASSERT_EQ(tree.node(*it).ancestor_material_id(), mat1.material_id());
+
+  it = group3.begin();
+  ASSERT_EQ(tree.node(*it).ancestor_material_id(), mat1.material_id());
+  ++it;
+  ASSERT_EQ(tree.node(*it).ancestor_material_id(), mat1.material_id());
+
+  // when
+  group3.set_material(mat2.material_id());
+
+  // then
+  //
+  //   materials        materials derivation
+  //       o                    o
+  //    o     1              o     1
+  //  o   o o   2          o   o 1   1
+  //           o o                  1 1
+  //
+  ASSERT_EQ(group3.material_id(), mat2.material_id());
+
+  it = group2.begin();
+  ASSERT_EQ(tree.node(*it).ancestor_material_id(), mat1.material_id());
+  ++it;
+  ASSERT_EQ(tree.node(*it).ancestor_material_id(), mat1.material_id());
+
+  it = group3.begin();
+  ASSERT_EQ(tree.node(*it).ancestor_material_id(), mat1.material_id());
+  ++it;
+  ASSERT_EQ(tree.node(*it).ancestor_material_id(), mat1.material_id());
+
+  // when
+  group2.remove_material();
+
+  // then
+  //
+  //   materials        materials derivation
+  //       o                    o
+  //    o     o              o     o
+  //  o   o o   2          o   o o   2
+  //           o o                  2 2
+  //
+  ASSERT_EQ(tree.root().ancestor_material_id(), std::nullopt);
+
+  it = tree.root().begin();
+  ASSERT_EQ(tree.node(*it).ancestor_material_id(), std::nullopt);
+  ++it;
+  ASSERT_EQ(tree.node(*it).ancestor_material_id(), std::nullopt);
+
+  it = group1.begin();
+  ASSERT_EQ(tree.node(*it).ancestor_material_id(), std::nullopt);
+  ++it;
+  ASSERT_EQ(tree.node(*it).ancestor_material_id(), std::nullopt);
+
+  it = group2.begin();
+  ASSERT_EQ(tree.node(*it).ancestor_material_id(), std::nullopt);
+  ++it;
+  ASSERT_EQ(tree.node(*it).ancestor_material_id(), std::nullopt);
+  ASSERT_EQ(tree.node(*it).material_id(), mat2.material_id());
+  it = group3.begin();
+  ASSERT_EQ(tree.node(*it).ancestor_material_id(), mat2.material_id());
+  ++it;
+  ASSERT_EQ(tree.node(*it).ancestor_material_id(), mat2.material_id());
+}
+
+TEST_F(SDFTreeTest, MaterialsAreProperlyDeletedFromTree) {
+  // given
+  //
+  //    materials          materials derivation
+  //        2                      2
+  //    1       3              2       2
+  //  1 2 3   1   2          2 2 2   2   2
+  //             2 1                    2 2
+  //
+  resin::SDFTree tree;
+  auto mat1 = tree.add_material(resin::Material(glm::vec3(1.F))).material_id();
+  auto mat2 = tree.add_material(resin::Material(glm::vec3(1.F))).material_id();
+  auto mat3 = tree.add_material(resin::Material(glm::vec3(1.F))).material_id();
+
+  tree.root().set_material(mat2);
+  auto& group1 = tree.root().push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Union);
+  group1.set_material(mat1);
+  group1.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Union).set_material(mat1);
+  group1.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Union).set_material(mat2);
+  group1.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Union).set_material(mat3);
+  auto& group2 = tree.root().push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Union);
+  group2.set_material(mat3);
+  group2.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Union).set_material(mat1);
+  auto& group3 = group2.push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Union);
+  group3.set_material(mat2);
+  group3.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Union).set_material(mat2);
+  group3.push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Union).set_material(mat1);
+
+  // when
+  tree.delete_material(mat2);
+
+  // then
+  //
+  //    materials         materials derivation
+  //        o                      o
+  //    1       3              1       3
+  //  1 o 3   1   o          1 1 1   3   3
+  //             o 1                    3 3
+  //
+  for (auto mat : tree.materials()) {
+    ASSERT_NE(mat, mat2);
+  }
+  ASSERT_THROW(tree.material(mat2), resin::MaterialSDFTreeComponentDoesNotExist);
+
+  ASSERT_EQ(tree.root().material_id(), std::nullopt);
+  ASSERT_EQ(tree.root().ancestor_material_id(), std::nullopt);
+
+  auto it = tree.root().begin();
+  ASSERT_EQ(tree.node(*it).material_id(), mat1);
+  ASSERT_EQ(tree.node(*it).ancestor_material_id(), std::nullopt);
+  ++it;
+  ASSERT_EQ(tree.node(*it).material_id(), mat3);
+  ASSERT_EQ(tree.node(*it).ancestor_material_id(), std::nullopt);
+
+  it = group1.begin();
+  ASSERT_EQ(tree.node(*it).material_id(), mat1);
+  ASSERT_EQ(tree.node(*it).ancestor_material_id(), mat1);
+  ++it;
+  ASSERT_EQ(tree.node(*it).material_id(), std::nullopt);
+  ASSERT_EQ(tree.node(*it).ancestor_material_id(), mat1);
+  ++it;
+  ASSERT_EQ(tree.node(*it).material_id(), mat3);
+  ASSERT_EQ(tree.node(*it).ancestor_material_id(), mat1);
+
+  it = group2.begin();
+  ASSERT_EQ(tree.node(*it).material_id(), mat1);
+  ASSERT_EQ(tree.node(*it).ancestor_material_id(), mat3);
+  ++it;
+  ASSERT_FALSE(tree.node(*it).material_id().has_value());
+  ASSERT_EQ(tree.node(*it).ancestor_material_id(), mat3);
+
+  it = group3.begin();
+  ASSERT_EQ(tree.node(*it).material_id(), std::nullopt);
+  ASSERT_EQ(tree.node(*it).ancestor_material_id(), mat3);
+  ++it;
+  ASSERT_EQ(tree.node(*it).material_id(), mat1);
+  ASSERT_EQ(tree.node(*it).ancestor_material_id(), mat3);
 }

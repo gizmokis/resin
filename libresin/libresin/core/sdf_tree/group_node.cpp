@@ -1,5 +1,6 @@
 #include <libresin/core/sdf_shader_consts.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
+#include <libresin/core/sdf_tree/primitive_base_node.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
@@ -15,14 +16,12 @@ GroupNode::GroupNode(SDFTreeRegistry& tree) : SDFTreeNode(tree, "Group") {
 }
 GroupNode::~GroupNode() { tree_registry_.all_group_nodes[node_id_.raw()] = std::nullopt; }
 
-void GroupNode::push_back_primitive(SDFTreePrimitiveType type, SDFBinaryOperation bin_op) {
+SDFTreeNode& GroupNode::push_back_primitive(SDFTreePrimitiveType type, SDFBinaryOperation bin_op) {
   switch (type) {
     case SDFTreePrimitiveType::Sphere:
-      push_back_child<SphereNode>(bin_op);
-      return;
+      return push_back_child<SphereNode>(bin_op);
     case SDFTreePrimitiveType::Cube:
-      push_back_child<CubeNode>(bin_op);
-      return;
+      return push_back_child<CubeNode>(bin_op);
     case resin::SDFTreePrimitiveType::_Count:
       throw NonExhaustiveEnumException();
   }
@@ -35,7 +34,7 @@ bool GroupNode::is_node_shallow(IdView<SDFTreeNodeId> id) const {
          tree_registry_.all_group_nodes[id.raw()].value().get().primitives().size() == 0;
 }
 
-std::string GroupNode::gen_shader_code() const {
+std::string GroupNode::gen_shader_code(GenShaderMode mode) const {
   size_t non_shallow_nodes_count = 0;
   auto first_non_shallow_node    = nodes_order_.begin();
   auto second_non_shallow_node   = nodes_order_.begin();
@@ -60,7 +59,7 @@ std::string GroupNode::gen_shader_code() const {
 
   if (non_shallow_nodes_count == 1) {
     // If there is one node only, the operation is ignored
-    return get_child(*last_non_shallow_node).gen_shader_code();
+    return get_child(*last_non_shallow_node).gen_shader_code(mode);
   }
 
   std::string sdf;
@@ -69,10 +68,10 @@ std::string GroupNode::gen_shader_code() const {
       continue;
     }
 
-    sdf += sdf_shader_consts::kSDFShaderBinOpFunctionNames.get_value(get_child(*it).bin_op());
+    sdf += sdf_shader_consts::kSDFShaderBinOpFunctionNames[get_child(*it).bin_op()];
     sdf += "(";
   }
-  sdf += get_child(*first_non_shallow_node).gen_shader_code();
+  sdf += get_child(*first_non_shallow_node).gen_shader_code(mode);
   sdf += ",";
 
   for (auto it = second_non_shallow_node; it != nodes_order_.end(); ++it) {
@@ -80,8 +79,8 @@ std::string GroupNode::gen_shader_code() const {
       continue;
     }
 
-    sdf += get_child(*it).gen_shader_code();
-    sdf += "),";
+    sdf += get_child(*it).gen_shader_code(mode);
+    sdf += ",0.5),";  // FIXME(SDF-117)
   }
   sdf.pop_back();
 
@@ -91,22 +90,105 @@ std::string GroupNode::gen_shader_code() const {
 void GroupNode::set_parent(std::unique_ptr<SDFTreeNode>& node_ptr) {
   node_ptr->set_parent(*this);
   node_ptr->transform().set_parent(transform_);
+  if (ancestor_mat_id_.has_value()) {
+    node_ptr->set_ancestor_mat_id(*ancestor_mat_id_);
+  }
   insert_leaves_up(node_ptr);
 }
 
 void GroupNode::remove_from_parent(std::unique_ptr<SDFTreeNode>& node_ptr) {
   node_ptr->remove_from_parent();
   node_ptr->transform().remove_from_parent();
+  if (ancestor_mat_id_.has_value()) {
+    node_ptr->remove_ancestor_mat_id();
+  }
   remove_leaves_up(node_ptr);
 }
 
 SDFTreeNode& GroupNode::get_child(IdView<SDFTreeNodeId> node_id) const {
-  auto it = nodes_.find(node_id);
-  if (it == nodes_.end()) {
+  if (!tree_registry_.all_nodes[node_id.raw()].has_value()) {
+    log_throw(SDFTreeNodeDoesNotExist(node_id.raw()));
+  }
+
+  if (!is_child(node_id)) {
     log_throw(SDFTreeNodeIsNotAChild(node_id.raw(), node_id_.raw()));
   }
 
-  return *it->second.second;
+  return tree_registry_.all_nodes[node_id.raw()]->get();
+}
+
+void GroupNode::set_ancestor_mat_id(IdView<MaterialId> mat_id) {
+  ancestor_mat_id_ = mat_id;
+
+  for (auto& it : *this) {
+    get_child(it).set_ancestor_mat_id(mat_id);
+  }
+}
+
+void GroupNode::remove_ancestor_mat_id() {
+  ancestor_mat_id_ = std::nullopt;
+
+  if (mat_id_.has_value()) {
+    for (auto& it : *this) {
+      get_child(it).set_ancestor_mat_id(*mat_id_);
+    }
+  } else {
+    for (auto& it : *this) {
+      get_child(it).remove_ancestor_mat_id();
+    }
+  }
+}
+
+void GroupNode::fix_material_ancestors() {
+  tree_registry_.is_tree_dirty = true;
+
+  if (!parent_.has_value()) {
+    ancestor_mat_id_ = std::nullopt;
+  } else {
+    auto ancestor = parent_->get().ancestor_material_id();
+    if (ancestor.has_value()) {
+      ancestor_mat_id_ = ancestor;
+    } else {
+      ancestor_mat_id_ = parent_->get().material_id();
+    }
+  }
+
+  for (auto& it : *this) {
+    get_child(it).fix_material_ancestors();
+  }
+}
+
+void GroupNode::set_material(IdView<MaterialId> mat_id) {
+  tree_registry_.is_tree_dirty = true;
+  mat_id_                      = mat_id;
+
+  if (!ancestor_mat_id_.has_value()) {
+    for (auto& it : *this) {
+      get_child(it).set_ancestor_mat_id(mat_id);
+    }
+  }
+}
+
+void GroupNode::remove_material() {
+  tree_registry_.is_tree_dirty = true;
+  mat_id_                      = std::nullopt;
+
+  if (!ancestor_mat_id_.has_value()) {
+    for (auto& it : *this) {
+      get_child(it).remove_ancestor_mat_id();
+    }
+  }
+}
+
+void GroupNode::delete_material_from_subtree(IdView<MaterialId> mat_id) {
+  tree_registry_.is_tree_dirty = true;
+  if (mat_id == mat_id_) {
+    mat_id_ = std::nullopt;
+  }
+
+  for (auto it : *this) {
+    get_child(it).delete_material_from_subtree(mat_id);
+  }
 }
 
 void GroupNode::delete_child(IdView<SDFTreeNodeId> node_id) {
@@ -114,6 +196,8 @@ void GroupNode::delete_child(IdView<SDFTreeNodeId> node_id) {
   if (it == nodes_.end()) {
     log_throw(SDFTreeNodeIsNotAChild(node_id.raw(), node_id_.raw()));
   }
+
+  tree_registry_.is_tree_dirty = true;
   remove_from_parent(it->second.second);
 
   nodes_order_.erase(it->second.first);
@@ -168,7 +252,8 @@ SDFTreeNode& GroupNode::child_neighbor_next(IdView<SDFTreeNodeId> node_id) {
 }
 
 std::unique_ptr<SDFTreeNode> GroupNode::detach_child(IdView<SDFTreeNodeId> node_id) {
-  auto map_it = nodes_.find(node_id);
+  tree_registry_.is_tree_dirty = true;
+  auto map_it                  = nodes_.find(node_id);
   if (map_it == nodes_.end()) {
     log_throw(SDFTreeNodeIsNotAChild(node_id.raw(), node_id_.raw()));
   }
@@ -183,6 +268,7 @@ std::unique_ptr<SDFTreeNode> GroupNode::detach_child(IdView<SDFTreeNodeId> node_
 }
 
 void GroupNode::push_back_child(std::unique_ptr<SDFTreeNode> node_ptr) {
+  tree_registry_.is_tree_dirty = true;
   set_parent(node_ptr);
   auto node_id = node_ptr->node_id();
 
@@ -191,6 +277,7 @@ void GroupNode::push_back_child(std::unique_ptr<SDFTreeNode> node_ptr) {
 }
 
 void GroupNode::push_front_child(std::unique_ptr<SDFTreeNode> node_ptr) {
+  tree_registry_.is_tree_dirty = true;
   set_parent(node_ptr);
   auto node_id = node_ptr->node_id();
 
@@ -204,6 +291,7 @@ void GroupNode::insert_before_child(std::optional<IdView<SDFTreeNodeId>> before_
     push_back_child(std::move(node_ptr));
     return;
   }
+  tree_registry_.is_tree_dirty = true;
   set_parent(node_ptr);
 
   auto map_it = nodes_.find(*before_child_id);
@@ -223,6 +311,7 @@ void GroupNode::insert_after_child(std::optional<IdView<SDFTreeNodeId>> after_ch
     push_front_child(std::move(node_ptr));
     return;
   }
+  tree_registry_.is_tree_dirty = true;
   set_parent(node_ptr);
 
   auto map_it = nodes_.find(*after_child_id);
@@ -238,7 +327,7 @@ void GroupNode::insert_after_child(std::optional<IdView<SDFTreeNodeId>> after_ch
 
 void GroupNode::push_dirty_primitives() {
   for (auto prim : leaves_) {
-    tree_registry_.dirty_primitives.push_back(std::move(prim));
+    tree_registry_.dirty_primitives.emplace(std::move(prim));
   }
 }
 

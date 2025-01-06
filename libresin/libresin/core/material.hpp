@@ -2,17 +2,21 @@
 #define RESIN_MATERIAL_HPP
 
 #include <glm/glm.hpp>
+#include <libresin/core/id_registry.hpp>
 
 namespace resin {
 
+struct Material;
+using MaterialId = Id<Material>;
+
 struct Material {
-  explicit Material(const glm::vec3& color, float ambientFactor = 0.5F, float diffuseFactor = 0.5F,
-                    float specularFactor = 0.5F, float specularExponent = 50.F)
+  explicit Material(const glm::vec3& color = glm::vec3(1.F), float _ambientFactor = 0.5F, float _diffuseFactor = 0.5F,
+                    float _specularFactor = 0.5F, float _specularExponent = 50.F)
       : albedo(color),
-        ambientFactor(ambientFactor),
-        diffuseFactor(diffuseFactor),
-        specularFactor(specularFactor),
-        specularExponent(specularExponent) {}
+        ambientFactor(_ambientFactor),
+        diffuseFactor(_diffuseFactor),
+        specularFactor(_specularFactor),
+        specularExponent(_specularExponent) {}
 
   glm::vec3 albedo;
 
@@ -20,6 +24,36 @@ struct Material {
   float diffuseFactor;
   float specularFactor;
   float specularExponent;
+};
+
+struct SDFTreeRegistry;
+
+class MaterialSDFTreeComponent {
+ public:
+  MaterialSDFTreeComponent() = delete;
+
+  explicit MaterialSDFTreeComponent(SDFTreeRegistry& tree);
+  MaterialSDFTreeComponent(SDFTreeRegistry& tree, Material mat);
+
+  MaterialSDFTreeComponent(const MaterialSDFTreeComponent&)            = delete;
+  MaterialSDFTreeComponent& operator=(const MaterialSDFTreeComponent&) = delete;
+
+  MaterialSDFTreeComponent(MaterialSDFTreeComponent&&)                  = default;
+  MaterialSDFTreeComponent& operator=(MaterialSDFTreeComponent&& other) = default;
+
+  inline bool operator==(const MaterialSDFTreeComponent& other) const { return material_id() == other.material_id(); }
+  inline bool operator!=(const MaterialSDFTreeComponent& other) const { return material_id() != other.material_id(); }
+
+  inline IdView<MaterialId> material_id() const { return mat_id_; }
+  inline void rename(std::string&& new_name) { name_ = std::move(new_name); }
+  inline std::string_view name() const { return name_; }
+
+ public:
+  Material material;
+
+ private:
+  MaterialId mat_id_;
+  std::string name_;
 };
 
 }  // namespace resin

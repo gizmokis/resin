@@ -1,0 +1,326 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/gizmokis/resin/refs/heads/master/schemas/definitions.schema.json",
+  "title": "Definitions for Resin JSON schemas",
+  "description": "Common definitions for Resin JSON schemas used by prefabs and scenes.",
+  "$defs": {
+    "intId": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "binaryOperation": {
+      "type": "string",
+      "enum": [
+        "union",
+        "smoothUnion",
+        "diff",
+        "smoothDiff",
+        "inter",
+        "smoothInter",
+        "xor",
+        "smoothXor"
+      ]
+    },
+    "color": {
+      "type": "object",
+      "description": "Color in RGB format",
+      "required": [
+        "r",
+        "g",
+        "b"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "r": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Red component"
+        },
+        "g": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Green component"
+        },
+        "b": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Blue component"
+        }
+      }
+    },
+    "transform": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "position": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "x",
+            "y",
+            "z"
+          ],
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            },
+            "z": {
+              "type": "number"
+            }
+          }
+        },
+        "rotation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "x",
+            "y",
+            "z",
+            "w"
+          ],
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            },
+            "z": {
+              "type": "number"
+            },
+            "w": {
+              "type": "number"
+            }
+          }
+        },
+        "scale": {
+          "type": "number"
+        }
+      }
+    },
+    "sphere": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "radius"
+      ],
+      "properties": {
+        "radius": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "cube": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "size"
+      ],
+      "properties": {
+        "size": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "x",
+            "y",
+            "z"
+          ],
+          "properties": {
+            "x": {
+              "type": "number",
+              "minimum": 0
+            },
+            "y": {
+              "type": "number",
+              "minimum": 0
+            },
+            "z": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "materialId": {
+          "type": "number"
+        }
+      }
+    },
+    "nodeCommon": {
+      "type": "object",
+      "required": [
+        "binaryOperation",
+        "name",
+        "transform"
+      ],
+      "properties": {
+        "binaryOperation": {
+          "$ref": "#/$defs/binaryOperation"
+        },
+        "name": {
+          "type": "string"
+        },
+        "materialId": {
+          "$ref": "#/$defs/intId"
+        },
+        "transform": {
+          "$ref": "#/$defs/transform"
+        }
+      }
+    },
+    "sphereNode": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/nodeCommon"
+        },
+        {
+          "type": "object",
+          "required": [
+            "sphere"
+          ],
+          "properties": {
+            "sphere": {
+              "$ref": "#/$defs/sphere"
+            }
+          }
+        }
+      ]
+    },
+    "cubeNode": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/nodeCommon"
+        },
+        {
+          "type": "object",
+          "required": [
+            "cube"
+          ],
+          "properties": {
+            "cube": {
+              "$ref": "#/$defs/cube"
+            }
+          }
+        }
+      ]
+    },
+    "group": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        }
+      }
+    },
+    "groupNode": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/nodeCommon"
+        },
+        {
+          "type": "object",
+          "required": [
+            "group"
+          ],
+          "properties": {
+            "group": {
+              "$ref": "#/$defs/group"
+            }
+          }
+        }
+      ]
+    },
+    "node": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/groupNode"
+        },
+        {
+          "$ref": "#/$defs/sphereNode"
+        },
+        {
+          "$ref": "#/$defs/cubeNode"
+        }
+      ]
+    },
+    "material": {
+      "type": "object",
+      "description": "Phong material properties",
+      "required": [
+        "id",
+        "name",
+        "albedo",
+        "ambient",
+        "diffuse",
+        "specular",
+        "specularExponent"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/intId"
+        },
+        "name": {
+          "type": "string"
+        },
+        "albedo": {
+          "$ref": "#/$defs/color"
+        },
+        "ambient": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Ambient light reflection factor"
+        },
+        "diffuse": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Diffuse light reflection factor"
+        },
+        "specular": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Specular light reflection factor"
+        },
+        "specularExponent": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Specular exponent (shininess)"
+        }
+      }
+    },
+    "tree": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rootGroup"
+      ],
+      "properties": {
+        "materials": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/material"
+          }
+        },
+        "rootGroup": {
+          "$ref": "#/$defs/groupNode"
+        }
+      }
+    }
+  }
+}

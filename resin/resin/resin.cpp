@@ -12,13 +12,20 @@
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
+#include <libresin/core/transform.hpp>
+#include <libresin/core/uniform_buffer.hpp>
 #include <libresin/utils/logger.hpp>
 #include <memory>
+#include <nfd/nfd.hpp>
+#include <optional>
 #include <resin/core/window.hpp>
+#include <resin/dialog/file_dialog.hpp>
 #include <resin/event/event.hpp>
 #include <resin/event/window_events.hpp>
+#include <resin/imgui/node_edit.hpp>
 #include <resin/imgui/sdf_tree.hpp>
 #include <resin/imgui/transform_edit.hpp>
+#include <resin/imgui/viewport.hpp>
 #include <resin/resin.hpp>
 
 namespace resin {
@@ -37,12 +44,10 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
 
   const std::filesystem::path path = std::filesystem::current_path() / "assets";
 
-  cube_transform_.set_local_pos(glm::vec3(1, 1, 0));
-
   cube_mat_   = std::make_unique<Material>(glm::vec3(0.96F, 0.25F, 0.25F));
   sphere_mat_ = std::make_unique<Material>(glm::vec3(0.25F, 0.25F, 0.96F));
 
-  camera_       = std::make_unique<Camera>(true, 90.F, 16.F / 9.F, 0.75F, 100.F);
+  camera_       = std::make_unique<Camera>(false, 70.F, 16.F / 9.F, 0.75F, 100.F);
   glm::vec3 pos = glm::vec3(0, 2, 3);
   camera_->transform.set_local_pos(pos);
   glm::vec3 direction = glm::normalize(-pos);
@@ -53,9 +58,6 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
                                                     PointLight::Attenuation(1.0F, 0.7F, 1.8F));
   directional_light_ = std::make_unique<DirectionalLight>(glm::vec3(0.5F, 0.5F, 0.5F), 1.0F);
   directional_light_->transform.set_local_rot(glm::quatLookAt(direction, glm::vec3(0, 1, 0)));
-
-  shader_ = std::make_unique<RenderingShaderProgram>("default", *shader_resource_manager_.get_res(path / "test.vert"),
-                                                     *shader_resource_manager_.get_res(path / "test.frag"));
 
   const unsigned int march_res = 16;
   int invoc = 0;
@@ -98,11 +100,41 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof indices, indices, GL_STATIC_DRAW);
 
   // Example tree
-  sdf_tree_.root().push_back_child<SphereNode>(SDFBinaryOperation::Inter);
+  sdf_tree_.root().push_back_child<SphereNode>(SDFBinaryOperation::SmoothUnion);
   sdf_tree_.root()
-      .push_back_child<GroupNode>(SDFBinaryOperation::Union)
-      .push_back_child<CubeNode>(SDFBinaryOperation::Diff);
-  sdf_tree_.root().push_back_child<CubeNode>(SDFBinaryOperation::Union);
+      .push_back_child<CubeNode>(SDFBinaryOperation::SmoothUnion)
+      .transform()
+      .set_local_pos(glm::vec3(1, 1, 0));
+  sdf_tree_.root().push_back_child<SphereNode>(SDFBinaryOperation::SmoothUnion);
+
+  // SDF Shader
+  ShaderResource frag_shader = *shader_resource_manager_.get_res(path / "test.frag");
+
+  frag_shader.set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
+  Logger::info("{}", frag_shader.get_glsl());
+
+  ubo_ = std::make_unique<UniformBuffer>(sdf_tree_.max_nodes_count());
+  frag_shader.set_ext_defi("MAX_UBO_NODE_COUNT", std::to_string(ubo_->max_count()));
+  ubo_->bind();
+  ubo_->set(sdf_tree_);
+  ubo_->unbind();
+
+  shader_ = std::make_unique<RenderingShaderProgram>("default", *shader_resource_manager_.get_res(path / "test.vert"),
+                                                     std::move(frag_shader));
+
+  framebuffer_ = std::make_unique<Framebuffer>(window_->dimensions().x, window_->dimensions().y);
+
+  setup_shader();
+}
+
+void Resin::setup_shader() {
+  shader_->bind_uniform_buffer("Data", *ubo_);
+  shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
+  shader_->set_uniform("u_resolution", glm::vec2(framebuffer_->width(), framebuffer_->height()));
+  shader_->set_uniform("u_nearPlane", camera_->near_plane());
+  shader_->set_uniform("u_farPlane", camera_->far_plane());
+  shader_->set_uniform("u_ortho", camera_->is_orthographic);
+  shader_->set_uniform("u_camSize", camera_->height());
 }
 
 void Resin::run() {
@@ -135,7 +167,16 @@ void Resin::run() {
 
     ++frames;
     if (!minimized_) {
-      render();
+      ImGui_ImplOpenGL3_NewFrame();
+      ImGui_ImplGlfw_NewFrame();
+      ImGui::NewFrame();
+
+      gui();
+
+      ImGui::Render();
+      ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+      window_->on_update();
     }
 
     if (second > 1s) {
@@ -154,26 +195,56 @@ void Resin::update(duration_t delta) {
   window_->set_title(std::format("Resin [{} FPS {} TPS] running for: {}", fps_, tps_,
                                  std::chrono::duration_cast<std::chrono::seconds>(time_)));
 
-  cube_transform_.rotate(glm::angleAxis(2 * std::chrono::duration<float>(delta).count(), glm::vec3(0, 1, 0)));
   directional_light_->transform.rotate(glm::angleAxis(std::chrono::duration<float>(delta).count(), glm::vec3(0, 1, 0)));
 
-  shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
-  shader_->set_uniform("u_resolution", glm::vec2(window_->dimensions()));
-  shader_->set_uniform("u_nearPlane", camera_->near_plane());
-  shader_->set_uniform("u_farPlane", camera_->far_plane());
-  shader_->set_uniform("u_iM", cube_transform_.world_to_local_matrix());
-  shader_->set_uniform("u_scale", cube_transform_.scale());
-  shader_->set_uniform("u_ortho", camera_->is_orthographic);
-  shader_->set_uniform("u_camSize", camera_->height());
+  if (sdf_tree_.is_dirty()) {
+    shader_->fragment_shader().set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
+    Logger::debug("{}", sdf_tree_.gen_shader_code());
+    shader_->recompile();
+    setup_shader();
+    Logger::info("Refreshed the SDF Tree");
+    sdf_tree_.mark_clean();
+  }
+
+  ubo_->bind();
+  ubo_->update_dirty(sdf_tree_);
+  ubo_->unbind();
+
+  // TODO(SDF-87)
+  shader_->set_uniform("u_cubeMat", *cube_mat_);
+  shader_->set_uniform("u_sphereMat", *sphere_mat_);
+
   shader_->set_uniform("u_dirLight", *directional_light_);
   shader_->set_uniform("u_pointLight", *point_light_);
   shader_->set_uniform("u_cubeMat", *cube_mat_);
   shader_->set_uniform("u_sphereMat", *sphere_mat_);
+
+  FileDialog::instance().update();
 }
 
 void Resin::gui() {
-  // ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
-  // TODO(SDF-81): Proper rendering to framebuffer
+  ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
+
+  bool resized = false;
+  if (ImGui::resin::Viewport(*framebuffer_, resized)) {
+    auto width  = static_cast<float>(framebuffer_->width());
+    auto height = static_cast<float>(framebuffer_->height());
+
+    if (resized) {
+      camera_->set_aspect_ratio(width / height);
+      shader_->set_uniform("u_resolution", glm::vec2(width, height));
+      shader_->set_uniform("u_camSize", camera_->height());
+    }
+
+    framebuffer_->bind();
+    render();
+    framebuffer_->unbind();
+    glViewport(0, 0, static_cast<GLint>(window_->dimensions().x), static_cast<GLint>(window_->dimensions().y));
+
+    ImGui::Image((ImTextureID)(intptr_t)framebuffer_->color_texture(), ImVec2(width, height), ImVec2(0, 1),  // NOLINT
+                 ImVec2(1, 0));
+  }
+  ImGui::End();
 
   ImGui::SetNextWindowSizeConstraints(ImVec2(280.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
   if (ImGui::Begin("SDF Tree")) {
@@ -182,13 +253,8 @@ void Resin::gui() {
   ImGui::End();
 
   ImGui::SetNextWindowSizeConstraints(ImVec2(350.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
-  ImGui::Begin("Test Cube");
-  ImGui::Text("Parameters");
-  if (ImGui::BeginTabBar("TestTabBar", ImGuiTabBarFlags_None)) {
-    if (ImGui::BeginTabItem("Transform")) {
-      ImGui::resin::TransformEdit(&cube_transform_);
-      ImGui::EndTabItem();
-    }
+  ImGui::Begin("[TEMP] Lights");
+  if (ImGui::BeginTabBar("LightsTabBar", ImGuiTabBarFlags_None)) {
     // TODO(SDF-88): i don't want to design GUI please save me guys 🤲🙏
     if (ImGui::BeginTabItem("DirLight")) {
       ImGui::ColorEdit3("Light color", glm::value_ptr(directional_light_->color));
@@ -207,6 +273,12 @@ void Resin::gui() {
       }
       ImGui::EndTabItem();
     }
+    ImGui::EndTabBar();
+  }
+  ImGui::End();
+
+  ImGui::Begin("[TEMP] Materials");
+  if (ImGui::BeginTabBar("MaterialTabBar", ImGuiTabBarFlags_None)) {
     // TODO(SDF-87)
     if (ImGui::BeginTabItem("CubeMat")) {
       ImGui::ColorEdit3("Color", glm::value_ptr(cube_mat_->albedo));
@@ -218,36 +290,30 @@ void Resin::gui() {
     }
     if (ImGui::BeginTabItem("SphereMat")) {
       ImGui::ColorEdit3("Color", glm::value_ptr(sphere_mat_->albedo));
-      ImGui::DragFloat("Ambient", &sphere_mat_->ambientFactor, 0.01F, 0.0F, 2.0F, "%.2f");
-      ImGui::DragFloat("Diffuse", &sphere_mat_->diffuseFactor, 0.01F, 0.0F, 2.0F, "%.2f");
-      ImGui::DragFloat("Specular", &sphere_mat_->specularFactor, 0.01F, 0.0F, 2.0F, "%.2f");
+      ImGui::DragFloat("Ambient", &sphere_mat_->ambientFactor, 0.01F, 0.0F, 1.0F, "%.2f");
+      ImGui::DragFloat("Diffuse", &sphere_mat_->diffuseFactor, 0.01F, 0.0F, 1.0F, "%.2f");
+      ImGui::DragFloat("Specular", &sphere_mat_->specularFactor, 0.01F, 0.0F, 1.0F, "%.2f");
       ImGui::DragFloat("Exponent", &sphere_mat_->specularExponent, 0.1F, 0.0F, 100.0F, "%.1f");
       ImGui::EndTabItem();
     }
     ImGui::EndTabBar();
   }
   ImGui::End();
+
+  ImGui::SetNextWindowSizeConstraints(ImVec2(350.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
+  ImGui::Begin("Selection");
+  if (selected_node_.has_value()) {
+    ImGui::resin::NodeEdit(sdf_tree_.node(*selected_node_));
+  }
+
+  ImGui::End();
 }
 
 void Resin::render() {
-  glClearColor(0.1F, 0.1F, 0.1F, 1.F);
-  glClear(GL_COLOR_BUFFER_BIT);
-
-  {
-    glBindVertexArray(vertex_array_);
-    shader_->bind();
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-    shader_->unbind();
-  }
-
-  ImGui_ImplOpenGL3_NewFrame();
-  ImGui_ImplGlfw_NewFrame();
-  ImGui::NewFrame();
-  gui();
-  ImGui::Render();
-  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-  window_->on_update();
+  glBindVertexArray(vertex_array_);
+  shader_->bind();
+  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+  shader_->unbind();
 }
 
 bool Resin::on_window_close(WindowCloseEvent&) {
@@ -264,10 +330,8 @@ bool Resin::on_window_resize(WindowResizeEvent& e) {
 
   minimized_ = false;
   glViewport(0, 0, static_cast<GLint>(e.width()), static_cast<GLint>(e.height()));
-  auto width  = static_cast<float>(e.width());
-  auto height = static_cast<float>(e.height());
-  camera_->set_aspect_ratio(width / height);
-
+  auto width     = static_cast<float>(e.width());
+  auto height    = static_cast<float>(e.height());
   ImGuiIO& io    = ImGui::GetIO();
   io.DisplaySize = ImVec2(width, height);
   return false;
@@ -275,6 +339,7 @@ bool Resin::on_window_resize(WindowResizeEvent& e) {
 
 bool Resin::on_test(WindowTestEvent&) {
   camera_->is_orthographic = !camera_->is_orthographic;
+  shader_->set_uniform("u_ortho", camera_->is_orthographic);
 
   return false;
 }
