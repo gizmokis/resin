@@ -79,7 +79,7 @@ bool TransformGizmo(::resin::Transform& trans, const ::resin::Camera& camera, Gi
                            ImGuizmo::MODE::WORLD, glm::value_ptr(mat))) {
     constexpr float kFloatEqTreshold = 1e-5F;
 
-    // Uniform scaling
+    // Assuming uniform scaling
     if (std::abs(mat[1][1] - mat[0][0]) > kFloatEqTreshold) {
       if (std::abs(mat[1][1] - mat[2][2]) > kFloatEqTreshold) {
         trans.set_local_scale(mat[1][1]);
