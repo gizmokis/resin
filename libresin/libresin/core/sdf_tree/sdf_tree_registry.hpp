@@ -13,6 +13,9 @@ template <sdf_shader_consts::SDFShaderPrim PrimType>
 class PrimitiveNode;
 
 struct SDFTreeRegistry {
+  using PrimitivesSet = std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>;
+  using MaterialsSet  = std::unordered_set<IdView<MaterialId>, IdViewHash<MaterialId>, std::equal_to<>>;
+
   // TODO(SDF-98): allow specifying the sizes
   SDFTreeRegistry()
       : sphere_components_registry(IdRegistry<PrimitiveNode<sdf_shader_consts::SDFShaderPrim::Sphere>>(100)),
@@ -24,7 +27,6 @@ struct SDFTreeRegistry {
         default_material(*this) {
     all_nodes.resize(nodes_registry.get_max_objs());
     all_group_nodes.resize(nodes_registry.get_max_objs());
-    dirty_primitives.reserve(nodes_registry.get_max_objs());
   }
 
   IdRegistry<PrimitiveNode<sdf_shader_consts::SDFShaderPrim::Sphere>> sphere_components_registry;
@@ -49,16 +51,18 @@ struct SDFTreeRegistry {
   std::vector<std::optional<std::reference_wrapper<SDFTreeNode>>> all_nodes;
   std::vector<std::optional<std::reference_wrapper<GroupNode>>> all_group_nodes;
 
-  std::vector<IdView<SDFTreeNodeId>> dirty_primitives;
+  PrimitivesSet dirty_primitives;
 
   IdRegistry<Material> materials_registry;
-  std::vector<IdView<MaterialId>> dirty_materials;
+  MaterialsSet dirty_materials;
 
   // Required for shader generation
   MaterialSDFTreeComponent default_material;
 
   size_t node_index{};
   size_t material_index{};
+
+  bool is_tree_dirty{true};
 };
 
 }  // namespace resin

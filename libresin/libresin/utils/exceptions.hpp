@@ -69,7 +69,20 @@ class FileStreamNotAvailableException : public ResinException {
 
  private:
   std::string file_path_;
-  std::string error_details_;
+};
+
+class DirectoryDoesNotExistException : public ResinException {
+ public:
+  EXCEPTION_NAME(DirectoryDoesNotExistException)
+
+  explicit DirectoryDoesNotExistException(std::string&& dir_path)
+      : ResinException(std::format(R"(File stream is not available for "{}")", dir_path)),
+        dir_path_(std::move(dir_path)) {}
+
+  inline const std::string& get_file_path() const { return dir_path_; }
+
+ private:
+  std::string dir_path_;
 };
 
 class FileExtensionNotSupportedException : public ResinException {
@@ -391,7 +404,7 @@ class InvalidJSONException : public ResinException {
  public:
   EXCEPTION_NAME(InvalidJSONException)
 
-  explicit InvalidJSONException() : ResinException("Provided JSON is not a valid json") {}
+  explicit InvalidJSONException() : ResinException("Provided JSON is not valid.") {}
 };
 
 class NotImplementedException : public ResinException {

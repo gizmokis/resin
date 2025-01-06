@@ -99,8 +99,11 @@ class GroupNode final : public SDFTreeNode {
   // Cost: O(1)
   SDFTreeNode& get_child(IdView<SDFTreeNodeId> node_id) const;
 
-  // Cost: Amortized O(1)
-  inline bool is_child(IdView<SDFTreeNodeId> node_id) const { return nodes_.find(node_id) == nodes_.end(); }
+  // Cost: O(1)
+  inline bool is_child(IdView<SDFTreeNodeId> node_id) const {
+    return tree_registry_.all_nodes[node_id.raw()]->get().has_parent() &&
+           tree_registry_.all_nodes[node_id.raw()]->get().parent().node_id() == this->node_id();
+  }
 
   inline const std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& primitives() {
     return leaves_;

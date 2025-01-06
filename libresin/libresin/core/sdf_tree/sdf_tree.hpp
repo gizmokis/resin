@@ -22,12 +22,12 @@ class SDFTree {
 
   // Visits all dirty primitives AND clears the dirty primitives collection.
   void visit_dirty_primitives(ISDFTreeNodeVisitor& visitor);
-  inline void clear_dirty_primitives() { sdf_tree_registry_.dirty_primitives.clear(); }
+  inline void mark_primitives_clean() { sdf_tree_registry_.dirty_primitives.clear(); }
 
   void visit_all_primitives(ISDFTreeNodeVisitor& visitor);
   void visit_node(IdView<SDFTreeNodeId> node_id, ISDFTreeNodeVisitor& visitor);
 
-  inline std::vector<IdView<SDFTreeNodeId>> dirty_primitives() const { return sdf_tree_registry_.dirty_primitives; }
+  inline const SDFTreeRegistry::PrimitivesSet& dirty_primitives() const { return sdf_tree_registry_.dirty_primitives; }
 
   // Cost O(1)
   SDFTreeNode& node(IdView<SDFTreeNodeId> node_id);
@@ -58,6 +58,9 @@ class SDFTree {
 
   inline size_t tree_id() const { return tree_id_; }
 
+  inline bool is_dirty() const { return sdf_tree_registry_.is_tree_dirty; }
+  inline void mark_clean() { sdf_tree_registry_.is_tree_dirty = false; }
+
   MaterialSDFTreeComponent& material(IdView<MaterialId> mat_id);
   const MaterialSDFTreeComponent& material(IdView<MaterialId> mat_id) const;
   MaterialSDFTreeComponent& add_material(Material mat);
@@ -66,7 +69,7 @@ class SDFTree {
   // Note: Throws if the `mat_id` is the default material id.
   void delete_material(IdView<MaterialId> mat_id);
 
-  inline void mark_material_dirty(IdView<MaterialId> mat_id) { sdf_tree_registry_.dirty_materials.push_back(mat_id); }
+  inline void mark_material_dirty(IdView<MaterialId> mat_id) { sdf_tree_registry_.dirty_materials.insert(mat_id); }
 
   // Note: The vector does not contain the default material.
   inline const std::vector<IdView<MaterialId>>& materials() const { return material_active_ids_; }

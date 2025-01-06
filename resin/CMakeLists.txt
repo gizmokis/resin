@@ -11,7 +11,7 @@ file(GLOB_RECURSE SOURCES
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 
-target_link_libraries(${PROJECT_NAME} PUBLIC glfw libresin glm::glm imgui glad)
+target_link_libraries(${PROJECT_NAME} PUBLIC glfw libresin glm::glm imgui glad nfd)
 target_include_directories(${PROJECT_NAME}
                            PUBLIC . "${CMAKE_BINARY_DIR}/generated")
 

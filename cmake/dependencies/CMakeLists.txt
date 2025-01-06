@@ -175,6 +175,32 @@ if(BUILD_ASSIMP)
 endif()
 
 # ##############################################################################
+# nativefiledialog-extended
+# ##############################################################################
+message(CHECK_START "Fetching nativefiledialog-extended")
+list(APPEND CMAKE_MESSAGE_INDENT "  ")
+
+# IMPORTANT: The xdg-desktop-portal allows to display the actual native file dialog
+# on linux systems (by default the nfd uses gtk). However there might be some issues 
+# on DEs that are not directly supporting the portals. The rule of thumb is that everywhere 
+# you can run file dialog from your flatpak app, the portals should work seamlessly.
+set(NFD_PORTAL
+    ON
+    CACHE BOOL "Use portal to use native file dialog instead of the gtk" FORCE)
+
+FetchContent_Declare(
+  nfd 
+  GIT_REPOSITORY "https://github.com/btzy/nativefiledialog-extended.git"
+  GIT_TAG "v1.2.1"
+  PATCH_COMMAND git apply --ignore-whitespace
+                "${CMAKE_CURRENT_LIST_DIR}/../../patches/nfd.patch"
+  UPDATE_DISCONNECTED 1)
+FetchContent_MakeAvailable(nfd)
+
+list(POP_BACK CMAKE_MESSAGE_INDENT)
+message(CHECK_PASS "fetched")
+
+# ##############################################################################
 # GTest
 # ##############################################################################
 if(BUILD_TESTING)

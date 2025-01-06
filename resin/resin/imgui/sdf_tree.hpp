@@ -17,19 +17,16 @@ namespace resin {
 
 class SDFTreeComponentVisitor : public ::resin::ISDFTreeNodeVisitor {
  public:
-  explicit SDFTreeComponentVisitor(std::optional<::resin::IdView<::resin::SDFTreeNodeId>> selected,
-                                   size_t sdf_tree_comp_id)
-      : selected_(selected), payload_type_(std::format("SDF_TREE_DND_PAYLOAD_{}", sdf_tree_comp_id)) {}
+  explicit SDFTreeComponentVisitor(::resin::SDFTree& tree,
+                                   std::optional<::resin::IdView<::resin::SDFTreeNodeId>> selected)
+      : selected_(selected), payload_type_(std::format("SDF_TREE_DND_PAYLOAD_{}", tree.tree_id())), sdf_tree_(tree) {}
   void visit_group(::resin::GroupNode& node) override;
   void visit_primitive(::resin::BasePrimitiveNode& node) override;
 
-  void render_tree(::resin::SDFTree& tree);
+  void render_tree();
+  void apply_move_operation();
 
   inline std::optional<::resin::IdView<::resin::SDFTreeNodeId>> selected() const { return selected_; }
-
-  void apply_move_operation(::resin::SDFTree& tree);
-
-  inline bool is_tree_edited() const { return is_tree_edited_; }
 
  private:
   void render_op(::resin::SDFTreeNode& node) const;
@@ -42,7 +39,6 @@ class SDFTreeComponentVisitor : public ::resin::ISDFTreeNodeVisitor {
   bool is_parent_dragged_                                          = false;
   bool is_first_                                                   = false;
   bool is_any_node_clicked_                                        = false;
-  bool is_tree_edited_                                             = false;
 
   std::optional<::resin::IdView<::resin::SDFTreeNodeId>> move_source_target_ = std::nullopt;
   std::optional<::resin::IdView<::resin::SDFTreeNodeId>> move_after_target_  = std::nullopt;
@@ -61,9 +57,11 @@ class SDFTreeComponentVisitor : public ::resin::ISDFTreeNodeVisitor {
           {::resin::SDFBinaryOperation::Xor, "^"},           //
           {::resin::SDFBinaryOperation::SmoothXor, "^'"}     //
       });
+
+  ::resin::SDFTree& sdf_tree_;  // NOLINT
 };
 
-std::pair<std::optional<::resin::IdView<::resin::SDFTreeNodeId>>, bool> SDFTreeView(
+std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(
     ::resin::SDFTree& tree, const std::optional<::resin::IdView<::resin::SDFTreeNodeId>>& old_selected);
 
 }  // namespace resin

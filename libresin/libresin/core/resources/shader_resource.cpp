@@ -76,7 +76,7 @@ static std::string load_content(const std::filesystem::path& path) {
     log_throw(InvalidFileTypeException(path.string(), "Expected regular or symlink file."));
   }
 
-  std::ifstream file_stream(path.string());
+  std::ifstream file_stream(path);
   if (!file_stream.is_open()) {
     log_throw(FileStreamNotAvailableException(path.string()));
   }
