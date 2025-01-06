@@ -33,7 +33,8 @@ TEST_F(SDFTreeTest, SDFShaderIsCorrectlyGenerated) {
 
   // then
   ASSERT_EQ(
-      "opDiff(sdCube(pos,0),opDiff(opInter(sdCube(pos,1),opDiff(sdSphere(pos,3),sdCube(pos,4),0.5),0.5),sdSphere(pos,2),0.5),0.5)",
+      "opDiff(sdCube(pos,0),opDiff(opInter(sdCube(pos,1),opDiff(sdSphere(pos,3),sdCube(pos,4),0.5),0.5),sdSphere(pos,2)"
+      ",0.5),0.5)",
       sh_code_single_prim_arr);
 }
 
@@ -68,7 +69,8 @@ TEST_F(SDFTreeTest, SDFShaderGenerationOmitsShallowNodes) {
 
   // then
   ASSERT_EQ(
-      "opDiff(sdCube(pos,0),opDiff(opInter(sdCube(pos,1),opDiff(sdSphere(pos,3),sdCube(pos,4),0.5),0.5),sdSphere(pos,2),0.5),0.5)",
+      "opDiff(sdCube(pos,0),opDiff(opInter(sdCube(pos,1),opDiff(sdSphere(pos,3),sdCube(pos,4),0.5),0.5),sdSphere(pos,2)"
+      ",0.5),0.5)",
       sh_code_single_prim_arr);
 }
 
