@@ -157,9 +157,9 @@ void Resin::run() {
 
       ImGui::Render();
       ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-      window_->on_update();
     }
+
+    window_->on_update();
 
     if (second > 1s) {
       uint16_t seconds = static_cast<uint16_t>(std::chrono::duration_cast<std::chrono::seconds>(second).count());

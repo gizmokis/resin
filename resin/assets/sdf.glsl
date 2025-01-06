@@ -55,15 +55,8 @@ sdf_result opSmoothUnion(sdf_result d1, sdf_result d2, float k)
     k *= 6.0/4.0;
     float h = max(k - abs(d1.dist-d2.dist), 0.0)/k;
     sdf_result result;
-    result.mat = material_mix(d1.mat, d2.mat, clamp( 0.5+0.5*(d1.dist-d2.dist)/(4*k/6), 0.0, 1.0 ));
+    result.mat = material_mix(d1.mat, d2.mat, clamp( 0.5+0.5*(d1.dist-d2.dist)/(4*k/6), 0.0, 1.0 )); // TODO(SDF-117): optimize math
     result.dist = min(d1.dist,d2.dist) - h*h*h*k*(1.0/6.0); 
     result.id = d1.dist < d2.dist ? d1.id : d2.id;
     return result;
-
-    // float h = clamp( 0.5 + 0.5*(d2.dist-d1.dist)/k, 0.0, 1.0 );
-    // sdf_result result;
-    // result.mat = material_mix(d2.mat, d1.mat, h);
-    // result.dist = mix( d2.dist, d1.dist, h ) - k*h*(1.0-h);
-    // result.id = (d1.dist<d2.dist) ? d1.id : d2.id;
-    // return result;
 }
