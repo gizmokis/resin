@@ -59,16 +59,10 @@ class BasePrimitiveNode : public SDFTreeNode {
         return std::format(
             "{}({},{})", sdf_shader_consts::kSDFShaderPrimFunctionNames[primitive_type()],
             sdf_shader_consts::kSDFShaderVariableNames[sdf_shader_consts::SDFShaderVariable::Position],  //
-            // sdf_shader_consts::kSDFPrimitivesArrayName,                                                  //
             prim_id_.raw()                                                                               //
         );
       case resin::GenShaderMode::ArrayPerPrimitiveType:
-        return std::format(
-            "{}({},{}[{}])", sdf_shader_consts::kSDFShaderPrimFunctionNames[primitive_type()],
-            sdf_shader_consts::kSDFShaderVariableNames[sdf_shader_consts::SDFShaderVariable::Position],  //
-            sdf_shader_consts::kSDFShaderPrimComponentArrayNames[primitive_type()],                      //
-            get_component_raw_id()                                                                       //
-        );
+        break;
     }
 
     throw NonExhaustiveEnumException();

@@ -29,14 +29,9 @@ TEST_F(SDFTreeTest, SDFShaderIsCorrectlyGenerated) {
   tree.group(group2).push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Diff);
 
   // when
-  auto sh_code_arr_per_prim    = tree.gen_shader_code(resin::GenShaderMode::ArrayPerPrimitiveType);
   auto sh_code_single_prim_arr = tree.gen_shader_code(resin::GenShaderMode::SinglePrimitiveArray);
 
   // then
-  ASSERT_EQ(
-      "opDiff(sdCube(pos,u_cubes[0]),opDiff(opInter(sdCube(pos,u_cubes[1]),opDiff(sdSphere(pos,u_spheres[1]),sdCube("
-      "pos,u_cubes[2]),0.5),0.5),sdSphere(pos,u_spheres[0]),0.5),0.5)",
-      sh_code_arr_per_prim);
   ASSERT_EQ(
       "opDiff(sdCube(pos,0),opDiff(opInter(sdCube(pos,1),opDiff(sdSphere(pos,3),sdCube(pos,4),0.5),0.5),sdSphere(pos,2),0.5),0.5)",
       sh_code_single_prim_arr);
@@ -69,14 +64,9 @@ TEST_F(SDFTreeTest, SDFShaderGenerationOmitsShallowNodes) {
   group4.push_front_child<resin::GroupNode>(resin::SDFBinaryOperation::Union);
 
   // when
-  auto sh_code_arr_per_prim    = tree.gen_shader_code(resin::GenShaderMode::ArrayPerPrimitiveType);
   auto sh_code_single_prim_arr = tree.gen_shader_code(resin::GenShaderMode::SinglePrimitiveArray);
 
   // then
-  ASSERT_EQ(
-      "opDiff(sdCube(pos,u_cubes[0]),opDiff(opInter(sdCube(pos,u_cubes[1]),opDiff(sdSphere(pos,u_spheres[1]),sdCube("
-      "pos,u_cubes[2]),0.5),0.5),sdSphere(pos,u_spheres[0]),0.5),0.5)",
-      sh_code_arr_per_prim);
   ASSERT_EQ(
       "opDiff(sdCube(pos,0),opDiff(opInter(sdCube(pos,1),opDiff(sdSphere(pos,3),sdCube(pos,4),0.5),0.5),sdSphere(pos,2),0.5),0.5)",
       sh_code_single_prim_arr);
