@@ -106,7 +106,7 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
   shader_->bind_uniform_buffer("Data", *primitive_ubo_);
 
   framebuffer_ = std::make_unique<Framebuffer>(window_->dimensions().x, window_->dimensions().y);
-  
+
   setup_shader_uniforms();
 }
 
