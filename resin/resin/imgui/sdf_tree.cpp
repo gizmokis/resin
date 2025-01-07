@@ -2,6 +2,7 @@
 #include <imgui/imgui_internal.h>
 
 #include <fstream>
+#include <libresin/core/mesh_exporter.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/primitive_base_node.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
@@ -147,6 +148,17 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
             ::resin::Logger::info("Saved prefab to {}", path.string());
           },
           std::span<const ::resin::FileDialog::FilterItem>(kPrefabFiltersArray), std::string(name) += ".json");
+    }
+    if (ImGui::Selectable("Export as mesh")) {
+      auto curr_id   = node.node_id();
+      auto name      = node.name();
+      auto& sdf_tree = sdf_tree_;
+
+      ::resin::FileDialog::instance().save_file(
+        [curr_id, &sdf_tree](const std::filesystem::path& path) {
+          //::resin::MeshExporter exporter();
+
+        });
     }
     ImGui::EndPopup();
   }

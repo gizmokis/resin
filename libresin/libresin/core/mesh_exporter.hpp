@@ -9,25 +9,28 @@
 #include <libresin/core/shader.hpp>
 #include <string>
 #include <vector>
+#include <libresin/core/resources/shader_resource.hpp>
 namespace resin {
 
 class MeshExporter {
  public:
-  MeshExporter(const ComputeShaderProgram& compute_shader_program);
+  MeshExporter(ShaderResourceManager& shader_manager, unsigned int resolution);
   ~MeshExporter();
 
-  void export_mesh(const std::string& output_path, const std::string& format, const glm::vec3& bb_start,
-                   const glm::vec3& bb_end, const unsigned int march_res);
+  void setup_scene(const glm::vec3& bb_start, const glm::vec3& bb_end, const SDFTree& sdf_tree);
+  void export_mesh(const std::string& output_path, const std::string& format);
 
  private:
-  ComputeShaderProgram compute_shader_program_;
-  GLuint edges_lookup;
-  GLuint triangles_lookup;
-  GLuint vertex_buffer;
-  GLuint vertex_count_buffer;
-  GLuint normal_buffer;
-  GLuint uv_buffer;
-  GLuint output_texture;
+  ShaderResourceManager& shader_manager_;
+  ShaderResource shader_resource_;
+  GLuint edges_lookup_;
+  GLuint triangles_lookup_;
+  GLuint vertex_buffer_;
+  GLuint vertex_count_buffer_;
+  GLuint normal_buffer_;
+  GLuint uv_buffer_;
+  GLuint output_texture_;
+  unsigned int resolution_;
 
   std::vector<glm::vec4> vertices_;
   std::vector<glm::vec4> normals_;
@@ -35,11 +38,10 @@ class MeshExporter {
 
   aiScene* scene_;
 
-  void initialize_buffers(unsigned int march_res);
-  void execute_shader(const glm::vec3 bb_start, const glm::vec3 bb_end, const unsigned int march_res) const;
+  void initialize_buffers();
+  void execute_shader(const glm::vec3 bb_start, const glm::vec3 bb_end, SDFTree sdf_tree);
   void read_buffers();
   void create_scene();
-  void export_scene(const std::string& output_path, const std::string& format) const;
 
   // "scary" mapping tables for marching cubes
   const int edge_table[256] = {
