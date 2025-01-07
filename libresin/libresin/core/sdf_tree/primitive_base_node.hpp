@@ -59,7 +59,7 @@ class BasePrimitiveNode : public SDFTreeNode {
         return std::format(
             "{}({},{},{})", sdf_shader_consts::kSDFShaderPrimFunctionNames[primitive_type()],
             sdf_shader_consts::kSDFShaderVariableNames[sdf_shader_consts::SDFShaderVariable::Position],  //
-            node_id_.raw(),
+            node_id_.raw(),                                                                              //
             prim_id_.raw()                                                                               //
         );
       case resin::GenShaderMode::ArrayPerPrimitiveType:

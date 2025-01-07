@@ -80,7 +80,9 @@ class EnumMapper {
 
   constexpr Value value(enum_type enum_entry) const { return names_[static_cast<size_t>(enum_entry)]; }
   constexpr Value operator[](enum_type enum_entry) const { return names_[static_cast<size_t>(enum_entry)]; }
-  constexpr enum_type from_value(Value value) const { // Keep in mind this mapping may be neither injective nor surjective
+
+  // Keep in mind this mapping may be neither injective nor surjective
+  constexpr enum_type from_value(Value value) const {
     for (size_t i = 0; i < kEnumSize; ++i) {
       if (names_[i] == value) {
         return static_cast<enum_type>(i);
