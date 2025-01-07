@@ -14,6 +14,8 @@ MeshExporter::MeshExporter(const ComputeShaderProgram& compute_shader_program)
     : compute_shader_program_(compute_shader_program), scene_(new aiScene()) {}
 
 MeshExporter::~MeshExporter() {
+  glDeleteBuffers(1, &edges_lookup);
+  glDeleteBuffers(1, &triangles_lookup);
   glDeleteBuffers(1, &vertex_buffer);
   glDeleteBuffers(1, &vertex_count_buffer);
   glDeleteBuffers(1, &normal_buffer);
@@ -44,25 +46,36 @@ void MeshExporter::execute_shader(const glm::vec3 bb_start, const glm::vec3 bb_e
 }
 void MeshExporter::initialize_buffers(const unsigned int march_res) {
   const size_t max_vertices = std::pow(march_res, 3) * 3 * 5;  // max 5 triangles in each cuboid
+
+  glGenBuffers(1, &edges_lookup);
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, edges_lookup);
+  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(int) * 256, edge_table, GL_STREAM_READ);
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, edges_lookup);
+
+  glGenBuffers(1, &triangles_lookup);
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, triangles_lookup);
+  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(int) * 4096, tri_table, GL_STREAM_READ);
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, triangles_lookup);
+
   glGenBuffers(1, &vertex_buffer);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, vertex_buffer);
   glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::vec4) * max_vertices, nullptr, GL_STREAM_READ);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, vertex_buffer);
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, vertex_buffer);
 
   glGenBuffers(1, &vertex_count_buffer);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, vertex_count_buffer);
   glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(unsigned int), nullptr, GL_STREAM_READ);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, vertex_count_buffer);
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, vertex_count_buffer);
 
   glGenBuffers(1, &normal_buffer);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, normal_buffer);
   glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::vec4) * max_vertices, nullptr, GL_STREAM_READ);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, normal_buffer);
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, normal_buffer);
 
   glGenBuffers(1, &uv_buffer);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, uv_buffer);
   glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::vec2) * max_vertices, nullptr, GL_STREAM_READ);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, uv_buffer);
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, uv_buffer);
 }
 
 void MeshExporter::read_buffers() {
