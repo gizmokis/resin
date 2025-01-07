@@ -88,4 +88,11 @@ void Framebuffer::resize(size_t width, size_t height) {
   util::prepare_texture(GL_RED_INTEGER, GL_R32I, static_cast<GLsizei>(width), static_cast<GLsizei>(height));
 }
 
+int Framebuffer::sample_mouse_pick(const size_t x, const size_t y) const {  // NOLINT
+  glReadBuffer(GL_COLOR_ATTACHMENT1);
+  int pixel = -1;
+  glReadPixels(static_cast<GLint>(x), static_cast<GLint>(height_ - y), 1, 1, GL_RED_INTEGER, GL_INT, &pixel);
+  return pixel;
+}
+
 }  // namespace resin

@@ -2,7 +2,6 @@
 #define RESIN_WINDOW_EVENTS_HPP
 
 #include <resin/event/event.hpp>
-#include <sstream>
 
 namespace resin {
 
@@ -33,11 +32,7 @@ class WindowResizeEvent : public Event<EventType::WindowResizeEvent> {
   unsigned int width() const { return width_; }
   unsigned int height() const { return height_; }
 
-  std::string to_string() const override {
-    std::stringstream ss;
-    ss << name() << ": " << width_ << " x " << height_;
-    return ss.str();
-  }
+  std::string to_string() const override { return std::format("{}: {} x {}", name(), width_, height_); }
 
  private:
   unsigned int width_, height_;

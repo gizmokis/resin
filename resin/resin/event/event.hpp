@@ -16,7 +16,16 @@
 
 namespace resin {
 
-enum class EventType { None = 0, WindowCloseEvent, WindowResizeEvent, WindowTestEvent };
+enum class EventType {
+  None = 0,
+  WindowCloseEvent,
+  WindowResizeEvent,
+  WindowTestEvent,
+  MouseButtonPressedEvent,
+  MouseButtonReleasedEvent,
+  MouseScrollEvent,
+  MouseMoveEvent
+};
 
 class BaseEvent {
  public:

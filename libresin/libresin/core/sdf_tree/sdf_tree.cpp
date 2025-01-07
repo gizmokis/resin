@@ -17,7 +17,7 @@ SDFTree::SDFTree() : root_(std::make_unique<GroupNode>(sdf_tree_registry_)), tre
 }
 
 std::optional<IdView<SDFTreeNodeId>> SDFTree::get_view_from_raw_id(size_t raw_id) {
-  if (!sdf_tree_registry_.all_nodes[raw_id].has_value()) {
+  if (sdf_tree_registry_.all_nodes[raw_id].has_value()) {
     return sdf_tree_registry_.all_nodes[raw_id].value().get().node_id();
   }
   return std::nullopt;

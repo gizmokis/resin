@@ -21,6 +21,8 @@ class Framebuffer {
   inline size_t width() const { return width_; }
   inline size_t height() const { return height_; }
   inline GLuint color_texture() const { return color_attachment_texture_; }
+  
+  int sample_mouse_pick(size_t x, size_t y) const;
 
  private:
   static constexpr std::array<GLenum, 2> kAttachments = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};

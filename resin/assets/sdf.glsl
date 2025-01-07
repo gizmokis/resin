@@ -16,30 +16,30 @@ layout (std140) uniform Data
     sdf_node u_sdf_primitives[kMaxNodeCount];
 };
 
-void prepare(inout sdf_result res, inout vec3 pos, int node_id, int material_id) {
-    pos = (u_sdf_primitives[node_id].transform * vec4(pos,1)).xyz;
+void prepare(inout sdf_result res, inout vec3 pos, int node_id, int primitive_id, int material_id) {
+    pos = (u_sdf_primitives[primitive_id].transform * vec4(pos,1)).xyz;
     res.mat = u_sdf_materials[material_id];
     res.id = node_id;
 }
 
-sdf_result sdSphere(vec3 pos, int node_id)
+sdf_result sdSphere(vec3 pos, int node_id, int primitive_id)
 {
     sdf_result res;
 
-    prepare(res, pos, node_id, 0);
+    prepare(res, pos, node_id, primitive_id, 0);
 
-    sdf_node prop = u_sdf_primitives[node_id];
+    sdf_node prop = u_sdf_primitives[primitive_id];
     res.dist = prop.scale == 0 ? u_farPlane : prop.scale * (length(pos) - prop.size.x);
     return res;
 }
 
-sdf_result sdCube(vec3 pos, int node_id)
+sdf_result sdCube(vec3 pos, int node_id, int primitive_id)
 {
     sdf_result res;
 
-    prepare(res, pos, node_id, 1);
+    prepare(res, pos, node_id, primitive_id, 1);
 
-    sdf_node prop = u_sdf_primitives[node_id];
+    sdf_node prop = u_sdf_primitives[primitive_id];
     vec3 d = abs(pos) - prop.size;
     res.dist = prop.scale == 0 ? u_farPlane : prop.scale * (min(max(d.x,max(d.y,d.z)),0.0) + length(max(d,0.0)));
     return res;

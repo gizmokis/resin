@@ -3,6 +3,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <glm/ext/vector_float2.hpp>
 #include <libresin/core/camera.hpp>
 #include <libresin/core/framebuffer.hpp>
 #include <libresin/core/resources/shader_resource.hpp>
@@ -14,6 +15,7 @@
 #include <memory>
 #include <resin/core/window.hpp>
 #include <resin/event/event.hpp>
+#include <resin/event/mouse_events.hpp>
 #include <resin/event/window_events.hpp>
 
 int main();
@@ -50,6 +52,7 @@ class Resin {
   bool on_window_close(WindowCloseEvent& e);
   bool on_window_resize(WindowResizeEvent& e);
   bool on_test(WindowTestEvent& e);
+  bool on_click(MouseButtonPressedEvent& e);
 
  public:
   static constexpr duration_t kTickTime = 16666us;  // 60 TPS = 16.6(6) ms/t
@@ -67,6 +70,8 @@ class Resin {
   std::unique_ptr<RenderingShaderProgram> shader_;
   std::unique_ptr<PrimitiveUniformBuffer> primitive_ubo_;
   std::unique_ptr<Framebuffer> framebuffer_;
+
+  glm::vec2 viewport_pos_;
 
   std::unique_ptr<Camera> camera_;
   std::unique_ptr<PointLight> point_light_;

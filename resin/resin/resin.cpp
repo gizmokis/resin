@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <format>
+#include <glm/ext.hpp>
 #include <libresin/core/resources/shader_resource.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
@@ -20,6 +21,7 @@
 #include <resin/core/window.hpp>
 #include <resin/dialog/file_dialog.hpp>
 #include <resin/event/event.hpp>
+#include <resin/event/mouse_events.hpp>
 #include <resin/event/window_events.hpp>
 #include <resin/imgui/node_edit.hpp>
 #include <resin/imgui/sdf_tree.hpp>
@@ -29,10 +31,11 @@
 
 namespace resin {
 
-Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
+Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0), viewport_pos_() {
   dispatcher_.subscribe<WindowCloseEvent>(BIND_EVENT_METHOD(on_window_close));
   dispatcher_.subscribe<WindowResizeEvent>(BIND_EVENT_METHOD(on_window_resize));
   dispatcher_.subscribe<WindowTestEvent>(BIND_EVENT_METHOD(on_test));
+  dispatcher_.subscribe<MouseButtonPressedEvent>(BIND_EVENT_METHOD(on_click));
 
   {
     WindowProperties properties;
@@ -210,6 +213,12 @@ void Resin::gui() {
     auto width  = static_cast<float>(framebuffer_->width());
     auto height = static_cast<float>(framebuffer_->height());
 
+    ImVec2 pos = ImGui::
+        GetCursorScreenPos();  // TODO(anyone)
+                               // https://stackoverflow.com/questions/73601927/implicit-vector-conversion-in-imgui-imvec-glmvec
+    viewport_pos_.x = pos.x;
+    viewport_pos_.y = pos.y;
+
     if (resized) {
       camera_->set_aspect_ratio(width / height);
       shader_->set_uniform("u_resolution", glm::vec2(width, height));
@@ -322,6 +331,25 @@ bool Resin::on_test(WindowTestEvent&) {
   shader_->set_uniform("u_ortho", camera_->is_orthographic);
 
   return false;
+}
+
+bool Resin::on_click(MouseButtonPressedEvent& e) {
+  glm::vec2 relative_pos = e.pos() - viewport_pos_;
+  if (relative_pos.x < 0 || relative_pos.y < 0 || relative_pos.x > static_cast<float>(framebuffer_->width()) ||
+      relative_pos.y > static_cast<float>(framebuffer_->height())) {
+    return false;
+  }
+
+  framebuffer_->bind();
+  int id = framebuffer_->sample_mouse_pick(static_cast<size_t>(relative_pos.x), static_cast<size_t>(relative_pos.y));
+  framebuffer_->unbind();
+  if (id == -1) {
+    selected_node_ = std::nullopt;
+    return true;
+  }
+
+  selected_node_ = sdf_tree_.get_view_from_raw_id(id);
+  return true;
 }
 
 }  // namespace resin
