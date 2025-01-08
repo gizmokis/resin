@@ -7,17 +7,18 @@
 #include <libresin/core/resources/shader_resource.hpp>
 #include <libresin/core/resources/shader_resource_managers.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
+#include <libresin/core/shader_storage_buffer.hpp>
 #include <string>
 #include <vector>
 namespace resin {
-class ShaderStorageBuffer;
 
 class MeshExporter {
  public:
   MeshExporter(unsigned int resolution);
   ~MeshExporter();
 
-  void setup_scene(const glm::vec3& bb_start, const glm::vec3& bb_end, SDFTree& sdf_tree, IdView<SDFTreeNodeId> node_id);
+  void setup_scene(const glm::vec3& bb_start, const glm::vec3& bb_end, SDFTree& sdf_tree,
+                   IdView<SDFTreeNodeId> node_id);
   void export_mesh(const std::string& output_path, const std::string& format);
 
  private:
@@ -38,7 +39,7 @@ class MeshExporter {
   aiScene* scene_;
 
   void initialize_buffers();
-  void execute_shader(const glm::vec3 bb_start, const glm::vec3 bb_end, SDFTree& sdf_tree, IdView<SDFTreeNodeId> node_id);
+  void execute_shader(glm::vec3 bb_start, glm::vec3 bb_end, SDFTree& sdf_tree, IdView<SDFTreeNodeId> node_id);
   void read_buffers();
   void create_scene();
 

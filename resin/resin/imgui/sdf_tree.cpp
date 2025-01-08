@@ -153,12 +153,12 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
     }
     if (node.primitives().size() > 0) {
       if (ImGui::BeginMenu("Export mesh as...")) {
-        static int resolution_index     = 2;  // default to 32
-        const unsigned int resolutions[]         = {8, 16, 32, 64, 128, 256};
-        const char* resolution_labels[] = {"8", "16", "32", "64", "128", "256"};
-        auto curr_id                    = node.node_id();
-        auto name                       = node.name();
-        auto& sdf_tree                  = sdf_tree_;
+        static int resolution_index      = 2;  // default to 32
+        const unsigned int resolutions[] = {8, 16, 32, 64, 128, 256};
+        const char* resolution_labels[]  = {"8", "16", "32", "64", "128", "256"};
+        auto curr_id                     = node.node_id();
+        auto name                        = node.name();
+        auto& sdf_tree                   = sdf_tree_;
         ImGui::Text("Select resolution:");
         if (ImGui::Combo("##Resolution", &resolution_index, resolution_labels, IM_ARRAYSIZE(resolution_labels))) {
         }
