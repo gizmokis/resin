@@ -56,7 +56,9 @@ GroupNode& SDFTree::group(IdView<SDFTreeNodeId> node_id) {
 
 void SDFTree::visit_dirty_primitives(ISDFTreeNodeVisitor& visitor) {
   for (auto prim : sdf_tree_registry_.dirty_primitives) {
-    sdf_tree_registry_.all_nodes[prim.raw()]->get().accept_visitor(visitor);
+    if (sdf_tree_registry_.all_nodes[prim.raw()].has_value()) {
+      sdf_tree_registry_.all_nodes[prim.raw()]->get().accept_visitor(visitor);
+    }
   }
   mark_primitives_clean();
 }

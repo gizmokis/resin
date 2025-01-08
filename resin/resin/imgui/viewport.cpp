@@ -9,7 +9,7 @@ namespace resin {
 
 bool Viewport(::resin::Framebuffer& framebuffer, bool& resized) {
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-  if (!ImGui::Begin("Viewport")) {
+  if (!ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_MenuBar)) {
     ImGui::PopStyleVar();
     return false;
   }

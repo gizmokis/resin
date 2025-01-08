@@ -3,15 +3,13 @@
 layout(location = 0) out vec4 fragColor;
 
 // fragment
-in vec3 v_Pos;
+in vec2 v_Pos;
 
 // camera
 uniform mat4 u_iV;
 uniform bool u_ortho;
-uniform vec2 u_resolution;
 uniform float u_nearPlane;
 uniform float u_farPlane;
-uniform float u_camSize;
 
 #include "blinn_phong.glsl"
 #include "sdf.glsl"
@@ -101,14 +99,16 @@ vec3 render( vec3 ray_origin, vec3 ray_direction )
 }
 
 void main() {
-    vec2 pos = (2.0*gl_FragCoord.xy-u_resolution)/u_resolution.y;
 
     vec4 ray_origin;    // vec4(ro, 1) as it needs to be translated
     vec4 ray_direction; // vec4(rd, 0) as it cannot be translated
     if (u_ortho) {
-        ray_origin = vec4(vec3(u_camSize * pos, 0), 1); // apply desired scaling from fov
+
+        vec2 pos = v_Pos;
+        ray_origin = vec4(vec3(pos, 0), 1);
         ray_direction = vec4(0, 0, -1, 0);
     } else {
+        vec2 pos = v_Pos;
         ray_origin = vec4(0, 0, 0, 1); 
         ray_direction = vec4(normalize(vec3(pos, -u_nearPlane)), 0);
     }

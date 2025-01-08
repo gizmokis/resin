@@ -25,6 +25,7 @@ class Camera {
 
   glm::mat4 view_matrix() const;
   glm::mat4 inverse_view_matrix() const;
+  glm::mat4 proj_matrix() const;
 
  private:
   float fov_;  // only apparent if orthographic

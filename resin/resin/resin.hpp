@@ -15,6 +15,7 @@
 #include <resin/core/window.hpp>
 #include <resin/event/event.hpp>
 #include <resin/event/window_events.hpp>
+#include <resin/imgui/transform_gizmo.hpp>
 
 int main();
 
@@ -73,6 +74,10 @@ class Resin {
   std::unique_ptr<DirectionalLight> directional_light_;
   std::unique_ptr<Material> cube_mat_, sphere_mat_;
   Transform camera_rig_;
+  bool is_viewport_focused_{false};
+  bool use_local_gizmos_{false};
+
+  ImGui::resin::GizmoOperation gizmo_operation_;
 
   bool running_   = true;
   bool minimized_ = false;

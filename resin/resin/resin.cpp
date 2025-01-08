@@ -1,18 +1,30 @@
+#include <GLFW/glfw3.h>
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_opengl3.h>
 #include <imgui/imgui_internal.h>
+#include <imguizmo/ImGuizmo.h>
+#include <math.h>
 
 #include <chrono>
 #include <cstdint>
 #include <filesystem>
 #include <format>
+#include <glm/ext/quaternion_trigonometric.hpp>
+#include <glm/ext/scalar_constants.hpp>
+#include <glm/fwd.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/matrix.hpp>
+#include <glm/trigonometric.hpp>
+#include <libresin/core/camera.hpp>
 #include <libresin/core/resources/shader_resource.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/core/transform.hpp>
 #include <libresin/core/uniform_buffer.hpp>
+#include <libresin/utils/enum_mapper.hpp>
 #include <libresin/utils/logger.hpp>
 #include <memory>
 #include <nfd/nfd.hpp>
@@ -24,12 +36,18 @@
 #include <resin/imgui/node_edit.hpp>
 #include <resin/imgui/sdf_tree.hpp>
 #include <resin/imgui/transform_edit.hpp>
+#include <resin/imgui/transform_gizmo.hpp>
 #include <resin/imgui/viewport.hpp>
 #include <resin/resin.hpp>
+#include <string_view>
 
 namespace resin {
 
-Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
+Resin::Resin()
+    : vertex_array_(0),
+      vertex_buffer_(0),
+      index_buffer_(0),
+      gizmo_operation_(ImGui::resin::GizmoOperation::Translation) {
   dispatcher_.subscribe<WindowCloseEvent>(BIND_EVENT_METHOD(on_window_close));
   dispatcher_.subscribe<WindowResizeEvent>(BIND_EVENT_METHOD(on_window_resize));
   dispatcher_.subscribe<WindowTestEvent>(BIND_EVENT_METHOD(on_test));
@@ -82,11 +100,9 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
 
   // Example tree
   sdf_tree_.root().push_back_child<SphereNode>(SDFBinaryOperation::SmoothUnion);
-  sdf_tree_.root()
-      .push_back_child<CubeNode>(SDFBinaryOperation::SmoothUnion)
-      .transform()
-      .set_local_pos(glm::vec3(1, 1, 0));
-  sdf_tree_.root().push_back_child<SphereNode>(SDFBinaryOperation::SmoothUnion);
+  auto& group = sdf_tree_.root().push_back_child<GroupNode>(SDFBinaryOperation::SmoothUnion);
+  group.push_back_child<CubeNode>(SDFBinaryOperation::SmoothUnion).transform().set_local_pos(glm::vec3(1, 1, 0));
+  group.push_back_child<CubeNode>(SDFBinaryOperation::SmoothUnion).transform().set_local_pos(glm::vec3(-1, -1, 0));
 
   // SDF Shader
   ShaderResource frag_shader = *shader_resource_manager_.get_res(path / "test.frag");
@@ -172,6 +188,68 @@ void Resin::run() {
   }
 }
 
+static bool update_camera_controls(Camera& camera, GLFWwindow* window, float dt) {
+  // TODO(SDF-82): move out of the resin.cpp
+  static auto last_mouse_pos = glm::vec2(0.0F);
+  const float sensitivity    = 0.06F;
+  const float speed          = 5.0F;
+
+  double mouse_x = NAN;
+  double mouse_y = NAN;
+  glfwGetCursorPos(window, &mouse_x, &mouse_y);
+  glm::vec2 mouse_pos   = glm::vec2(mouse_x, mouse_y);
+  glm::vec2 mouse_delta = (mouse_pos - last_mouse_pos) * sensitivity;
+  last_mouse_pos        = mouse_pos;
+
+  if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) != GLFW_PRESS) {
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    return false;
+  }
+
+  glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+  float right   = 0.F;
+  float up      = 0.F;
+  float forward = 0.F;
+
+  // Forward/Backward
+  if (!camera.is_orthographic) {
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+      forward += speed * dt;
+    } else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+      forward -= speed * dt;
+    }
+  }
+
+  // Left/Right
+  if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+    right -= speed * dt;
+  } else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+    right += speed * dt;
+  }
+
+  // Up/Down
+  if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
+    up -= speed * dt;
+  } else if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+    up += speed * dt;
+  }
+
+  auto pos = camera.transform.local_pos();
+  pos += camera.transform.local_front() * forward + camera.transform.local_right() * right +
+         camera.transform.local_up() * up;
+  camera.transform.set_local_pos(pos);
+
+  auto rot     = camera.transform.local_rot();
+  auto yaw     = glm::angleAxis(-mouse_delta.x * 0.03F, glm::vec3(0, 1, 0));
+  auto pitch   = glm::angleAxis(-mouse_delta.y * 0.03F, camera.transform.local_right());
+  auto new_rot = yaw * pitch * rot;
+  camera.transform.set_local_rot(new_rot);
+  // TODO(SDF-82): prevent full 360 pitch flips
+
+  return true;
+}
+
 void Resin::update(duration_t delta) {
   window_->set_title(std::format("Resin [{} FPS {} TPS] running for: {}", fps_, tps_,
                                  std::chrono::duration_cast<std::chrono::seconds>(time_)));
@@ -200,7 +278,16 @@ void Resin::update(duration_t delta) {
   shader_->set_uniform("u_cubeMat", *cube_mat_);
   shader_->set_uniform("u_sphereMat", *sphere_mat_);
 
+  shader_->set_uniform("u_camSize", camera_->height());
+  shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
+
   FileDialog::instance().update();
+  if (is_viewport_focused_) {
+    if (update_camera_controls(*camera_, window_->native_window(), static_cast<float>(delta.count()) * 1e-9F)) {
+      shader_->set_uniform("u_camSize", camera_->height());
+      shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
+    }
+  }
 }
 
 void Resin::gui() {
@@ -208,8 +295,33 @@ void Resin::gui() {
 
   bool resized = false;
   if (ImGui::resin::Viewport(*framebuffer_, resized)) {
-    auto width  = static_cast<float>(framebuffer_->width());
-    auto height = static_cast<float>(framebuffer_->height());
+    if (ImGui::BeginMenuBar()) {
+      ImGui::Text("Local Transform:");
+      ImGui::Checkbox("##LocalCheckbox", &use_local_gizmos_);
+
+      static constexpr resin::StringEnumMapper<ImGui::resin::GizmoOperation> kOps({
+          {ImGui::resin::GizmoOperation::Translation, "Translation"},  //
+          {ImGui::resin::GizmoOperation::Rotation, "Rotation"},        //
+          {ImGui::resin::GizmoOperation::Scale, "Scale"}               //
+      });
+
+      ImGui::Text("Operation:");
+      ImGui::SetNextItemWidth(ImGui::CalcTextSize("Translation").x + 12.0F);
+      if (ImGui::BeginCombo("##OperationCombo", kOps[gizmo_operation_].data(), ImGuiComboFlags_NoArrowButton)) {
+        for (const auto [current_op, name] : kOps) {
+          if (ImGui::Selectable(kOps[current_op].data())) {
+            gizmo_operation_ = current_op;
+          }
+        }
+        ImGui::EndCombo();
+      }
+
+      ImGui::EndMenuBar();
+    }
+
+    is_viewport_focused_ = ImGui::IsWindowFocused();
+    auto width           = static_cast<float>(framebuffer_->width());
+    auto height          = static_cast<float>(framebuffer_->height());
 
     if (resized) {
       camera_->set_aspect_ratio(width / height);
@@ -224,7 +336,17 @@ void Resin::gui() {
 
     ImGui::Image((ImTextureID)(intptr_t)framebuffer_->color_texture(), ImVec2(width, height), ImVec2(0, 1),  // NOLINT
                  ImVec2(1, 0));
+    if (selected_node_ && !selected_node_->expired()) {
+      auto& node = sdf_tree_.node(*selected_node_);
+      if (ImGui::resin::TransformGizmo(
+              node.transform(), *camera_,
+              use_local_gizmos_ ? ImGui::resin::GizmoMode::Local : ImGui::resin::GizmoMode::World, gizmo_operation_,
+              width, height)) {
+        node.mark_dirty();
+      }
+    }
   }
+
   ImGui::End();
 
   ImGui::SetNextWindowSizeConstraints(ImVec2(280.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
@@ -232,6 +354,15 @@ void Resin::gui() {
     selected_node_ = ImGui::resin::SDFTreeView(sdf_tree_, selected_node_);
   }
   ImGui::End();
+
+  if (ImGui::Begin("Tools [TEMP]")) {
+    float fov = camera_->fov();
+    if (ImGui::DragFloat("Camera FOV", &fov, 0.5F, 10.0F, 140.0F, "%.2f")) {
+      camera_->set_fov(fov);
+      shader_->set_uniform("u_camSize", camera_->height());
+    }
+    ImGui::End();
+  }
 
   ImGui::SetNextWindowSizeConstraints(ImVec2(350.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
   ImGui::Begin("[TEMP] Lights");
@@ -241,6 +372,7 @@ void Resin::gui() {
       ImGui::ColorEdit3("Light color", glm::value_ptr(directional_light_->color));
       ImGui::resin::TransformEdit(&directional_light_->transform);
       ImGui::DragFloat("Ambient impact", &directional_light_->ambient_impact, 0.01F, 0.0F, 2.0F, "%.2f");
+
       ImGui::EndTabItem();
     }
     if (ImGui::BeginTabItem("PointLight")) {
@@ -283,7 +415,7 @@ void Resin::gui() {
 
   ImGui::SetNextWindowSizeConstraints(ImVec2(350.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
   ImGui::Begin("Selection");
-  if (selected_node_.has_value()) {
+  if (selected_node_.has_value() && !selected_node_->expired()) {
     ImGui::resin::NodeEdit(sdf_tree_.node(*selected_node_));
   }
 
