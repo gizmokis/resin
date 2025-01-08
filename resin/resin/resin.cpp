@@ -90,7 +90,7 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
   sdf_tree_.root().push_back_child<SphereNode>(SDFBinaryOperation::SmoothUnion);
 
   // SDF Shader
-  ShaderResource frag_shader = *shader_resource_manager_.get_res(path / "test.frag");
+  ShaderResource frag_shader = *shader_resource_manager_->get_res(path / "test.frag");
 
   frag_shader.set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
   Logger::info("{}", frag_shader.get_glsl());
@@ -101,36 +101,7 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
   ubo_->set(sdf_tree_);
   ubo_->unbind();
 
-  const unsigned int march_res = 32;
-  int invoc                    = 0;
-  int workGroupSizes[3]        = {0};
-  glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, &workGroupSizes[0]);
-  glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 1, &workGroupSizes[1]);
-  glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 2, &workGroupSizes[2]);
-  glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &invoc);
-
-  Logger::debug("Max compute work group size X: {}", workGroupSizes[0]);
-  Logger::debug("Max compute work group size Y: {}", workGroupSizes[1]);
-  Logger::debug("Max compute work group size Z: {}", workGroupSizes[2]);
-
-  Logger::debug("Max invocations: {}", invoc);
-
-  // Compute
-
-  ShaderResource compute_shader = *shader_resource_manager_.get_res(path / "marching_cubes.comp");
-  compute_shader.set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
-  compute_shader.set_ext_defi("MAX_UBO_NODE_COUNT", std::to_string(ubo_->max_count()));
-  marching_cubes_shader_ = std::make_unique<ComputeShaderProgram>("marching_cubes", std::move(compute_shader));
-  marching_cubes_shader_->set_uniform("u_farPlane", camera_->far_plane());
-
-  ubo_->bind();
-  ubo_->set(sdf_tree_);
-  ubo_->unbind();
-  marching_cubes_shader_->bind_uniform_buffer("Data", *ubo_);
-  MeshExporter exporter(*marching_cubes_shader_);
-  exporter.export_mesh("test.obj", "obj", glm::vec3(-2, -2, -2), glm::vec3(3, 3, 3), march_res);
-
-  shader_ = std::make_unique<RenderingShaderProgram>("default", *shader_resource_manager_.get_res(path / "test.vert"),
+  shader_ = std::make_unique<RenderingShaderProgram>("default", *shader_resource_manager_->get_res(path / "test.vert"),
                                                      std::move(frag_shader));
 
   framebuffer_ = std::make_unique<Framebuffer>(window_->dimensions().x, window_->dimensions().y);

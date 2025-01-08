@@ -5,7 +5,6 @@
 #include <libresin/core/mesh_exporter.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/primitive_base_node.hpp>
-#include <libresin/core/sdf_tree/primitive_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/utils/exceptions.hpp>
@@ -22,8 +21,8 @@ namespace ImGui {  // NOLINT
 
 namespace resin {
 
-static const std::array<::resin::FileDialog::FilterItem, 1> kPrefabFiltersArray = {
-    ::resin::FileDialog::FilterItem("Resin prefab", "json")};
+static const std::array<::resin::FileDialog::FilterItem, 2> kPrefabFiltersArray = {
+    ::resin::FileDialog::FilterItem("Resin prefab", "json"), ::resin::FileDialog::FilterItem("Wavefront obj", "obj")};
 
 std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeComponentVisitor::get_curr_payload() {
   std::optional<::resin::IdView<::resin::SDFTreeNodeId>> source_id;
@@ -155,10 +154,13 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
       auto& sdf_tree = sdf_tree_;
 
       ::resin::FileDialog::instance().save_file(
-        [curr_id, &sdf_tree](const std::filesystem::path& path) {
-          //::resin::MeshExporter exporter();
-
-        });
+          [curr_id, &sdf_tree](const std::filesystem::path& path) {
+            ::resin::MeshExporter exporter(64);
+            glm::vec3 pos = sdf_tree.node(curr_id).transform().pos();
+            exporter.setup_scene(pos - glm::vec3(5.0f), pos + glm::vec3(5.0f), sdf_tree);
+            exporter.export_mesh(path.string(), "obj");
+          },
+          std::span<const ::resin::FileDialog::FilterItem>(kPrefabFiltersArray), std::string(name) += ".obj");
     }
     ImGui::EndPopup();
   }

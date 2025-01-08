@@ -3,8 +3,8 @@
 #define LOCAL_SIZE 8
 layout (local_size_x = LOCAL_SIZE, local_size_y = LOCAL_SIZE, local_size_z = LOCAL_SIZE) in;
 
-layout (binding = 0) buffer edgeTable { int edge_table[256];};
-layout (binding = 1) buffer triTable { int tri_table[4096];};
+layout (binding = 0) buffer edgeTable { int edge_table[];};
+layout (binding = 1) buffer triTable { int tri_table[];};
 layout (binding = 2) buffer vertBuffer { vec4 vertexBuffer[]; };
 layout (binding = 3) buffer vertexCountBuffer { uint vertex_size; };
 layout (binding = 4) buffer normalBuffer { vec4 normal_buffer[];};
@@ -21,7 +21,7 @@ uniform float u_farPlane;
 #external_definition MAX_UBO_NODE_COUNT
 
 const int kMaxNodeCount = MAX_UBO_NODE_COUNT;
-layout (std140) uniform Data
+layout (std140, binding = 1) uniform Data
 {
 node u_sdf_primitives[kMaxNodeCount];
 };
@@ -86,16 +86,9 @@ return position.xy / vec2(marchRes * voxelSize.x, marchRes * voxelSize.y);
 void main() {
 ivec3 globalID = ivec3(gl_GlobalInvocationID);
 
-//    if(globalID.x <= 1 && globalID.y <= 1 && globalID.z <= 1)
-//    {
-//        for(int i = 0; i < texSize.x; i++)
-//                for(int y = 0; y < texSize.y; y++)
-//                    imageStore(output_texture, ivec2(i, y), ivec4(0.5));
-//    }
-//
+
 //    barrier();
 //    memoryBarrier();
-//    memoryBarrierImage();
 
 vec3 voxelSize = (boundingBoxEnd - boundingBoxStart) / marchRes;
 
@@ -167,7 +160,7 @@ normal_buffer[index + 2] = vec4(v2_normal, 1.0);
 uv_buffer[index] = planarProjection(v0, voxelSize);
 uv_buffer[index + 1] = planarProjection(v1, voxelSize);
 uv_buffer[index + 2] = planarProjection(v2, voxelSize);
-        
+
 //vec2 uv0 = computeTriplanarUV(v0, v0_normal) * texSize;
 //vec2 uv1 = computeTriplanarUV(v1, v1_normal) * texSize;
 //vec2 uv2 = computeTriplanarUV(v2, v2_normal) * texSize;

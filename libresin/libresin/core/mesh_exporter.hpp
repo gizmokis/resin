@@ -1,35 +1,35 @@
 #ifndef MESH_EXPORTER_HPP
 #define MESH_EXPORTER_HPP
 
-#include <assimp/postprocess.h>
 #include <assimp/scene.h>
 #include <glad/gl.h>
 
-#include <assimp/Exporter.hpp>
-#include <libresin/core/shader.hpp>
+#include <glm/fwd.hpp>
+#include <libresin/core/resources/shader_resource.hpp>
+#include <libresin/core/resources/shader_resource_managers.hpp>
+#include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <string>
 #include <vector>
-#include <libresin/core/resources/shader_resource.hpp>
 namespace resin {
+class ShaderStorageBuffer;
 
 class MeshExporter {
  public:
-  MeshExporter(ShaderResourceManager& shader_manager, unsigned int resolution);
+  MeshExporter(unsigned int resolution);
   ~MeshExporter();
 
-  void setup_scene(const glm::vec3& bb_start, const glm::vec3& bb_end, const SDFTree& sdf_tree);
+  void setup_scene(const glm::vec3& bb_start, const glm::vec3& bb_end, SDFTree& sdf_tree);
   void export_mesh(const std::string& output_path, const std::string& format);
 
  private:
-  ShaderResourceManager& shader_manager_;
+  std::shared_ptr<ShaderResourceManager> shader_manager_ = ShaderResourceManagers::get_instance();
   ShaderResource shader_resource_;
-  GLuint edges_lookup_;
-  GLuint triangles_lookup_;
-  GLuint vertex_buffer_;
-  GLuint vertex_count_buffer_;
-  GLuint normal_buffer_;
-  GLuint uv_buffer_;
-  GLuint output_texture_;
+  std::unique_ptr<ShaderStorageBuffer> edges_lookup_buffer_;
+  std::unique_ptr<ShaderStorageBuffer> triangles_lookup_buffer_;
+  std::unique_ptr<ShaderStorageBuffer> vertex_buffer_;
+  std::unique_ptr<ShaderStorageBuffer> vertex_count_buffer_;
+  std::unique_ptr<ShaderStorageBuffer> normal_buffer_;
+  std::unique_ptr<ShaderStorageBuffer> uv_buffer_;
   unsigned int resolution_;
 
   std::vector<glm::vec4> vertices_;
@@ -39,12 +39,12 @@ class MeshExporter {
   aiScene* scene_;
 
   void initialize_buffers();
-  void execute_shader(const glm::vec3 bb_start, const glm::vec3 bb_end, SDFTree sdf_tree);
+  void execute_shader(const glm::vec3 bb_start, const glm::vec3 bb_end, SDFTree& sdf_tree);
   void read_buffers();
   void create_scene();
 
   // "scary" mapping tables for marching cubes
-  const int edge_table[256] = {
+  const int edge_table_[256] = {
       0x0,   0x109, 0x203, 0x30a, 0x406, 0x50f, 0x605, 0x70c, 0x80c, 0x905, 0xa0f, 0xb06, 0xc0a, 0xd03, 0xe09, 0xf00,
       0x190, 0x99,  0x393, 0x29a, 0x596, 0x49f, 0x795, 0x69c, 0x99c, 0x895, 0xb9f, 0xa96, 0xd9a, 0xc93, 0xf99, 0xe90,
       0x230, 0x339, 0x33,  0x13a, 0x636, 0x73f, 0x435, 0x53c, 0xa3c, 0xb35, 0x83f, 0x936, 0xe3a, 0xf33, 0xc39, 0xd30,
@@ -62,7 +62,7 @@ class MeshExporter {
       0xe90, 0xf99, 0xc93, 0xd9a, 0xa96, 0xb9f, 0x895, 0x99c, 0x69c, 0x795, 0x49f, 0x596, 0x29a, 0x393, 0x99,  0x190,
       0xf00, 0xe09, 0xd03, 0xc0a, 0xb06, 0xa0f, 0x905, 0x80c, 0x70c, 0x605, 0x50f, 0x406, 0x30a, 0x203, 0x109, 0x0};
 
-  const int tri_table[4096] = {
+  const int tri_table_[4096] = {
       -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0,  8,  3,  -1, -1, -1, -1, -1, -1, -1, -1, -1,
       -1, -1, -1, -1, 0,  1,  9,  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1,  8,  3,  9,  8,  1,  -1, -1,
       -1, -1, -1, -1, -1, -1, -1, -1, 1,  2,  10, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0,  8,  3,  1,

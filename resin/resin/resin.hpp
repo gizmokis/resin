@@ -6,6 +6,7 @@
 #include <libresin/core/camera.hpp>
 #include <libresin/core/framebuffer.hpp>
 #include <libresin/core/resources/shader_resource.hpp>
+#include <libresin/core/resources/shader_resource_managers.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
@@ -57,7 +58,7 @@ class Resin {
  private:
   unsigned int vertex_array_, vertex_buffer_, index_buffer_;
   EventDispatcher dispatcher_;
-  ShaderResourceManager shader_resource_manager_;
+  std::shared_ptr<ShaderResourceManager> shader_resource_manager_ = ShaderResourceManagers::get_instance();
 
   SDFTree sdf_tree_;
 
@@ -67,7 +68,6 @@ class Resin {
   std::unique_ptr<RenderingShaderProgram> shader_;
   std::unique_ptr<UniformBuffer> ubo_;
   std::unique_ptr<Framebuffer> framebuffer_;
-  std::unique_ptr<ComputeShaderProgram> marching_cubes_shader_;
 
   std::unique_ptr<Camera> camera_;
   std::unique_ptr<PointLight> point_light_;

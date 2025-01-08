@@ -5,116 +5,94 @@
 #include <assimp/Exporter.hpp>
 #include <glm/vec3.hpp>
 #include <libresin/core/mesh_exporter.hpp>
-#include <stdexcept>
+#include <libresin/core/shader.hpp>
+#include <libresin/core/shader_storage_buffer.hpp>
+#include <libresin/core/uniform_buffer.hpp>
+#include <memory>
 #include <string>
 #include <vector>
 
 namespace resin {
-MeshExporter::MeshExporter(ShaderResourceManager& shader_manager, unsigned int resolution)
-    : shader_manager_(shader_manager), shader_resource_(), resolution_(resolution), scene_(new aiScene()) {
-  const std::filesystem::path path = std::filesystem::current_path() / "assets";
-  shader_resource_                 = *shader_manager_.get_res(path / "marching_cubes.comp");
+
+MeshExporter::MeshExporter(unsigned int resolution)
+    : resolution_(resolution),
+      shader_resource_(*shader_manager_->get_res(std::filesystem::current_path() / "assets/marching_cubes.comp")),
+      scene_(new aiScene()) {
   initialize_buffers();
 }
 
-void MeshExporter::setup_scene(const glm::vec3& bb_start, const glm::vec3& bb_end, const SDFTree& sdf_tree) {
+void MeshExporter::setup_scene(const glm::vec3& bb_start, const glm::vec3& bb_end, SDFTree& sdf_tree) {
   execute_shader(bb_start, bb_end, sdf_tree);
   read_buffers();
   create_scene();
 }
 
-MeshExporter::~MeshExporter() {
-  glDeleteBuffers(1, &edges_lookup_);
-  glDeleteBuffers(1, &triangles_lookup_);
-  glDeleteBuffers(1, &vertex_buffer_);
-  glDeleteBuffers(1, &vertex_count_buffer_);
-  glDeleteBuffers(1, &normal_buffer_);
-  glDeleteBuffers(1, &uv_buffer_);
-  delete scene_;
-}
-
+MeshExporter::~MeshExporter() { delete scene_; }
 
 void MeshExporter::export_mesh(const std::string& output_path, const std::string& format) {
   Assimp::Exporter exporter;
   if (exporter.Export(scene_, format, output_path) != AI_SUCCESS) {
     Logger::err("Failed to export mesh asset '{}'", output_path);
-  }}
+  } else {
+    Logger::info("Successfully exported mesh asset '{}'", output_path);
+  }
+}
 
-void MeshExporter::execute_shader(const glm::vec3 bb_start, const glm::vec3 bb_end, SDFTree sdf_tree) {
-  UniformBuffer ubo(sdf_tree.max_nodes_count());
+void MeshExporter::execute_shader(const glm::vec3 bb_start, const glm::vec3 bb_end, SDFTree& sdf_tree) {
+  UniformBuffer ubo(sdf_tree.max_nodes_count(), 1);
   shader_resource_.set_ext_defi("SDF_CODE", sdf_tree.gen_shader_code());
   shader_resource_.set_ext_defi("MAX_UBO_NODE_COUNT", std::to_string(ubo.max_count()));
-  ubo.bind();
-  ubo.set(sdf_tree);
-  ubo.unbind();
-
   ComputeShaderProgram compute_shader_program("marching_cubes", shader_resource_);
 
   // Set up compute shader
+  ubo.bind();
+  ubo.set(sdf_tree);
+  ubo.unbind();
   compute_shader_program.bind();
+
   compute_shader_program.set_uniform("boundingBoxStart", bb_start);
   compute_shader_program.set_uniform("boundingBoxEnd", bb_end);
   compute_shader_program.set_uniform("marchRes", resolution_);
+  compute_shader_program.set_uniform("u_farPlane", 100.f);  // TODO remove this uniform
 
   // Dispatch compute shader.
   glDispatchCompute(resolution_ / 8, resolution_ / 8, resolution_ / 8);
-  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);  // add GL_SHADER_IMAGE_ACCESS_BARRIER_BIT later for texture
+  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT |
+                  GL_UNIFORM_BARRIER_BIT);  // add GL_SHADER_IMAGE_ACCESS_BARRIER_BIT later for texture
+  compute_shader_program.unbind();
 }
+
 void MeshExporter::initialize_buffers() {
-  const size_t max_vertices = std::pow(resolution_, 3) * 3 * 5;  // max 5 triangles in each cuboid
+  const GLsizei max_vertices =
+      static_cast<GLsizei>(std::pow(resolution_, 3) * 3 * 5);  // max 5 triangles per each cuboid
 
-  glGenBuffers(1, &edges_lookup_);
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, edges_lookup_);
-  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(int) * 256, edge_table, GL_STREAM_READ);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, edges_lookup_);
+  edges_lookup_buffer_ = std::make_unique<ShaderStorageBuffer>(sizeof(edge_table_), 0);
+  edges_lookup_buffer_->set_data(edge_table_, sizeof(edge_table_));
 
-  glGenBuffers(1, &triangles_lookup_);
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, triangles_lookup_);
-  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(int) * 4096, tri_table, GL_STREAM_READ);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, triangles_lookup_);
+  triangles_lookup_buffer_ = std::make_unique<ShaderStorageBuffer>(sizeof(tri_table_), 1);
+  triangles_lookup_buffer_->set_data(tri_table_, sizeof(tri_table_));
 
-  glGenBuffers(1, &vertex_buffer_);
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, vertex_buffer_);
-  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::vec4) * max_vertices, nullptr, GL_STREAM_READ);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, vertex_buffer_);
+  vertex_buffer_       = std::make_unique<ShaderStorageBuffer>(sizeof(glm::vec4) * max_vertices, 2, GL_STREAM_READ);
+  vertex_count_buffer_ = std::make_unique<ShaderStorageBuffer>(sizeof(GLuint), 3, GL_STREAM_READ);
+  GLuint init          = 0;
+  vertex_count_buffer_->set_data(&init, sizeof(GLuint));
 
-  glGenBuffers(1, &vertex_count_buffer_);
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, vertex_count_buffer_);
-  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(unsigned int), nullptr, GL_STREAM_READ);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, vertex_count_buffer_);
-
-  glGenBuffers(1, &normal_buffer_);
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, normal_buffer_);
-  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::vec4) * max_vertices, nullptr, GL_STREAM_READ);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, normal_buffer_);
-
-  glGenBuffers(1, &uv_buffer_);
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, uv_buffer_);
-  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::vec2) * max_vertices, nullptr, GL_STREAM_READ);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, uv_buffer_);
+  normal_buffer_ = std::make_unique<ShaderStorageBuffer>(sizeof(glm::vec4) * max_vertices, 4, GL_STREAM_READ);
+  uv_buffer_     = std::make_unique<ShaderStorageBuffer>(sizeof(glm::vec2) * max_vertices, 5, GL_STREAM_READ);
 }
 
 void MeshExporter::read_buffers() {
-  unsigned int vertex_count = 0;
+  GLuint vertex_count = 0;
 
-  // Read vertex count.
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, vertex_count_buffer_);
-  glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(unsigned int), &vertex_count);
+  vertex_count_buffer_->get_data(&vertex_count, sizeof(GLuint));
 
-  // Resize output vectors.
   vertices_.resize(vertex_count);
   normals_.resize(vertex_count);
   uvs_.resize(vertex_count);
 
-  // Read vertex data.
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, vertex_buffer_);
-  glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(glm::vec4) * vertex_count, vertices_.data());
-
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, normal_buffer_);
-  glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(glm::vec4) * vertex_count, normals_.data());
-
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, uv_buffer_);
-  glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(glm::vec2) * vertex_count, uvs_.data());
+  vertex_buffer_->get_data(vertices_.data(), static_cast<GLsizeiptr>(sizeof(glm::vec4) * vertex_count));
+  normal_buffer_->get_data(normals_.data(), static_cast<GLsizeiptr>(sizeof(glm::vec4) * vertex_count));
+  uv_buffer_->get_data(uvs_.data(), static_cast<GLsizeiptr>(sizeof(glm::vec2) * vertex_count));
 }
 
 void MeshExporter::create_scene() {
