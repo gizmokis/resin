@@ -21,6 +21,7 @@ struct Transform final {
   const Transform& parent() const { return *parent_; }
   void set_parent(std::optional<std::reference_wrapper<Transform>> parent);
 
+  void move(const glm::vec3& delta);
   void move_local(const glm::vec3& delta);
 
   void rotate(const glm::vec3& axis, float angle);
@@ -41,6 +42,8 @@ struct Transform final {
   float& local_scale() { return scale_; }
   float scale() const;
   void set_local_scale(float scale);
+
+  void set_local_from_matrix(const glm::mat4& local_mat);
 
   glm::mat3 local_orientation() const;
   glm::mat3 orientation() const;
