@@ -1,5 +1,6 @@
 #include <glad/gl.h>
 
+#include <cstddef>
 #include <libresin/core/shader_storage_buffer.hpp>
 
 namespace resin {

@@ -2,6 +2,7 @@
 #define SHADER_STORAGE_BUFFER_HPP
 
 #include <glad/gl.h>
+#include <cstddef>
 
 namespace resin {
 class ShaderStorageBuffer {
