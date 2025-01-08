@@ -17,6 +17,7 @@
 #include <resin/event/event.hpp>
 #include <resin/event/mouse_events.hpp>
 #include <resin/event/window_events.hpp>
+#include <resin/imgui/gizmo.hpp>
 #include <resin/imgui/transform_gizmo.hpp>
 #include <resin/resources/resource_managers.hpp>
 
