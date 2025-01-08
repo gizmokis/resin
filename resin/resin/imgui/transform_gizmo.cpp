@@ -76,18 +76,28 @@ bool TransformGizmo(::resin::Transform& trans, const ::resin::Camera& camera, Gi
   }
 
   if (ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(proj), ImGuizmo::OPERATION::SCALE,
-                           ImGuizmo::MODE::WORLD, glm::value_ptr(mat))) {
+                           ImGuizmo::MODE::WORLD, glm::value_ptr(mat), glm::value_ptr(delta_mat))) {
     constexpr float kFloatEqTreshold = 1e-5F;
+
+    // Note: delta matrix doesn't contain a delta per frame, but a delta from the moment the user grabbed the gizmo for
+    // the first time so we can't use it here ☹️
+    float scale_fix = 1.0F;
+    if (trans.has_parent()) {
+      scale_fix = trans.parent().scale();
+    }
 
     // Assuming uniform scaling
     if (std::abs(mat[1][1] - mat[0][0]) > kFloatEqTreshold) {
       if (std::abs(mat[1][1] - mat[2][2]) > kFloatEqTreshold) {
-        trans.set_local_scale(mat[1][1]);
+        trans.set_local_scale(mat[1][1] / scale_fix);
       } else {
-        trans.set_local_scale(mat[0][0]);
+        trans.set_local_scale(mat[0][0] / scale_fix);
       }
     } else if (std::abs(mat[2][2] - mat[0][0]) > kFloatEqTreshold) {
-      trans.set_local_scale(mat[2][2]);
+      trans.set_local_scale(mat[2][2] / scale_fix);
+    } else if (std::abs(mat[0][0] - trans.scale()) > kFloatEqTreshold) {
+      // handle the case when origin is used for scaling
+      trans.set_local_scale(mat[0][0] / scale_fix);
     }
 
     return true;

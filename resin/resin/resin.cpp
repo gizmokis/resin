@@ -43,7 +43,11 @@
 
 namespace resin {
 
-Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
+Resin::Resin()
+    : vertex_array_(0),
+      vertex_buffer_(0),
+      index_buffer_(0),
+      gizmo_operation_(ImGui::resin::GizmoOperation::Translation) {
   dispatcher_.subscribe<WindowCloseEvent>(BIND_EVENT_METHOD(on_window_close));
   dispatcher_.subscribe<WindowResizeEvent>(BIND_EVENT_METHOD(on_window_resize));
   dispatcher_.subscribe<WindowTestEvent>(BIND_EVENT_METHOD(on_test));
@@ -293,7 +297,7 @@ void Resin::gui() {
   if (ImGui::resin::Viewport(*framebuffer_, resized)) {
     if (ImGui::BeginMenuBar()) {
       ImGui::Text("Local Transform:");
-      ImGui::Checkbox("##LocalCheckbox", &use_local_gimos_);
+      ImGui::Checkbox("##LocalCheckbox", &use_local_gizmos_);
 
       static constexpr resin::StringEnumMapper<ImGui::resin::GizmoOperation> kOps({
           {ImGui::resin::GizmoOperation::Translation, "Translation"},  //
@@ -305,16 +309,8 @@ void Resin::gui() {
       ImGui::SetNextItemWidth(ImGui::CalcTextSize("Translation").x + 12.0F);
       if (ImGui::BeginCombo("##OperationCombo", kOps[gizmo_operation_].data(), ImGuiComboFlags_NoArrowButton)) {
         for (const auto [current_op, name] : kOps) {
-          bool disable = selected_node_ && !selected_node_->expired() && sdf_tree_.is_group(*selected_node_) &&
-                         current_op == ImGui::resin::GizmoOperation::Scale;
-          if (disable) {
-            ImGui::BeginDisabled();
-          }
           if (ImGui::Selectable(kOps[current_op].data())) {
             gizmo_operation_ = current_op;
-          }
-          if (disable) {
-            ImGui::EndDisabled();
           }
         }
         ImGui::EndCombo();
@@ -341,14 +337,10 @@ void Resin::gui() {
     ImGui::Image((ImTextureID)(intptr_t)framebuffer_->color_texture(), ImVec2(width, height), ImVec2(0, 1),  // NOLINT
                  ImVec2(1, 0));
     if (selected_node_ && !selected_node_->expired()) {
-      if (sdf_tree_.is_group(*selected_node_) && gizmo_operation_ == ImGui::resin::GizmoOperation::Scale) {
-        gizmo_operation_ = ImGui::resin::GizmoOperation::Translation;
-      }
-
       auto& node = sdf_tree_.node(*selected_node_);
       if (ImGui::resin::TransformGizmo(
               node.transform(), *camera_,
-              use_local_gimos_ ? ImGui::resin::GizmoMode::Local : ImGui::resin::GizmoMode::World, gizmo_operation_,
+              use_local_gizmos_ ? ImGui::resin::GizmoMode::Local : ImGui::resin::GizmoMode::World, gizmo_operation_,
               width, height)) {
         node.mark_dirty();
       }
