@@ -8,6 +8,7 @@
 #include <libresin/core/resources/shader_resource_managers.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/shader_storage_buffer.hpp>
+#include <memory>
 #include <string>
 #include <vector>
 namespace resin {
@@ -19,7 +20,7 @@ class MeshExporter {
 
   void setup_scene(const glm::vec3& bb_start, const glm::vec3& bb_end, SDFTree& sdf_tree,
                    IdView<SDFTreeNodeId> node_id);
-  void export_mesh(const std::string& output_path, const std::string& format);
+  void export_mesh(const std::string& output_path, const std::string& format) const;
 
  private:
   std::shared_ptr<ShaderResourceManager> shader_manager_ = ShaderResourceManagers::get_instance();
@@ -41,7 +42,7 @@ class MeshExporter {
   void initialize_buffers();
   void execute_shader(glm::vec3 bb_start, glm::vec3 bb_end, SDFTree& sdf_tree, IdView<SDFTreeNodeId> node_id);
   void read_buffers();
-  void create_scene();
+  void create_scene() const;
 
   // "scary" mapping tables for marching cubes
   const int edge_table_[256] = {

@@ -5,12 +5,12 @@
 #include <assimp/Exporter.hpp>
 #include <filesystem>
 #include <libresin/core/mesh_exporter.hpp>
+#include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/shader.hpp>
-#include <libresin/core/shader_storage_buffer.hpp>
 #include <libresin/core/uniform_buffer.hpp>
 #include <memory>
-#include <string>
-#include <vector>
+
+#include <glad/gl.h>
 
 namespace resin {
 
@@ -30,7 +30,7 @@ void MeshExporter::setup_scene(const glm::vec3& bb_start, const glm::vec3& bb_en
 
 MeshExporter::~MeshExporter() { delete scene_; }
 
-void MeshExporter::export_mesh(const std::string& output_path, const std::string& format) {
+void MeshExporter::export_mesh(const std::string& output_path, const std::string& format) const {
   Assimp::Exporter exporter;
   if (exporter.Export(scene_, format, output_path) != AI_SUCCESS) {
     Logger::err("Failed to export mesh asset '{}'", output_path);
@@ -64,8 +64,8 @@ void MeshExporter::execute_shader(const glm::vec3 bb_start, const glm::vec3 bb_e
 }
 
 void MeshExporter::initialize_buffers() {
-  const GLsizei max_vertices =
-      static_cast<GLsizei>(std::pow(resolution_, 3) * 3 * 5);  // max 5 triangles per each cuboid
+  const auto max_vertices =
+      static_cast<unsigned int>(std::pow(resolution_, 3) * 3 * 5);  // max 5 triangles per each cuboid
 
   edges_lookup_buffer_ = std::make_unique<ShaderStorageBuffer>(sizeof(edge_table_), 0);
   edges_lookup_buffer_->set_data(edge_table_, sizeof(edge_table_));
@@ -74,9 +74,9 @@ void MeshExporter::initialize_buffers() {
   triangles_lookup_buffer_->set_data(tri_table_, sizeof(tri_table_));
 
   vertex_buffer_       = std::make_unique<ShaderStorageBuffer>(sizeof(glm::vec4) * max_vertices, 2, GL_STREAM_READ);
-  vertex_count_buffer_ = std::make_unique<ShaderStorageBuffer>(sizeof(GLuint), 3, GL_STREAM_READ);
+  vertex_count_buffer_ = std::make_unique<ShaderStorageBuffer>(sizeof(unsigned int), 3, GL_STREAM_READ);
   GLuint init          = 0;
-  vertex_count_buffer_->set_data(&init, sizeof(GLuint));
+  vertex_count_buffer_->set_data(&init, sizeof(unsigned int));
 
   normal_buffer_ = std::make_unique<ShaderStorageBuffer>(sizeof(glm::vec4) * max_vertices, 4, GL_STREAM_READ);
   uv_buffer_     = std::make_unique<ShaderStorageBuffer>(sizeof(glm::vec2) * max_vertices, 5, GL_STREAM_READ);
@@ -85,18 +85,18 @@ void MeshExporter::initialize_buffers() {
 void MeshExporter::read_buffers() {
   GLuint vertex_count = 0;
 
-  vertex_count_buffer_->get_data(&vertex_count, sizeof(GLuint));
+  vertex_count_buffer_->get_data(&vertex_count, sizeof(unsigned int));
 
   vertices_.resize(vertex_count);
   normals_.resize(vertex_count);
   uvs_.resize(vertex_count);
 
-  vertex_buffer_->get_data(vertices_.data(), static_cast<GLsizeiptr>(sizeof(glm::vec4) * vertex_count));
-  normal_buffer_->get_data(normals_.data(), static_cast<GLsizeiptr>(sizeof(glm::vec4) * vertex_count));
-  uv_buffer_->get_data(uvs_.data(), static_cast<GLsizeiptr>(sizeof(glm::vec2) * vertex_count));
+  vertex_buffer_->get_data(vertices_.data(), (sizeof(glm::vec4) * vertex_count));
+  normal_buffer_->get_data(normals_.data(), (sizeof(glm::vec4) * vertex_count));
+  uv_buffer_->get_data(uvs_.data(), (sizeof(glm::vec2) * vertex_count));
 }
 
-void MeshExporter::create_scene() {
+void MeshExporter::create_scene() const {
   scene_->mRootNode             = new aiNode();
   scene_->mMeshes               = new aiMesh*[1];
   scene_->mMeshes[0]            = new aiMesh();
