@@ -50,15 +50,14 @@ void MeshExporter::execute_shader(const glm::vec3 bb_start, const glm::vec3 bb_e
   ubo.unbind();
   compute_shader_program.bind();
 
-  compute_shader_program.set_uniform("boundingBoxStart", bb_start);
-  compute_shader_program.set_uniform("boundingBoxEnd", bb_end);
-  compute_shader_program.set_uniform("marchRes", resolution_);
+  compute_shader_program.set_uniform("u_boundingBoxStart", bb_start);
+  compute_shader_program.set_uniform("u_boundingBoxEnd", bb_end);
+  compute_shader_program.set_uniform("u_marchRes", resolution_);
   compute_shader_program.set_uniform("u_farPlane", 100.f);  // TODO remove this uniform
 
   // Dispatch compute shader.
   glDispatchCompute(resolution_ / 8, resolution_ / 8, resolution_ / 8);
-  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT |
-                  GL_UNIFORM_BARRIER_BIT);  // add GL_SHADER_IMAGE_ACCESS_BARRIER_BIT later for texture
+  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);  // add GL_SHADER_IMAGE_ACCESS_BARRIER_BIT later for texture
   compute_shader_program.unbind();
 }
 
