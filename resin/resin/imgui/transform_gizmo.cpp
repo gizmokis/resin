@@ -36,7 +36,7 @@ bool TransformGizmo(::resin::Transform& trans, const ::resin::Camera& camera, Gi
         auto parent_rot_mat = glm::mat4_cast(trans.parent().rot());
         dp                  = glm::vec3(glm::transpose(parent_rot_mat) * glm::vec4(dp, 1.0F));
       }
-      trans.move_local(dp);
+      trans.move(dp);
 
       return true;
     }

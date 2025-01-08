@@ -30,8 +30,13 @@ void Transform::set_parent(const std::optional<std::reference_wrapper<Transform>
   parent_->get().children_.emplace_back(*this);
 }
 
-void Transform::move_local(const glm::vec3& delta) {
+void Transform::move(const glm::vec3& delta) {
   pos_ += delta;
+  mark_dirty();
+}
+
+void Transform::move_local(const glm::vec3& delta) {
+  pos_ += delta.x * local_right() + delta.y * local_up() + delta.z * local_front();
   mark_dirty();
 }
 
@@ -47,6 +52,18 @@ void Transform::rotate(const glm::quat& rotation) {
 
 void Transform::rotate_local(const glm::quat& rotation) {
   rot_ = glm::normalize(rot_ * rotation);
+  mark_dirty();
+}
+
+void Transform::set_local_from_matrix(const glm::mat4& local_mat) {
+  auto new_loc_pos    = glm::vec3(local_mat[3]);
+  auto new_loc_rot    = glm::normalize(glm::quat_cast(local_mat));
+  float new_loc_scale = glm::length(glm::vec3(local_mat[0][0], local_mat[1][0], local_mat[2][0]));
+
+  pos_   = new_loc_pos;
+  rot_   = new_loc_rot;
+  scale_ = new_loc_scale;
+
   mark_dirty();
 }
 
