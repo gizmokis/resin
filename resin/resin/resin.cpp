@@ -26,7 +26,6 @@
 #include <libresin/core/uniform_buffer.hpp>
 #include <libresin/utils/enum_mapper.hpp>
 #include <libresin/utils/logger.hpp>
-#include <memory>
 #include <nfd/nfd.hpp>
 #include <optional>
 #include <resin/core/mouse_codes.hpp>
@@ -35,10 +34,10 @@
 #include <resin/event/event.hpp>
 #include <resin/event/mouse_events.hpp>
 #include <resin/event/window_events.hpp>
+#include <resin/imgui/gizmo.hpp>
 #include <resin/imgui/node_edit.hpp>
 #include <resin/imgui/sdf_tree.hpp>
 #include <resin/imgui/transform_edit.hpp>
-#include <resin/imgui/transform_gizmo.hpp>
 #include <resin/imgui/viewport.hpp>
 #include <resin/resin.hpp>
 #include <string_view>
@@ -342,19 +341,22 @@ void Resin::gui() {
 
     ImGui::Image((ImTextureID)(intptr_t)framebuffer_->color_texture(), ImVec2(width, height), ImVec2(0, 1),  // NOLINT
                  ImVec2(1, 0));
+
     if (ImGui::IsItemHovered()) {
       ImGui::SetNextFrameWantCaptureMouse(false);
     }
 
+    // Draw gizmos
+    ImGui::resin::BeginGizmoFrame();
     if (selected_node_ && !selected_node_->expired()) {
       auto& node = sdf_tree_.node(*selected_node_);
       if (ImGui::resin::TransformGizmo(
               node.transform(), *camera_,
-              use_local_gizmos_ ? ImGui::resin::GizmoMode::Local : ImGui::resin::GizmoMode::World, gizmo_operation_,
-              width, height)) {
+              use_local_gizmos_ ? ImGui::resin::GizmoMode::Local : ImGui::resin::GizmoMode::World, gizmo_operation_)) {
         node.mark_dirty();
       }
     }
+    ImGui::resin::CameraViewGizmo(*camera_, 100.0F);
   }
   ImGui::End();
 

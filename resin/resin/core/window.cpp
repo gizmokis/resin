@@ -15,6 +15,8 @@
 #include <resin/event/window_events.hpp>
 #include <string>
 
+#include "resin/imgui/gizmo.hpp"
+
 namespace resin {
 
 uint8_t Window::glfw_window_count_ = 0;
@@ -38,7 +40,7 @@ void Window::api_init() {
   io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
   imgui_set_style();
-  ImGuizmo::SetImGuiContext(ImGui::GetCurrentContext());
+  ImGui::resin::SetImGuiContext(ImGui::GetCurrentContext());
 
   Logger::debug("Api init");
 }

@@ -6,26 +6,33 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/matrix.hpp>
 #include <libresin/core/transform.hpp>
-#include <resin/imgui/transform_gizmo.hpp>
+#include <resin/imgui/gizmo.hpp>
 
 namespace ImGui {  // NOLINT
 
 namespace resin {
 
-bool TransformGizmo(::resin::Transform& trans, const ::resin::Camera& camera, GizmoMode mode, GizmoOperation operation,
-                    float width, float height)
+void SetImGuiContext(ImGuiContext* ctx) { ImGuizmo::SetImGuiContext(ctx); }
 
-{
+void BeginGizmoFrame(ImDrawList* drawlist) {
+  ImGuizmo::BeginFrame();
+  ImGuizmo::SetDrawlist(drawlist);
+}
+
+bool TransformGizmo(::resin::Transform& trans, const ::resin::Camera& camera, GizmoMode mode,
+                    GizmoOperation operation) {
+  const float pos_x  = ImGui::GetWindowPos().x + ImGui::GetCursorStartPos().x;
+  const float pos_y  = ImGui::GetWindowPos().y + ImGui::GetCursorStartPos().y;
+  const float width  = ImGui::GetWindowWidth() - ImGui::GetCursorStartPos().x;
+  const float height = ImGui::GetWindowHeight() - ImGui::GetCursorStartPos().y;
+
+  ImGuizmo::SetOrthographic(camera.is_orthographic);
+  ImGuizmo::SetRect(pos_x, pos_y, width, height);
+
   auto view      = camera.view_matrix();
   auto proj      = camera.proj_matrix();
   auto delta_mat = glm::mat4(1.0F);
   auto mat       = trans.local_to_world_matrix();
-
-  ImGuizmo::BeginFrame();
-  ImGuizmo::SetDrawlist();
-  ImGuizmo::SetOrthographic(camera.is_orthographic());
-  ImGuizmo::SetRect(ImGui::GetWindowPos().x + ImGui::GetCursorStartPos().x,
-                    ImGui::GetWindowPos().y + ImGui::GetCursorStartPos().y, width, height);
 
   if (operation == GizmoOperation::Translation) {
     if (ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(proj), ImGuizmo::OPERATION::TRANSLATE,
@@ -79,8 +86,8 @@ bool TransformGizmo(::resin::Transform& trans, const ::resin::Camera& camera, Gi
                            ImGuizmo::MODE::WORLD, glm::value_ptr(mat), glm::value_ptr(delta_mat))) {
     constexpr float kFloatEqTreshold = 1e-5F;
 
-    // Note: delta matrix doesn't contain a delta per frame, but a delta from the moment the user grabbed the gizmo for
-    // the first time so we can't use it here ☹️
+    // Note: delta matrix doesn't contain a delta per frame, but a delta from the moment the user grabbed the gizmo
+    // for the first time so we can't use it here ☹️
     float scale_fix = 1.0F;
     if (trans.has_parent()) {
       scale_fix = trans.parent().scale();
@@ -104,6 +111,17 @@ bool TransformGizmo(::resin::Transform& trans, const ::resin::Camera& camera, Gi
   }
 
   return false;
+}
+
+void CameraViewGizmo(::resin::Camera& camera, float distance, ImVec2 size) {
+  const float pos_x = ImGui::GetWindowPos().x + ImGui::GetCursorStartPos().x;
+  const float pos_y = ImGui::GetWindowPos().y + ImGui::GetCursorStartPos().y;
+  const float width = ImGui::GetWindowWidth() - ImGui::GetCursorStartPos().x;
+
+  auto view = camera.view_matrix();
+  ImGuizmo::ViewManipulate(glm::value_ptr(view), distance, ImVec2(pos_x + width - size.x, pos_y), size, 0x00000000);
+  // NOTE: We assume that camera transform has no parent
+  //   camera.transform.set_local_from_matrix(view);
 }
 
 }  // namespace resin
