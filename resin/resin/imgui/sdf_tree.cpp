@@ -21,8 +21,11 @@ namespace ImGui {  // NOLINT
 
 namespace resin {
 
-static const std::array<::resin::FileDialog::FilterItem, 2> kPrefabFiltersArray = {
-    ::resin::FileDialog::FilterItem("Resin prefab", "json"), ::resin::FileDialog::FilterItem("Wavefront obj", "obj")};
+static const std::array<::resin::FileDialog::FilterItem, 1> kPrefabFiltersArray = {
+    ::resin::FileDialog::FilterItem("Resin prefab", "json")};
+
+static const std::array<::resin::FileDialog::FilterItem, 2> kMeshFiltersArray = {
+    ::resin::FileDialog::FilterItem("Wavefront obj", "obj"), ::resin::FileDialog::FilterItem("GLTF2", "gltf")};
 
 std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeComponentVisitor::get_curr_payload() {
   std::optional<::resin::IdView<::resin::SDFTreeNodeId>> source_id;
@@ -148,19 +151,41 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
           },
           std::span<const ::resin::FileDialog::FilterItem>(kPrefabFiltersArray), std::string(name) += ".json");
     }
-    if (ImGui::Selectable("Export as mesh")) {
-      auto curr_id   = node.node_id();
-      auto name      = node.name();
-      auto& sdf_tree = sdf_tree_;
+    if (node.primitives().size() > 0) {
+      if (ImGui::BeginMenu("Export mesh as...")) {
+        static int resolution_index     = 2;  // default to 32
+        const unsigned int resolutions[]         = {8, 16, 32, 64, 128, 256};
+        const char* resolution_labels[] = {"8", "16", "32", "64", "128", "256"};
+        auto curr_id                    = node.node_id();
+        auto name                       = node.name();
+        auto& sdf_tree                  = sdf_tree_;
+        ImGui::Text("Select resolution:");
+        if (ImGui::Combo("##Resolution", &resolution_index, resolution_labels, IM_ARRAYSIZE(resolution_labels))) {
+        }
+        unsigned int resolution = resolutions[resolution_index];
+        if (ImGui::MenuItem("OBJ")) {
+          ::resin::FileDialog::instance().save_file(
+              [curr_id, &sdf_tree, resolution](const std::filesystem::path& path) {
+                ::resin::MeshExporter exporter(resolution);
+                glm::vec3 pos = sdf_tree.group(curr_id).transform().pos();  // TODO(SDF-130) calculate bounding box
+                exporter.setup_scene(pos - glm::vec3(5.0f), pos + glm::vec3(5.0f), sdf_tree, curr_id);
+                exporter.export_mesh(path.string(), "obj");
+              },
+              std::span<const ::resin::FileDialog::FilterItem>(kMeshFiltersArray), std::string(name) + ".obj");
+        }
 
-      ::resin::FileDialog::instance().save_file(
-          [curr_id, &sdf_tree](const std::filesystem::path& path) {
-            ::resin::MeshExporter exporter(64);
-            glm::vec3 pos = sdf_tree.node(curr_id).transform().pos();
-            exporter.setup_scene(pos - glm::vec3(5.0f), pos + glm::vec3(5.0f), sdf_tree);
-            exporter.export_mesh(path.string(), "obj");
-          },
-          std::span<const ::resin::FileDialog::FilterItem>(kPrefabFiltersArray), std::string(name) += ".obj");
+        if (ImGui::MenuItem("GLTF")) {
+          ::resin::FileDialog::instance().save_file(
+              [curr_id, &sdf_tree, resolution](const std::filesystem::path& path) {
+                ::resin::MeshExporter exporter(resolution);
+                glm::vec3 pos = sdf_tree.group(curr_id).transform().pos();  // TODO(SDF-130) calculate bounding box
+                exporter.setup_scene(pos - glm::vec3(5.0f), pos + glm::vec3(5.0f), sdf_tree, curr_id);
+                exporter.export_mesh(path.string(), "gltf2");
+              },
+              std::span<const ::resin::FileDialog::FilterItem>(kMeshFiltersArray), std::string(name) + ".gltf");
+        }
+        ImGui::EndMenu();
+      }
     }
     ImGui::EndPopup();
   }

@@ -3,7 +3,7 @@
 #include <assimp/vector3.h>
 
 #include <assimp/Exporter.hpp>
-#include <glm/vec3.hpp>
+#include <filesystem>
 #include <libresin/core/mesh_exporter.hpp>
 #include <libresin/core/shader.hpp>
 #include <libresin/core/shader_storage_buffer.hpp>
@@ -15,14 +15,15 @@
 namespace resin {
 
 MeshExporter::MeshExporter(unsigned int resolution)
-    : resolution_(resolution),
-      shader_resource_(*shader_manager_->get_res(std::filesystem::current_path() / "assets/marching_cubes.comp")),
+    : shader_resource_(*shader_manager_->get_res(std::filesystem::current_path() / "assets/marching_cubes.comp")),
+      resolution_(resolution),
       scene_(new aiScene()) {
   initialize_buffers();
 }
 
-void MeshExporter::setup_scene(const glm::vec3& bb_start, const glm::vec3& bb_end, SDFTree& sdf_tree) {
-  execute_shader(bb_start, bb_end, sdf_tree);
+void MeshExporter::setup_scene(const glm::vec3& bb_start, const glm::vec3& bb_end, SDFTree& sdf_tree,
+                               IdView<SDFTreeNodeId> node_id) {
+  execute_shader(bb_start, bb_end, sdf_tree, node_id);
   read_buffers();
   create_scene();
 }
@@ -38,26 +39,27 @@ void MeshExporter::export_mesh(const std::string& output_path, const std::string
   }
 }
 
-void MeshExporter::execute_shader(const glm::vec3 bb_start, const glm::vec3 bb_end, SDFTree& sdf_tree) {
+void MeshExporter::execute_shader(const glm::vec3 bb_start, const glm::vec3 bb_end, SDFTree& sdf_tree,
+                                  IdView<SDFTreeNodeId> node_id) {
+  GroupNode& group_node = sdf_tree.group(node_id);
   UniformBuffer ubo(sdf_tree.max_nodes_count(), 1);
-  shader_resource_.set_ext_defi("SDF_CODE", sdf_tree.gen_shader_code());
+  shader_resource_.set_ext_defi("SDF_CODE", group_node.gen_shader_code(GenShaderMode::SinglePrimitiveArray));
   shader_resource_.set_ext_defi("MAX_UBO_NODE_COUNT", std::to_string(ubo.max_count()));
-  ComputeShaderProgram compute_shader_program("marching_cubes", shader_resource_);
-
   // Set up compute shader
+  ComputeShaderProgram compute_shader_program("marching_cubes", shader_resource_);
   ubo.bind();
-  ubo.set(sdf_tree);
+  ubo.set(sdf_tree, node_id);
   ubo.unbind();
   compute_shader_program.bind();
 
   compute_shader_program.set_uniform("u_boundingBoxStart", bb_start);
   compute_shader_program.set_uniform("u_boundingBoxEnd", bb_end);
   compute_shader_program.set_uniform("u_marchRes", resolution_);
-  compute_shader_program.set_uniform("u_farPlane", 100.f);  // TODO remove this uniform
+  compute_shader_program.set_uniform("u_farPlane", 100.f);  // remove this uniform later
 
   // Dispatch compute shader.
   glDispatchCompute(resolution_ / 8, resolution_ / 8, resolution_ / 8);
-  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);  // add GL_SHADER_IMAGE_ACCESS_BARRIER_BIT later for texture
+  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);  // TODO(SDF-129) add GL_SHADER_IMAGE_ACCESS_BARRIER_BIT for textures
   compute_shader_program.unbind();
 }
 
@@ -123,7 +125,7 @@ void MeshExporter::create_scene() {
   }
 
   mesh->mFaces    = new aiFace[vertices_.size() / 3];
-  mesh->mNumFaces = vertices_.size() / 3;
+  mesh->mNumFaces = static_cast<unsigned int>(vertices_.size() / 3);
   for (unsigned int i = 0; i < vertices_.size(); i += 3) {
     aiFace& face     = mesh->mFaces[i / 3];
     face.mIndices    = new unsigned int[3]{i + 1, i, i + 2};  // counterclockwise winding order

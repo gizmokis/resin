@@ -2,7 +2,6 @@
 #define MESH_EXPORTER_HPP
 
 #include <assimp/scene.h>
-#include <glad/gl.h>
 
 #include <glm/fwd.hpp>
 #include <libresin/core/resources/shader_resource.hpp>
@@ -18,7 +17,7 @@ class MeshExporter {
   MeshExporter(unsigned int resolution);
   ~MeshExporter();
 
-  void setup_scene(const glm::vec3& bb_start, const glm::vec3& bb_end, SDFTree& sdf_tree);
+  void setup_scene(const glm::vec3& bb_start, const glm::vec3& bb_end, SDFTree& sdf_tree, IdView<SDFTreeNodeId> node_id);
   void export_mesh(const std::string& output_path, const std::string& format);
 
  private:
@@ -39,7 +38,7 @@ class MeshExporter {
   aiScene* scene_;
 
   void initialize_buffers();
-  void execute_shader(const glm::vec3 bb_start, const glm::vec3 bb_end, SDFTree& sdf_tree);
+  void execute_shader(const glm::vec3 bb_start, const glm::vec3 bb_end, SDFTree& sdf_tree, IdView<SDFTreeNodeId> node_id);
   void read_buffers();
   void create_scene();
 

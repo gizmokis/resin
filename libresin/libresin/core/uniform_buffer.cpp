@@ -24,6 +24,13 @@ void UniformBuffer::set(SDFTree& tree) {  // NOLINT
   tree.visit_all_primitives(visitor);
 }
 
+void UniformBuffer::set(SDFTree& tree, IdView<SDFTreeNodeId> node_id) {  // NOLINT
+  UBONodeVisitor visitor;
+  for (const auto prim : tree.group(node_id).primitives()) {
+    tree.node(prim).accept_visitor(visitor);
+  }
+}
+
 void UniformBuffer::update_dirty(SDFTree& tree) {  // NOLINT
   UBONodeVisitor visitor;
   tree.visit_dirty_primitives(visitor);

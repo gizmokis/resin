@@ -71,8 +71,9 @@ vec3 calcNormal(vec3 pos)
 }
 
 // For temporary UVs
-vec2 planarProjection(vec3 position, vec3 voxelSize) {
-    return position.xy / vec2(u_marchRes * voxelSize.x, u_marchRes * voxelSize.y);
+vec2 planarProjection(vec3 position) {
+    vec3 normalizedPos = (position - u_boundingBoxStart) / (u_boundingBoxEnd - u_boundingBoxStart);
+    return vec2(normalizedPos.x, normalizedPos.y);
 }
 
 
@@ -145,9 +146,9 @@ void main() {
 
 
         // Temporary UVs
-        uv_buffer[index] = planarProjection(v0, voxelSize);
-        uv_buffer[index + 1] = planarProjection(v1, voxelSize);
-        uv_buffer[index + 2] = planarProjection(v2, voxelSize);
+        uv_buffer[index] = planarProjection(v0);
+        uv_buffer[index + 1] = planarProjection(v1);
+        uv_buffer[index + 2] = planarProjection(v2);
 
     }
 
