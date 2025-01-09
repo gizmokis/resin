@@ -4,12 +4,12 @@
 #include <imgui/imgui_impl_opengl3.h>
 #include <imgui/imgui_internal.h>
 #include <imguizmo/ImGuizmo.h>
-#include <math.h>
 
 #include <chrono>
+#include <cmath>
 #include <cstdint>
 #include <filesystem>
-#include <format>
+#include <glm/ext.hpp>
 #include <glm/ext/quaternion_trigonometric.hpp>
 #include <glm/ext/scalar_constants.hpp>
 #include <glm/fwd.hpp>
@@ -29,9 +29,11 @@
 #include <memory>
 #include <nfd/nfd.hpp>
 #include <optional>
+#include <resin/core/mouse_codes.hpp>
 #include <resin/core/window.hpp>
 #include <resin/dialog/file_dialog.hpp>
 #include <resin/event/event.hpp>
+#include <resin/event/mouse_events.hpp>
 #include <resin/event/window_events.hpp>
 #include <resin/imgui/node_edit.hpp>
 #include <resin/imgui/sdf_tree.hpp>
@@ -47,10 +49,12 @@ Resin::Resin()
     : vertex_array_(0),
       vertex_buffer_(0),
       index_buffer_(0),
+      viewport_pos_(),
       gizmo_operation_(ImGui::resin::GizmoOperation::Translation) {
   dispatcher_.subscribe<WindowCloseEvent>(BIND_EVENT_METHOD(on_window_close));
   dispatcher_.subscribe<WindowResizeEvent>(BIND_EVENT_METHOD(on_window_resize));
   dispatcher_.subscribe<WindowTestEvent>(BIND_EVENT_METHOD(on_test));
+  dispatcher_.subscribe<MouseButtonPressedEvent>(BIND_EVENT_METHOD(on_click));
 
   {
     WindowProperties properties;
@@ -110,27 +114,28 @@ Resin::Resin()
   frag_shader.set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
   Logger::info("{}", frag_shader.get_glsl());
 
-  ubo_ = std::make_unique<UniformBuffer>(sdf_tree_.max_nodes_count());
-  frag_shader.set_ext_defi("MAX_UBO_NODE_COUNT", std::to_string(ubo_->max_count()));
-  ubo_->bind();
-  ubo_->set(sdf_tree_);
-  ubo_->unbind();
+  primitive_ubo_ = std::make_unique<PrimitiveUniformBuffer>(sdf_tree_.max_nodes_count());
+  frag_shader.set_ext_defi("MAX_UBO_NODE_COUNT", std::to_string(sdf_tree_.max_nodes_count()));
+
+  primitive_ubo_->bind();
+  primitive_ubo_->set(sdf_tree_);
+  primitive_ubo_->unbind();
 
   shader_ = std::make_unique<RenderingShaderProgram>("default", *shader_resource_manager_.get_res(path / "test.vert"),
                                                      std::move(frag_shader));
+  shader_->bind_uniform_buffer("Data", *primitive_ubo_);
 
   framebuffer_ = std::make_unique<Framebuffer>(window_->dimensions().x, window_->dimensions().y);
 
-  setup_shader();
+  setup_shader_uniforms();
 }
 
-void Resin::setup_shader() {
-  shader_->bind_uniform_buffer("Data", *ubo_);
+void Resin::setup_shader_uniforms() {
   shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
   shader_->set_uniform("u_resolution", glm::vec2(framebuffer_->width(), framebuffer_->height()));
   shader_->set_uniform("u_nearPlane", camera_->near_plane());
   shader_->set_uniform("u_farPlane", camera_->far_plane());
-  shader_->set_uniform("u_ortho", camera_->is_orthographic);
+  shader_->set_uniform("u_ortho", camera_->is_orthographic());
   shader_->set_uniform("u_camSize", camera_->height());
 }
 
@@ -172,9 +177,9 @@ void Resin::run() {
 
       ImGui::Render();
       ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-      window_->on_update();
     }
+
+    window_->on_update();
 
     if (second > 1s) {
       uint16_t seconds = static_cast<uint16_t>(std::chrono::duration_cast<std::chrono::seconds>(second).count());
@@ -213,10 +218,11 @@ static bool update_camera_controls(Camera& camera, GLFWwindow* window, float dt)
   float forward = 0.F;
 
   // Forward/Backward
-  if (!camera.is_orthographic) {
+  if (!camera.is_orthographic()) {
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
       forward += speed * dt;
-    } else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
       forward -= speed * dt;
     }
   }
@@ -224,21 +230,23 @@ static bool update_camera_controls(Camera& camera, GLFWwindow* window, float dt)
   // Left/Right
   if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
     right -= speed * dt;
-  } else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+  }
+  if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
     right += speed * dt;
   }
 
   // Up/Down
   if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
     up -= speed * dt;
-  } else if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+  }
+  if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
     up += speed * dt;
   }
 
   auto pos = camera.transform.local_pos();
-  pos += camera.transform.local_front() * forward + camera.transform.local_right() * right +
-         camera.transform.local_up() * up;
+  pos += camera.transform.local_front() * forward + camera.transform.local_right() * right + glm::vec3(0, 1, 0) * up;
   camera.transform.set_local_pos(pos);
+  camera.recalculate_projection();
 
   auto rot     = camera.transform.local_rot();
   auto yaw     = glm::angleAxis(-mouse_delta.x * 0.03F, glm::vec3(0, 1, 0));
@@ -251,43 +259,36 @@ static bool update_camera_controls(Camera& camera, GLFWwindow* window, float dt)
 }
 
 void Resin::update(duration_t delta) {
-  window_->set_title(std::format("Resin [{} FPS {} TPS] running for: {}", fps_, tps_,
-                                 std::chrono::duration_cast<std::chrono::seconds>(time_)));
-
   directional_light_->transform.rotate(glm::angleAxis(std::chrono::duration<float>(delta).count(), glm::vec3(0, 1, 0)));
 
   if (sdf_tree_.is_dirty()) {
     shader_->fragment_shader().set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
     Logger::debug("{}", sdf_tree_.gen_shader_code());
     shader_->recompile();
-    setup_shader();
+    setup_shader_uniforms();
     Logger::info("Refreshed the SDF Tree");
     sdf_tree_.mark_clean();
   }
 
-  ubo_->bind();
-  ubo_->update_dirty(sdf_tree_);
-  ubo_->unbind();
+  primitive_ubo_->bind();
+  primitive_ubo_->update_dirty(sdf_tree_);
+  primitive_ubo_->unbind();
 
   // TODO(SDF-87)
-  shader_->set_uniform("u_cubeMat", *cube_mat_);
-  shader_->set_uniform("u_sphereMat", *sphere_mat_);
+  shader_->set_uniform("u_sdf_materials[0]", *sphere_mat_);
+  shader_->set_uniform("u_sdf_materials[1]", *cube_mat_);
 
   shader_->set_uniform("u_dirLight", *directional_light_);
   shader_->set_uniform("u_pointLight", *point_light_);
-  shader_->set_uniform("u_cubeMat", *cube_mat_);
-  shader_->set_uniform("u_sphereMat", *sphere_mat_);
 
-  shader_->set_uniform("u_camSize", camera_->height());
-  shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
-
-  FileDialog::instance().update();
   if (is_viewport_focused_) {
     if (update_camera_controls(*camera_, window_->native_window(), static_cast<float>(delta.count()) * 1e-9F)) {
       shader_->set_uniform("u_camSize", camera_->height());
       shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
     }
   }
+
+  FileDialog::instance().update();
 }
 
 void Resin::gui() {
@@ -323,6 +324,11 @@ void Resin::gui() {
     auto width           = static_cast<float>(framebuffer_->width());
     auto height          = static_cast<float>(framebuffer_->height());
 
+    // TODO(anyone) https://stackoverflow.com/questions/73601927/implicit-vector-conversion-in-imgui-imvec-glmvec
+    ImVec2 pos      = ImGui::GetCursorScreenPos();
+    viewport_pos_.x = pos.x;
+    viewport_pos_.y = pos.y;
+
     if (resized) {
       camera_->set_aspect_ratio(width / height);
       shader_->set_uniform("u_resolution", glm::vec2(width, height));
@@ -336,6 +342,10 @@ void Resin::gui() {
 
     ImGui::Image((ImTextureID)(intptr_t)framebuffer_->color_texture(), ImVec2(width, height), ImVec2(0, 1),  // NOLINT
                  ImVec2(1, 0));
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetNextFrameWantCaptureMouse(false);
+    }
+
     if (selected_node_ && !selected_node_->expired()) {
       auto& node = sdf_tree_.node(*selected_node_);
       if (ImGui::resin::TransformGizmo(
@@ -346,7 +356,6 @@ void Resin::gui() {
       }
     }
   }
-
   ImGui::End();
 
   ImGui::SetNextWindowSizeConstraints(ImVec2(280.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
@@ -361,8 +370,8 @@ void Resin::gui() {
       camera_->set_fov(fov);
       shader_->set_uniform("u_camSize", camera_->height());
     }
-    ImGui::End();
   }
+  ImGui::End();
 
   ImGui::SetNextWindowSizeConstraints(ImVec2(350.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
   ImGui::Begin("[TEMP] Lights");
@@ -418,8 +427,16 @@ void Resin::gui() {
   if (selected_node_.has_value() && !selected_node_->expired()) {
     ImGui::resin::NodeEdit(sdf_tree_.node(*selected_node_));
   }
-
   ImGui::End();
+
+#ifndef NDEBUG
+  if (ImGui::Begin("DEBUG")) {
+    ImGui::Text("FPS: %d", fps_);
+    ImGui::Text("TPS: %d", tps_);
+    ImGui::Text("Running for: %lld", std::chrono::duration_cast<std::chrono::seconds>(time_));  // NOLINT
+  }
+  ImGui::End();
+#endif
 }
 
 void Resin::render() {
@@ -451,10 +468,41 @@ bool Resin::on_window_resize(WindowResizeEvent& e) {
 }
 
 bool Resin::on_test(WindowTestEvent&) {
-  camera_->is_orthographic = !camera_->is_orthographic;
-  shader_->set_uniform("u_ortho", camera_->is_orthographic);
+  camera_->set_orthographic(!camera_->is_orthographic());
+  shader_->set_uniform("u_ortho", camera_->is_orthographic());
+  shader_->set_uniform("u_camSize", camera_->height());
 
   return false;
+}
+
+bool Resin::on_click(MouseButtonPressedEvent& e) {
+  ImGuiIO& io = ImGui::GetIO();
+  if (io.WantCaptureMouse) {
+    return true;
+  }
+
+  glm::vec2 relative_pos = e.pos() - viewport_pos_;
+  if (relative_pos.x < 0 || relative_pos.y < 0 || relative_pos.x > static_cast<float>(framebuffer_->width()) ||
+      relative_pos.y > static_cast<float>(framebuffer_->height())) {
+    return false;
+  }
+
+  if (e.button() == mouse::Code::MouseButtonLeft) {
+    return on_left_click(relative_pos);
+  }
+
+  return false;
+}
+
+bool Resin::on_left_click(glm::vec2 relative_pos) {
+  // TODO(SDF-82): Make sure that mouse pick is not performed when camera is moving
+
+  framebuffer_->bind();
+  int id = framebuffer_->sample_mouse_pick(static_cast<size_t>(relative_pos.x), static_cast<size_t>(relative_pos.y));
+  framebuffer_->unbind();
+
+  selected_node_ = id == -1 ? std::nullopt : sdf_tree_.get_view_from_raw_id(id);
+  return true;
 }
 
 }  // namespace resin

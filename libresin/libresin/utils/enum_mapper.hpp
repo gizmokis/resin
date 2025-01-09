@@ -3,6 +3,7 @@
 
 #include <array>
 #include <cstddef>
+#include <optional>
 #include <string_view>
 #include <type_traits>
 
@@ -66,7 +67,7 @@ class EnumMapper {
       present_[i] = false;
     }
 
-    for (size_t i = 0; i < N; ++i) {
+    for (size_t i = 0; i < kEnumSize; ++i) {
       auto idx      = static_cast<size_t>(values_map[i].first);
       names_[idx]   = values_map[i].second;
       present_[idx] = true;
@@ -80,6 +81,17 @@ class EnumMapper {
 
   constexpr Value value(enum_type enum_entry) const { return names_[static_cast<size_t>(enum_entry)]; }
   constexpr Value operator[](enum_type enum_entry) const { return names_[static_cast<size_t>(enum_entry)]; }
+
+  // Keep in mind this mapping may be neither injective nor surjective
+  constexpr std::optional<enum_type> from_value(Value value) const {
+    for (size_t i = 0; i < kEnumSize; ++i) {
+      if (names_[i] == value) {
+        return std::make_optional(static_cast<enum_type>(i));
+      }
+    }
+
+    return std::nullopt;
+  }
 
  private:
   template <size_t... Is>

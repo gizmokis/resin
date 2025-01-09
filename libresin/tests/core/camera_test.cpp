@@ -10,8 +10,8 @@ TEST(CameraTest, UpdateDimensions) {
   const float aspect_ratio    = 16.0F / 9.0F;
   const float near_plane      = 0.1F;
   const float far_plane       = 100.0F;
-  const float expected_height = 0.082842715;
-  const float expected_width  = 0.14727594;
+  const float expected_height = 0.04142136;
+  const float expected_width  = 0.07363797;
 
   // when
   const resin::Camera camera(false, fov, aspect_ratio, near_plane, far_plane);

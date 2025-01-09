@@ -99,6 +99,7 @@ class ShaderProgram {
 
  private:
   mutable std::unordered_map<std::string, GLint, StringHash, std::equal_to<>> uniform_locations_;
+  mutable std::unordered_map<GLuint, GLuint> uniform_block_bindings_;
 };
 
 template <>
