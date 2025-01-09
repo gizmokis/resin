@@ -115,16 +115,7 @@ void SDFTree::delete_material(IdView<MaterialId> mat_id) {
 
   root_->remove_material_from_subtree(mat_id);
 
-  for (auto it = material_active_ids_.begin(); it != material_active_ids_.end(); ++it) {  // 😢
-    if (*it != mat_id) {
-      continue;
-    }
-
-    auto it2 = material_active_ids_.erase(it);  // 😢
-    if (it2 != it) {
-      break;
-    }
-  }
+  std::erase(material_active_ids_, mat_id);
 
   materials_[mat_id.raw()] = std::nullopt;
 }
