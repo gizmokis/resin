@@ -86,18 +86,14 @@ void render( vec3 ray_origin, vec3 ray_direction )
 }
 
 void main() {
-
     vec4 ray_origin;    // vec4(ro, 1) as it needs to be translated
     vec4 ray_direction; // vec4(rd, 0) as it cannot be translated
     if (u_ortho) {
-
-        vec2 pos = v_Pos;
-        ray_origin = vec4(vec3(pos, 0), 1);
+        ray_origin = vec4(v_Pos, 0, 1); // apply desired scaling from fov
         ray_direction = vec4(0, 0, -1, 0);
     } else {
-        vec2 pos = v_Pos;
         ray_origin = vec4(0, 0, 0, 1); 
-        ray_direction = vec4(normalize(vec3(pos, -u_nearPlane)), 0);
+        ray_direction = normalize(vec4(v_Pos, -u_nearPlane, 0));
     }
     
     render((u_iV * ray_origin).xyz, ((u_iV * ray_direction).xyz));

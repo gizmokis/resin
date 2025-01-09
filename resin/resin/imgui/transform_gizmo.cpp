@@ -23,7 +23,7 @@ bool TransformGizmo(::resin::Transform& trans, const ::resin::Camera& camera, Gi
 
   ImGuizmo::BeginFrame();
   ImGuizmo::SetDrawlist();
-  ImGuizmo::SetOrthographic(camera.is_orthographic);
+  ImGuizmo::SetOrthographic(camera.is_orthographic());
   ImGuizmo::SetRect(ImGui::GetWindowPos().x + ImGui::GetCursorStartPos().x,
                     ImGui::GetWindowPos().y + ImGui::GetCursorStartPos().y, width, height);
 

@@ -9,7 +9,6 @@
 #include <cmath>
 #include <cstdint>
 #include <filesystem>
-#include <format>
 #include <glm/ext.hpp>
 #include <glm/ext/quaternion_trigonometric.hpp>
 #include <glm/ext/scalar_constants.hpp>
@@ -136,7 +135,7 @@ void Resin::setup_shader_uniforms() {
   shader_->set_uniform("u_resolution", glm::vec2(framebuffer_->width(), framebuffer_->height()));
   shader_->set_uniform("u_nearPlane", camera_->near_plane());
   shader_->set_uniform("u_farPlane", camera_->far_plane());
-  shader_->set_uniform("u_ortho", camera_->is_orthographic);
+  shader_->set_uniform("u_ortho", camera_->is_orthographic());
   shader_->set_uniform("u_camSize", camera_->height());
 }
 
@@ -219,7 +218,7 @@ static bool update_camera_controls(Camera& camera, GLFWwindow* window, float dt)
   float forward = 0.F;
 
   // Forward/Backward
-  if (!camera.is_orthographic) {
+  if (!camera.is_orthographic()) {
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
       forward += speed * dt;
     }
@@ -247,6 +246,7 @@ static bool update_camera_controls(Camera& camera, GLFWwindow* window, float dt)
   auto pos = camera.transform.local_pos();
   pos += camera.transform.local_front() * forward + camera.transform.local_right() * right + glm::vec3(0, 1, 0) * up;
   camera.transform.set_local_pos(pos);
+  camera.recalculate_projection();
 
   auto rot     = camera.transform.local_rot();
   auto yaw     = glm::angleAxis(-mouse_delta.x * 0.03F, glm::vec3(0, 1, 0));
@@ -259,9 +259,6 @@ static bool update_camera_controls(Camera& camera, GLFWwindow* window, float dt)
 }
 
 void Resin::update(duration_t delta) {
-  window_->set_title(std::format("Resin [{} FPS {} TPS] running for: {}", fps_, tps_,
-                                 std::chrono::duration_cast<std::chrono::seconds>(time_)));
-
   directional_light_->transform.rotate(glm::angleAxis(std::chrono::duration<float>(delta).count(), glm::vec3(0, 1, 0)));
 
   if (sdf_tree_.is_dirty()) {
@@ -430,8 +427,16 @@ void Resin::gui() {
   if (selected_node_.has_value() && !selected_node_->expired()) {
     ImGui::resin::NodeEdit(sdf_tree_.node(*selected_node_));
   }
-
   ImGui::End();
+
+#ifndef NDEBUG
+  if (ImGui::Begin("DEBUG")) {
+    ImGui::Text("FPS: %d", fps_);
+    ImGui::Text("TPS: %d", tps_);
+    ImGui::Text("Running for: %lld", std::chrono::duration_cast<std::chrono::seconds>(time_));  // NOLINT
+  }
+  ImGui::End();
+#endif
 }
 
 void Resin::render() {
@@ -463,8 +468,9 @@ bool Resin::on_window_resize(WindowResizeEvent& e) {
 }
 
 bool Resin::on_test(WindowTestEvent&) {
-  camera_->is_orthographic = !camera_->is_orthographic;
-  shader_->set_uniform("u_ortho", camera_->is_orthographic);
+  camera_->set_orthographic(!camera_->is_orthographic());
+  shader_->set_uniform("u_ortho", camera_->is_orthographic());
+  shader_->set_uniform("u_camSize", camera_->height());
 
   return false;
 }
