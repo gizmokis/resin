@@ -1,6 +1,7 @@
 #include <assimp/mesh.h>
 #include <assimp/scene.h>
 #include <assimp/vector3.h>
+#include <glad/gl.h>
 
 #include <assimp/Exporter.hpp>
 #include <filesystem>
@@ -10,7 +11,8 @@
 #include <libresin/core/uniform_buffer.hpp>
 #include <memory>
 
-#include <glad/gl.h>
+#include <libresin/utils/path_utf.hpp>
+
 
 namespace resin {
 
@@ -30,12 +32,12 @@ void MeshExporter::setup_scene(const glm::vec3& bb_start, const glm::vec3& bb_en
 
 MeshExporter::~MeshExporter() { delete scene_; }
 
-void MeshExporter::export_mesh(const std::string& output_path, const std::string& format) const {
+void MeshExporter::export_mesh(const std::filesystem::path& output_path, std::string_view format) const {
   Assimp::Exporter exporter;
-  if (exporter.Export(scene_, format, output_path) != AI_SUCCESS) {
-    Logger::err("Failed to export mesh asset '{}'", output_path);
+  if (exporter.Export(scene_, std::string(format), path_to_utf8str(output_path)) != AI_SUCCESS) {
+    Logger::err("Failed to export mesh asset '{}'", output_path.string());
   } else {
-    Logger::info("Successfully exported mesh asset '{}'", output_path);
+    Logger::info("Successfully exported mesh asset '{}'", output_path.string());
   }
 }
 
@@ -55,7 +57,7 @@ void MeshExporter::execute_shader(const glm::vec3 bb_start, const glm::vec3 bb_e
   compute_shader_program.set_uniform("u_boundingBoxStart", bb_start);
   compute_shader_program.set_uniform("u_boundingBoxEnd", bb_end);
   compute_shader_program.set_uniform("u_marchRes", resolution_);
-  compute_shader_program.set_uniform("u_farPlane", 100.f);  // remove this uniform later
+  compute_shader_program.set_uniform("u_farPlane", 100.F);  // remove this uniform later
 
   // Dispatch compute shader.
   glDispatchCompute(resolution_ / 8, resolution_ / 8, resolution_ / 8);
@@ -97,6 +99,7 @@ void MeshExporter::read_buffers() {
 }
 
 void MeshExporter::create_scene() const {
+  // NOLINTBEGIN(cppcoreguidelines-owning-memory)
   scene_->mRootNode             = new aiNode();
   scene_->mMeshes               = new aiMesh*[1];
   scene_->mMeshes[0]            = new aiMesh();
@@ -121,7 +124,7 @@ void MeshExporter::create_scene() const {
   for (size_t i = 0; i < vertices_.size(); ++i) {
     mesh->mVertices[i]         = aiVector3D(vertices_[i].x, vertices_[i].y, vertices_[i].z);
     mesh->mNormals[i]          = aiVector3D(normals_[i].x, normals_[i].y, normals_[i].z);
-    mesh->mTextureCoords[0][i] = aiVector3D(uvs_[i].x, uvs_[i].y, 0.0f);
+    mesh->mTextureCoords[0][i] = aiVector3D(uvs_[i].x, uvs_[i].y, 0.0F);
   }
 
   mesh->mFaces    = new aiFace[vertices_.size() / 3];
@@ -131,6 +134,7 @@ void MeshExporter::create_scene() const {
     face.mIndices    = new unsigned int[3]{i + 1, i, i + 2};  // counterclockwise winding order
     face.mNumIndices = 3;
   }
+  // NOLINTEND(cppcoreguidelines-owning-memory)
 }
 
 }  // namespace resin

@@ -1,5 +1,5 @@
-#ifndef SHADER_STORAGE_BUFFER_HPP
-#define SHADER_STORAGE_BUFFER_HPP
+#ifndef RESIN_SHADER_STORAGE_BUFFER_HPP
+#define RESIN_SHADER_STORAGE_BUFFER_HPP
 
 #include <glad/gl.h>
 #include <cstddef>
@@ -32,4 +32,4 @@ class ShaderStorageBuffer {
 };
 }  // namespace resin
 
-#endif  // SHADER_STORAGE_BUFFER_HPP
+#endif  // RESIN_SHADER_STORAGE_BUFFER_HPP

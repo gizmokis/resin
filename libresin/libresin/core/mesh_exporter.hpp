@@ -1,5 +1,5 @@
-#ifndef MESH_EXPORTER_HPP
-#define MESH_EXPORTER_HPP
+#ifndef RESIN_MESH_EXPORTER_HPP
+#define RESIN_MESH_EXPORTER_HPP
 
 #include <assimp/scene.h>
 
@@ -9,18 +9,17 @@
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/shader_storage_buffer.hpp>
 #include <memory>
-#include <string>
 #include <vector>
 namespace resin {
 
 class MeshExporter {
  public:
-  MeshExporter(unsigned int resolution);
+  explicit MeshExporter(unsigned int resolution);
   ~MeshExporter();
 
   void setup_scene(const glm::vec3& bb_start, const glm::vec3& bb_end, SDFTree& sdf_tree,
                    IdView<SDFTreeNodeId> node_id);
-  void export_mesh(const std::string& output_path, const std::string& format) const;
+  void export_mesh(const std::filesystem::path& output_path, std::string_view format) const;
 
  private:
   std::shared_ptr<ShaderResourceManager> shader_manager_ = ShaderResourceManagers::get_instance();
@@ -214,4 +213,4 @@ class MeshExporter {
 };
 
 }  // namespace resin
-#endif  // MESH_EXPORTER_HPP
+#endif  // RESIN_MESH_EXPORTER_HPP
