@@ -128,8 +128,10 @@ void Window::set_glfw_callbacks() const {
   glfwSetMouseButtonCallback(window_ptr_, [](GLFWwindow* window, int button_code, int action, int /*mods*/) {
     const WindowProperties& properties = *static_cast<WindowProperties*>(glfwGetWindowUserPointer(window));
 
-    // this value is always present in this context, as all GLFW buttons are properly mapped
-    mouse::Code button = mouse::kMouseCodeGLFWMapping.from_value(button_code).value();
+    auto button = mouse::kMouseCodeGLFWMapping.from_value(button_code);
+    if (!button) {
+      return;
+   }
 
     double x, y;  // NOLINT
     glfwGetCursorPos(window, &x, &y);
