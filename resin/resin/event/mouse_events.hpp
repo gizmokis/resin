@@ -11,8 +11,7 @@ class MouseButtonPressedEvent : public Event<EventType::MouseButtonPressedEvent>
  public:
   EVENT_NAME(MouseButtonPressedEvent)
 
-  MouseButtonPressedEvent(int button, glm::vec2 pos)
-      : button_(mouse::kMouseCodeGLFWMapping.from_value(button)), pos_(pos) {}
+  MouseButtonPressedEvent(mouse::Code button, glm::vec2 pos) : button_(button), pos_(pos) {}
 
   mouse::Code button() const { return button_; }
   glm::vec2 pos() const { return pos_; }
@@ -31,8 +30,7 @@ class MouseButtonReleasedEvent : public Event<EventType::MouseButtonReleasedEven
  public:
   EVENT_NAME(MouseButtonReleasedEvent)
 
-  MouseButtonReleasedEvent(int button, glm::vec2 pos)
-      : button_(mouse::kMouseCodeGLFWMapping.from_value(button)), pos_(pos) {}
+  MouseButtonReleasedEvent(mouse::Code button, glm::vec2 pos) : button_(button), pos_(pos) {}
 
   mouse::Code button() const { return button_; }
   glm::vec2 pos() const { return pos_; }

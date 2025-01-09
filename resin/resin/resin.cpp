@@ -30,6 +30,7 @@
 #include <memory>
 #include <nfd/nfd.hpp>
 #include <optional>
+#include <resin/core/mouse_codes.hpp>
 #include <resin/core/window.hpp>
 #include <resin/dialog/file_dialog.hpp>
 #include <resin/event/event.hpp>
@@ -221,7 +222,8 @@ static bool update_camera_controls(Camera& camera, GLFWwindow* window, float dt)
   if (!camera.is_orthographic) {
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
       forward += speed * dt;
-    } else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
       forward -= speed * dt;
     }
   }
@@ -229,20 +231,21 @@ static bool update_camera_controls(Camera& camera, GLFWwindow* window, float dt)
   // Left/Right
   if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
     right -= speed * dt;
-  } else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+  }
+  if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
     right += speed * dt;
   }
 
   // Up/Down
   if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
     up -= speed * dt;
-  } else if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+  }
+  if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
     up += speed * dt;
   }
 
   auto pos = camera.transform.local_pos();
-  pos += camera.transform.local_front() * forward + camera.transform.local_right() * right +
-         camera.transform.local_up() * up;
+  pos += camera.transform.local_front() * forward + camera.transform.local_right() * right + glm::vec3(0, 1, 0) * up;
   camera.transform.set_local_pos(pos);
 
   auto rot     = camera.transform.local_rot();
@@ -281,17 +284,17 @@ void Resin::update(duration_t delta) {
   shader_->set_uniform("u_dirLight", *directional_light_);
   shader_->set_uniform("u_pointLight", *point_light_);
 
-  FileDialog::instance().update();
   if (is_viewport_focused_) {
     if (update_camera_controls(*camera_, window_->native_window(), static_cast<float>(delta.count()) * 1e-9F)) {
       shader_->set_uniform("u_camSize", camera_->height());
       shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
     }
   }
+
+  FileDialog::instance().update();
 }
 
 void Resin::gui() {
-  ImGui::ShowDemoWindow();
   ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
 
   bool resized = false;
@@ -342,9 +345,10 @@ void Resin::gui() {
 
     ImGui::Image((ImTextureID)(intptr_t)framebuffer_->color_texture(), ImVec2(width, height), ImVec2(0, 1),  // NOLINT
                  ImVec2(1, 0));
-    if(ImGui::IsItemHovered()) {
+    if (ImGui::IsItemHovered()) {
       ImGui::SetNextFrameWantCaptureMouse(false);
     }
+
     if (selected_node_ && !selected_node_->expired()) {
       auto& node = sdf_tree_.node(*selected_node_);
       if (ImGui::resin::TransformGizmo(
@@ -477,15 +481,21 @@ bool Resin::on_click(MouseButtonPressedEvent& e) {
     return false;
   }
 
+  if (e.button() == mouse::Code::MouseButtonLeft) {
+    return on_left_click(relative_pos);
+  }
+
+  return false;
+}
+
+bool Resin::on_left_click(glm::vec2 relative_pos) {
+  // TODO(SDF-82): Make sure that mouse pick is not performed when camera is moving
+
   framebuffer_->bind();
   int id = framebuffer_->sample_mouse_pick(static_cast<size_t>(relative_pos.x), static_cast<size_t>(relative_pos.y));
   framebuffer_->unbind();
-  if (id == -1) {
-    selected_node_ = std::nullopt;
-    return true;
-  }
 
-  selected_node_ = sdf_tree_.get_view_from_raw_id(id);
+  selected_node_ = id == -1 ? std::nullopt : sdf_tree_.get_view_from_raw_id(id);
   return true;
 }
 

@@ -116,7 +116,7 @@ void Window::set_glfw_callbacks() const {
     properties.eventDispatcher->get().dispatch(window_resize_event);
   });
 
-  glfwSetKeyCallback(window_ptr_, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
+  glfwSetKeyCallback(window_ptr_, [](GLFWwindow* window, int key, int /*scancode*/, int action, int /*mods*/) {
     const WindowProperties& properties = *static_cast<WindowProperties*>(glfwGetWindowUserPointer(window));
 
     if (key == GLFW_KEY_V && action == GLFW_PRESS) {
@@ -125,8 +125,10 @@ void Window::set_glfw_callbacks() const {
     }
   });
 
-  glfwSetMouseButtonCallback(window_ptr_, [](GLFWwindow* window, int button, int action, int mods) {
+  glfwSetMouseButtonCallback(window_ptr_, [](GLFWwindow* window, int button_code, int action, int /*mods*/) {
     const WindowProperties& properties = *static_cast<WindowProperties*>(glfwGetWindowUserPointer(window));
+
+    mouse::Code button = mouse::kMouseCodeGLFWMapping.from_value(button_code);
 
     double x, y;  // NOLINT
     glfwGetCursorPos(window, &x, &y);

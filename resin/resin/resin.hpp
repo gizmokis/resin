@@ -54,6 +54,7 @@ class Resin {
   bool on_window_resize(WindowResizeEvent& e);
   bool on_test(WindowTestEvent& e);
   bool on_click(MouseButtonPressedEvent& e);
+  bool on_left_click(glm::vec2 relative_pos);
 
  public:
   static constexpr duration_t kTickTime = 16666us;  // 60 TPS = 16.6(6) ms/t
