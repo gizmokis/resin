@@ -131,18 +131,18 @@ void Window::set_glfw_callbacks() const {
     auto button = mouse::kMouseCodeGLFWMapping.from_value(button_code);
     if (!button) {
       return;
-   }
+    }
 
     double x, y;  // NOLINT
     glfwGetCursorPos(window, &x, &y);
     switch (action) {
       case GLFW_PRESS: {
-        MouseButtonPressedEvent mouse_button_pressed_event(button, glm::vec2(x, y));
+        MouseButtonPressedEvent mouse_button_pressed_event(*button, glm::vec2(x, y));
         properties.eventDispatcher->get().dispatch(mouse_button_pressed_event);
         break;
       }
       case GLFW_RELEASE: {
-        MouseButtonReleasedEvent mouse_button_released_event(button, glm::vec2(x, y));
+        MouseButtonReleasedEvent mouse_button_released_event(*button, glm::vec2(x, y));
         properties.eventDispatcher->get().dispatch(mouse_button_released_event);
         break;
       }
