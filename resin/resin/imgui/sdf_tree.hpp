@@ -9,6 +9,7 @@
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node_visitor.hpp>
+#include <memory>
 #include <optional>
 
 namespace ImGui {  // NOLINT
@@ -32,6 +33,8 @@ class SDFTreeComponentVisitor : public ::resin::ISDFTreeNodeVisitor {
   void render_op(::resin::SDFTreeNode& node) const;
   void drag_and_drop(::resin::SDFTreeNode& node, bool ignore_middle);
   std::optional<::resin::IdView<::resin::SDFTreeNodeId>> get_curr_payload();
+  std::unique_ptr<::resin::SDFTreeNode> fix_transform_and_detach(::resin::IdView<::resin::SDFTreeNodeId> source,
+                                                                 ::resin::IdView<::resin::SDFTreeNodeId> new_parent);
 
  private:
   std::optional<::resin::IdView<::resin::SDFTreeNodeId>> selected_ = std::nullopt;

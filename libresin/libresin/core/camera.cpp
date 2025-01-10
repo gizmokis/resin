@@ -1,42 +1,54 @@
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/geometric.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <libresin/core/camera.hpp>
 
 namespace resin {
 
-Camera::Camera(const bool orthographic, const float fov, const float aspect_ratio, const float near_plane,
-               float far_plane)
-    : is_orthographic(orthographic),
+Camera::Camera(bool orthographic, float fov, float aspect_ratio, float near_plane, float far_plane)
+    : is_orthographic_(orthographic),
       fov_(fov),
       aspect_ratio_(aspect_ratio),
+      width_(),
+      height_(),
       near_plane_(near_plane),
       far_plane_(far_plane),
-      width_(0.0F),
-      height_(0.0F) {
-  update_dimensions();
+      projection_() {
+  recalculate_projection();
 }
 
-void Camera::set_fov(const float fov) {
+void Camera::set_orthographic(bool ortho) {
+  is_orthographic_ = ortho;
+  recalculate_projection();
+}
+
+void Camera::set_fov(float fov) {
   fov_ = fov;
-  update_dimensions();
+  recalculate_projection();
 }
 
-void Camera::set_aspect_ratio(const float aspect_ratio) {
+void Camera::set_aspect_ratio(float aspect_ratio) {
   aspect_ratio_ = aspect_ratio;
-  update_dimensions();
+  recalculate_projection();
 }
 
-void Camera::set_near_plane(const float near_plane) {
+void Camera::set_near_plane(float near_plane) {
   near_plane_ = near_plane;
-  update_dimensions();
+  recalculate_projection();
 }
 
-void Camera::set_far_plane(const float far_plane) { far_plane_ = far_plane; }
+void Camera::set_far_plane(float far_plane) { far_plane_ = far_plane; }
 
-void Camera::update_dimensions() {
-  height_ = 2.0F * near_plane_ * std::tan(glm::radians(fov_ * 0.5F));
-  width_  = height_ * aspect_ratio_;
+void Camera::recalculate_projection() {
+  float focal_length = is_orthographic_ ? glm::length(transform.pos()) : near_plane_;
+  height_            = focal_length * std::tan(glm::radians(fov_ * 0.5F));
+  width_             = height_ * aspect_ratio_;
+
+  if (is_orthographic_) {
+    projection_ = glm::ortho(-width_, width_, -height_, height_, near_plane_, far_plane_);
+  } else {
+    projection_ = glm::perspective(glm::radians(fov_), aspect_ratio_, near_plane_, far_plane_);
+  }
 }
-
-glm::mat4 Camera::view_matrix() const { return transform.world_to_local_matrix(); }
-glm::mat4 Camera::inverse_view_matrix() const { return transform.local_to_world_matrix(); }
 
 }  // namespace resin

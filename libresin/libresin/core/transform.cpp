@@ -30,6 +30,11 @@ void Transform::set_parent(const std::optional<std::reference_wrapper<Transform>
   parent_->get().children_.emplace_back(*this);
 }
 
+void Transform::move_local(const glm::vec3& delta) {
+  pos_ += delta;
+  mark_dirty();
+}
+
 void Transform::rotate(const glm::vec3& axis, const float angle) {
   rot_ = glm::rotate(rot_, angle, axis);
   mark_dirty();

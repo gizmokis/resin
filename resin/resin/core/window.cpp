@@ -3,13 +3,15 @@
 #include <imgui/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_opengl3.h>
 #include <imgui/imgui_impl_opengl3_loader.h>
+#include <imguizmo/ImGuizmo.h>
 
-#include <cstdlib>
 #include <libresin/utils/logger.hpp>
 #include <libresin/utils/path_utf.hpp>
 #include <resin/core/graphics_context.hpp>
+#include <resin/core/mouse_codes.hpp>
 #include <resin/core/window.hpp>
 #include <resin/event/event.hpp>
+#include <resin/event/mouse_events.hpp>
 #include <resin/event/window_events.hpp>
 #include <string>
 
@@ -36,6 +38,7 @@ void Window::api_init() {
   io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
   imgui_set_style();
+  ImGuizmo::SetImGuiContext(ImGui::GetCurrentContext());
 
   Logger::debug("Api init");
 }
@@ -113,12 +116,36 @@ void Window::set_glfw_callbacks() const {
     properties.eventDispatcher->get().dispatch(window_resize_event);
   });
 
-  glfwSetKeyCallback(window_ptr_, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
+  glfwSetKeyCallback(window_ptr_, [](GLFWwindow* window, int key, int /*scancode*/, int action, int /*mods*/) {
     const WindowProperties& properties = *static_cast<WindowProperties*>(glfwGetWindowUserPointer(window));
 
     if (key == GLFW_KEY_V && action == GLFW_PRESS) {
       WindowTestEvent window_test_event;
       properties.eventDispatcher->get().dispatch(window_test_event);
+    }
+  });
+
+  glfwSetMouseButtonCallback(window_ptr_, [](GLFWwindow* window, int button_code, int action, int /*mods*/) {
+    const WindowProperties& properties = *static_cast<WindowProperties*>(glfwGetWindowUserPointer(window));
+
+    auto button = mouse::kMouseCodeGLFWMapping.from_value(button_code);
+    if (!button) {
+      return;
+    }
+
+    double x, y;  // NOLINT
+    glfwGetCursorPos(window, &x, &y);
+    switch (action) {
+      case GLFW_PRESS: {
+        MouseButtonPressedEvent mouse_button_pressed_event(*button, glm::vec2(x, y));
+        properties.eventDispatcher->get().dispatch(mouse_button_pressed_event);
+        break;
+      }
+      case GLFW_RELEASE: {
+        MouseButtonReleasedEvent mouse_button_released_event(*button, glm::vec2(x, y));
+        properties.eventDispatcher->get().dispatch(mouse_button_released_event);
+        break;
+      }
     }
   });
 }

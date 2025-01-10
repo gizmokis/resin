@@ -17,7 +17,7 @@ SDFTree::SDFTree() : root_(std::make_unique<GroupNode>(sdf_tree_registry_)), tre
 }
 
 std::optional<IdView<SDFTreeNodeId>> SDFTree::get_view_from_raw_id(size_t raw_id) {
-  if (!sdf_tree_registry_.all_nodes[raw_id].has_value()) {
+  if (sdf_tree_registry_.all_nodes[raw_id].has_value()) {
     return sdf_tree_registry_.all_nodes[raw_id].value().get().node_id();
   }
   return std::nullopt;
@@ -56,7 +56,9 @@ GroupNode& SDFTree::group(IdView<SDFTreeNodeId> node_id) {
 
 void SDFTree::visit_dirty_primitives(ISDFTreeNodeVisitor& visitor) {
   for (auto prim : sdf_tree_registry_.dirty_primitives) {
-    sdf_tree_registry_.all_nodes[prim.raw()]->get().accept_visitor(visitor);
+    if (sdf_tree_registry_.all_nodes[prim.raw()].has_value()) {
+      sdf_tree_registry_.all_nodes[prim.raw()]->get().accept_visitor(visitor);
+    }
   }
   mark_primitives_clean();
 }
@@ -113,16 +115,7 @@ void SDFTree::delete_material(IdView<MaterialId> mat_id) {
 
   root_->remove_material_from_subtree(mat_id);
 
-  for (auto it = material_active_ids_.begin(); it != material_active_ids_.end(); ++it) {  // 😢
-    if (*it != mat_id) {
-      continue;
-    }
-
-    auto it2 = material_active_ids_.erase(it);  // 😢
-    if (it2 != it) {
-      break;
-    }
-  }
+  std::erase(material_active_ids_, mat_id);
 
   materials_[mat_id.raw()] = std::nullopt;
 }

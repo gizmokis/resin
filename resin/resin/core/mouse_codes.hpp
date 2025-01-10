@@ -1,0 +1,56 @@
+#ifndef RESIN_MOUSE_CODES_HPP
+#define RESIN_MOUSE_CODES_HPP
+
+#include <GLFW/glfw3.h>
+
+#include <cstdint>
+#include <libresin/utils/enum_mapper.hpp>
+
+namespace resin {
+
+namespace mouse {
+
+enum class Code : uint8_t {
+  MouseButtonLeft,
+  MouseButtonRight,
+  MouseButtonMiddle,
+  MouseButton4,
+  MouseButton5,
+  MouseButton6,
+  MouseButton7,
+  MouseButton8,
+
+  _Count,  // NOLINT
+
+  MouseButton1 = MouseButtonLeft,
+  MouseButton2 = MouseButtonRight,
+  MouseButton3 = MouseButtonMiddle
+};
+
+constexpr StringEnumMapper<Code> kMouseCodeNames({
+    {Code::MouseButtonLeft, "MouseButtonLeft"},      //
+    {Code::MouseButtonRight, "MouseButtonRight"},    //
+    {Code::MouseButtonMiddle, "MouseButtonMiddle"},  //
+    {Code::MouseButton4, "MouseButton4"},            //
+    {Code::MouseButton5, "MouseButton5"},            //
+    {Code::MouseButton6, "MouseButton6"},            //
+    {Code::MouseButton7, "MouseButton7"},            //
+    {Code::MouseButton8, "MouseButton8"}             //
+});
+
+constexpr EnumMapper<Code, int> kMouseCodeGLFWMapping({
+    {Code::MouseButtonLeft, GLFW_MOUSE_BUTTON_1},    //
+    {Code::MouseButtonRight, GLFW_MOUSE_BUTTON_2},   //
+    {Code::MouseButtonMiddle, GLFW_MOUSE_BUTTON_3},  //
+    {Code::MouseButton4, GLFW_MOUSE_BUTTON_4},       //
+    {Code::MouseButton5, GLFW_MOUSE_BUTTON_5},       //
+    {Code::MouseButton6, GLFW_MOUSE_BUTTON_6},       //
+    {Code::MouseButton7, GLFW_MOUSE_BUTTON_7},       //
+    {Code::MouseButton8, GLFW_MOUSE_BUTTON_8}        //
+});
+
+}  // namespace mouse
+
+}  // namespace resin
+
+#endif  // RESIN_MOUSE_CODES_HPP

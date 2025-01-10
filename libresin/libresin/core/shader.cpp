@@ -33,6 +33,11 @@ void ShaderProgram::recompile() {
   auto stop     = clock::now();
   auto duration = duration_cast<std::chrono::milliseconds>(stop - start);
   Logger::debug("Shader {} recompilation took {}", shader_name_, duration);
+
+  // Reconnect UBO bindings
+  for (auto& pair : uniform_block_bindings_) {
+    glUniformBlockBinding(program_id_, pair.first, pair.second);
+  }
 }
 
 std::optional<std::string> ShaderProgram::get_shader_status(GLuint shader, GLenum type) {
@@ -118,7 +123,7 @@ GLuint ShaderProgram::create_shader(const ShaderResource& resource, GLenum type)
 }
 
 void ShaderProgram::bind_uniform_buffer(std::string_view name, const UniformBuffer& ubo) const {
-  GLuint index = glGetUniformBlockIndex(program_id_, name.data());
+  const GLuint index = glGetUniformBlockIndex(program_id_, name.data());
   if (index == GL_INVALID_INDEX) {
     log_throw(ShaderProgramValidationException(
         shader_name_, std::format(R"(Unable to find uniform block "{}" in shader "{}")", name, shader_name_)));
@@ -131,9 +136,10 @@ void ShaderProgram::bind_uniform_buffer(std::string_view name, const UniformBuff
         shader_name_, std::format(R"(Unexpected uniform block size: {}. Expected: {})", size, ubo.buffer_size())));
   }
 
-  glUniformBlockBinding(program_id_, index, static_cast<GLuint>(ubo.binding()));
-  Logger::debug(R"(Bound uniform block "{}" (index: {}, size: {} bytes) in shader "{}" to id {})", name, index, size,
-                shader_name_, ubo.binding());
+  uniform_block_bindings_[index] = static_cast<GLuint>(ubo.binding());
+  glUniformBlockBinding(program_id_, index, uniform_block_bindings_[index]);
+  Logger::debug(R"(Bound uniform block "{}" (index: {}, size: {} bytes) in shader "{}" to binding: {})", name, index,
+                size, shader_name_, ubo.binding());
 }
 
 RenderingShaderProgram::RenderingShaderProgram(std::string_view name, ShaderResource vertex_resource,
