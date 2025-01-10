@@ -23,5 +23,5 @@ void ShaderStorageBuffer::get_data(void* output, size_t size) const {
 }
 void ShaderStorageBuffer::bind() const { glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer_id_); }
 
-void ShaderStorageBuffer::unbind() const { glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); } // NOLINT
+void ShaderStorageBuffer::unbind() const { glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); }  // NOLINT
 }  // namespace resin

@@ -23,7 +23,6 @@
 #include <resin/resources/resource_managers.hpp>
 #include <utility>
 
-
 namespace ImGui {  // NOLINT
 
 namespace resin {
