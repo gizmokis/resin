@@ -50,7 +50,6 @@ class PrimitiveUniformBuffer : public UniformBuffer {
   size_t max_count() const { return max_count_; }
 
   void set(SDFTree& tree);
-  void set(SDFTree& tree, IdView<SDFTreeNodeId> node_id);
   void update_dirty(SDFTree& tree);
 
   PrimitiveUniformBuffer(const PrimitiveUniformBuffer&)            = delete;

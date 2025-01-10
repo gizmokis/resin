@@ -16,15 +16,11 @@ uniform vec3 u_boundingBoxEnd;
 uniform uint u_marchRes;
 uniform float u_farPlane;
 
+#include "blinn_phong.glsl"
 #include "sdf.glsl"
 #external_definition SDF_CODE
 #external_definition MAX_UBO_NODE_COUNT
 
-const int kMaxNodeCount = MAX_UBO_NODE_COUNT;
-layout (std140, binding = 0) uniform Data
-{
-    node u_sdf_primitives[kMaxNodeCount];
-};
 
 const ivec2 edgeVertexPairs [12] = ivec2[](
 /*
@@ -51,7 +47,7 @@ ivec2(3, 7)  // Edge 11
 );
 
 
-vec2 map(vec3 pos)
+sdf_result map(vec3 pos)
 {
     return SDF_CODE;
 }
@@ -64,7 +60,7 @@ vec3 calcNormal(vec3 pos)
     for (int i = 0; i < 4; i++)
     {
         vec3 e = 0.5773 * (2.0 * vec3((((i + 3) >> 1) & 1), ((i >> 1) & 1), (i & 1)) - 1.0);
-        n += e * map(pos + 0.0005 * e).x;
+        n += e * map(pos + 0.0005 * e).dist;
         //if( n.x+n.y+n.z>100.0 ) break;
     }
     return normalize(n);
@@ -95,7 +91,7 @@ void main() {
     // Evaluate the SDF at the corners
     float values[8];
     for (int i = 0; i < 8; ++i) {
-        values[i] = map(cornerPositions[i]).x;
+        values[i] = map(cornerPositions[i]).dist;
     }
 
     // Determine indexes of intersected vertices
