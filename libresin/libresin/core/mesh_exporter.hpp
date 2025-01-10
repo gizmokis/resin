@@ -5,16 +5,16 @@
 
 #include <glm/fwd.hpp>
 #include <libresin/core/resources/shader_resource.hpp>
-#include <libresin/core/resources/shader_resource_managers.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/shader_storage_buffer.hpp>
 #include <memory>
 #include <vector>
+
 namespace resin {
 
 class MeshExporter {
  public:
-  explicit MeshExporter(unsigned int resolution);
+  explicit MeshExporter(ShaderResource& shader_resource, unsigned int resolution);
   ~MeshExporter();
 
   void setup_scene(const glm::vec3& bb_start, const glm::vec3& bb_end, SDFTree& sdf_tree,
@@ -22,8 +22,7 @@ class MeshExporter {
   void export_mesh(const std::filesystem::path& output_path, std::string_view format) const;
 
  private:
-  std::shared_ptr<ShaderResourceManager> shader_manager_ = ShaderResourceManagers::get_instance();
-  ShaderResource shader_resource_;
+  ShaderResource& shader_resource_;
   std::unique_ptr<ShaderStorageBuffer> edges_lookup_buffer_;
   std::unique_ptr<ShaderStorageBuffer> triangles_lookup_buffer_;
   std::unique_ptr<ShaderStorageBuffer> vertex_buffer_;

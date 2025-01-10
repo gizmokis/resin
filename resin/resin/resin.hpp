@@ -6,7 +6,6 @@
 #include <libresin/core/camera.hpp>
 #include <libresin/core/framebuffer.hpp>
 #include <libresin/core/resources/shader_resource.hpp>
-#include <libresin/core/resources/shader_resource_managers.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
@@ -16,6 +15,7 @@
 #include <resin/core/window.hpp>
 #include <resin/event/event.hpp>
 #include <resin/event/window_events.hpp>
+#include <resin/resources/resource_managers.hpp>
 
 int main();
 
@@ -58,7 +58,7 @@ class Resin {
  private:
   unsigned int vertex_array_, vertex_buffer_, index_buffer_;
   EventDispatcher dispatcher_;
-  std::shared_ptr<ShaderResourceManager> shader_resource_manager_ = ShaderResourceManagers::get_instance();
+  ShaderResourceManager& shader_resource_manager_ = ResourceManagers::shader_manager();
 
   SDFTree sdf_tree_;
 

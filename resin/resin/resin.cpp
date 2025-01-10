@@ -55,7 +55,7 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
   camera_->transform.set_parent(camera_rig_);
 
   point_light_       = std::make_unique<PointLight>(glm::vec3(0.57F, 0.38F, 0.04F), glm::vec3(0.0F, 1.0F, 0.5F),
-                                              PointLight::Attenuation(1.0F, 0.7F, 1.8F));
+                                                    PointLight::Attenuation(1.0F, 0.7F, 1.8F));
   directional_light_ = std::make_unique<DirectionalLight>(glm::vec3(0.5F, 0.5F, 0.5F), 1.0F);
   directional_light_->transform.set_local_rot(glm::quatLookAt(direction, glm::vec3(0, 1, 0)));
 
@@ -90,7 +90,7 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
   sdf_tree_.root().push_back_child<SphereNode>(SDFBinaryOperation::SmoothUnion);
 
   // SDF Shader
-  ShaderResource frag_shader = *shader_resource_manager_->get_res(path / "test.frag");
+  ShaderResource frag_shader = *shader_resource_manager_.get_res(path / "test.frag");
 
   frag_shader.set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
   Logger::info("{}", frag_shader.get_glsl());
@@ -101,7 +101,7 @@ Resin::Resin() : vertex_array_(0), vertex_buffer_(0), index_buffer_(0) {
   ubo_->set(sdf_tree_);
   ubo_->unbind();
 
-  shader_ = std::make_unique<RenderingShaderProgram>("default", *shader_resource_manager_->get_res(path / "test.vert"),
+  shader_ = std::make_unique<RenderingShaderProgram>("default", *shader_resource_manager_.get_res(path / "test.vert"),
                                                      std::move(frag_shader));
 
   framebuffer_ = std::make_unique<Framebuffer>(window_->dimensions().x, window_->dimensions().y);

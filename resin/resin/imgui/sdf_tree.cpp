@@ -1,8 +1,10 @@
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
 
+#include <filesystem>
 #include <fstream>
 #include <libresin/core/mesh_exporter.hpp>
+#include <libresin/core/resources/shader_resource.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/primitive_base_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
@@ -15,6 +17,7 @@
 #include <ranges>
 #include <resin/dialog/file_dialog.hpp>
 #include <resin/imgui/sdf_tree.hpp>
+#include <resin/resources/resource_managers.hpp>
 #include <utility>
 
 namespace ImGui {  // NOLINT
@@ -166,10 +169,13 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
         if (ImGui::MenuItem("OBJ")) {
           ::resin::FileDialog::instance().save_file(
               [curr_id, &sdf_tree, resolution](const std::filesystem::path& path) {
-                ::resin::MeshExporter exporter(resolution);
+                ::resin::ShaderResourceManager resource_manager = ::resin::ResourceManagers::shader_manager();
+                ::resin::ShaderResource shader_resource =
+                    *resource_manager.get_res(std::filesystem::current_path() / "assets/marching_cubes.comp");
+                ::resin::MeshExporter exporter(shader_resource, resolution);
                 glm::vec3 pos = sdf_tree.group(curr_id).transform().pos();  // TODO(SDF-130) calculate bounding box
-                exporter.setup_scene(pos - glm::vec3(5.0f), pos + glm::vec3(5.0f), sdf_tree, curr_id);
-                exporter.export_mesh(path.string(), "obj");
+                exporter.setup_scene(pos - glm::vec3(5.0F), pos + glm::vec3(5.0F), sdf_tree, curr_id);
+                exporter.export_mesh(path, "obj");
               },
               std::span<const ::resin::FileDialog::FilterItem>(kMeshFiltersArray), std::string(name) + ".obj");
         }
@@ -177,10 +183,13 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
         if (ImGui::MenuItem("GLTF")) {
           ::resin::FileDialog::instance().save_file(
               [curr_id, &sdf_tree, resolution](const std::filesystem::path& path) {
-                ::resin::MeshExporter exporter(resolution);
+                ::resin::ShaderResourceManager resource_manager = ::resin::ResourceManagers::shader_manager();
+                ::resin::ShaderResource shader_resource =
+                    *resource_manager.get_res(std::filesystem::current_path() / "assets/marching_cubes.comp");
+                ::resin::MeshExporter exporter(shader_resource, resolution);
                 glm::vec3 pos = sdf_tree.group(curr_id).transform().pos();  // TODO(SDF-130) calculate bounding box
-                exporter.setup_scene(pos - glm::vec3(5.0f), pos + glm::vec3(5.0f), sdf_tree, curr_id);
-                exporter.export_mesh(path.string(), "gltf2");
+                exporter.setup_scene(pos - glm::vec3(5.0F), pos + glm::vec3(5.0F), sdf_tree, curr_id);
+                exporter.export_mesh(path, "gltf2");
               },
               std::span<const ::resin::FileDialog::FilterItem>(kMeshFiltersArray), std::string(name) + ".gltf");
         }

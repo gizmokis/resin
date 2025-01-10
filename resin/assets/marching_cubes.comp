@@ -21,7 +21,7 @@ uniform float u_farPlane;
 #external_definition MAX_UBO_NODE_COUNT
 
 const int kMaxNodeCount = MAX_UBO_NODE_COUNT;
-layout (std140, binding = 1) uniform Data
+layout (std140, binding = 0) uniform Data
 {
     node u_sdf_primitives[kMaxNodeCount];
 };

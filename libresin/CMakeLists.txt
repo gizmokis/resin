@@ -33,14 +33,6 @@ target_link_options(${PROJECT_NAME} PRIVATE ${PROJ_SHARED_LINKER_FLAGS})
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC GLM_ENABLE_EXPERIMENTAL)
 
-# Copy assets folder to build directory
-add_custom_target(copy_lib_assets
-        COMMAND ${CMAKE_COMMAND} -DASSETS_SOURCE_DIR=${PROJECT_SOURCE_DIR}/assets
-        -DASSETS_DEST_DIR=${CMAKE_BINARY_DIR}/bin # TODO(SDF-104) handle library only build
-        -P ${PROJECT_SOURCE_DIR}/../cmake/copy_assets.cmake
-)
-add_dependencies(${PROJECT_NAME} copy_lib_assets)
-
 if (BUILD_TESTING)
     # Generate the tests constants
     set(TESTS_DATA_PATH "${CMAKE_CURRENT_SOURCE_DIR}/tests/data")

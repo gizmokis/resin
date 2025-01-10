@@ -9,17 +9,13 @@
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/shader.hpp>
 #include <libresin/core/uniform_buffer.hpp>
-#include <memory>
-
 #include <libresin/utils/path_utf.hpp>
-
+#include <memory>
 
 namespace resin {
 
-MeshExporter::MeshExporter(unsigned int resolution)
-    : shader_resource_(*shader_manager_->get_res(std::filesystem::current_path() / "assets/marching_cubes.comp")),
-      resolution_(resolution),
-      scene_(new aiScene()) {
+MeshExporter::MeshExporter(ShaderResource& shader_resource, unsigned int resolution)
+    : shader_resource_(shader_resource), resolution_(resolution), scene_(new aiScene()) {
   initialize_buffers();
 }
 
@@ -44,16 +40,12 @@ void MeshExporter::export_mesh(const std::filesystem::path& output_path, std::st
 void MeshExporter::execute_shader(const glm::vec3 bb_start, const glm::vec3 bb_end, SDFTree& sdf_tree,
                                   IdView<SDFTreeNodeId> node_id) {
   GroupNode& group_node = sdf_tree.group(node_id);
-  UniformBuffer ubo(sdf_tree.max_nodes_count(), 1);
   shader_resource_.set_ext_defi("SDF_CODE", group_node.gen_shader_code(GenShaderMode::SinglePrimitiveArray));
-  shader_resource_.set_ext_defi("MAX_UBO_NODE_COUNT", std::to_string(ubo.max_count()));
+  shader_resource_.set_ext_defi("MAX_UBO_NODE_COUNT", std::to_string(sdf_tree.max_nodes_count()));
+
   // Set up compute shader
   ComputeShaderProgram compute_shader_program("marching_cubes", shader_resource_);
-  ubo.bind();
-  ubo.set(sdf_tree, node_id);
-  ubo.unbind();
   compute_shader_program.bind();
-
   compute_shader_program.set_uniform("u_boundingBoxStart", bb_start);
   compute_shader_program.set_uniform("u_boundingBoxEnd", bb_end);
   compute_shader_program.set_uniform("u_marchRes", resolution_);
