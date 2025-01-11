@@ -1,13 +1,15 @@
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
 
+#include <filesystem>
 #include <fstream>
 #include <glm/fwd.hpp>
 #include <glm/geometric.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
+#include <libresin/core/mesh_exporter.hpp>
+#include <libresin/core/resources/shader_resource.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/primitive_base_node.hpp>
-#include <libresin/core/sdf_tree/primitive_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/utils/exceptions.hpp>
@@ -18,6 +20,7 @@
 #include <ranges>
 #include <resin/dialog/file_dialog.hpp>
 #include <resin/imgui/sdf_tree.hpp>
+#include <resin/resources/resource_managers.hpp>
 #include <utility>
 
 namespace ImGui {  // NOLINT
@@ -26,6 +29,9 @@ namespace resin {
 
 static const std::array<::resin::FileDialog::FilterItem, 1> kPrefabFiltersArray = {
     ::resin::FileDialog::FilterItem("Resin prefab", "json")};
+
+static const std::array<::resin::FileDialog::FilterItem, 2> kMeshFiltersArray = {
+    ::resin::FileDialog::FilterItem("Wavefront obj", "obj"), ::resin::FileDialog::FilterItem("GLTF2", "gltf")};
 
 std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeComponentVisitor::get_curr_payload() {
   std::optional<::resin::IdView<::resin::SDFTreeNodeId>> source_id;
@@ -150,6 +156,48 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
             ::resin::Logger::info("Saved prefab to {}", path.string());
           },
           std::span<const ::resin::FileDialog::FilterItem>(kPrefabFiltersArray), std::string(name) += ".json");
+    }
+    if (node.primitives().size() > 0) {
+      if (ImGui::BeginMenu("Export mesh as...")) {
+        static int resolution_index      = 2;  // default to 32
+        const unsigned int resolutions[] = {8, 16, 32, 64, 128, 256};
+        const char* resolution_labels[]  = {"8", "16", "32", "64", "128", "256"};
+        auto curr_id                     = node.node_id();
+        auto name                        = node.name();
+        auto& sdf_tree                   = sdf_tree_;
+        ImGui::Text("Select resolution:");
+        if (ImGui::Combo("##Resolution", &resolution_index, resolution_labels, IM_ARRAYSIZE(resolution_labels))) {
+        }
+        unsigned int resolution = resolutions[resolution_index];
+        if (ImGui::MenuItem("OBJ")) {
+          ::resin::FileDialog::instance().save_file(
+              [curr_id, &sdf_tree, resolution](const std::filesystem::path& path) {
+                auto& resource_manager = ::resin::ResourceManagers::shader_manager();
+                ::resin::ShaderResource shader_resource =
+                    *resource_manager.get_res(std::filesystem::current_path() / "assets/marching_cubes.comp");
+                ::resin::MeshExporter exporter(shader_resource, resolution);
+                glm::vec3 pos = sdf_tree.group(curr_id).transform().pos();  // TODO(SDF-130) calculate bounding box
+                exporter.setup_scene(pos - glm::vec3(5.0F), pos + glm::vec3(5.0F), sdf_tree, curr_id);
+                exporter.export_mesh(path, "obj");
+              },
+              std::span<const ::resin::FileDialog::FilterItem>(kMeshFiltersArray), std::string(name) + ".obj");
+        }
+
+        if (ImGui::MenuItem("GLTF")) {
+          ::resin::FileDialog::instance().save_file(
+              [curr_id, &sdf_tree, resolution](const std::filesystem::path& path) {
+                auto& resource_manager = ::resin::ResourceManagers::shader_manager();
+                ::resin::ShaderResource shader_resource =
+                    *resource_manager.get_res(std::filesystem::current_path() / "assets/marching_cubes.comp");
+                ::resin::MeshExporter exporter(shader_resource, resolution);
+                glm::vec3 pos = sdf_tree.group(curr_id).transform().pos();  // TODO(SDF-130) calculate bounding box
+                exporter.setup_scene(pos - glm::vec3(5.0F), pos + glm::vec3(5.0F), sdf_tree, curr_id);
+                exporter.export_mesh(path, "gltf2");
+              },
+              std::span<const ::resin::FileDialog::FilterItem>(kMeshFiltersArray), std::string(name) + ".gltf");
+        }
+        ImGui::EndMenu();
+      }
     }
     ImGui::EndPopup();
   }
