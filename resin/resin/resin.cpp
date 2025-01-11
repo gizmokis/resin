@@ -8,6 +8,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
 #include <filesystem>
 #include <glm/ext.hpp>
 #include <glm/ext/quaternion_trigonometric.hpp>
@@ -362,8 +363,10 @@ void Resin::gui(duration_t delta) {
       }
     }
 
-    if (ImGui::resin::CameraViewGizmo(*camera_, 5.0F, static_cast<float>(delta.count()) * 1e-9F)) {
+    if (ImGui::resin::CameraViewGizmo(*camera_, camera_distance_, static_cast<float>(delta.count()) * 1e-9F)) {
       shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
+    } else {
+      camera_distance_ = glm::length(camera_->transform.pos());
     }
   }
   ImGui::End();
@@ -519,7 +522,23 @@ bool Resin::on_key_pressed(KeyPressedEvent& e) {
 bool Resin::on_key_released(KeyReleasedEvent& e) { return true; }
 
 bool Resin::on_scroll(ScrollEvent& e) {
-  Logger::info("{}", e);
+  if (is_viewport_focused_ && std::abs(e.offset().y) > 0.0F) {
+    camera_distance_ = glm::length(camera_->transform.pos());
+    camera_distance_ -= e.offset().y * 0.8F;
+    if (camera_distance_ < 0.0F) {
+      camera_distance_ = 0.0F;
+    }
+    auto dir = glm::normalize(camera_->transform.pos());
+
+    camera_->transform.set_local_pos(dir * camera_distance_);
+    camera_->transform.set_local_rot(glm::quatLookAt(-dir, glm::vec3(0.0F, 1.0F, 0.0F)));
+
+    shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
+    if (camera_->is_orthographic()) {
+      camera_->recalculate_projection();
+      shader_->set_uniform("u_camSize", camera_->height());
+    }
+  }
   return true;
 }
 

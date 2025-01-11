@@ -89,6 +89,8 @@ class Resin {
   bool is_viewport_focused_{false};
   bool use_local_gizmos_{false};
 
+  float camera_distance_;
+
   ImGui::resin::GizmoOperation gizmo_operation_;
 
   bool running_   = true;
