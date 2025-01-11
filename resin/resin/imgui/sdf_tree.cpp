@@ -172,7 +172,7 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
         if (ImGui::MenuItem("OBJ")) {
           ::resin::FileDialog::instance().save_file(
               [curr_id, &sdf_tree, resolution](const std::filesystem::path& path) {
-                ::resin::ShaderResourceManager resource_manager = ::resin::ResourceManagers::shader_manager();
+                auto& resource_manager = ::resin::ResourceManagers::shader_manager();
                 ::resin::ShaderResource shader_resource =
                     *resource_manager.get_res(std::filesystem::current_path() / "assets/marching_cubes.comp");
                 ::resin::MeshExporter exporter(shader_resource, resolution);
@@ -186,7 +186,7 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
         if (ImGui::MenuItem("GLTF")) {
           ::resin::FileDialog::instance().save_file(
               [curr_id, &sdf_tree, resolution](const std::filesystem::path& path) {
-                ::resin::ShaderResourceManager resource_manager = ::resin::ResourceManagers::shader_manager();
+                auto& resource_manager = ::resin::ResourceManagers::shader_manager();
                 ::resin::ShaderResource shader_resource =
                     *resource_manager.get_res(std::filesystem::current_path() / "assets/marching_cubes.comp");
                 ::resin::MeshExporter exporter(shader_resource, resolution);
