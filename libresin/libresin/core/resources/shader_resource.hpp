@@ -1,5 +1,5 @@
-#ifndef SHADER_RESOURCE_HPP
-#define SHADER_RESOURCE_HPP
+#ifndef RESIN_SHADER_RESOURCE_HPP
+#define RESIN_SHADER_RESOURCE_HPP
 
 #include <array>
 #include <cstdint>

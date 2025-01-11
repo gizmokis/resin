@@ -142,6 +142,19 @@ void ShaderProgram::bind_uniform_buffer(std::string_view name, const UniformBuff
                 size, shader_name_, ubo.binding());
 }
 
+void ShaderProgram::bind_uniform_buffer(std::string_view name, size_t binding) const {
+  const GLuint index = glGetUniformBlockIndex(program_id_, name.data());
+  if (index == GL_INVALID_INDEX) {
+    log_throw(ShaderProgramValidationException(
+        shader_name_, std::format(R"(Unable to find uniform block "{}" in shader "{}")", name, shader_name_)));
+  }
+
+  uniform_block_bindings_[index] = static_cast<GLuint>(binding);
+  glUniformBlockBinding(program_id_, index, uniform_block_bindings_[index]);
+  Logger::debug(R"(Bound uniform block "{}" (index: {}) in shader "{}" to binding: {})", name, index, shader_name_,
+                binding);
+}
+
 RenderingShaderProgram::RenderingShaderProgram(std::string_view name, ShaderResource vertex_resource,
                                                ShaderResource fragment_resource)
     : ShaderProgram(name), vertex_shader_(std::move(vertex_resource)), fragment_shader_(std::move(fragment_resource)) {

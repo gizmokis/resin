@@ -232,7 +232,7 @@ void Window::imgui_set_style() {
   style.ChildRounding             = 5.0f;
   style.ChildBorderSize           = 1.0f;
   style.PopupRounding             = 5.0f;
-  style.PopupBorderSize           = 0.0f;
+  style.PopupBorderSize           = 1.0f;
   style.FramePadding              = ImVec2(5.0f, 3.0f);
   style.FrameRounding             = 5.0f;
   style.FrameBorderSize           = 0.0f;

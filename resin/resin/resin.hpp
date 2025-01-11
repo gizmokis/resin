@@ -18,6 +18,7 @@
 #include <resin/event/mouse_events.hpp>
 #include <resin/event/window_events.hpp>
 #include <resin/imgui/transform_gizmo.hpp>
+#include <resin/resources/resource_managers.hpp>
 
 int main();
 
@@ -62,7 +63,7 @@ class Resin {
  private:
   unsigned int vertex_array_, vertex_buffer_, index_buffer_;
   EventDispatcher dispatcher_;
-  ShaderResourceManager shader_resource_manager_;
+  ShaderResourceManager& shader_resource_manager_ = ResourceManagers::shader_manager();
 
   SDFTree sdf_tree_;
 
