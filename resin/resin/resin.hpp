@@ -21,6 +21,8 @@
 #include <resin/imgui/transform_gizmo.hpp>
 #include <resin/resources/resource_managers.hpp>
 
+#include "resin/event/key_events.hpp"
+
 int main();
 
 namespace resin {
@@ -57,6 +59,8 @@ class Resin {
   bool on_test(WindowTestEvent& e);
   bool on_click(MouseButtonPressedEvent& e);
   bool on_left_click(glm::vec2 relative_pos);
+  bool on_key_pressed(KeyPressedEvent& e);
+  bool on_key_released(KeyReleasedEvent& e);
 
  public:
   static constexpr duration_t kTickTime = 16666us;  // 60 TPS = 16.6(6) ms/t

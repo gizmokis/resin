@@ -22,29 +22,29 @@ template <EnumWithCountConcept EnumType, EnumMappingValueConcept Value>
 class EnumMapper;
 
 template <EnumWithCountConcept EnumType, typename Value>
-class EnumMappingIterator {
+class EnumMapperIterator {
  public:
   using enum_type = typename EnumMapper<EnumType, Value>::enum_type;
 
-  EnumMappingIterator(const EnumMapper<EnumType, Value>& mapping, size_t index) : mapping_(mapping), index_(index) {}
+  EnumMapperIterator(const EnumMapper<EnumType, Value>& mapping, size_t index) : mapping_(mapping), index_(index) {}
 
   std::pair<enum_type, Value> operator*() const {
     return {static_cast<enum_type>(index_), mapping_[static_cast<enum_type>(index_)]};
   }
 
-  EnumMappingIterator& operator++() {
+  EnumMapperIterator& operator++() {
     ++index_;
     return *this;
   }
 
-  EnumMappingIterator operator++(int) {
-    EnumMappingIterator temp = *this;
+  EnumMapperIterator operator++(int) {
+    EnumMapperIterator temp = *this;
     ++(*this);
     return temp;
   }
 
-  bool operator==(const EnumMappingIterator& other) const { return index_ == other.index_; }
-  bool operator!=(const EnumMappingIterator& other) const { return !(*this == other); }
+  bool operator==(const EnumMapperIterator& other) const { return index_ == other.index_; }
+  bool operator!=(const EnumMapperIterator& other) const { return !(*this == other); }
 
  private:
   const EnumMapper<EnumType, Value>& mapping_;
@@ -76,8 +76,8 @@ class EnumMapper {
     validate_mapping(std::make_index_sequence<kEnumSize>{});
   }
 
-  constexpr auto begin() const { return EnumMappingIterator<EnumType, Value>(*this, 0); }
-  constexpr auto end() const { return EnumMappingIterator<EnumType, Value>(*this, kEnumSize); }
+  constexpr auto begin() const { return EnumMapperIterator<EnumType, Value>(*this, 0); }
+  constexpr auto end() const { return EnumMapperIterator<EnumType, Value>(*this, kEnumSize); }
 
   constexpr Value value(enum_type enum_entry) const { return names_[static_cast<size_t>(enum_entry)]; }
   constexpr Value operator[](enum_type enum_entry) const { return names_[static_cast<size_t>(enum_entry)]; }

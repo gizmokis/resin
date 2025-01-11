@@ -8,14 +8,15 @@
 #include <libresin/utils/logger.hpp>
 #include <libresin/utils/path_utf.hpp>
 #include <resin/core/graphics_context.hpp>
+#include <resin/core/key_codes.hpp>
 #include <resin/core/mouse_codes.hpp>
 #include <resin/core/window.hpp>
 #include <resin/event/event.hpp>
+#include <resin/event/key_events.hpp>
 #include <resin/event/mouse_events.hpp>
 #include <resin/event/window_events.hpp>
+#include <resin/imgui/gizmo.hpp>
 #include <string>
-
-#include "resin/imgui/gizmo.hpp"
 
 namespace resin {
 
@@ -146,6 +147,28 @@ void Window::set_glfw_callbacks() const {
       case GLFW_RELEASE: {
         MouseButtonReleasedEvent mouse_button_released_event(*button, glm::vec2(x, y));
         properties.eventDispatcher->get().dispatch(mouse_button_released_event);
+        break;
+      }
+    }
+  });
+
+  glfwSetKeyCallback(window_ptr_, [](GLFWwindow* window, int key_code, int /*scancode*/, int action, int /*mods*/) {
+    const WindowProperties& properties = *static_cast<WindowProperties*>(glfwGetWindowUserPointer(window));
+
+    auto key_val = key::GLFWKeyToCode(key_code);
+    if (!key_val) {
+      return;
+    }
+
+    switch (action) {
+      case GLFW_PRESS: {
+        KeyPressedEvent key_pressed_event(*key_val);
+        properties.eventDispatcher->get().dispatch(key_pressed_event);
+        break;
+      }
+      case GLFW_RELEASE: {
+        KeyReleasedEvent key_released_event(*key_val);
+        properties.eventDispatcher->get().dispatch(key_released_event);
         break;
       }
     }

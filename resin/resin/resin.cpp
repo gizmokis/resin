@@ -42,6 +42,8 @@
 #include <resin/resin.hpp>
 #include <string_view>
 
+#include "resin/event/key_events.hpp"
+
 namespace resin {
 
 Resin::Resin()
@@ -54,6 +56,8 @@ Resin::Resin()
   dispatcher_.subscribe<WindowResizeEvent>(BIND_EVENT_METHOD(on_window_resize));
   dispatcher_.subscribe<WindowTestEvent>(BIND_EVENT_METHOD(on_test));
   dispatcher_.subscribe<MouseButtonPressedEvent>(BIND_EVENT_METHOD(on_click));
+  dispatcher_.subscribe<KeyPressedEvent>(BIND_EVENT_METHOD(on_key_pressed));
+  dispatcher_.subscribe<KeyReleasedEvent>(BIND_EVENT_METHOD(on_key_released));
 
   {
     WindowProperties properties;
@@ -507,6 +511,16 @@ bool Resin::on_left_click(glm::vec2 relative_pos) {
   framebuffer_->unbind();
 
   selected_node_ = id == -1 ? std::nullopt : sdf_tree_.get_view_from_raw_id(id);
+  return true;
+}
+
+bool Resin::on_key_pressed(KeyPressedEvent& e) {
+  Logger::info("{}", e);
+  return true;
+}
+
+bool Resin::on_key_released(KeyReleasedEvent& e) {
+  Logger::info("{}", e);
   return true;
 }
 
