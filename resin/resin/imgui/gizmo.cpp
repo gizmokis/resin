@@ -120,12 +120,12 @@ bool CameraViewGizmo(::resin::Camera& camera, float distance, float dt, ImVec2 s
   const float pos_y = ImGui::GetWindowPos().y + ImGui::GetCursorStartPos().y;
   const float width = ImGui::GetWindowWidth() - ImGui::GetCursorStartPos().x;
 
-  camera.transform.set_parent(std::nullopt);
-  auto view = camera.view_matrix();
-
-  if (ImGuizmo::ViewManipulate(view, camera.transform.local_rot(), distance, ImVec2(pos_x + width - size.x, pos_y),
+  auto inv_view_rot = camera.transform.local_rot();
+  auto inv_view_pos = camera.transform.local_pos();
+  if (ImGuizmo::ViewManipulate(camera.view_matrix(), inv_view_pos, inv_view_rot, distance, ImVec2(pos_x + width - size.x, pos_y),
                                size, 0x00000000, true, dt, 0.2F)) {
-    camera.transform.set_local_from_matrix(glm::inverse(view));
+    camera.transform.set_local_pos(inv_view_pos);
+    camera.transform.set_local_rot(inv_view_rot);
     return true;
   }
   return false;

@@ -22,7 +22,7 @@ diff --git a/ImGuizmo.cpp b/src/imguizmo/ImGuizmo.cpp
 similarity index 95%
 rename from ImGuizmo.cpp
 rename to src/imguizmo/ImGuizmo.cpp
-index ed05fd8..8a2ee68 100644
+index ed05fd8..82762a4 100644
 --- a/ImGuizmo.cpp
 +++ b/src/imguizmo/ImGuizmo.cpp
 @@ -23,12 +23,13 @@
@@ -103,7 +103,7 @@ index ed05fd8..8a2ee68 100644
     }
  
 -   void ViewManipulate(float* view, float length, ImVec2 position, ImVec2 size, ImU32 backgroundColor)
-+   bool ViewManipulate(glm::mat4& viewMat, const glm::quat& invViewRot, float length, ImVec2 position, ImVec2 size, ImU32 backgroundColor, bool forceUpOrientation, float dt, float interpolationTime)
++   bool ViewManipulate(glm::mat4 viewMat, glm::vec3& invViewPos, glm::quat& invViewRot, float length, ImVec2 position, ImVec2 size, ImU32 backgroundColor, bool forceUpOrientation, float dt, float interpolationTime)
     {
 +      float* view = glm::value_ptr(viewMat);
        static bool isDraging = false;
@@ -185,12 +185,12 @@ index ed05fd8..8a2ee68 100644
 -                        interpolationFrames = 40;
 +                        auto endDir = glm::normalize(glm::vec3(interpolationEndDir.x, interpolationEndDir.y, interpolationEndDir.z));
 +                        auto endUp = glm::normalize(glm::vec3(interpolationEndUp.x, interpolationEndUp.y, interpolationEndUp.z));
-+                        interpolationEndQuat =  glm::inverse(glm::quatLookAtLH(endDir, endUp));
++                        interpolationEndQuat =  glm::quatLookAtLH(endDir, endUp);
 +
 +                        isDuringInterpolation = true;
 +                        interpolationStartDir = viewInverse.v.dir;
 +                        interpolationStartUp = viewInverse.v.up;
-+                        interpolationStartQuat = glm::inverse(invViewRot);
++                        interpolationStartQuat = invViewRot;
 +
                          isClicking = false;
                       }
@@ -212,8 +212,8 @@ index ed05fd8..8a2ee68 100644
 +        auto startEye = startDir * length;
 +        auto endDir = glm::normalize(glm::vec3(interpolationEndDir.x, interpolationEndDir.y, interpolationEndDir.z));
 +        auto endEye = endDir * length;
-+        auto qm = glm::slerp(interpolationStartQuat, interpolationEndQuat, t);
-+        viewMat = glm::mat4_cast(qm) * glm::translate(-startEye - (endEye - startEye) * t);
++        invViewRot = glm::slerp(interpolationStartQuat, interpolationEndQuat, t);
++        invViewPos = startEye + (endEye - startEye) * t;
  
 -         vec_t newUp = viewInverse.v.up;
 -         newUp.Lerp(interpolationUp, 0.3f);
@@ -249,10 +249,6 @@ index ed05fd8..8a2ee68 100644
 -         ry.RotationAxis(viewInverse.v.right, -io.MouseDelta.y * 0.01f);
 -
 -         roll = rx * ry;
--
--         vec_t newDir = viewInverse.v.dir;
--         newDir.TransformVector(roll);
--         newDir.Normalize();
 +      if (!isDuringInterpolation) {
 +        if (!isDraging && io.MouseDown[0] && isInside && (fabsf(io.MouseDelta.x) > 0.f || fabsf(io.MouseDelta.y) > 0.f))
 +        {
@@ -270,18 +266,27 @@ index ed05fd8..8a2ee68 100644
 +
 +                    interpolationStartDir = viewInverse.v.dir;
 +                    interpolationStartUp = viewInverse.v.up;
-+                    interpolationStartQuat = glm::inverse(invViewRot);
++                    interpolationStartQuat = invViewRot;
 +
 +                    interpolationEndDir = viewInverse.v.dir;
 +                    interpolationEndUp = referenceUp; 
 +
 +                    auto endDir = glm::normalize(glm::vec3(interpolationEndDir.x, interpolationEndDir.y, interpolationEndDir.z));
 +                    auto endUp = glm::normalize(glm::vec3(interpolationEndUp.x, interpolationEndUp.y, interpolationEndUp.z));
-+                    interpolationEndQuat =  glm::inverse(glm::quatLookAtLH(endDir, endUp));
++                    interpolationEndQuat =  glm::quatLookAtLH(endDir, endUp);
 +                }
 +            }
 +            isDraging = false;
 +        }
+ 
+-         vec_t newDir = viewInverse.v.dir;
+-         newDir.TransformVector(roll);
+-         newDir.Normalize();
++        if (isDraging)
++        {
++            auto right = glm::vec3(viewMat[0][0], viewMat[1][0], viewMat[2][0]);
++            auto yaw     = glm::angleAxis(-io.MouseDelta.x * 0.01f, glm::vec3(0.F, 1.F, 0.F));
++            auto pitch   = glm::angleAxis(-io.MouseDelta.y * 0.01f, right);
  
 -         // clamp
 -         vec_t planDir = Cross(viewInverse.v.right, referenceUp);
@@ -293,18 +298,12 @@ index ed05fd8..8a2ee68 100644
 -            newDir += planDir * dt;
 -            newDir.Normalize();
 -         }
-+        if (isDraging)
-+        {
-+            auto right = glm::vec3(viewMat[0][0], viewMat[1][0], viewMat[2][0]);
-+            auto yaw     = glm::angleAxis(-io.MouseDelta.x * 0.01f, glm::vec3(0.F, 1.F, 0.F));
-+            auto pitch   = glm::angleAxis(-io.MouseDelta.y * 0.01f, right);
-+            auto new_rot = yaw * pitch * invViewRot;
++            invViewRot = yaw * pitch * invViewRot;
++            auto new_orient = glm::mat4_cast(invViewRot);
++            invViewPos = glm::vec3(new_orient[2][0], new_orient[2][1], new_orient[2][2]) * length;
  
 -         vec_t newEye = camTarget + newDir * length;
 -         LookAt(&newEye.x, &camTarget.x, &referenceUp.x, view);
-+            viewMat = glm::mat4_cast(glm::inverse(new_rot));
-+            auto eye = glm::vec3(viewMat[0][2], viewMat[1][2], viewMat[2][2]) * length;
-+            viewMat = viewMat * glm::translate(-eye);
 +            isNewViewCreated = true;
 +        } 
        }
@@ -319,7 +318,7 @@ diff --git a/ImGuizmo.h b/src/imguizmo/ImGuizmo.h
 similarity index 95%
 rename from ImGuizmo.h
 rename to src/imguizmo/ImGuizmo.h
-index 155202d..56393fc 100644
+index 155202d..fbc528f 100644
 --- a/ImGuizmo.h
 +++ b/src/imguizmo/ImGuizmo.h
 @@ -104,8 +104,9 @@ void EditTransform(const Camera& camera, matrix_t& matrix)
@@ -338,7 +337,7 @@ index 155202d..56393fc 100644
     // other software are using the same mechanics. But just in case, you are now warned!
     //
 -   IMGUI_API void ViewManipulate(float* view, float length, ImVec2 position, ImVec2 size, ImU32 backgroundColor);
-+   IMGUI_API bool ViewManipulate(glm::mat4& viewMat, const glm::quat& invViewRot, float length, ImVec2 position, ImVec2 size, ImU32 backgroundColor, bool forceUpOrientation, float dt, float interpolationTime = 0.5F);
++   IMGUI_API bool ViewManipulate(glm::mat4 viewMat, glm::vec3& invViewPos, glm::quat& invViewRot, float length, ImVec2 position, ImVec2 size, ImU32 backgroundColor, bool forceUpOrientation, float dt, float interpolationTime = 0.5F);
  
     IMGUI_API void SetID(int id);
  

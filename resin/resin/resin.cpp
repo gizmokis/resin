@@ -72,7 +72,6 @@ Resin::Resin()
   glm::vec3 direction = glm::normalize(-pos);
   camera_->transform.set_local_pos(glm::vec3(0.0F, 0.0F, 5.0F));
   camera_->transform.set_local_rot(glm::quatLookAt(glm::vec3(0.0F, 0.0F, -1.0F), glm::vec3(0.0F, 0.0F, 0.0F)));
-  //   camera_->transform.set_parent(camera_rig_);
 
   point_light_       = std::make_unique<PointLight>(glm::vec3(0.57F, 0.38F, 0.04F), glm::vec3(0.0F, 1.0F, 0.5F),
                                                     PointLight::Attenuation(1.0F, 0.7F, 1.8F));
