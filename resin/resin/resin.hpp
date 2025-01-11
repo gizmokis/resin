@@ -49,7 +49,7 @@ class Resin {
 
   void run();
   void update(duration_t delta);
-  void gui();
+  void gui(duration_t delta);
   void render();
 
   bool on_window_close(WindowCloseEvent& e);

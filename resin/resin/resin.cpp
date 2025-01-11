@@ -67,12 +67,12 @@ Resin::Resin()
   cube_mat_   = std::make_unique<Material>(glm::vec3(0.96F, 0.25F, 0.25F));
   sphere_mat_ = std::make_unique<Material>(glm::vec3(0.25F, 0.25F, 0.96F));
 
-  camera_       = std::make_unique<Camera>(false, 70.F, 16.F / 9.F, 0.75F, 100.F);
-  glm::vec3 pos = glm::vec3(0, 2, 3);
-  camera_->transform.set_local_pos(pos);
+  camera_             = std::make_unique<Camera>(false, 70.F, 16.F / 9.F, 0.75F, 100.F);
+  glm::vec3 pos       = glm::vec3(0, 2, 3);
   glm::vec3 direction = glm::normalize(-pos);
-  camera_->transform.set_local_rot(glm::quatLookAt(direction, glm::vec3(0, 1, 0)));
-  camera_->transform.set_parent(camera_rig_);
+  camera_->transform.set_local_pos(glm::vec3(0.0F, 0.0F, 5.0F));
+  camera_->transform.set_local_rot(glm::quatLookAt(glm::vec3(0.0F, 0.0F, -1.0F), glm::vec3(0.0F, 0.0F, 0.0F)));
+  //   camera_->transform.set_parent(camera_rig_);
 
   point_light_       = std::make_unique<PointLight>(glm::vec3(0.57F, 0.38F, 0.04F), glm::vec3(0.0F, 1.0F, 0.5F),
                                                     PointLight::Attenuation(1.0F, 0.7F, 1.8F));
@@ -172,7 +172,7 @@ void Resin::run() {
       ImGui_ImplGlfw_NewFrame();
       ImGui::NewFrame();
 
-      gui();
+      gui(delta);
 
       ImGui::Render();
       ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -252,6 +252,7 @@ static bool update_camera_controls(Camera& camera, GLFWwindow* window, float dt)
   auto pitch   = glm::angleAxis(-mouse_delta.y * 0.03F, camera.transform.local_right());
   auto new_rot = yaw * pitch * rot;
   camera.transform.set_local_rot(new_rot);
+
   // TODO(SDF-82): prevent full 360 pitch flips
 
   return true;
@@ -290,7 +291,7 @@ void Resin::update(duration_t delta) {
   FileDialog::instance().update();
 }
 
-void Resin::gui() {
+void Resin::gui(duration_t delta) {
   ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
 
   bool resized = false;
@@ -356,7 +357,10 @@ void Resin::gui() {
         node.mark_dirty();
       }
     }
-    ImGui::resin::CameraViewGizmo(*camera_, 100.0F);
+
+    if (ImGui::resin::CameraViewGizmo(*camera_, 5.0F, static_cast<float>(delta.count()) * 1e-9F)) {
+      shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
+    }
   }
   ImGui::End();
 
