@@ -1,4 +1,5 @@
 #include <imgui/imgui.h>
+#include <imgui/imgui_internal.h>
 #include <imguizmo/ImGuizmo.h>
 
 #include <glm/glm.hpp>
@@ -6,6 +7,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/matrix.hpp>
 #include <libresin/core/transform.hpp>
+#include <optional>
 #include <resin/imgui/gizmo.hpp>
 
 namespace ImGui {  // NOLINT
@@ -26,7 +28,7 @@ bool TransformGizmo(::resin::Transform& trans, const ::resin::Camera& camera, Gi
   const float width  = ImGui::GetWindowWidth() - ImGui::GetCursorStartPos().x;
   const float height = ImGui::GetWindowHeight() - ImGui::GetCursorStartPos().y;
 
-  ImGuizmo::SetOrthographic(camera.is_orthographic);
+  ImGuizmo::SetOrthographic(camera.is_orthographic());
   ImGuizmo::SetRect(pos_x, pos_y, width, height);
 
   auto view      = camera.view_matrix();
@@ -113,15 +115,20 @@ bool TransformGizmo(::resin::Transform& trans, const ::resin::Camera& camera, Gi
   return false;
 }
 
-void CameraViewGizmo(::resin::Camera& camera, float distance, ImVec2 size) {
+bool CameraViewGizmo(::resin::Camera& camera, float distance, float dt, ImVec2 size) {
   const float pos_x = ImGui::GetWindowPos().x + ImGui::GetCursorStartPos().x;
   const float pos_y = ImGui::GetWindowPos().y + ImGui::GetCursorStartPos().y;
   const float width = ImGui::GetWindowWidth() - ImGui::GetCursorStartPos().x;
 
+  camera.transform.set_parent(std::nullopt);
   auto view = camera.view_matrix();
-  ImGuizmo::ViewManipulate(glm::value_ptr(view), distance, ImVec2(pos_x + width - size.x, pos_y), size, 0x00000000);
-  // NOTE: We assume that camera transform has no parent
-  //   camera.transform.set_local_from_matrix(view);
+
+  if (ImGuizmo::ViewManipulate(view, camera.transform.local_rot(), distance, ImVec2(pos_x + width - size.x, pos_y),
+                               size, 0x00000000, true, dt, 0.2F)) {
+    camera.transform.set_local_from_matrix(glm::inverse(view));
+    return true;
+  }
+  return false;
 }
 
 }  // namespace resin

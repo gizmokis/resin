@@ -17,7 +17,7 @@ enum class GizmoOperation : uint8_t { Translation = 0, Rotation = 1, Scale = 2, 
 void SetImGuiContext(ImGuiContext* ctx);
 void BeginGizmoFrame(ImDrawList* drawlist = nullptr);
 bool TransformGizmo(::resin::Transform& trans, const ::resin::Camera& camera, GizmoMode mode, GizmoOperation operation);
-void CameraViewGizmo(::resin::Camera& camera, float distance, ImVec2 size = ImVec2(128.0F, 128.0F));
+bool CameraViewGizmo(::resin::Camera& camera, float distance, float dt, ImVec2 size = ImVec2(128.0F, 128.0F));
 
 }  // namespace resin
 
