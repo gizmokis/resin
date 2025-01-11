@@ -81,7 +81,7 @@ class Resin {
   std::unique_ptr<PointLight> point_light_;
   std::unique_ptr<DirectionalLight> directional_light_;
   std::unique_ptr<Material> cube_mat_, sphere_mat_;
-  Transform camera_rig_;
+
   bool is_viewport_focused_{false};
   bool use_local_gizmos_{false};
 
