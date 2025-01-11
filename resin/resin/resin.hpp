@@ -56,7 +56,6 @@ class Resin {
 
   bool on_window_close(WindowCloseEvent& e);
   bool on_window_resize(WindowResizeEvent& e);
-  bool on_test(WindowTestEvent& e);
   bool on_click(MouseButtonPressedEvent& e);
   bool on_left_click(glm::vec2 relative_pos);
   bool on_key_pressed(KeyPressedEvent& e);

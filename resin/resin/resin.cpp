@@ -32,6 +32,7 @@
 #include <resin/core/window.hpp>
 #include <resin/dialog/file_dialog.hpp>
 #include <resin/event/event.hpp>
+#include <resin/event/key_events.hpp>
 #include <resin/event/mouse_events.hpp>
 #include <resin/event/window_events.hpp>
 #include <resin/imgui/gizmo.hpp>
@@ -42,7 +43,7 @@
 #include <resin/resin.hpp>
 #include <string_view>
 
-#include "resin/event/key_events.hpp"
+#include "resin/core/key_codes.hpp"
 
 namespace resin {
 
@@ -54,7 +55,6 @@ Resin::Resin()
       gizmo_operation_(ImGui::resin::GizmoOperation::Translation) {
   dispatcher_.subscribe<WindowCloseEvent>(BIND_EVENT_METHOD(on_window_close));
   dispatcher_.subscribe<WindowResizeEvent>(BIND_EVENT_METHOD(on_window_resize));
-  dispatcher_.subscribe<WindowTestEvent>(BIND_EVENT_METHOD(on_test));
   dispatcher_.subscribe<MouseButtonPressedEvent>(BIND_EVENT_METHOD(on_click));
   dispatcher_.subscribe<KeyPressedEvent>(BIND_EVENT_METHOD(on_key_pressed));
   dispatcher_.subscribe<KeyReleasedEvent>(BIND_EVENT_METHOD(on_key_released));
@@ -476,14 +476,6 @@ bool Resin::on_window_resize(WindowResizeEvent& e) {
   return false;
 }
 
-bool Resin::on_test(WindowTestEvent&) {
-  camera_->set_orthographic(!camera_->is_orthographic());
-  shader_->set_uniform("u_ortho", camera_->is_orthographic());
-  shader_->set_uniform("u_camSize", camera_->height());
-
-  return false;
-}
-
 bool Resin::on_click(MouseButtonPressedEvent& e) {
   ImGuiIO& io = ImGui::GetIO();
   if (io.WantCaptureMouse) {
@@ -515,13 +507,14 @@ bool Resin::on_left_click(glm::vec2 relative_pos) {
 }
 
 bool Resin::on_key_pressed(KeyPressedEvent& e) {
-  Logger::info("{}", e);
+  if (e.key_code() == key::Code::V) {
+    camera_->set_orthographic(!camera_->is_orthographic());
+    shader_->set_uniform("u_ortho", camera_->is_orthographic());
+    shader_->set_uniform("u_camSize", camera_->height());
+  }
   return true;
 }
 
-bool Resin::on_key_released(KeyReleasedEvent& e) {
-  Logger::info("{}", e);
-  return true;
-}
+bool Resin::on_key_released(KeyReleasedEvent& e) { return true; }
 
 }  // namespace resin

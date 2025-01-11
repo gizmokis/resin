@@ -5,7 +5,6 @@
 
 #include <cstdint>
 #include <libresin/utils/enum_mapper.hpp>
-#include <unordered_set>
 
 namespace resin {
 
@@ -13,32 +12,32 @@ namespace key {
 
 enum class Code : uint8_t {
   // Letters
-  KeyA,
-  KeyB,
-  KeyC,
-  KeyD,
-  KeyE,
-  KeyF,
-  KeyG,
-  KeyH,
-  KeyI,
-  KeyJ,
-  KeyK,
-  KeyL,
-  KeyM,
-  KeyN,
-  KeyO,
-  KeyP,
-  KeyQ,
-  KeyR,
-  KeyS,
-  KeyT,
-  KeyU,
-  KeyV,
-  KeyW,
-  KeyX,
-  KeyY,
-  KeyZ,
+  A,
+  B,
+  C,
+  D,
+  E,
+  F,
+  G,
+  H,
+  I,
+  J,
+  K,
+  L,
+  M,
+  N,
+  O,
+  P,
+  Q,
+  R,
+  S,
+  T,
+  U,
+  V,
+  W,
+  X,
+  Y,
+  Z,
 
   // Numbers
   Num0,
@@ -52,7 +51,7 @@ enum class Code : uint8_t {
   Num8,
   Num9,
 
-  // Function keys
+  // Function s
   F1,
   F2,
   F3,
@@ -66,13 +65,13 @@ enum class Code : uint8_t {
   F11,
   F12,
 
-  // Arrow keys
+  // Arrow s
   ArrowUp,
   ArrowDown,
   ArrowLeft,
   ArrowRight,
 
-  // Special keys
+  // Special s
   Escape,
   Enter,
   Backspace,
@@ -85,7 +84,7 @@ enum class Code : uint8_t {
   LeftAlt,
   RightAlt,
 
-  // Additional keys
+  // Additional s
   Insert,
   Delete,
   Home,
@@ -111,32 +110,32 @@ enum class Code : uint8_t {
 
 constexpr StringEnumMapper<Code> kKeyCodeNames({
     // Letters
-    {Code::KeyA, "KeyA"},
-    {Code::KeyB, "KeyB"},
-    {Code::KeyC, "KeyC"},
-    {Code::KeyD, "KeyD"},
-    {Code::KeyE, "KeyE"},
-    {Code::KeyF, "KeyF"},
-    {Code::KeyG, "KeyG"},
-    {Code::KeyH, "KeyH"},
-    {Code::KeyI, "KeyI"},
-    {Code::KeyJ, "KeyJ"},
-    {Code::KeyK, "KeyK"},
-    {Code::KeyL, "KeyL"},
-    {Code::KeyM, "KeyM"},
-    {Code::KeyN, "KeyN"},
-    {Code::KeyO, "KeyO"},
-    {Code::KeyP, "KeyP"},
-    {Code::KeyQ, "KeyQ"},
-    {Code::KeyR, "KeyR"},
-    {Code::KeyS, "KeyS"},
-    {Code::KeyT, "KeyT"},
-    {Code::KeyU, "KeyU"},
-    {Code::KeyV, "KeyV"},
-    {Code::KeyW, "KeyW"},
-    {Code::KeyX, "KeyX"},
-    {Code::KeyY, "KeyY"},
-    {Code::KeyZ, "KeyZ"},
+    {Code::A, "A"},
+    {Code::B, "B"},
+    {Code::C, "C"},
+    {Code::D, "D"},
+    {Code::E, "E"},
+    {Code::F, "F"},
+    {Code::G, "G"},
+    {Code::H, "H"},
+    {Code::I, "I"},
+    {Code::J, "J"},
+    {Code::K, "K"},
+    {Code::L, "L"},
+    {Code::M, "M"},
+    {Code::N, "N"},
+    {Code::O, "O"},
+    {Code::P, "P"},
+    {Code::Q, "Q"},
+    {Code::R, "R"},
+    {Code::S, "S"},
+    {Code::T, "T"},
+    {Code::U, "U"},
+    {Code::V, "V"},
+    {Code::W, "W"},
+    {Code::X, "X"},
+    {Code::Y, "Y"},
+    {Code::Z, "Z"},
 
     // Numbers
     {Code::Num0, "Num0"},
@@ -150,7 +149,7 @@ constexpr StringEnumMapper<Code> kKeyCodeNames({
     {Code::Num8, "Num8"},
     {Code::Num9, "Num9"},
 
-    // Function keys
+    // Function s
     {Code::F1, "F1"},
     {Code::F2, "F2"},
     {Code::F3, "F3"},
@@ -164,13 +163,13 @@ constexpr StringEnumMapper<Code> kKeyCodeNames({
     {Code::F11, "F11"},
     {Code::F12, "F12"},
 
-    // Arrow keys
+    // Arrow s
     {Code::ArrowUp, "ArrowUp"},
     {Code::ArrowDown, "ArrowDown"},
     {Code::ArrowLeft, "ArrowLeft"},
     {Code::ArrowRight, "ArrowRight"},
 
-    // Special keys
+    // Special s
     {Code::Escape, "Escape"},
     {Code::Enter, "Enter"},
     {Code::Backspace, "Backspace"},
@@ -183,7 +182,7 @@ constexpr StringEnumMapper<Code> kKeyCodeNames({
     {Code::LeftAlt, "LeftAlt"},
     {Code::RightAlt, "RightAlt"},
 
-    // Additional keys
+    // Additional s
     {Code::Insert, "Insert"},
     {Code::Delete, "Delete"},
     {Code::Home, "Home"},
@@ -205,34 +204,34 @@ constexpr StringEnumMapper<Code> kKeyCodeNames({
     {Code::GraveAccent, "GraveAccent"},
 });
 
-constexpr EnumMapper<Code, int> kKeyCodeGLFWMapping({
+constexpr EnumMapper<Code, int> kCodeGLFWMapping({
     // Letters
-    {Code::KeyA, GLFW_KEY_A},
-    {Code::KeyB, GLFW_KEY_B},
-    {Code::KeyC, GLFW_KEY_C},
-    {Code::KeyD, GLFW_KEY_D},
-    {Code::KeyE, GLFW_KEY_E},
-    {Code::KeyF, GLFW_KEY_F},
-    {Code::KeyG, GLFW_KEY_G},
-    {Code::KeyH, GLFW_KEY_H},
-    {Code::KeyI, GLFW_KEY_I},
-    {Code::KeyJ, GLFW_KEY_J},
-    {Code::KeyK, GLFW_KEY_K},
-    {Code::KeyL, GLFW_KEY_L},
-    {Code::KeyM, GLFW_KEY_M},
-    {Code::KeyN, GLFW_KEY_N},
-    {Code::KeyO, GLFW_KEY_O},
-    {Code::KeyP, GLFW_KEY_P},
-    {Code::KeyQ, GLFW_KEY_Q},
-    {Code::KeyR, GLFW_KEY_R},
-    {Code::KeyS, GLFW_KEY_S},
-    {Code::KeyT, GLFW_KEY_T},
-    {Code::KeyU, GLFW_KEY_U},
-    {Code::KeyV, GLFW_KEY_V},
-    {Code::KeyW, GLFW_KEY_W},
-    {Code::KeyX, GLFW_KEY_X},
-    {Code::KeyY, GLFW_KEY_Y},
-    {Code::KeyZ, GLFW_KEY_Z},
+    {Code::A, GLFW_KEY_A},
+    {Code::B, GLFW_KEY_B},
+    {Code::C, GLFW_KEY_C},
+    {Code::D, GLFW_KEY_D},
+    {Code::E, GLFW_KEY_E},
+    {Code::F, GLFW_KEY_F},
+    {Code::G, GLFW_KEY_G},
+    {Code::H, GLFW_KEY_H},
+    {Code::I, GLFW_KEY_I},
+    {Code::J, GLFW_KEY_J},
+    {Code::K, GLFW_KEY_K},
+    {Code::L, GLFW_KEY_L},
+    {Code::M, GLFW_KEY_M},
+    {Code::N, GLFW_KEY_N},
+    {Code::O, GLFW_KEY_O},
+    {Code::P, GLFW_KEY_P},
+    {Code::Q, GLFW_KEY_Q},
+    {Code::R, GLFW_KEY_R},
+    {Code::S, GLFW_KEY_S},
+    {Code::T, GLFW_KEY_T},
+    {Code::U, GLFW_KEY_U},
+    {Code::V, GLFW_KEY_V},
+    {Code::W, GLFW_KEY_W},
+    {Code::X, GLFW_KEY_X},
+    {Code::Y, GLFW_KEY_Y},
+    {Code::Z, GLFW_KEY_Z},
 
     // Numbers
     {Code::Num0, GLFW_KEY_0},
@@ -246,7 +245,7 @@ constexpr EnumMapper<Code, int> kKeyCodeGLFWMapping({
     {Code::Num8, GLFW_KEY_8},
     {Code::Num9, GLFW_KEY_9},
 
-    // Function keys
+    // Function s
     {Code::F1, GLFW_KEY_F1},
     {Code::F2, GLFW_KEY_F2},
     {Code::F3, GLFW_KEY_F3},
@@ -260,13 +259,13 @@ constexpr EnumMapper<Code, int> kKeyCodeGLFWMapping({
     {Code::F11, GLFW_KEY_F11},
     {Code::F12, GLFW_KEY_F12},
 
-    // Arrow keys
+    // Arrow s
     {Code::ArrowUp, GLFW_KEY_UP},
     {Code::ArrowDown, GLFW_KEY_DOWN},
     {Code::ArrowLeft, GLFW_KEY_LEFT},
     {Code::ArrowRight, GLFW_KEY_RIGHT},
 
-    // Special keys
+    // Special s
     {Code::Escape, GLFW_KEY_ESCAPE},
     {Code::Enter, GLFW_KEY_ENTER},
     {Code::Backspace, GLFW_KEY_BACKSPACE},
@@ -279,7 +278,7 @@ constexpr EnumMapper<Code, int> kKeyCodeGLFWMapping({
     {Code::LeftAlt, GLFW_KEY_LEFT_ALT},
     {Code::RightAlt, GLFW_KEY_RIGHT_ALT},
 
-    // Additional keys
+    // Additional s
     {Code::Insert, GLFW_KEY_INSERT},
     {Code::Delete, GLFW_KEY_DELETE},
     {Code::Home, GLFW_KEY_HOME},
@@ -306,57 +305,57 @@ inline std::optional<Code> GLFWKeyToCode(int key) {
   switch (key) {
     // Letters
     case GLFW_KEY_A:
-      return Code::KeyA;
+      return Code::A;
     case GLFW_KEY_B:
-      return Code::KeyB;
+      return Code::B;
     case GLFW_KEY_C:
-      return Code::KeyC;
+      return Code::C;
     case GLFW_KEY_D:
-      return Code::KeyD;
+      return Code::D;
     case GLFW_KEY_E:
-      return Code::KeyE;
+      return Code::E;
     case GLFW_KEY_F:
-      return Code::KeyF;
+      return Code::F;
     case GLFW_KEY_G:
-      return Code::KeyG;
+      return Code::G;
     case GLFW_KEY_H:
-      return Code::KeyH;
+      return Code::H;
     case GLFW_KEY_I:
-      return Code::KeyI;
+      return Code::I;
     case GLFW_KEY_J:
-      return Code::KeyJ;
+      return Code::J;
     case GLFW_KEY_K:
-      return Code::KeyK;
+      return Code::K;
     case GLFW_KEY_L:
-      return Code::KeyL;
+      return Code::L;
     case GLFW_KEY_M:
-      return Code::KeyM;
+      return Code::M;
     case GLFW_KEY_N:
-      return Code::KeyN;
+      return Code::N;
     case GLFW_KEY_O:
-      return Code::KeyO;
+      return Code::O;
     case GLFW_KEY_P:
-      return Code::KeyP;
+      return Code::P;
     case GLFW_KEY_Q:
-      return Code::KeyQ;
+      return Code::Q;
     case GLFW_KEY_R:
-      return Code::KeyR;
+      return Code::R;
     case GLFW_KEY_S:
-      return Code::KeyS;
+      return Code::S;
     case GLFW_KEY_T:
-      return Code::KeyT;
+      return Code::T;
     case GLFW_KEY_U:
-      return Code::KeyU;
+      return Code::U;
     case GLFW_KEY_V:
-      return Code::KeyV;
+      return Code::V;
     case GLFW_KEY_W:
-      return Code::KeyW;
+      return Code::W;
     case GLFW_KEY_X:
-      return Code::KeyX;
+      return Code::X;
     case GLFW_KEY_Y:
-      return Code::KeyY;
+      return Code::Y;
     case GLFW_KEY_Z:
-      return Code::KeyZ;
+      return Code::Z;
 
     // Numbers
     case GLFW_KEY_0:
@@ -380,7 +379,7 @@ inline std::optional<Code> GLFWKeyToCode(int key) {
     case GLFW_KEY_9:
       return Code::Num9;
 
-    // Function keys
+    // Function s
     case GLFW_KEY_F1:
       return Code::F1;
     case GLFW_KEY_F2:
@@ -406,7 +405,7 @@ inline std::optional<Code> GLFWKeyToCode(int key) {
     case GLFW_KEY_F12:
       return Code::F12;
 
-    // Arrow keys
+    // Arrow s
     case GLFW_KEY_UP:
       return Code::ArrowUp;
     case GLFW_KEY_DOWN:
@@ -416,7 +415,7 @@ inline std::optional<Code> GLFWKeyToCode(int key) {
     case GLFW_KEY_RIGHT:
       return Code::ArrowRight;
 
-    // Special keys
+    // Special s
     case GLFW_KEY_ESCAPE:
       return Code::Escape;
     case GLFW_KEY_ENTER:
@@ -440,7 +439,7 @@ inline std::optional<Code> GLFWKeyToCode(int key) {
     case GLFW_KEY_RIGHT_ALT:
       return Code::RightAlt;
 
-    // Additional keys
+    // Additional s
     case GLFW_KEY_INSERT:
       return Code::Insert;
     case GLFW_KEY_DELETE:

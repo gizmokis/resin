@@ -119,12 +119,25 @@ void Window::set_glfw_callbacks() const {
     properties.eventDispatcher->get().dispatch(window_resize_event);
   });
 
-  glfwSetKeyCallback(window_ptr_, [](GLFWwindow* window, int key, int /*scancode*/, int action, int /*mods*/) {
+  glfwSetKeyCallback(window_ptr_, [](GLFWwindow* window, int key_code, int /*scancode*/, int action, int /*mods*/) {
     const WindowProperties& properties = *static_cast<WindowProperties*>(glfwGetWindowUserPointer(window));
 
-    if (key == GLFW_KEY_V && action == GLFW_PRESS) {
-      WindowTestEvent window_test_event;
-      properties.eventDispatcher->get().dispatch(window_test_event);
+    auto key_val = key::GLFWKeyToCode(key_code);
+    if (!key_val) {
+      return;
+    }
+
+    switch (action) {
+      case GLFW_PRESS: {
+        KeyPressedEvent key_pressed_event(*key_val);
+        properties.eventDispatcher->get().dispatch(key_pressed_event);
+        break;
+      }
+      case GLFW_RELEASE: {
+        KeyReleasedEvent key_released_event(*key_val);
+        properties.eventDispatcher->get().dispatch(key_released_event);
+        break;
+      }
     }
   });
 
@@ -147,28 +160,6 @@ void Window::set_glfw_callbacks() const {
       case GLFW_RELEASE: {
         MouseButtonReleasedEvent mouse_button_released_event(*button, glm::vec2(x, y));
         properties.eventDispatcher->get().dispatch(mouse_button_released_event);
-        break;
-      }
-    }
-  });
-
-  glfwSetKeyCallback(window_ptr_, [](GLFWwindow* window, int key_code, int /*scancode*/, int action, int /*mods*/) {
-    const WindowProperties& properties = *static_cast<WindowProperties*>(glfwGetWindowUserPointer(window));
-
-    auto key_val = key::GLFWKeyToCode(key_code);
-    if (!key_val) {
-      return;
-    }
-
-    switch (action) {
-      case GLFW_PRESS: {
-        KeyPressedEvent key_pressed_event(*key_val);
-        properties.eventDispatcher->get().dispatch(key_pressed_event);
-        break;
-      }
-      case GLFW_RELEASE: {
-        KeyReleasedEvent key_released_event(*key_val);
-        properties.eventDispatcher->get().dispatch(key_released_event);
         break;
       }
     }
