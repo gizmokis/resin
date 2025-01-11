@@ -14,6 +14,7 @@
 #include <resin/event/event.hpp>
 #include <resin/event/key_events.hpp>
 #include <resin/event/mouse_events.hpp>
+#include <resin/event/scroll_events.hpp>
 #include <resin/event/window_events.hpp>
 #include <resin/imgui/gizmo.hpp>
 #include <string>
@@ -163,6 +164,13 @@ void Window::set_glfw_callbacks() const {
         break;
       }
     }
+  });
+
+  glfwSetScrollCallback(window_ptr_, [](GLFWwindow* window, double xoffset, double yoffset) {
+    const WindowProperties& properties = *static_cast<WindowProperties*>(glfwGetWindowUserPointer(window));
+
+    ScrollEvent scroll_event(glm::vec2(xoffset, yoffset));
+    properties.eventDispatcher->get().dispatch(scroll_event);
   });
 }
 

@@ -28,12 +28,14 @@
 #include <libresin/utils/logger.hpp>
 #include <nfd/nfd.hpp>
 #include <optional>
+#include <resin/core/key_codes.hpp>
 #include <resin/core/mouse_codes.hpp>
 #include <resin/core/window.hpp>
 #include <resin/dialog/file_dialog.hpp>
 #include <resin/event/event.hpp>
 #include <resin/event/key_events.hpp>
 #include <resin/event/mouse_events.hpp>
+#include <resin/event/scroll_events.hpp>
 #include <resin/event/window_events.hpp>
 #include <resin/imgui/gizmo.hpp>
 #include <resin/imgui/node_edit.hpp>
@@ -42,8 +44,6 @@
 #include <resin/imgui/viewport.hpp>
 #include <resin/resin.hpp>
 #include <string_view>
-
-#include "resin/core/key_codes.hpp"
 
 namespace resin {
 
@@ -58,6 +58,7 @@ Resin::Resin()
   dispatcher_.subscribe<MouseButtonPressedEvent>(BIND_EVENT_METHOD(on_click));
   dispatcher_.subscribe<KeyPressedEvent>(BIND_EVENT_METHOD(on_key_pressed));
   dispatcher_.subscribe<KeyReleasedEvent>(BIND_EVENT_METHOD(on_key_released));
+  dispatcher_.subscribe<ScrollEvent>(BIND_EVENT_METHOD(on_scroll));
 
   {
     WindowProperties properties;
@@ -516,5 +517,10 @@ bool Resin::on_key_pressed(KeyPressedEvent& e) {
 }
 
 bool Resin::on_key_released(KeyReleasedEvent& e) { return true; }
+
+bool Resin::on_scroll(ScrollEvent& e) {
+  Logger::info("{}", e);
+  return true;
+}
 
 }  // namespace resin

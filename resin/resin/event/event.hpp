@@ -21,12 +21,13 @@ enum class EventType {
   WindowCloseEvent,
   WindowResizeEvent,
   WindowTestEvent,
+  KeyPressedEvent,
+  KeyReleasedEvent,
   MouseButtonPressedEvent,
   MouseButtonReleasedEvent,
   MouseScrollEvent,
   MouseMoveEvent,
-  KeyPressedEvent,
-  KeyReleasedEvent
+  ScrollEvent
 };
 
 class BaseEvent {
