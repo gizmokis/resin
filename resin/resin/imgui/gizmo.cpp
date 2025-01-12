@@ -128,7 +128,8 @@ bool CameraViewGizmo(::resin::Camera& camera, float distance, float dt, bool fre
   auto inv_view_rot = camera.transform.local_rot();
   auto inv_view_pos = camera.transform.local_pos();
   if (ImGuizmo::ViewManipulate(camera.view_matrix(), inv_view_pos, inv_view_rot, distance,
-                               ImVec2(pos_x + width - size.x, pos_y), size, 0x00000000, true, dt, interpolation_time) &&
+                               ImVec2(pos_x + width - size.x, pos_y), size, 0x00000000, false, dt,
+                               interpolation_time) &&
       !freeze) {
     camera.transform.set_local_pos(inv_view_pos);
     camera.transform.set_local_rot(inv_view_rot);

@@ -225,6 +225,7 @@ void Resin::update(duration_t delta) {
 
   update_camera_operators(seconds_dt);
   update_camera_distance();
+  interpolate(seconds_dt);
 
   FileDialog::instance().update();
 }
@@ -414,6 +415,10 @@ bool Resin::on_mouse_btn_pressed(MouseButtonPressedEvent& e) {
   }
 
   if (e.button() == mouse::Code::MouseButtonRight) {
+    if (glm::dot(camera_->transform.local_up(), glm::vec3(0.0F, 1.0F, 0.0F)) < 0.0F) {
+      return start_interpolation();
+    }
+
     return activate_first_person_camera(e.pos());
   }
 
@@ -470,6 +475,7 @@ bool Resin::draw_transform_gizmo() {
   if (selected_node_ && !selected_node_->expired()) {
     bool disabled = current_vieport_state_ != ViewportState::ActiveIdle &&
                     current_vieport_state_ != ViewportState::InactiveIdle &&
+                    current_vieport_state_ != ViewportState::CameraInterpolation &&
                     current_vieport_state_ != ViewportState::GizmoTransform;
 
     auto& node = sdf_tree_.node(*selected_node_);
@@ -494,6 +500,7 @@ bool Resin::draw_transform_gizmo() {
 bool Resin::draw_camera_gizmo(float dt) {
   bool disabled = current_vieport_state_ != ViewportState::ActiveIdle &&
                   current_vieport_state_ != ViewportState::InactiveIdle &&
+                  current_vieport_state_ != ViewportState::CameraInterpolation &&
                   current_vieport_state_ != ViewportState::GizmoCamera;
 
   if (ImGui::resin::CameraViewGizmo(*camera_, camera_distance_, dt, disabled)) {
@@ -511,7 +518,8 @@ bool Resin::draw_camera_gizmo(float dt) {
 }
 
 bool Resin::update_camera_distance() {
-  if (current_vieport_state_ != ViewportState::GizmoCamera) {
+  if (current_vieport_state_ != ViewportState::GizmoCamera &&
+      current_vieport_state_ != ViewportState::CameraInterpolation) {
     camera_distance_ = glm::length(camera_->transform.pos());
     return true;
   }
@@ -519,7 +527,8 @@ bool Resin::update_camera_distance() {
 }
 
 bool Resin::switch_ortho() {
-  if (current_vieport_state_ != ViewportState::InactiveIdle) {
+  if (current_vieport_state_ != ViewportState::InactiveIdle &&
+      current_vieport_state_ != ViewportState::CameraInterpolation) {
     camera_->set_orthographic(!camera_->is_orthographic());
     shader_->set_uniform("u_ortho", camera_->is_orthographic());
     shader_->set_uniform("u_camSize", camera_->height());
@@ -533,6 +542,7 @@ bool Resin::activate_first_person_camera(glm::vec2 mouse_pos) {
   if (current_vieport_state_ == ViewportState::ActiveIdle) {
     current_vieport_state_ = ViewportState::FirstPersonCamera;
     window_->set_mouse_cursor_mode(mouse::CursorMode::Disabled);
+
     first_person_camera_operator_.start(mouse_pos);
     return true;
   }
@@ -569,8 +579,7 @@ bool Resin::activate_orbiting_camera(glm::vec2 mouse_pos) {
     current_vieport_state_ = ViewportState::OrbitingCamera;
 
     auto dir = glm::normalize(camera_->transform.pos());
-    camera_->transform.set_local_pos(dir * camera_distance_);
-    camera_->transform.set_local_rot(glm::quatLookAt(-dir, glm::vec3(0.0F, 1.0F, 0.0F)));
+    camera_->transform.set_local_rot(glm::quatLookAt(-dir, camera_->transform.local_up()));
 
     window_->set_mouse_cursor_mode(mouse::CursorMode::Disabled);
     orbiting_camera_operator_.start(mouse_pos);
@@ -610,7 +619,8 @@ bool Resin::update_camera_operators(float dt) {
 bool Resin::zoom_camera(glm::vec2 offset) {
   if (current_vieport_state_ == ViewportState::InactiveIdle ||
       current_vieport_state_ == ViewportState::FirstPersonCamera ||
-      current_vieport_state_ == ViewportState::OrbitingCamera) {
+      current_vieport_state_ == ViewportState::OrbitingCamera ||
+      current_vieport_state_ == ViewportState::CameraInterpolation) {
     return false;
   }
 
@@ -648,6 +658,49 @@ bool Resin::select_node(glm::vec2 relative_pos) {
   }
 
   return false;
+}
+
+bool Resin::start_interpolation() {
+  if (current_vieport_state_ == ViewportState::ActiveIdle || current_vieport_state_ == ViewportState::InactiveIdle) {
+    current_vieport_state_ = ViewportState::CameraInterpolation;
+  }
+
+  return true;
+}
+
+bool Resin::interpolate(float dt) {
+  static const float kInterpolationTime = 0.2F;
+
+  static bool interpolation_started   = false;
+  static float interpolation_progress = 0.0F;
+  static glm::quat interpolation_start_quat;
+  static glm::quat interpolation_end_quat;
+
+  if (current_vieport_state_ != ViewportState::CameraInterpolation) {
+    return false;
+  }
+
+  if (!interpolation_started) {
+    interpolation_started    = true;
+    interpolation_progress   = 0.0F;
+    interpolation_start_quat = camera_->transform.local_rot();
+    interpolation_end_quat   = glm::quatLookAt(camera_->transform.local_front(), glm::vec3(0.0F, 1.0F, 0.0F));
+    camera_->transform.local_rot();
+  }
+
+  interpolation_progress += dt;
+  if (interpolation_progress > kInterpolationTime) {
+    current_vieport_state_ = ViewportState::ActiveIdle;
+    interpolation_started  = false;
+    return true;
+  }
+
+  float t = interpolation_progress / kInterpolationTime;
+  camera_->transform.set_local_rot(glm::slerp(interpolation_start_quat, interpolation_end_quat, t));
+  shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
+  shader_->set_uniform("u_camSize", camera_->height());
+
+  return true;
 }
 
 }  // namespace resin

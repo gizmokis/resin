@@ -81,6 +81,8 @@ class Resin {
   bool update_camera_operators(float dt);
   bool zoom_camera(glm::vec2 offset);
   bool select_node(glm::vec2 relative_pos);
+  bool start_interpolation();
+  bool interpolate(float dt);
 
  public:
   static constexpr duration_t kTickTime = 16666us;  // 60 TPS = 16.6(6) ms/t
@@ -99,6 +101,7 @@ class Resin {
     OrbitingCamera,
     GizmoCamera,
     GizmoTransform,
+    CameraInterpolation,
     _Count  // NOLINT
   };
 
