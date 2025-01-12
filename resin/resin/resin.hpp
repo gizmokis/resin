@@ -23,7 +23,6 @@
 #include <resin/event/scroll_events.hpp>
 #include <resin/event/window_events.hpp>
 #include <resin/imgui/gizmo.hpp>
-#include <resin/imgui/transform_gizmo.hpp>
 #include <resin/resources/resource_managers.hpp>
 
 int main();
