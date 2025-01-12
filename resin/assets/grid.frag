@@ -24,7 +24,6 @@ void grid(vec3 rayOrigin, vec3 rayDir) {
     if (abs(rayDir.y) > 0.0001) {
         float t = -rayOrigin.y / rayDir.y;  
         vec3 pos = rayOrigin + t * rayDir;  // world-space intersection with XZ plane 
-        float dist = length(pos - rayOrigin);
         if ( u_ortho || t > 0.0) {
             bool minorGrid = mod(pos.x, u_spacing) < lineThickness || mod(pos.z, u_spacing) < lineThickness;
             bool majorGrid = mod(pos.x, majorSpacing) < lineThickness || mod(pos.z, majorSpacing) < lineThickness;
