@@ -116,7 +116,6 @@ Resin::Resin()
   ShaderResource frag_shader = *shader_resource_manager_.get_res(path / "test.frag");
 
   frag_shader.set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
-  Logger::info("{}", frag_shader.get_glsl());
 
   primitive_ubo_ = std::make_unique<PrimitiveUniformBuffer>(sdf_tree_.max_nodes_count());
   frag_shader.set_ext_defi("MAX_UBO_NODE_COUNT", std::to_string(sdf_tree_.max_nodes_count()));
@@ -198,7 +197,6 @@ void Resin::run() {
 }
 
 void Resin::update(duration_t delta) {
-  Logger::info("{}", static_cast<size_t>(current_vieport_state_));
   const float seconds_dt = std ::chrono::duration_cast<std::chrono::duration<float>>(delta).count();
 
   directional_light_->transform.rotate(glm::angleAxis(std::chrono::duration<float>(delta).count(), glm::vec3(0, 1, 0)));
