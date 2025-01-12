@@ -233,7 +233,20 @@ void Resin::gui(duration_t delta) {
   ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
 
   bool resized = false;
+
   if (ImGui::resin::Viewport(*framebuffer_, resized)) {
+    // These click checks allow for instant camera manipulation when viewport is not focused
+    if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && ImGui::IsWindowHovered() && !ImGui::IsWindowFocused()) {
+      ImGui::SetWindowFocus();
+      update_vieport_active(true);
+      activate_first_person_camera(window_->mouse_pos());
+    }
+    if (ImGui::IsMouseClicked(ImGuiMouseButton_Middle) && ImGui::IsWindowHovered() && !ImGui::IsWindowFocused()) {
+      ImGui::SetWindowFocus();
+      update_vieport_active(true);
+      activate_orbiting_camera(window_->mouse_pos());
+    }
+
     if (ImGui::BeginMenuBar()) {
       ImGui::Text("Local Transform:");
       ImGui::Checkbox("##LocalCheckbox", &use_local_gizmos_);

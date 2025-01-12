@@ -66,7 +66,7 @@ class Resin {
   bool on_key_released(KeyReleasedEvent& e);
   bool on_scroll(ScrollEvent& e);
 
-  // vieport actions
+  // vieport actions -- these methods mutate the viewport state
   bool update_vieport_active(bool is_viewport_focused);
   bool draw_transform_gizmo();
   bool draw_camera_gizmo(float dt);
@@ -104,7 +104,6 @@ class Resin {
     CameraInterpolation,
     _Count  // NOLINT
   };
-
   ViewportState current_vieport_state_;
 
   std::optional<IdView<SDFTreeNodeId>> selected_node_;
