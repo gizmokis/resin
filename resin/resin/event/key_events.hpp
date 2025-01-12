@@ -36,4 +36,4 @@ class KeyReleasedEvent : public Event<EventType::KeyReleasedEvent> {
 
 }  // namespace resin
 
-#endif  // RESIN_MOUSE_EVENTS_HPP
+#endif  // RESIN_KEY_EVENTS_HPP

@@ -23,4 +23,4 @@ class ScrollEvent : public Event<EventType::ScrollEvent> {
 
 }  // namespace resin
 
-#endif  // RESIN_MOUSE_EVENTS_HPP
+#endif  // RESIN_SCROLL_EVENTS_HPP
