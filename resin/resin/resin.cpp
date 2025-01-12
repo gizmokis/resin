@@ -110,7 +110,7 @@ Resin::Resin()
 
   // SDF Shader
   ShaderResource grid_frag_shader = *shader_resource_manager_.get_res(path / "grid.frag");
-  ShaderResource frag_shader      = *shader_resource_manager_.get_res(path / "test.frag");
+  ShaderResource frag_shader      = *shader_resource_manager_.get_res(path / "main.frag");
 
   frag_shader.set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
   Logger::info("{}", frag_shader.get_glsl());
@@ -122,10 +122,10 @@ Resin::Resin()
   primitive_ubo_->set(sdf_tree_);
   primitive_ubo_->unbind();
 
-  grid_shader_ = std::make_unique<RenderingShaderProgram>("grid", *shader_resource_manager_.get_res(path / "test.vert"),
+  grid_shader_ = std::make_unique<RenderingShaderProgram>("grid", *shader_resource_manager_.get_res(path / "main.vert"),
                                                           std::move(grid_frag_shader));
-  shader_ = std::make_unique<RenderingShaderProgram>("default", *shader_resource_manager_.get_res(path / "test.vert"),
-                                                     std::move(frag_shader));
+  shader_      = std::make_unique<RenderingShaderProgram>("main", *shader_resource_manager_.get_res(path / "main.vert"),
+                                                          std::move(frag_shader));
   shader_->bind_uniform_buffer("Data", *primitive_ubo_);
 
   framebuffer_ = std::make_unique<Framebuffer>(window_->dimensions().x, window_->dimensions().y);
