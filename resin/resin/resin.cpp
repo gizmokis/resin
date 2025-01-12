@@ -615,15 +615,15 @@ bool Resin::zoom_camera(glm::vec2 offset) {
   }
 
   if (std::abs(offset.y) > 0.0F) {
-    camera_distance_ = glm::length(camera_->transform.pos());
+    camera_distance_ = glm::length(camera_->transform.local_pos());
     camera_distance_ -= offset.y * 0.8F;
     if (camera_distance_ < 0.0F) {
       camera_distance_ = 0.0F;
     }
 
-    auto dir = glm::normalize(camera_->transform.pos());
+    auto dir = glm::normalize(camera_->transform.local_pos());
     camera_->transform.set_local_pos(dir * camera_distance_);
-    camera_->transform.set_local_rot(glm::quatLookAt(-dir, glm::vec3(0.0F, 1.0F, 0.0F)));
+    camera_->transform.set_local_rot(glm::quatLookAt(-dir, camera_->transform.local_up()));
 
     shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
     if (camera_->is_orthographic()) {
