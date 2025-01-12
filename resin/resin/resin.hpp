@@ -15,6 +15,7 @@
 #include <memory>
 #include <resin/camera/first_person_camera_operator.hpp>
 #include <resin/camera/orbiting_camera_operator.hpp>
+#include <resin/core/key_codes.hpp>
 #include <resin/core/window.hpp>
 #include <resin/event/event.hpp>
 #include <resin/event/key_events.hpp>
@@ -24,9 +25,6 @@
 #include <resin/imgui/gizmo.hpp>
 #include <resin/imgui/transform_gizmo.hpp>
 #include <resin/resources/resource_managers.hpp>
-
-#include "libresin/utils/enum_mapper.hpp"
-#include "resin/core/key_codes.hpp"
 
 int main();
 
@@ -70,6 +68,9 @@ class Resin {
 
   // vieport actions
   bool update_vieport_active(bool is_viewport_focused);
+  bool draw_transform_gizmo();
+  bool draw_camera_gizmo(float dt);
+  bool update_camera_distance();
   bool switch_ortho();
   bool activate_first_person_camera(glm::vec2 mouse_pos);
   bool deactivate_first_person_camera();

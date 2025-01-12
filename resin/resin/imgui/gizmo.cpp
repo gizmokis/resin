@@ -7,7 +7,6 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/matrix.hpp>
 #include <libresin/core/transform.hpp>
-#include <optional>
 #include <resin/imgui/gizmo.hpp>
 
 namespace ImGui {  // NOLINT
@@ -21,8 +20,10 @@ void BeginGizmoFrame(ImDrawList* drawlist) {
   ImGuizmo::SetDrawlist(drawlist);
 }
 
-bool TransformGizmo(::resin::Transform& trans, const ::resin::Camera& camera, GizmoMode mode,
-                    GizmoOperation operation) {
+bool IsTransformGizmoUsed() { return ImGuizmo::IsUsing(); }
+
+bool TransformGizmo(::resin::Transform& trans, const ::resin::Camera& camera, GizmoMode mode, GizmoOperation operation,
+                    bool freeze) {
   const float pos_x  = ImGui::GetWindowPos().x + ImGui::GetCursorStartPos().x;
   const float pos_y  = ImGui::GetWindowPos().y + ImGui::GetCursorStartPos().y;
   const float width  = ImGui::GetWindowWidth() - ImGui::GetCursorStartPos().x;
@@ -39,7 +40,8 @@ bool TransformGizmo(::resin::Transform& trans, const ::resin::Camera& camera, Gi
   if (operation == GizmoOperation::Translation) {
     if (ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(proj), ImGuizmo::OPERATION::TRANSLATE,
                              mode == GizmoMode::Local ? ImGuizmo::MODE::LOCAL : ImGuizmo::MODE::WORLD,
-                             glm::value_ptr(mat), glm::value_ptr(delta_mat))) {
+                             glm::value_ptr(mat), glm::value_ptr(delta_mat)) &&
+        !freeze) {
       auto dp = glm::vec3(delta_mat[3]);
       if (trans.has_parent()) {
         auto parent_rot_mat = glm::mat4_cast(trans.parent().rot());
@@ -55,7 +57,8 @@ bool TransformGizmo(::resin::Transform& trans, const ::resin::Camera& camera, Gi
   if (operation == GizmoOperation::Rotation) {
     if (ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(proj), ImGuizmo::OPERATION::ROTATE,
                              mode == GizmoMode::Local ? ImGuizmo::MODE::LOCAL : ImGuizmo::MODE::WORLD,
-                             glm::value_ptr(mat), glm::value_ptr(delta_mat))) {
+                             glm::value_ptr(mat), glm::value_ptr(delta_mat)) &&
+        !freeze) {
       auto dq = glm::quat_cast(delta_mat);
       if (trans.has_parent()) {
         auto pq = trans.parent().rot();
@@ -85,7 +88,8 @@ bool TransformGizmo(::resin::Transform& trans, const ::resin::Camera& camera, Gi
   }
 
   if (ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(proj), ImGuizmo::OPERATION::SCALE,
-                           ImGuizmo::MODE::WORLD, glm::value_ptr(mat), glm::value_ptr(delta_mat))) {
+                           ImGuizmo::MODE::WORLD, glm::value_ptr(mat), glm::value_ptr(delta_mat)) &&
+      !freeze) {
     constexpr float kFloatEqTreshold = 1e-5F;
 
     // Note: delta matrix doesn't contain a delta per frame, but a delta from the moment the user grabbed the gizmo
@@ -115,7 +119,8 @@ bool TransformGizmo(::resin::Transform& trans, const ::resin::Camera& camera, Gi
   return false;
 }
 
-bool CameraViewGizmo(::resin::Camera& camera, float distance, float dt, float interpolation_time, ImVec2 size) {
+bool CameraViewGizmo(::resin::Camera& camera, float distance, float dt, bool freeze, float interpolation_time,
+                     ImVec2 size) {
   const float pos_x = ImGui::GetWindowPos().x + ImGui::GetCursorStartPos().x;
   const float pos_y = ImGui::GetWindowPos().y + ImGui::GetCursorStartPos().y;
   const float width = ImGui::GetWindowWidth() - ImGui::GetCursorStartPos().x;
@@ -123,7 +128,8 @@ bool CameraViewGizmo(::resin::Camera& camera, float distance, float dt, float in
   auto inv_view_rot = camera.transform.local_rot();
   auto inv_view_pos = camera.transform.local_pos();
   if (ImGuizmo::ViewManipulate(camera.view_matrix(), inv_view_pos, inv_view_rot, distance,
-                               ImVec2(pos_x + width - size.x, pos_y), size, 0x00000000, true, dt, interpolation_time)) {
+                               ImVec2(pos_x + width - size.x, pos_y), size, 0x00000000, true, dt, interpolation_time) &&
+      !freeze) {
     camera.transform.set_local_pos(inv_view_pos);
     camera.transform.set_local_rot(inv_view_rot);
     return true;

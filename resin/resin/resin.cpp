@@ -3,7 +3,6 @@
 #include <imgui/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_opengl3.h>
 #include <imgui/imgui_internal.h>
-#include <imguizmo/ImGuizmo.h>
 
 #include <chrono>
 #include <cmath>
@@ -225,11 +224,13 @@ void Resin::update(duration_t delta) {
   shader_->set_uniform("u_pointLight", *point_light_);
 
   update_camera_operators(seconds_dt);
+  update_camera_distance();
 
   FileDialog::instance().update();
 }
 
 void Resin::gui(duration_t delta) {
+  const float seconds_dt = std ::chrono::duration_cast<std::chrono::duration<float>>(delta).count();
   ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
 
   bool resized = false;
@@ -287,21 +288,10 @@ void Resin::gui(duration_t delta) {
     }
 
     ImGui::resin::BeginGizmoFrame();
-    if (selected_node_ && !selected_node_->expired()) {
-      auto& node = sdf_tree_.node(*selected_node_);
-      if (ImGui::resin::TransformGizmo(
-              node.transform(), *camera_,
-              use_local_gizmos_ ? ImGui::resin::GizmoMode::Local : ImGui::resin::GizmoMode::World, gizmo_operation_)) {
-        node.mark_dirty();
-      }
-    }
-
-    if (ImGui::resin::CameraViewGizmo(*camera_, camera_distance_, static_cast<float>(delta.count()) * 1e-9F)) {
-      shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
-    } else {
-      camera_distance_ = glm::length(camera_->transform.pos());
-    }
+    draw_transform_gizmo();
+    draw_camera_gizmo(seconds_dt);
   }
+
   ImGui::End();
 
   ImGui::SetNextWindowSizeConstraints(ImVec2(280.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
@@ -469,8 +459,60 @@ bool Resin::update_vieport_active(bool is_viewport_focused) {
     current_vieport_state_ = ViewportState::ActiveIdle;
     return true;
   }
-  if (current_vieport_state_ == ViewportState::ActiveIdle && !is_viewport_focused) {
+  if (current_vieport_state_ != ViewportState::InactiveIdle && !is_viewport_focused) {
     current_vieport_state_ = ViewportState::InactiveIdle;
+    return true;
+  }
+  return false;
+}
+
+bool Resin::draw_transform_gizmo() {
+  if (selected_node_ && !selected_node_->expired()) {
+    bool disabled = current_vieport_state_ != ViewportState::ActiveIdle &&
+                    current_vieport_state_ != ViewportState::InactiveIdle &&
+                    current_vieport_state_ != ViewportState::GizmoTransform;
+
+    auto& node = sdf_tree_.node(*selected_node_);
+    if (ImGui::resin::TransformGizmo(
+            node.transform(), *camera_,
+            use_local_gizmos_ ? ImGui::resin::GizmoMode::Local : ImGui::resin::GizmoMode::World, gizmo_operation_,
+            disabled)) {
+      node.mark_dirty();
+      current_vieport_state_ = ViewportState::GizmoTransform;
+      return true;
+    }
+  }
+
+  if (current_vieport_state_ == ViewportState::GizmoTransform && !ImGui::resin::IsTransformGizmoUsed()) {
+    current_vieport_state_ = ViewportState::ActiveIdle;
+    return true;
+  }
+
+  return false;
+}
+
+bool Resin::draw_camera_gizmo(float dt) {
+  bool disabled = current_vieport_state_ != ViewportState::ActiveIdle &&
+                  current_vieport_state_ != ViewportState::InactiveIdle &&
+                  current_vieport_state_ != ViewportState::GizmoCamera;
+
+  if (ImGui::resin::CameraViewGizmo(*camera_, camera_distance_, dt, disabled)) {
+    shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
+    current_vieport_state_ = ViewportState::GizmoCamera;
+    return true;
+  }
+
+  if (current_vieport_state_ == ViewportState::GizmoCamera) {
+    current_vieport_state_ = ViewportState::ActiveIdle;
+    return true;
+  }
+
+  return false;
+}
+
+bool Resin::update_camera_distance() {
+  if (current_vieport_state_ != ViewportState::GizmoCamera) {
+    camera_distance_ = glm::length(camera_->transform.pos());
     return true;
   }
   return false;
@@ -566,7 +608,9 @@ bool Resin::update_camera_operators(float dt) {
 }
 
 bool Resin::zoom_camera(glm::vec2 offset) {
-  if (current_vieport_state_ == ViewportState::InactiveIdle) {
+  if (current_vieport_state_ == ViewportState::InactiveIdle ||
+      current_vieport_state_ == ViewportState::FirstPersonCamera ||
+      current_vieport_state_ == ViewportState::OrbitingCamera) {
     return false;
   }
 
