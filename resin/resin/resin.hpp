@@ -13,6 +13,7 @@
 #include <libresin/core/shader.hpp>
 #include <libresin/core/uniform_buffer.hpp>
 #include <memory>
+#include <resin/camera/first_person_camera_operator.hpp>
 #include <resin/camera/orbiting_camera_operator.hpp>
 #include <resin/core/window.hpp>
 #include <resin/event/event.hpp>
@@ -96,6 +97,7 @@ class Resin {
   ImGui::resin::GizmoOperation gizmo_operation_;
 
   OrbitingCameraOperator orbiting_camera_operator_;
+  FirstPersonCameraOperator first_person_camera_operator_;
 
   bool running_   = true;
   bool minimized_ = false;

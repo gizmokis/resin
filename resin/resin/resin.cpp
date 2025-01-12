@@ -29,6 +29,7 @@
 #include <libresin/utils/logger.hpp>
 #include <nfd/nfd.hpp>
 #include <optional>
+#include <resin/camera/first_person_camera_operator.hpp>
 #include <resin/core/key_codes.hpp>
 #include <resin/core/mouse_codes.hpp>
 #include <resin/core/window.hpp>
@@ -198,73 +199,9 @@ void Resin::run() {
   }
 }
 
-static bool update_camera_controls(Camera& camera, GLFWwindow* window, float dt) {
-  // TODO(SDF-82): move out of the resin.cpp
-  static auto last_mouse_pos = glm::vec2(0.0F);
-  const float sensitivity    = 0.06F;
-  const float speed          = 5.0F;
-
-  double mouse_x = NAN;
-  double mouse_y = NAN;
-  glfwGetCursorPos(window, &mouse_x, &mouse_y);
-  glm::vec2 mouse_pos   = glm::vec2(mouse_x, mouse_y);
-  glm::vec2 mouse_delta = (mouse_pos - last_mouse_pos) * sensitivity;
-  last_mouse_pos        = mouse_pos;
-
-  if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) != GLFW_PRESS) {
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    return false;
-  }
-
-  glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-  float right   = 0.F;
-  float up      = 0.F;
-  float forward = 0.F;
-
-  // Forward/Backward
-  if (!camera.is_orthographic()) {
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-      forward += speed * dt;
-    }
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-      forward -= speed * dt;
-    }
-  }
-
-  // Left/Right
-  if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-    right -= speed * dt;
-  }
-  if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-    right += speed * dt;
-  }
-
-  // Up/Down
-  if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
-    up -= speed * dt;
-  }
-  if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
-    up += speed * dt;
-  }
-
-  auto pos = camera.transform.local_pos();
-  pos += camera.transform.local_front() * forward + camera.transform.local_right() * right + glm::vec3(0, 1, 0) * up;
-  camera.transform.set_local_pos(pos);
-  camera.recalculate_projection();
-
-  auto rot     = camera.transform.local_rot();
-  auto yaw     = glm::angleAxis(-mouse_delta.x * 0.03F, glm::vec3(0, 1, 0));
-  auto pitch   = glm::angleAxis(-mouse_delta.y * 0.03F, camera.transform.local_right());
-  auto new_rot = yaw * pitch * rot;
-  camera.transform.set_local_rot(new_rot);
-
-  // TODO(SDF-82): prevent full 360 pitch flips
-
-  return true;
-}
-
 void Resin::update(duration_t delta) {
+  const float seconds_dt = std ::chrono::duration_cast<std::chrono::duration<float>>(delta).count();
+
   directional_light_->transform.rotate(glm::angleAxis(std::chrono::duration<float>(delta).count(), glm::vec3(0, 1, 0)));
 
   if (sdf_tree_.is_dirty()) {
@@ -288,19 +225,13 @@ void Resin::update(duration_t delta) {
   shader_->set_uniform("u_pointLight", *point_light_);
 
   if (is_viewport_focused_) {
-    if (update_camera_controls(*camera_, window_->native_window(), static_cast<float>(delta.count()) * 1e-9F)) {
+    if (orbiting_camera_operator_.update(*camera_, camera_distance_, window_->mouse_pos(), seconds_dt)) {
       shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
-      if (camera_->is_orthographic()) {
-        camera_->recalculate_projection();
-        shader_->set_uniform("u_camSize", camera_->height());
-      }
+      shader_->set_uniform("u_camSize", camera_->height());
     }
-  }
 
-  if (orbiting_camera_operator_.update(*camera_, camera_distance_, window_->mouse_pos())) {
-    shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
-    if (camera_->is_orthographic()) {
-      camera_->recalculate_projection();
+    if (first_person_camera_operator_.update(*camera_, window_->mouse_pos(), seconds_dt)) {
+      shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
       shader_->set_uniform("u_camSize", camera_->height());
     }
   }
@@ -510,6 +441,13 @@ bool Resin::on_mouse_btn_pressed(MouseButtonPressedEvent& e) {
 
   if (e.button() == mouse::Code::MouseButtonMiddle) {
     orbiting_camera_operator_.start();
+    window_->set_mouse_cursor_mode(mouse::CursorMode::Disabled);
+    return true;
+  }
+
+  if (e.button() == mouse::Code::MouseButtonRight) {
+    first_person_camera_operator_.start();
+    window_->set_mouse_cursor_mode(mouse::CursorMode::Disabled);
     return true;
   }
 
@@ -519,6 +457,13 @@ bool Resin::on_mouse_btn_pressed(MouseButtonPressedEvent& e) {
 bool Resin::on_mouse_btn_released(MouseButtonReleasedEvent& e) {
   if (e.button() == mouse::Code::MouseButtonMiddle) {
     orbiting_camera_operator_.stop();
+    window_->set_mouse_cursor_mode(mouse::CursorMode::Normal);
+    return true;
+  }
+
+  if (e.button() == mouse::Code::MouseButtonRight) {
+    first_person_camera_operator_.stop();
+    window_->set_mouse_cursor_mode(mouse::CursorMode::Normal);
     return true;
   }
 
@@ -544,10 +489,62 @@ bool Resin::on_key_pressed(KeyPressedEvent& e) {
     return true;
   }
 
+  if (e.key_code() == key::Code::W) {
+    first_person_camera_operator_.start_moving_in_dir(FirstPersonCameraOperator::Dir::Front);
+    return true;
+  }
+  if (e.key_code() == key::Code::S) {
+    first_person_camera_operator_.start_moving_in_dir(FirstPersonCameraOperator::Dir::Back);
+    return true;
+  }
+  if (e.key_code() == key::Code::A) {
+    first_person_camera_operator_.start_moving_in_dir(FirstPersonCameraOperator::Dir::Left);
+    return true;
+  }
+  if (e.key_code() == key::Code::D) {
+    first_person_camera_operator_.start_moving_in_dir(FirstPersonCameraOperator::Dir::Right);
+    return true;
+  }
+  if (e.key_code() == key::Code::Q) {
+    first_person_camera_operator_.start_moving_in_dir(FirstPersonCameraOperator::Dir::Up);
+    return true;
+  }
+  if (e.key_code() == key::Code::E) {
+    first_person_camera_operator_.start_moving_in_dir(FirstPersonCameraOperator::Dir::Down);
+    return true;
+  }
+
   return false;
 }
 
-bool Resin::on_key_released(KeyReleasedEvent& e) { return false; }
+bool Resin::on_key_released(KeyReleasedEvent& e) {
+  if (e.key_code() == key::Code::W) {
+    first_person_camera_operator_.stop_moving_in_dir(FirstPersonCameraOperator::Dir::Front);
+    return true;
+  }
+  if (e.key_code() == key::Code::S) {
+    first_person_camera_operator_.stop_moving_in_dir(FirstPersonCameraOperator::Dir::Back);
+    return true;
+  }
+  if (e.key_code() == key::Code::A) {
+    first_person_camera_operator_.stop_moving_in_dir(FirstPersonCameraOperator::Dir::Left);
+    return true;
+  }
+  if (e.key_code() == key::Code::D) {
+    first_person_camera_operator_.stop_moving_in_dir(FirstPersonCameraOperator::Dir::Right);
+    return true;
+  }
+  if (e.key_code() == key::Code::Q) {
+    first_person_camera_operator_.stop_moving_in_dir(FirstPersonCameraOperator::Dir::Up);
+    return true;
+  }
+  if (e.key_code() == key::Code::E) {
+    first_person_camera_operator_.stop_moving_in_dir(FirstPersonCameraOperator::Dir::Down);
+    return true;
+  }
+
+  return false;
+}
 
 bool Resin::on_scroll(ScrollEvent& e) {
   if (is_viewport_focused_ && std::abs(e.offset().y) > 0.0F) {

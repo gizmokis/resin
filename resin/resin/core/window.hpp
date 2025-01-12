@@ -9,6 +9,7 @@
 #include <memory>
 #include <optional>
 #include <resin/core/graphics_context.hpp>
+#include <resin/core/mouse_codes.hpp>
 #include <resin/event/event.hpp>
 #include <string>
 
@@ -41,6 +42,7 @@ class Window {
   inline bool vsync() const { return properties_.vsync; }
   inline bool fullscreen() const { return properties_.fullscreen; }
   glm::vec2 mouse_pos() const;
+  void set_mouse_cursor_mode(mouse::CursorMode cursor_mode);
 
   void set_title(std::string_view title);
   void set_pos(glm::ivec2 pos);

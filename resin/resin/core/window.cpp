@@ -195,6 +195,10 @@ glm::vec2 Window::mouse_pos() const {
   return glm::vec2(xpos, ypos);
 }
 
+void Window::set_mouse_cursor_mode(mouse::CursorMode cursor_mode) {
+  glfwSetInputMode(window_ptr_, GLFW_CURSOR, mouse::kMouseCursorModeGLFWMapping[cursor_mode]);
+}
+
 void Window::set_title(std::string_view title) {
   glfwSetWindowTitle(window_ptr_, title.data());
   properties_.title = title;

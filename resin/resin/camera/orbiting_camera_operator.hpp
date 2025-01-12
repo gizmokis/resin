@@ -18,8 +18,8 @@ class OrbitingCameraOperator {
   OrbitingCameraOperator& operator=(OrbitingCameraOperator&&)      = delete;
 
   inline void start() { is_active_ = true; }
-  bool update(Camera& camera, float camera_distance, glm::vec2 mouse_pos);
   inline void stop() { is_active_ = false; }
+  bool update(Camera& camera, float camera_distance, glm::vec2 mouse_pos, float dt);
   inline void set_sensitivity(float sensitivity) { sensitivity_ = sensitivity; }
   inline void set_center(glm::vec3 center) { center_ = center; }
   inline bool is_active() const { return is_active_; }
