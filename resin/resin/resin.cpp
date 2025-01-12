@@ -540,7 +540,7 @@ bool Resin::activate_first_person_camera(glm::vec2 mouse_pos) {
   if (current_vieport_state_ == ViewportState::ActiveIdle) {
     current_vieport_state_ = ViewportState::FirstPersonCamera;
     window_->set_mouse_cursor_mode(mouse::CursorMode::Disabled);
-
+    ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouse;
     first_person_camera_operator_.start(mouse_pos);
     return true;
   }
@@ -552,6 +552,7 @@ bool Resin::deactivate_first_person_camera() {
   if (current_vieport_state_ == ViewportState::FirstPersonCamera) {
     current_vieport_state_ = ViewportState::ActiveIdle;
     window_->set_mouse_cursor_mode(mouse::CursorMode::Normal);
+    ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
     first_person_camera_operator_.stop();
     return true;
   }
@@ -580,6 +581,7 @@ bool Resin::activate_orbiting_camera(glm::vec2 mouse_pos) {
     camera_->transform.set_local_rot(glm::quatLookAt(-dir, camera_->transform.local_up()));
 
     window_->set_mouse_cursor_mode(mouse::CursorMode::Disabled);
+    ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouse;
     orbiting_camera_operator_.start(mouse_pos);
     return true;
   }
@@ -590,6 +592,7 @@ bool Resin::deactivate_orbiting_camera() {
   if (current_vieport_state_ == ViewportState::OrbitingCamera) {
     current_vieport_state_ = ViewportState::ActiveIdle;
     window_->set_mouse_cursor_mode(mouse::CursorMode::Normal);
+    ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
     orbiting_camera_operator_.stop();
     return true;
   }
