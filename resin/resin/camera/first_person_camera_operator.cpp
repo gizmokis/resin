@@ -1,3 +1,5 @@
+#include <glm/fwd.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <libresin/core/camera.hpp>
 #include <resin/camera/first_person_camera_operator.hpp>
 
@@ -61,7 +63,8 @@ bool FirstPersonCameraOperator::update(Camera& camera, glm::vec2 mouse_pos, floa
     }
 
     auto pos = camera.transform.local_pos();
-    pos += camera.transform.local_front() * forward + camera.transform.local_right() * right + glm::vec3(0, 1, 0) * up;
+    pos += camera.transform.local_front() * forward + camera.transform.local_right() * right +
+           camera.transform.local_up() * up;
     camera.transform.set_local_pos(pos);
     camera.recalculate_projection();
 
@@ -70,6 +73,19 @@ bool FirstPersonCameraOperator::update(Camera& camera, glm::vec2 mouse_pos, floa
     auto yaw              = glm::angleAxis(-mouse_delta.x * dt, glm::vec3(0, 1, 0));
     auto pitch            = glm::angleAxis(-mouse_delta.y * dt, camera.transform.local_right());
     auto new_rot          = yaw * pitch * rot;
+
+    // Prevent 360 flips
+    auto new_up = new_rot * glm::vec3(0.0F, 1.0F, 0.0F);
+    if (glm::dot(new_up, glm::vec3(0.0F, 1.0F, 0.0F)) < 0.0F) {
+      auto new_dir = new_rot * glm::vec3(0.0F, 0.0F, -1.0F);
+      if (glm::dot(new_dir, glm::vec3(0.0F, 1.0F, 0.0F)) > 0.0F) {
+        // operator looks up
+        new_rot = glm::quatLookAt(glm::vec3(0.0F, 1.0F, 0.0F), new_up);
+      } else {
+        // operator looks down
+        new_rot = glm::quatLookAt(glm::vec3(0.0F, -1.0F, 0.0F), new_up);
+      }
+    }
     camera.transform.set_local_rot(new_rot);
   }
 

@@ -429,16 +429,6 @@ bool Resin::on_mouse_btn_pressed(MouseButtonPressedEvent& e) {
     return true;
   }
 
-  glm::vec2 relative_pos = e.pos() - viewport_pos_;
-  if (relative_pos.x < 0 || relative_pos.y < 0 || relative_pos.x > static_cast<float>(framebuffer_->width()) ||
-      relative_pos.y > static_cast<float>(framebuffer_->height())) {
-    return false;
-  }
-
-  if (e.button() == mouse::Code::MouseButtonLeft) {
-    return on_left_click(relative_pos);
-  }
-
   if (e.button() == mouse::Code::MouseButtonMiddle) {
     orbiting_camera_operator_.start();
     window_->set_mouse_cursor_mode(mouse::CursorMode::Disabled);
@@ -449,6 +439,16 @@ bool Resin::on_mouse_btn_pressed(MouseButtonPressedEvent& e) {
     first_person_camera_operator_.start();
     window_->set_mouse_cursor_mode(mouse::CursorMode::Disabled);
     return true;
+  }
+
+  glm::vec2 relative_pos = e.pos() - viewport_pos_;
+  if (relative_pos.x < 0 || relative_pos.y < 0 || relative_pos.x > static_cast<float>(framebuffer_->width()) ||
+      relative_pos.y > static_cast<float>(framebuffer_->height())) {
+    return false;
+  }
+
+  if (e.button() == mouse::Code::MouseButtonLeft) {
+    return on_left_click(relative_pos);
   }
 
   return false;
