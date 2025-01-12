@@ -65,7 +65,7 @@ vec3 calcNormal( in vec3 pos )
 
 void render( vec3 ray_origin, vec3 ray_direction )
 { 
-    fragColor = vec4(u_Ambient, 1.0);
+    fragColor = vec4(0.0);
     id = -1;
 
     sdf_result result;
