@@ -578,7 +578,11 @@ bool Resin::activate_orbiting_camera(glm::vec2 mouse_pos) {
     current_vieport_state_ = ViewportState::OrbitingCamera;
 
     auto dir = glm::normalize(camera_->transform.pos());
-    camera_->transform.set_local_rot(glm::quatLookAt(-dir, camera_->transform.local_up()));
+    if (glm::dot(camera_->transform.local_up(), glm::vec3(0.0F, 1.0F, 0.0F)) > 0.0F) {
+      camera_->transform.set_local_rot(glm::quatLookAt(-dir, glm::vec3(0.0F, 1.0F, 0.0F)));
+    } else {
+      camera_->transform.set_local_rot(glm::quatLookAt(-dir, glm::vec3(0.0F, -1.0F, 0.0F)));
+    }
 
     window_->set_mouse_cursor_mode(mouse::CursorMode::Disabled);
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouse;
@@ -634,7 +638,11 @@ bool Resin::zoom_camera(glm::vec2 offset) {
 
     auto dir = glm::normalize(camera_->transform.local_pos());
     camera_->transform.set_local_pos(dir * camera_distance_);
-    camera_->transform.set_local_rot(glm::quatLookAt(-dir, camera_->transform.local_up()));
+    if (glm::dot(camera_->transform.local_up(), glm::vec3(0.0F, 1.0F, 0.0F)) > 0.0F) {
+      camera_->transform.set_local_rot(glm::quatLookAt(-dir, glm::vec3(0.0F, 1.0F, 0.0F)));
+    } else {
+      camera_->transform.set_local_rot(glm::quatLookAt(-dir, glm::vec3(0.0F, -1.0F, 0.0F)));
+    }
 
     shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
     if (camera_->is_orthographic()) {
