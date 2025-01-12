@@ -188,6 +188,13 @@ void Window::on_update() {
   context_->swap_buffers();
 }
 
+glm::vec2 Window::mouse_pos() const {
+  double xpos = 0.0;
+  double ypos = 0.0;
+  glfwGetCursorPos(window_ptr_, &xpos, &ypos);
+  return glm::vec2(xpos, ypos);
+}
+
 void Window::set_title(std::string_view title) {
   glfwSetWindowTitle(window_ptr_, title.data());
   properties_.title = title;

@@ -56,7 +56,8 @@ Resin::Resin()
       gizmo_operation_(ImGui::resin::GizmoOperation::Translation) {
   dispatcher_.subscribe<WindowCloseEvent>(BIND_EVENT_METHOD(on_window_close));
   dispatcher_.subscribe<WindowResizeEvent>(BIND_EVENT_METHOD(on_window_resize));
-  dispatcher_.subscribe<MouseButtonPressedEvent>(BIND_EVENT_METHOD(on_click));
+  dispatcher_.subscribe<MouseButtonPressedEvent>(BIND_EVENT_METHOD(on_mouse_btn_pressed));
+  dispatcher_.subscribe<MouseButtonReleasedEvent>(BIND_EVENT_METHOD(on_mouse_btn_released));
   dispatcher_.subscribe<KeyPressedEvent>(BIND_EVENT_METHOD(on_key_pressed));
   dispatcher_.subscribe<KeyReleasedEvent>(BIND_EVENT_METHOD(on_key_released));
   dispatcher_.subscribe<ScrollEvent>(BIND_EVENT_METHOD(on_scroll));
@@ -288,8 +289,19 @@ void Resin::update(duration_t delta) {
 
   if (is_viewport_focused_) {
     if (update_camera_controls(*camera_, window_->native_window(), static_cast<float>(delta.count()) * 1e-9F)) {
-      shader_->set_uniform("u_camSize", camera_->height());
       shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
+      if (camera_->is_orthographic()) {
+        camera_->recalculate_projection();
+        shader_->set_uniform("u_camSize", camera_->height());
+      }
+    }
+  }
+
+  if (orbiting_camera_operator_.update(*camera_, camera_distance_, window_->mouse_pos())) {
+    shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
+    if (camera_->is_orthographic()) {
+      camera_->recalculate_projection();
+      shader_->set_uniform("u_camSize", camera_->height());
     }
   }
 
@@ -480,7 +492,7 @@ bool Resin::on_window_resize(WindowResizeEvent& e) {
   return false;
 }
 
-bool Resin::on_click(MouseButtonPressedEvent& e) {
+bool Resin::on_mouse_btn_pressed(MouseButtonPressedEvent& e) {
   ImGuiIO& io = ImGui::GetIO();
   if (io.WantCaptureMouse) {
     return true;
@@ -494,6 +506,20 @@ bool Resin::on_click(MouseButtonPressedEvent& e) {
 
   if (e.button() == mouse::Code::MouseButtonLeft) {
     return on_left_click(relative_pos);
+  }
+
+  if (e.button() == mouse::Code::MouseButtonMiddle) {
+    orbiting_camera_operator_.start();
+    return true;
+  }
+
+  return false;
+}
+
+bool Resin::on_mouse_btn_released(MouseButtonReleasedEvent& e) {
+  if (e.button() == mouse::Code::MouseButtonMiddle) {
+    orbiting_camera_operator_.stop();
+    return true;
   }
 
   return false;
@@ -515,11 +541,13 @@ bool Resin::on_key_pressed(KeyPressedEvent& e) {
     camera_->set_orthographic(!camera_->is_orthographic());
     shader_->set_uniform("u_ortho", camera_->is_orthographic());
     shader_->set_uniform("u_camSize", camera_->height());
+    return true;
   }
-  return true;
+
+  return false;
 }
 
-bool Resin::on_key_released(KeyReleasedEvent& e) { return true; }
+bool Resin::on_key_released(KeyReleasedEvent& e) { return false; }
 
 bool Resin::on_scroll(ScrollEvent& e) {
   if (is_viewport_focused_ && std::abs(e.offset().y) > 0.0F) {
@@ -528,8 +556,8 @@ bool Resin::on_scroll(ScrollEvent& e) {
     if (camera_distance_ < 0.0F) {
       camera_distance_ = 0.0F;
     }
-    auto dir = glm::normalize(camera_->transform.pos());
 
+    auto dir = glm::normalize(camera_->transform.pos());
     camera_->transform.set_local_pos(dir * camera_distance_);
     camera_->transform.set_local_rot(glm::quatLookAt(-dir, glm::vec3(0.0F, 1.0F, 0.0F)));
 
@@ -538,8 +566,10 @@ bool Resin::on_scroll(ScrollEvent& e) {
       camera_->recalculate_projection();
       shader_->set_uniform("u_camSize", camera_->height());
     }
+
+    return true;
   }
-  return true;
+  return false;
 }
 
 }  // namespace resin

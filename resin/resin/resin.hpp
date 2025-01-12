@@ -13,6 +13,7 @@
 #include <libresin/core/shader.hpp>
 #include <libresin/core/uniform_buffer.hpp>
 #include <memory>
+#include <resin/camera/orbiting_camera_operator.hpp>
 #include <resin/core/window.hpp>
 #include <resin/event/event.hpp>
 #include <resin/event/key_events.hpp>
@@ -56,7 +57,8 @@ class Resin {
 
   bool on_window_close(WindowCloseEvent& e);
   bool on_window_resize(WindowResizeEvent& e);
-  bool on_click(MouseButtonPressedEvent& e);
+  bool on_mouse_btn_pressed(MouseButtonPressedEvent& e);
+  bool on_mouse_btn_released(MouseButtonReleasedEvent& e);
   bool on_left_click(glm::vec2 relative_pos);
   bool on_key_pressed(KeyPressedEvent& e);
   bool on_key_released(KeyReleasedEvent& e);
@@ -92,6 +94,8 @@ class Resin {
   float camera_distance_;
 
   ImGui::resin::GizmoOperation gizmo_operation_;
+
+  OrbitingCameraOperator orbiting_camera_operator_;
 
   bool running_   = true;
   bool minimized_ = false;

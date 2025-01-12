@@ -40,6 +40,7 @@ class Window {
   inline glm::uvec2 dimensions() const { return glm::uvec2(properties_.width, properties_.height); }
   inline bool vsync() const { return properties_.vsync; }
   inline bool fullscreen() const { return properties_.fullscreen; }
+  glm::vec2 mouse_pos() const;
 
   void set_title(std::string_view title);
   void set_pos(glm::ivec2 pos);
