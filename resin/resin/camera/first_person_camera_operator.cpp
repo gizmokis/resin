@@ -3,25 +3,25 @@
 #include <libresin/core/camera.hpp>
 #include <resin/camera/first_person_camera_operator.hpp>
 
+#include "resin/core/key_codes.hpp"
+
 namespace resin {
 
 FirstPersonCameraOperator::FirstPersonCameraOperator()
     : last_mouse_pos_(0.0F), is_active_(false), sensitivity_(0.08F), speed_(5.0F) {}
 
-void FirstPersonCameraOperator::start_moving_in_dir(FirstPersonCameraOperator::Dir dir) {
-  auto dir_ind = static_cast<size_t>(dir);
-  if (dir_ind > kDirCount) {
-    return;
+void FirstPersonCameraOperator::start_move(key::Code key_code) {
+  auto it = key_mappings_.find(key_code);
+  if (it != key_mappings_.end()) {
+    move_dir(it->second) = true;
   }
-  move_dir_[dir_ind] = true;
 }
 
-void FirstPersonCameraOperator::stop_moving_in_dir(FirstPersonCameraOperator::Dir dir) {
-  auto dir_ind = static_cast<size_t>(dir);
-  if (dir_ind > kDirCount) {
-    return;
+void FirstPersonCameraOperator::stop_move(key::Code key_code) {
+  auto it = key_mappings_.find(key_code);
+  if (it != key_mappings_.end()) {
+    move_dir(it->second) = false;
   }
-  move_dir_[dir_ind] = false;
 }
 
 bool FirstPersonCameraOperator::is_moving_in_dir(FirstPersonCameraOperator::Dir dir) {
@@ -30,6 +30,11 @@ bool FirstPersonCameraOperator::is_moving_in_dir(FirstPersonCameraOperator::Dir 
     return false;
   }
 
+  return move_dir_[dir_ind];
+}
+
+bool& FirstPersonCameraOperator::move_dir(FirstPersonCameraOperator::Dir dir) {
+  auto dir_ind = static_cast<size_t>(dir);
   return move_dir_[dir_ind];
 }
 

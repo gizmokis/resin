@@ -224,17 +224,7 @@ void Resin::update(duration_t delta) {
   shader_->set_uniform("u_dirLight", *directional_light_);
   shader_->set_uniform("u_pointLight", *point_light_);
 
-  if (is_viewport_focused_) {
-    if (orbiting_camera_operator_.update(*camera_, camera_distance_, window_->mouse_pos(), seconds_dt)) {
-      shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
-      shader_->set_uniform("u_camSize", camera_->height());
-    }
-
-    if (first_person_camera_operator_.update(*camera_, window_->mouse_pos(), seconds_dt)) {
-      shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
-      shader_->set_uniform("u_camSize", camera_->height());
-    }
-  }
+  update_camera_operators(seconds_dt);
 
   FileDialog::instance().update();
 }
@@ -268,9 +258,10 @@ void Resin::gui(duration_t delta) {
       ImGui::EndMenuBar();
     }
 
-    is_viewport_focused_ = ImGui::IsWindowFocused();
-    auto width           = static_cast<float>(framebuffer_->width());
-    auto height          = static_cast<float>(framebuffer_->height());
+    update_vieport_active(ImGui::IsWindowFocused());
+
+    auto width  = static_cast<float>(framebuffer_->width());
+    auto height = static_cast<float>(framebuffer_->height());
 
     // TODO(anyone) https://stackoverflow.com/questions/73601927/implicit-vector-conversion-in-imgui-imvec-glmvec
     ImVec2 pos      = ImGui::GetCursorScreenPos();
@@ -295,7 +286,6 @@ void Resin::gui(duration_t delta) {
       ImGui::SetNextFrameWantCaptureMouse(false);
     }
 
-    // Draw gizmos
     ImGui::resin::BeginGizmoFrame();
     if (selected_node_ && !selected_node_->expired()) {
       auto& node = sdf_tree_.node(*selected_node_);
@@ -430,15 +420,11 @@ bool Resin::on_mouse_btn_pressed(MouseButtonPressedEvent& e) {
   }
 
   if (e.button() == mouse::Code::MouseButtonMiddle) {
-    orbiting_camera_operator_.start();
-    window_->set_mouse_cursor_mode(mouse::CursorMode::Disabled);
-    return true;
+    return activate_orbiting_camera(e.pos());
   }
 
   if (e.button() == mouse::Code::MouseButtonRight) {
-    first_person_camera_operator_.start();
-    window_->set_mouse_cursor_mode(mouse::CursorMode::Disabled);
-    return true;
+    return activate_first_person_camera(e.pos());
   }
 
   glm::vec2 relative_pos = e.pos() - viewport_pos_;
@@ -448,7 +434,7 @@ bool Resin::on_mouse_btn_pressed(MouseButtonPressedEvent& e) {
   }
 
   if (e.button() == mouse::Code::MouseButtonLeft) {
-    return on_left_click(relative_pos);
+    return select_node(relative_pos);
   }
 
   return false;
@@ -456,100 +442,137 @@ bool Resin::on_mouse_btn_pressed(MouseButtonPressedEvent& e) {
 
 bool Resin::on_mouse_btn_released(MouseButtonReleasedEvent& e) {
   if (e.button() == mouse::Code::MouseButtonMiddle) {
-    orbiting_camera_operator_.stop();
-    window_->set_mouse_cursor_mode(mouse::CursorMode::Normal);
-    return true;
+    return deactivate_orbiting_camera();
   }
 
   if (e.button() == mouse::Code::MouseButtonRight) {
-    first_person_camera_operator_.stop();
-    window_->set_mouse_cursor_mode(mouse::CursorMode::Normal);
-    return true;
+    return deactivate_first_person_camera();
   }
 
   return false;
 }
 
-bool Resin::on_left_click(glm::vec2 relative_pos) {
-  // TODO(SDF-82): Make sure that mouse pick is not performed when camera is moving
-
-  framebuffer_->bind();
-  int id = framebuffer_->sample_mouse_pick(static_cast<size_t>(relative_pos.x), static_cast<size_t>(relative_pos.y));
-  framebuffer_->unbind();
-
-  selected_node_ = id == -1 ? std::nullopt : sdf_tree_.get_view_from_raw_id(id);
-  return true;
-}
-
 bool Resin::on_key_pressed(KeyPressedEvent& e) {
   if (e.key_code() == key::Code::V) {
+    return switch_ortho();
+  }
+
+  return start_moving_first_person_camera(e.key_code());
+}
+
+bool Resin::on_key_released(KeyReleasedEvent& e) { return stop_moving_first_person_camera(e.key_code()); }
+
+bool Resin::on_scroll(ScrollEvent& e) { return zoom_camera(e.offset()); }
+
+bool Resin::update_vieport_active(bool is_viewport_focused) {
+  if (current_vieport_state_ == ViewportState::InactiveIdle && is_viewport_focused) {
+    current_vieport_state_ = ViewportState::ActiveIdle;
+    return true;
+  }
+  if (current_vieport_state_ == ViewportState::ActiveIdle && !is_viewport_focused) {
+    current_vieport_state_ = ViewportState::InactiveIdle;
+    return true;
+  }
+  return false;
+}
+
+bool Resin::switch_ortho() {
+  if (current_vieport_state_ != ViewportState::InactiveIdle) {
     camera_->set_orthographic(!camera_->is_orthographic());
     shader_->set_uniform("u_ortho", camera_->is_orthographic());
     shader_->set_uniform("u_camSize", camera_->height());
     return true;
   }
 
-  if (e.key_code() == key::Code::W) {
-    first_person_camera_operator_.start_moving_in_dir(FirstPersonCameraOperator::Dir::Front);
-    return true;
-  }
-  if (e.key_code() == key::Code::S) {
-    first_person_camera_operator_.start_moving_in_dir(FirstPersonCameraOperator::Dir::Back);
-    return true;
-  }
-  if (e.key_code() == key::Code::A) {
-    first_person_camera_operator_.start_moving_in_dir(FirstPersonCameraOperator::Dir::Left);
-    return true;
-  }
-  if (e.key_code() == key::Code::D) {
-    first_person_camera_operator_.start_moving_in_dir(FirstPersonCameraOperator::Dir::Right);
-    return true;
-  }
-  if (e.key_code() == key::Code::Q) {
-    first_person_camera_operator_.start_moving_in_dir(FirstPersonCameraOperator::Dir::Up);
-    return true;
-  }
-  if (e.key_code() == key::Code::E) {
-    first_person_camera_operator_.start_moving_in_dir(FirstPersonCameraOperator::Dir::Down);
+  return false;
+}
+
+bool Resin::activate_first_person_camera(glm::vec2 mouse_pos) {
+  if (current_vieport_state_ == ViewportState::ActiveIdle) {
+    current_vieport_state_ = ViewportState::FirstPersonCamera;
+    window_->set_mouse_cursor_mode(mouse::CursorMode::Disabled);
+    first_person_camera_operator_.start(mouse_pos);
     return true;
   }
 
   return false;
 }
 
-bool Resin::on_key_released(KeyReleasedEvent& e) {
-  if (e.key_code() == key::Code::W) {
-    first_person_camera_operator_.stop_moving_in_dir(FirstPersonCameraOperator::Dir::Front);
-    return true;
-  }
-  if (e.key_code() == key::Code::S) {
-    first_person_camera_operator_.stop_moving_in_dir(FirstPersonCameraOperator::Dir::Back);
-    return true;
-  }
-  if (e.key_code() == key::Code::A) {
-    first_person_camera_operator_.stop_moving_in_dir(FirstPersonCameraOperator::Dir::Left);
-    return true;
-  }
-  if (e.key_code() == key::Code::D) {
-    first_person_camera_operator_.stop_moving_in_dir(FirstPersonCameraOperator::Dir::Right);
-    return true;
-  }
-  if (e.key_code() == key::Code::Q) {
-    first_person_camera_operator_.stop_moving_in_dir(FirstPersonCameraOperator::Dir::Up);
-    return true;
-  }
-  if (e.key_code() == key::Code::E) {
-    first_person_camera_operator_.stop_moving_in_dir(FirstPersonCameraOperator::Dir::Down);
+bool Resin::deactivate_first_person_camera() {
+  if (current_vieport_state_ == ViewportState::FirstPersonCamera) {
+    current_vieport_state_ = ViewportState::ActiveIdle;
+    window_->set_mouse_cursor_mode(mouse::CursorMode::Normal);
+    first_person_camera_operator_.stop();
     return true;
   }
 
   return false;
 }
 
-bool Resin::on_scroll(ScrollEvent& e) {
-  if (is_viewport_focused_ && std::abs(e.offset().y) > 0.0F) {
+bool Resin::start_moving_first_person_camera(key::Code key_code) {
+  if (current_vieport_state_ == ViewportState::FirstPersonCamera) {
+    first_person_camera_operator_.start_move(key_code);
+    return true;
+  }
+  return false;
+}
+
+bool Resin::stop_moving_first_person_camera(key::Code key_code) {
+  first_person_camera_operator_.stop_move(key_code);
+  return true;
+}
+
+bool Resin::activate_orbiting_camera(glm::vec2 mouse_pos) {
+  if (current_vieport_state_ == ViewportState::ActiveIdle) {
+    current_vieport_state_ = ViewportState::OrbitingCamera;
+
+    auto dir = glm::normalize(camera_->transform.pos());
+    camera_->transform.set_local_pos(dir * camera_distance_);
+    camera_->transform.set_local_rot(glm::quatLookAt(-dir, glm::vec3(0.0F, 1.0F, 0.0F)));
+
+    window_->set_mouse_cursor_mode(mouse::CursorMode::Disabled);
+    orbiting_camera_operator_.start(mouse_pos);
+    return true;
+  }
+  return false;
+}
+
+bool Resin::deactivate_orbiting_camera() {
+  if (current_vieport_state_ == ViewportState::OrbitingCamera) {
+    current_vieport_state_ = ViewportState::ActiveIdle;
+    window_->set_mouse_cursor_mode(mouse::CursorMode::Normal);
+    orbiting_camera_operator_.stop();
+    return true;
+  }
+  return false;
+}
+
+bool Resin::update_camera_operators(float dt) {
+  if (current_vieport_state_ == ViewportState::OrbitingCamera) {
+    if (orbiting_camera_operator_.update(*camera_, camera_distance_, window_->mouse_pos(), dt)) {
+      shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
+      shader_->set_uniform("u_camSize", camera_->height());
+      return true;
+    }
+  } else if (current_vieport_state_ == ViewportState::FirstPersonCamera) {
+    if (first_person_camera_operator_.update(*camera_, window_->mouse_pos(), dt)) {
+      shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
+      shader_->set_uniform("u_camSize", camera_->height());
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool Resin::zoom_camera(glm::vec2 offset) {
+  if (current_vieport_state_ == ViewportState::InactiveIdle) {
+    return false;
+  }
+
+  if (std::abs(offset.y) > 0.0F) {
     camera_distance_ = glm::length(camera_->transform.pos());
-    camera_distance_ -= e.offset().y * 0.8F;
+    camera_distance_ -= offset.y * 0.8F;
     if (camera_distance_ < 0.0F) {
       camera_distance_ = 0.0F;
     }
@@ -566,6 +589,20 @@ bool Resin::on_scroll(ScrollEvent& e) {
 
     return true;
   }
+
+  return false;
+}
+
+bool Resin::select_node(glm::vec2 relative_pos) {
+  if (current_vieport_state_ == ViewportState::ActiveIdle || current_vieport_state_ == ViewportState::InactiveIdle) {
+    framebuffer_->bind();
+    int id = framebuffer_->sample_mouse_pick(static_cast<size_t>(relative_pos.x), static_cast<size_t>(relative_pos.y));
+    framebuffer_->unbind();
+
+    selected_node_ = id == -1 ? std::nullopt : sdf_tree_.get_view_from_raw_id(static_cast<size_t>(id));
+    return true;
+  }
+
   return false;
 }
 

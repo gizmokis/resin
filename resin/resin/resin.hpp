@@ -25,6 +25,9 @@
 #include <resin/imgui/transform_gizmo.hpp>
 #include <resin/resources/resource_managers.hpp>
 
+#include "libresin/utils/enum_mapper.hpp"
+#include "resin/core/key_codes.hpp"
+
 int main();
 
 namespace resin {
@@ -56,14 +59,27 @@ class Resin {
   void gui(duration_t delta);
   void render();
 
+  // events
   bool on_window_close(WindowCloseEvent& e);
   bool on_window_resize(WindowResizeEvent& e);
   bool on_mouse_btn_pressed(MouseButtonPressedEvent& e);
   bool on_mouse_btn_released(MouseButtonReleasedEvent& e);
-  bool on_left_click(glm::vec2 relative_pos);
   bool on_key_pressed(KeyPressedEvent& e);
   bool on_key_released(KeyReleasedEvent& e);
   bool on_scroll(ScrollEvent& e);
+
+  // vieport actions
+  bool update_vieport_active(bool is_viewport_focused);
+  bool switch_ortho();
+  bool activate_first_person_camera(glm::vec2 mouse_pos);
+  bool deactivate_first_person_camera();
+  bool start_moving_first_person_camera(key::Code key_code);
+  bool stop_moving_first_person_camera(key::Code key_code);
+  bool activate_orbiting_camera(glm::vec2 mouse_pos);
+  bool deactivate_orbiting_camera();
+  bool update_camera_operators(float dt);
+  bool zoom_camera(glm::vec2 offset);
+  bool select_node(glm::vec2 relative_pos);
 
  public:
   static constexpr duration_t kTickTime = 16666us;  // 60 TPS = 16.6(6) ms/t
@@ -74,6 +90,18 @@ class Resin {
   ShaderResourceManager& shader_resource_manager_ = ResourceManagers::shader_manager();
 
   SDFTree sdf_tree_;
+
+  enum class ViewportState : uint8_t {
+    InactiveIdle,
+    ActiveIdle,
+    FirstPersonCamera,
+    OrbitingCamera,
+    GizmoCamera,
+    GizmoTransform,
+    _Count  // NOLINT
+  };
+
+  ViewportState current_vieport_state_;
 
   std::optional<IdView<SDFTreeNodeId>> selected_node_;
 
@@ -89,7 +117,6 @@ class Resin {
   std::unique_ptr<DirectionalLight> directional_light_;
   std::unique_ptr<Material> cube_mat_, sphere_mat_;
 
-  bool is_viewport_focused_{false};
   bool use_local_gizmos_{false};
 
   float camera_distance_;
