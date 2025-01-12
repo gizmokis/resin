@@ -2,6 +2,7 @@
 #define RESIN_ORBITING_CAMERA_OPERATOR_HPP
 
 #include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
 
 namespace resin {
 
@@ -20,12 +21,12 @@ class OrbitingCameraOperator {
   bool update(Camera& camera, float camera_distance, glm::vec2 mouse_pos);
   inline void stop() { is_active_ = false; }
   inline void set_sensitivity(float sensitivity) { sensitivity_ = sensitivity; }
-  inline void set_center(glm::vec2 center) { center_ = center; }
+  inline void set_center(glm::vec3 center) { center_ = center; }
   inline bool is_active() const { return is_active_; }
 
  private:
   glm::vec2 last_mouse_pos_;
-  glm::vec2 center_;
+  glm::vec3 center_;
   bool is_active_;
   float sensitivity_;
 };
