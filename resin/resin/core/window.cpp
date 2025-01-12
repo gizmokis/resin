@@ -42,7 +42,7 @@ void Window::api_init() {
   io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
   imgui_set_style();
-  ImGui::resin::SetImGuiContext(ImGui::GetCurrentContext());
+  ImGui::resin::gizmo::SetImGuiContext(ImGui::GetCurrentContext());
 
   Logger::debug("Api init");
 }

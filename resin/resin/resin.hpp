@@ -123,7 +123,7 @@ class Resin {
 
   float camera_distance_;
 
-  ImGui::resin::GizmoOperation gizmo_operation_;
+  ImGui::resin::gizmo::Operation gizmo_operation_;
 
   OrbitingCameraOperator orbiting_camera_operator_;
   FirstPersonCameraOperator first_person_camera_operator_;

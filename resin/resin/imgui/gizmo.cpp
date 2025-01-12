@@ -12,18 +12,18 @@
 namespace ImGui {  // NOLINT
 
 namespace resin {
+namespace gizmo {
 
 void SetImGuiContext(ImGuiContext* ctx) { ImGuizmo::SetImGuiContext(ctx); }
 
-void BeginGizmoFrame(ImDrawList* drawlist) {
+void BeginFrame(ImDrawList* drawlist) {
   ImGuizmo::BeginFrame();
   ImGuizmo::SetDrawlist(drawlist);
 }
 
-bool IsTransformGizmoUsed() { return ImGuizmo::IsUsing(); }
+bool IsTransformUsed() { return ImGuizmo::IsUsing(); }
 
-bool TransformGizmo(::resin::Transform& trans, const ::resin::Camera& camera, GizmoMode mode, GizmoOperation operation,
-                    bool freeze) {
+bool Transform(::resin::Transform& trans, const ::resin::Camera& camera, Mode mode, Operation operation, bool freeze) {
   const float pos_x  = ImGui::GetWindowPos().x + ImGui::GetCursorStartPos().x;
   const float pos_y  = ImGui::GetWindowPos().y + ImGui::GetCursorStartPos().y;
   const float width  = ImGui::GetWindowWidth() - ImGui::GetCursorStartPos().x;
@@ -37,10 +37,10 @@ bool TransformGizmo(::resin::Transform& trans, const ::resin::Camera& camera, Gi
   auto delta_mat = glm::mat4(1.0F);
   auto mat       = trans.local_to_world_matrix();
 
-  if (operation == GizmoOperation::Translation) {
+  if (operation == Operation::Translation) {
     if (ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(proj), ImGuizmo::OPERATION::TRANSLATE,
-                             mode == GizmoMode::Local ? ImGuizmo::MODE::LOCAL : ImGuizmo::MODE::WORLD,
-                             glm::value_ptr(mat), glm::value_ptr(delta_mat)) &&
+                             mode == Mode::Local ? ImGuizmo::MODE::LOCAL : ImGuizmo::MODE::WORLD, glm::value_ptr(mat),
+                             glm::value_ptr(delta_mat)) &&
         !freeze) {
       auto dp = glm::vec3(delta_mat[3]);
       if (trans.has_parent()) {
@@ -54,10 +54,10 @@ bool TransformGizmo(::resin::Transform& trans, const ::resin::Camera& camera, Gi
     return false;
   }
 
-  if (operation == GizmoOperation::Rotation) {
+  if (operation == Operation::Rotation) {
     if (ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(proj), ImGuizmo::OPERATION::ROTATE,
-                             mode == GizmoMode::Local ? ImGuizmo::MODE::LOCAL : ImGuizmo::MODE::WORLD,
-                             glm::value_ptr(mat), glm::value_ptr(delta_mat)) &&
+                             mode == Mode::Local ? ImGuizmo::MODE::LOCAL : ImGuizmo::MODE::WORLD, glm::value_ptr(mat),
+                             glm::value_ptr(delta_mat)) &&
         !freeze) {
       auto dq = glm::quat_cast(delta_mat);
       if (trans.has_parent()) {
@@ -119,8 +119,7 @@ bool TransformGizmo(::resin::Transform& trans, const ::resin::Camera& camera, Gi
   return false;
 }
 
-bool CameraViewGizmo(::resin::Camera& camera, float distance, float dt, bool freeze, float interpolation_time,
-                     ImVec2 size) {
+bool CameraView(::resin::Camera& camera, float distance, float dt, bool freeze, float interpolation_time, ImVec2 size) {
   const float pos_x = ImGui::GetWindowPos().x + ImGui::GetCursorStartPos().x;
   const float pos_y = ImGui::GetWindowPos().y + ImGui::GetCursorStartPos().y;
   const float width = ImGui::GetWindowWidth() - ImGui::GetCursorStartPos().x;
@@ -137,6 +136,8 @@ bool CameraViewGizmo(::resin::Camera& camera, float distance, float dt, bool fre
   }
   return false;
 }
+
+}  // namespace gizmo
 
 }  // namespace resin
 

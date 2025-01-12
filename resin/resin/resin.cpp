@@ -53,7 +53,7 @@ Resin::Resin()
       vertex_buffer_(0),
       index_buffer_(0),
       viewport_pos_(),
-      gizmo_operation_(ImGui::resin::GizmoOperation::Translation) {
+      gizmo_operation_(ImGui::resin::gizmo::Operation::Translation) {
   dispatcher_.subscribe<WindowCloseEvent>(BIND_EVENT_METHOD(on_window_close));
   dispatcher_.subscribe<WindowResizeEvent>(BIND_EVENT_METHOD(on_window_resize));
   dispatcher_.subscribe<MouseButtonPressedEvent>(BIND_EVENT_METHOD(on_mouse_btn_pressed));
@@ -251,10 +251,10 @@ void Resin::gui(duration_t delta) {
       ImGui::Text("Local Transform:");
       ImGui::Checkbox("##LocalCheckbox", &use_local_gizmos_);
 
-      static constexpr resin::StringEnumMapper<ImGui::resin::GizmoOperation> kOps({
-          {ImGui::resin::GizmoOperation::Translation, "Translation"},  //
-          {ImGui::resin::GizmoOperation::Rotation, "Rotation"},        //
-          {ImGui::resin::GizmoOperation::Scale, "Scale"}               //
+      static constexpr resin::StringEnumMapper<ImGui::resin::gizmo::Operation> kOps({
+          {ImGui::resin::gizmo::Operation::Translation, "Translation"},  //
+          {ImGui::resin::gizmo::Operation::Rotation, "Rotation"},        //
+          {ImGui::resin::gizmo::Operation::Scale, "Scale"}               //
       });
 
       ImGui::Text("Operation:");
@@ -299,7 +299,7 @@ void Resin::gui(duration_t delta) {
       ImGui::SetNextFrameWantCaptureMouse(false);
     }
 
-    ImGui::resin::BeginGizmoFrame();
+    ImGui::resin::gizmo::BeginFrame();
     draw_transform_gizmo();
     draw_camera_gizmo(seconds_dt);
   }
@@ -490,9 +490,9 @@ bool Resin::draw_transform_gizmo() {
                     current_vieport_state_ != ViewportState::GizmoTransform;
 
     auto& node = sdf_tree_.node(*selected_node_);
-    if (ImGui::resin::TransformGizmo(
+    if (ImGui::resin::gizmo::Transform(
             node.transform(), *camera_,
-            use_local_gizmos_ ? ImGui::resin::GizmoMode::Local : ImGui::resin::GizmoMode::World, gizmo_operation_,
+            use_local_gizmos_ ? ImGui::resin::gizmo::Mode::Local : ImGui::resin::gizmo::Mode::World, gizmo_operation_,
             disabled)) {
       node.mark_dirty();
       current_vieport_state_ = ViewportState::GizmoTransform;
@@ -500,7 +500,7 @@ bool Resin::draw_transform_gizmo() {
     }
   }
 
-  if (current_vieport_state_ == ViewportState::GizmoTransform && !ImGui::resin::IsTransformGizmoUsed()) {
+  if (current_vieport_state_ == ViewportState::GizmoTransform && !ImGui::resin::gizmo::IsTransformUsed()) {
     current_vieport_state_ = ViewportState::ActiveIdle;
     return true;
   }
@@ -514,7 +514,7 @@ bool Resin::draw_camera_gizmo(float dt) {
                   current_vieport_state_ != ViewportState::CameraInterpolation &&
                   current_vieport_state_ != ViewportState::GizmoCamera;
 
-  if (ImGui::resin::CameraViewGizmo(*camera_, camera_distance_, dt, disabled)) {
+  if (ImGui::resin::gizmo::CameraView(*camera_, camera_distance_, dt, disabled)) {
     shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
     current_vieport_state_ = ViewportState::GizmoCamera;
     return true;
