@@ -1,4 +1,5 @@
 #include <GLFW/glfw3.h>
+#include <glad/gl.h>
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_opengl3.h>
@@ -22,6 +23,7 @@
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
+#include <libresin/core/shader.hpp>
 #include <libresin/core/transform.hpp>
 #include <libresin/core/uniform_buffer.hpp>
 #include <libresin/utils/enum_mapper.hpp>
@@ -59,7 +61,6 @@ Resin::Resin() : viewport_pos_(), gizmo_operation_(ImGui::resin::GizmoOperation:
 
     window_ = std::make_unique<Window>(std::move(properties));
   }
-  glClearColor(0.25F, 0.25F, 0.25F, 1.0F);
 
   // Setup framebuffer and raycaster
   framebuffer_ = std::make_unique<Framebuffer>(window_->dimensions().x, window_->dimensions().y);
@@ -122,6 +123,7 @@ void Resin::setup_shader_uniforms() {
   grid_shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
   grid_shader_->set_uniform("u_resolution", glm::vec2(framebuffer_->width(), framebuffer_->height()));
   grid_shader_->set_uniform("u_nearPlane", camera_->near_plane());
+  grid_shader_->set_uniform("u_farPlane", camera_->far_plane());
   grid_shader_->set_uniform("u_ortho", camera_->is_orthographic());
   grid_shader_->set_uniform("u_camSize", camera_->height());
   grid_shader_->set_uniform("u_spacing", grid_spacing_);
@@ -136,6 +138,8 @@ void Resin::run() {
 
   uint16_t frames = 0U;
   uint16_t ticks  = 0U;
+
+  init_gl();
 
   while (running_) {
     auto current_time = clock::now();
@@ -179,6 +183,16 @@ void Resin::run() {
       second = 0ns;
     }
   }
+}
+
+void Resin::init_gl() {  // NOLINT
+  glClearColor(0.25F, 0.25F, 0.25F, 1.0F);
+
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LESS);
 }
 
 static bool update_camera_controls(Camera& camera, GLFWwindow* window, float dt) {
@@ -280,6 +294,24 @@ void Resin::update(duration_t delta) {
   }
 
   FileDialog::instance().update();
+}
+
+void Resin::render() {
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  raycaster_->bind();
+
+  framebuffer_->begin_pick_render();
+  shader_->bind();
+  raycaster_->draw_call();
+  shader_->unbind();
+  framebuffer_->end_pick_render();
+
+  if (is_grid_) {
+    grid_shader_->bind();
+    raycaster_->draw_call();
+    grid_shader_->unbind();
+  }
 }
 
 void Resin::gui() {
@@ -436,24 +468,6 @@ void Resin::gui() {
   }
   ImGui::End();
 #endif
-}
-
-void Resin::render() {
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  raycaster_->bind();
-
-  if (is_grid_) {
-    grid_shader_->bind();
-    raycaster_->draw_call();
-  }
-
-  shader_->bind();
-  raycaster_->draw_call();
-  shader_->unbind();
-
-  glDisable(GL_BLEND);
 }
 
 bool Resin::on_window_close(WindowCloseEvent&) {

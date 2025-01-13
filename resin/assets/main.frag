@@ -46,7 +46,7 @@ float raycast(vec3 ray_origin, vec3 ray_direction, out sdf_result hit)
         t += res.dist;
     }
     
-    return -1;
+    return u_farPlane;
 }
 
 // https://iquilezles.org/articles/normalsSDF
@@ -63,14 +63,14 @@ vec3 calcNormal( in vec3 pos )
     return normalize(n); 
 }
 
-void render( vec3 ray_origin, vec3 ray_direction )
+float render( vec3 ray_origin, vec3 ray_direction )
 { 
     fragColor = vec4(0.0);
     id = -1;
 
     sdf_result result;
     float t = raycast(ray_origin, ray_direction, result);
-    if( t>-0.5 )
+    if( t>-0.5 && t < u_farPlane )
     {
         vec3 pos = ray_origin + t*ray_direction;
         vec3 nor = calcNormal( pos );
@@ -83,6 +83,7 @@ void render( vec3 ray_origin, vec3 ray_direction )
 		fragColor = vec4(light * mat.albedo, 1.0);
         id = result.id;
     }
+    return t;
 }
 
 void main() {
@@ -96,5 +97,14 @@ void main() {
         ray_direction = normalize(vec4(v_Pos, -u_nearPlane, 0));
     }
     
-    render((u_iV * ray_origin).xyz, ((u_iV * ray_direction).xyz));
+    float t = render((u_iV * ray_origin).xyz, ((u_iV * ray_direction).xyz));
+
+    // Depth
+    float A = u_nearPlane * u_farPlane;
+    float B = u_farPlane - u_nearPlane;
+    if (u_ortho) {
+        gl_FragDepth = (t - u_nearPlane) / B;
+    } else {
+        gl_FragDepth = (A/(t * ray_direction.z) + u_farPlane) / B;
+    }
 }

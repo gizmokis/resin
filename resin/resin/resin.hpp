@@ -48,6 +48,7 @@ class Resin {
   void setup_shader_uniforms();
 
   void run();
+  void init_gl();
   void update(duration_t delta);
   void gui();
   void render();
