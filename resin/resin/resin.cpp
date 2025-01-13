@@ -45,17 +45,14 @@
 
 namespace resin {
 
-Resin::Resin()
-    : vertex_array_(0),
-      vertex_buffer_(0),
-      index_buffer_(0),
-      viewport_pos_(),
-      gizmo_operation_(ImGui::resin::GizmoOperation::Translation) {
+Resin::Resin() : viewport_pos_(), gizmo_operation_(ImGui::resin::GizmoOperation::Translation) {
+  // Setup event handlers
   dispatcher_.subscribe<WindowCloseEvent>(BIND_EVENT_METHOD(on_window_close));
   dispatcher_.subscribe<WindowResizeEvent>(BIND_EVENT_METHOD(on_window_resize));
   dispatcher_.subscribe<WindowTestEvent>(BIND_EVENT_METHOD(on_test));
   dispatcher_.subscribe<MouseButtonPressedEvent>(BIND_EVENT_METHOD(on_click));
 
+  // Setup window
   {
     WindowProperties properties;
     properties.eventDispatcher = dispatcher_;
@@ -63,72 +60,53 @@ Resin::Resin()
     window_ = std::make_unique<Window>(std::move(properties));
   }
   glClearColor(0.25F, 0.25F, 0.25F, 1.0F);
-  const std::filesystem::path path = std::filesystem::current_path() / "assets";
 
-  cube_mat_   = std::make_unique<Material>(glm::vec3(0.96F, 0.25F, 0.25F));
-  sphere_mat_ = std::make_unique<Material>(glm::vec3(0.25F, 0.25F, 0.96F));
+  // Setup framebuffer and raycaster
+  framebuffer_ = std::make_unique<Framebuffer>(window_->dimensions().x, window_->dimensions().y);
+  raycaster_   = std::make_unique<Raycaster>();
 
-  camera_       = std::make_unique<Camera>(false, 70.F, 16.F / 9.F, 0.75F, 100.F);
-  glm::vec3 pos = glm::vec3(0, 2, 3);
-  camera_->transform.set_local_pos(pos);
-  glm::vec3 direction = glm::normalize(-pos);
-  camera_->transform.set_local_rot(glm::quatLookAt(direction, glm::vec3(0, 1, 0)));
-  camera_->transform.set_parent(camera_rig_);
+  // Main resource path
+  const std::filesystem::path assets_path = std::filesystem::current_path() / "assets";
 
-  point_light_       = std::make_unique<PointLight>(glm::vec3(0.57F, 0.38F, 0.04F), glm::vec3(0.0F, 1.0F, 0.5F),
-                                                    PointLight::Attenuation(1.0F, 0.7F, 1.8F));
-  directional_light_ = std::make_unique<DirectionalLight>(glm::vec3(0.5F, 0.5F, 0.5F), 1.0F);
-  directional_light_->transform.set_local_rot(glm::quatLookAt(direction, glm::vec3(0, 1, 0)));
-
-  // TODO(anyone): temporary, move out somewhere else
-  float vertices[4 * 3]   = {-1.F, -1.F, 0.F, 1.F, -1.F, 0.F, -1.F, 1.F, 0.F, 1.F, 1.F, 0.F};
-  unsigned int indices[6] = {0, 1, 2, 1, 3, 2};
-
-  // Generate VAO
-  glGenVertexArrays(1, &vertex_array_);
-  glBindVertexArray(vertex_array_);
-
-  // Generate VBO and load data into it
-  glGenBuffers(1, &vertex_buffer_);
-  glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_);
-  glBufferData(GL_ARRAY_BUFFER, sizeof vertices, vertices, GL_STATIC_DRAW);
-
-  // Set vertex attrib pointers
-  glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
-
-  // Generate indices
-  glGenBuffers(1, &index_buffer_);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer_);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof indices, indices, GL_STATIC_DRAW);
-
-  // Example tree
+  // Setup example tree
   sdf_tree_.root().push_back_child<SphereNode>(SDFBinaryOperation::SmoothUnion);
   auto& group = sdf_tree_.root().push_back_child<GroupNode>(SDFBinaryOperation::SmoothUnion);
   group.push_back_child<CubeNode>(SDFBinaryOperation::SmoothUnion).transform().set_local_pos(glm::vec3(1, 1, 0));
   group.push_back_child<CubeNode>(SDFBinaryOperation::SmoothUnion).transform().set_local_pos(glm::vec3(-1, -1, 0));
 
-  // SDF Shader
-  ShaderResource grid_frag_shader = *shader_resource_manager_.get_res(path / "grid.frag");
-  ShaderResource frag_shader      = *shader_resource_manager_.get_res(path / "main.frag");
-
-  frag_shader.set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
-  Logger::info("{}", frag_shader.get_glsl());
-
+  // Setup shaders
   primitive_ubo_ = std::make_unique<PrimitiveUniformBuffer>(sdf_tree_.max_nodes_count());
-  frag_shader.set_ext_defi("MAX_UBO_NODE_COUNT", std::to_string(sdf_tree_.max_nodes_count()));
-
   primitive_ubo_->bind();
   primitive_ubo_->set(sdf_tree_);
   primitive_ubo_->unbind();
 
-  grid_shader_ = std::make_unique<RenderingShaderProgram>("grid", *shader_resource_manager_.get_res(path / "main.vert"),
-                                                          std::move(grid_frag_shader));
-  shader_      = std::make_unique<RenderingShaderProgram>("main", *shader_resource_manager_.get_res(path / "main.vert"),
-                                                          std::move(frag_shader));
+  ShaderResource grid_frag_shader = *shader_resource_manager_.get_res(assets_path / "grid.frag");
+  ShaderResource main_frag_shader = *shader_resource_manager_.get_res(assets_path / "main.frag");
+  main_frag_shader.set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
+  main_frag_shader.set_ext_defi("MAX_UBO_NODE_COUNT", std::to_string(sdf_tree_.max_nodes_count()));
+
+  grid_shader_ = std::make_unique<RenderingShaderProgram>(
+      "grid", *shader_resource_manager_.get_res(assets_path / "main.vert"), std::move(grid_frag_shader));
+  shader_ = std::make_unique<RenderingShaderProgram>(
+      "main", *shader_resource_manager_.get_res(assets_path / "main.vert"), std::move(main_frag_shader));
   shader_->bind_uniform_buffer("Data", *primitive_ubo_);
 
-  framebuffer_ = std::make_unique<Framebuffer>(window_->dimensions().x, window_->dimensions().y);
+  // Setup camera
+  camera_       = std::make_unique<Camera>(false, 70.F, 16.F / 9.F, 0.75F, 100.F);
+  glm::vec3 pos = glm::vec3(0, 2, 3);
+  camera_->transform.set_local_pos(pos);
+  glm::vec3 direction = glm::normalize(-pos);
+  camera_->transform.set_local_rot(glm::quatLookAt(direction, glm::vec3(0, 1, 0)));
+
+  // Setup lights
+  point_light_       = std::make_unique<PointLight>(glm::vec3(0.57F, 0.38F, 0.04F), glm::vec3(0.0F, 1.0F, 0.5F),
+                                                    PointLight::Attenuation(1.0F, 0.7F, 1.8F));
+  directional_light_ = std::make_unique<DirectionalLight>(glm::vec3(0.5F, 0.5F, 0.5F), 1.0F);
+  directional_light_->transform.set_local_rot(glm::quatLookAt(direction, glm::vec3(0, 1, 0)));
+
+  // Setup example materials
+  cube_mat_   = std::make_unique<Material>(glm::vec3(0.96F, 0.25F, 0.25F));
+  sphere_mat_ = std::make_unique<Material>(glm::vec3(0.25F, 0.25F, 0.96F));
 
   setup_shader_uniforms();
 }
@@ -464,16 +442,15 @@ void Resin::render() {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  glBindVertexArray(vertex_array_);
+  raycaster_->bind();
 
   if (is_grid_) {
     grid_shader_->bind();
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-    grid_shader_->unbind();
+    raycaster_->draw_call();
   }
 
   shader_->bind();
-  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+  raycaster_->draw_call();
   shader_->unbind();
 
   glDisable(GL_BLEND);
@@ -537,7 +514,7 @@ bool Resin::on_left_click(glm::vec2 relative_pos) {
   int id = framebuffer_->sample_mouse_pick(static_cast<size_t>(relative_pos.x), static_cast<size_t>(relative_pos.y));
   framebuffer_->unbind();
 
-  selected_node_ = id == -1 ? std::nullopt : sdf_tree_.get_view_from_raw_id(id);
+  selected_node_ = id == -1 ? std::nullopt : sdf_tree_.get_view_from_raw_id(static_cast<size_t>(id));
   return true;
 }
 

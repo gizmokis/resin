@@ -56,7 +56,7 @@ void main() {
     vec4 ray_origin;    // vec4(ro, 1) as it needs to be translated
     vec4 ray_direction; // vec4(rd, 0) as it cannot be translated
     if (u_ortho) {
-        ray_origin = vec4(v_Pos, 0, 1); // apply desired scaling from fov
+        ray_origin = vec4(v_Pos, 0, 1);
         ray_direction = vec4(0, 0, -1, 0);
     } else {
         ray_origin = vec4(0, 0, 0, 1); 

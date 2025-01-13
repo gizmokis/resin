@@ -6,6 +6,7 @@
 #include <glm/ext/vector_float2.hpp>
 #include <libresin/core/camera.hpp>
 #include <libresin/core/framebuffer.hpp>
+#include <libresin/core/raycaster.hpp>
 #include <libresin/core/resources/shader_resource.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
@@ -61,15 +62,14 @@ class Resin {
   static constexpr duration_t kTickTime = 16666us;  // 60 TPS = 16.6(6) ms/t
 
  private:
-  unsigned int vertex_array_, vertex_buffer_, index_buffer_;
   EventDispatcher dispatcher_;
   ShaderResourceManager& shader_resource_manager_ = ResourceManagers::shader_manager();
 
   SDFTree sdf_tree_;
-
   std::optional<IdView<SDFTreeNodeId>> selected_node_;
 
   std::unique_ptr<Window> window_;
+  std::unique_ptr<Raycaster> raycaster_;
   std::unique_ptr<RenderingShaderProgram> shader_;
   std::unique_ptr<RenderingShaderProgram> grid_shader_;
   std::unique_ptr<PrimitiveUniformBuffer> primitive_ubo_;
@@ -81,7 +81,6 @@ class Resin {
   std::unique_ptr<PointLight> point_light_;
   std::unique_ptr<DirectionalLight> directional_light_;
   std::unique_ptr<Material> cube_mat_, sphere_mat_;
-  Transform camera_rig_;
   bool is_viewport_focused_{false};
   bool use_local_gizmos_{false};
   bool is_grid_{true};
