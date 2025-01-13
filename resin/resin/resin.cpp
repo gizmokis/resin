@@ -36,7 +36,6 @@
 #include <resin/event/event.hpp>
 #include <resin/event/key_events.hpp>
 #include <resin/event/mouse_events.hpp>
-#include <resin/event/scroll_events.hpp>
 #include <resin/event/window_events.hpp>
 #include <resin/imgui/gizmo.hpp>
 #include <resin/imgui/node_edit.hpp>
@@ -459,7 +458,7 @@ bool Resin::on_mouse_btn_released(MouseButtonReleasedEvent& e) {
 }
 
 bool Resin::on_key_pressed(KeyPressedEvent& e) {
-  if (e.key_code() == key::Code::V) {
+  if (e.key_code() == key::Code::C) {
     return switch_ortho();
   }
 

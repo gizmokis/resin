@@ -45,6 +45,20 @@ class MouseButtonReleasedEvent : public Event<EventType::MouseButtonReleasedEven
   glm::vec2 pos_;
 };
 
+class ScrollEvent : public Event<EventType::ScrollEvent> {
+ public:
+  EVENT_NAME(ScrollEvent)
+
+  explicit ScrollEvent(glm::vec2 offset) : offset_(offset) {}
+
+  glm::vec2 offset() const { return offset_; }
+
+  std::string to_string() const override { return std::format("{}: x={}, y={}", name(), offset_.x, offset_.y); }
+
+ private:
+  glm::vec2 offset_;
+};
+
 }  // namespace resin
 
 #endif  // RESIN_MOUSE_EVENTS_HPP
