@@ -108,6 +108,7 @@ class Resin {
 
   std::unique_ptr<Window> window_;
   std::unique_ptr<RenderingShaderProgram> shader_;
+  std::unique_ptr<RenderingShaderProgram> grid_shader_;
   std::unique_ptr<PrimitiveUniformBuffer> primitive_ubo_;
   std::unique_ptr<Framebuffer> framebuffer_;
 
@@ -119,6 +120,8 @@ class Resin {
   std::unique_ptr<Material> cube_mat_, sphere_mat_;
 
   bool use_local_gizmos_{false};
+  bool is_grid_{true};
+  float grid_spacing_ = 1.0;
 
   float camera_distance_;
 

@@ -67,7 +67,7 @@ Resin::Resin()
 
     window_ = std::make_unique<Window>(std::move(properties));
   }
-
+  glClearColor(0.25F, 0.25F, 0.25F, 1.0F);
   const std::filesystem::path path = std::filesystem::current_path() / "assets";
 
   cube_mat_   = std::make_unique<Material>(glm::vec3(0.96F, 0.25F, 0.25F));
@@ -112,7 +112,8 @@ Resin::Resin()
   group.push_back_child<CubeNode>(SDFBinaryOperation::SmoothUnion).transform().set_local_pos(glm::vec3(-1, -1, 0));
 
   // SDF Shader
-  ShaderResource frag_shader = *shader_resource_manager_.get_res(path / "test.frag");
+  ShaderResource grid_frag_shader = *shader_resource_manager_.get_res(path / "grid.frag");
+  ShaderResource frag_shader      = *shader_resource_manager_.get_res(path / "test.frag");
 
   frag_shader.set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
 
@@ -123,6 +124,8 @@ Resin::Resin()
   primitive_ubo_->set(sdf_tree_);
   primitive_ubo_->unbind();
 
+  grid_shader_ = std::make_unique<RenderingShaderProgram>("grid", *shader_resource_manager_.get_res(path / "test.vert"),
+                                                          std::move(grid_frag_shader));
   shader_ = std::make_unique<RenderingShaderProgram>("default", *shader_resource_manager_.get_res(path / "test.vert"),
                                                      std::move(frag_shader));
   shader_->bind_uniform_buffer("Data", *primitive_ubo_);
@@ -139,6 +142,13 @@ void Resin::setup_shader_uniforms() {
   shader_->set_uniform("u_farPlane", camera_->far_plane());
   shader_->set_uniform("u_ortho", camera_->is_orthographic());
   shader_->set_uniform("u_camSize", camera_->height());
+
+  grid_shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
+  grid_shader_->set_uniform("u_resolution", glm::vec2(framebuffer_->width(), framebuffer_->height()));
+  grid_shader_->set_uniform("u_nearPlane", camera_->near_plane());
+  grid_shader_->set_uniform("u_ortho", camera_->is_orthographic());
+  grid_shader_->set_uniform("u_camSize", camera_->height());
+  grid_shader_->set_uniform("u_spacing", grid_spacing_);
 }
 
 void Resin::run() {
@@ -284,6 +294,9 @@ void Resin::gui(duration_t delta) {
       camera_->set_aspect_ratio(width / height);
       shader_->set_uniform("u_resolution", glm::vec2(width, height));
       shader_->set_uniform("u_camSize", camera_->height());
+
+      grid_shader_->set_uniform("u_resolution", glm::vec2(width, height));
+      grid_shader_->set_uniform("u_camSize", camera_->height());
     }
 
     framebuffer_->bind();
@@ -316,6 +329,11 @@ void Resin::gui(duration_t delta) {
     if (ImGui::DragFloat("Camera FOV", &fov, 0.5F, 10.0F, 140.0F, "%.2f")) {
       camera_->set_fov(fov);
       shader_->set_uniform("u_camSize", camera_->height());
+      grid_shader_->set_uniform("u_camSize", camera_->height());
+    }
+    ImGui::Checkbox("Grid", &is_grid_);
+    if (ImGui::DragFloat("Spacing", &grid_spacing_, 0.05F, 0.0F, 100.0F)) {
+      grid_shader_->set_uniform("u_spacing", grid_spacing_);
     }
     ImGui::Text("First Person Camera:");
     bool use_local_up = first_person_camera_operator_.is_using_local_axises();
@@ -391,10 +409,22 @@ void Resin::gui(duration_t delta) {
 }
 
 void Resin::render() {
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glBindVertexArray(vertex_array_);
+
+  if (is_grid_) {
+    grid_shader_->bind();
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+    grid_shader_->unbind();
+  }
+
   shader_->bind();
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
   shader_->unbind();
+
+  glDisable(GL_BLEND);
 }
 
 bool Resin::on_window_close(WindowCloseEvent&) {
@@ -519,6 +549,7 @@ bool Resin::draw_camera_gizmo(float dt) {
 
   if (ImGui::resin::gizmo::CameraView(*camera_, camera_distance_, dt, disabled)) {
     shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
+    grid_shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
     current_vieport_state_ = ViewportState::GizmoCamera;
     return true;
   }
@@ -546,6 +577,8 @@ bool Resin::switch_ortho() {
     camera_->set_orthographic(!camera_->is_orthographic());
     shader_->set_uniform("u_ortho", camera_->is_orthographic());
     shader_->set_uniform("u_camSize", camera_->height());
+    grid_shader_->set_uniform("u_ortho", camera_->is_orthographic());
+    grid_shader_->set_uniform("u_camSize", camera_->height());
     return true;
   }
 
@@ -624,12 +657,16 @@ bool Resin::update_camera_operators(float dt) {
     if (orbiting_camera_operator_.update(*camera_, camera_distance_, window_->mouse_pos(), dt)) {
       shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
       shader_->set_uniform("u_camSize", camera_->height());
+      grid_shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
+      grid_shader_->set_uniform("u_camSize", camera_->height());
       return true;
     }
   } else if (current_vieport_state_ == ViewportState::FirstPersonCamera) {
     if (first_person_camera_operator_.update(*camera_, window_->mouse_pos(), dt)) {
       shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
       shader_->set_uniform("u_camSize", camera_->height());
+      grid_shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
+      grid_shader_->set_uniform("u_camSize", camera_->height());
       return true;
     }
   }
@@ -661,9 +698,11 @@ bool Resin::zoom_camera(glm::vec2 offset) {
     }
 
     shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
+    grid_shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
     if (camera_->is_orthographic()) {
       camera_->recalculate_projection();
       shader_->set_uniform("u_camSize", camera_->height());
+      grid_shader_->set_uniform("u_camSize", camera_->height());
     }
 
     return true;
@@ -724,6 +763,9 @@ bool Resin::interpolate(float dt) {
   camera_->transform.set_local_rot(glm::slerp(interpolation_start_quat, interpolation_end_quat, t));
   shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
   shader_->set_uniform("u_camSize", camera_->height());
+  grid_shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
+  grid_shader_->set_uniform("u_camSize", camera_->height());
+
 
   return true;
 }
