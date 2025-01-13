@@ -2,8 +2,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <libresin/core/camera.hpp>
 #include <resin/camera/first_person_camera_operator.hpp>
-
-#include "resin/core/key_codes.hpp"
+#include <resin/core/key_codes.hpp>
 
 namespace resin {
 
@@ -81,9 +80,9 @@ bool FirstPersonCameraOperator::update(Camera& camera, glm::vec2 mouse_pos, floa
 
     // Prevent 360 flips
     auto new_up = new_rot * glm::vec3(0.0F, 1.0F, 0.0F);
-    if (glm::dot(new_up, glm::vec3(0.0F, 1.0F, 0.0F)) < 0.0F) {
+    if (new_up.y < 0.0F) {
       auto new_dir = new_rot * glm::vec3(0.0F, 0.0F, -1.0F);
-      if (glm::dot(new_dir, glm::vec3(0.0F, 1.0F, 0.0F)) > 0.0F) {
+      if (new_dir.y > 0.0F) {
         // operator looks up
         new_rot = glm::quatLookAt(glm::vec3(0.0F, 1.0F, 0.0F), new_up);
       } else {

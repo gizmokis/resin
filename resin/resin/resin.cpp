@@ -426,7 +426,7 @@ bool Resin::on_mouse_btn_pressed(MouseButtonPressedEvent& e) {
   }
 
   if (e.button() == mouse::Code::MouseButtonRight) {
-    if (glm::dot(camera_->transform.local_up(), glm::vec3(0.0F, 1.0F, 0.0F)) < 0.0F) {
+    if (camera_->transform.local_up().y < 0.0F) {
       return start_interpolation();
     }
 
@@ -591,7 +591,7 @@ bool Resin::activate_orbiting_camera(glm::vec2 mouse_pos) {
     current_vieport_state_ = ViewportState::OrbitingCamera;
 
     auto dir = glm::normalize(camera_->transform.pos());
-    if (glm::dot(camera_->transform.local_up(), glm::vec3(0.0F, 1.0F, 0.0F)) > 0.0F) {
+    if (camera_->transform.local_up().y > 0.0F) {
       camera_->transform.set_local_rot(glm::quatLookAt(-dir, glm::vec3(0.0F, 1.0F, 0.0F)));
     } else {
       camera_->transform.set_local_rot(glm::quatLookAt(-dir, glm::vec3(0.0F, -1.0F, 0.0F)));
@@ -651,7 +651,7 @@ bool Resin::zoom_camera(glm::vec2 offset) {
 
     auto dir = glm::normalize(camera_->transform.local_pos());
     camera_->transform.set_local_pos(dir * camera_distance_);
-    if (glm::dot(camera_->transform.local_up(), glm::vec3(0.0F, 1.0F, 0.0F)) > 0.0F) {
+    if (camera_->transform.local_up().y > 0.0F) {
       camera_->transform.set_local_rot(glm::quatLookAt(-dir, glm::vec3(0.0F, 1.0F, 0.0F)));
     } else {
       camera_->transform.set_local_rot(glm::quatLookAt(-dir, glm::vec3(0.0F, -1.0F, 0.0F)));
