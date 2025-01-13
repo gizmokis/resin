@@ -27,7 +27,6 @@ enum class EventType {
   MouseButtonReleasedEvent,
   MouseScrollEvent,
   MouseMoveEvent,
-  ScrollEvent
 };
 
 class BaseEvent {

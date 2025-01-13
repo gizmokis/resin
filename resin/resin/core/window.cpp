@@ -168,7 +168,7 @@ void Window::set_glfw_callbacks() const {
   glfwSetScrollCallback(window_ptr_, [](GLFWwindow* window, double xoffset, double yoffset) {
     const WindowProperties& properties = *static_cast<WindowProperties*>(glfwGetWindowUserPointer(window));
 
-    ScrollEvent scroll_event(glm::vec2(xoffset, yoffset));
+    MouseScrollEvent scroll_event(glm::vec2(xoffset, yoffset));
     properties.eventDispatcher->get().dispatch(scroll_event);
   });
 }

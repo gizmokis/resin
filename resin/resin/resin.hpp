@@ -62,12 +62,12 @@ class Resin {
   bool on_window_resize(WindowResizeEvent& e);
   bool on_mouse_btn_pressed(MouseButtonPressedEvent& e);
   bool on_mouse_btn_released(MouseButtonReleasedEvent& e);
+  bool on_scroll(MouseScrollEvent& e);
   bool on_key_pressed(KeyPressedEvent& e);
   bool on_key_released(KeyReleasedEvent& e);
-  bool on_scroll(ScrollEvent& e);
 
-  // vieport actions -- these methods mutate the viewport state
-  bool update_vieport_active(bool is_viewport_focused);
+  // viewport actions -- these methods mutate the viewport state
+  bool update_viewport_active(bool is_viewport_focused);
   bool draw_transform_gizmo();
   bool draw_camera_gizmo(float dt);
   bool update_camera_distance();
@@ -103,7 +103,7 @@ class Resin {
     CameraInterpolation,
     _Count  // NOLINT
   };
-  ViewportState current_vieport_state_;
+  ViewportState current_viewport_state_;
 
   std::optional<IdView<SDFTreeNodeId>> selected_node_;
 
