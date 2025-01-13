@@ -1,4 +1,5 @@
 #include <GLFW/glfw3.h>
+#include <glad/gl.h>
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_opengl3.h>
@@ -22,6 +23,7 @@
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
+#include <libresin/core/shader.hpp>
 #include <libresin/core/transform.hpp>
 #include <libresin/core/uniform_buffer.hpp>
 #include <libresin/utils/enum_mapper.hpp>
@@ -48,89 +50,70 @@
 namespace resin {
 
 Resin::Resin()
-    : vertex_array_(0),
-      vertex_buffer_(0),
-      index_buffer_(0),
+    : current_viewport_state_(ViewportState::InactiveIdle),
       viewport_pos_(),
+      camera_distance_(0),
       gizmo_operation_(ImGui::resin::gizmo::Operation::Translation) {
+  // Setup event handlers
   dispatcher_.subscribe<WindowCloseEvent>(BIND_EVENT_METHOD(on_window_close));
   dispatcher_.subscribe<WindowResizeEvent>(BIND_EVENT_METHOD(on_window_resize));
   dispatcher_.subscribe<MouseButtonPressedEvent>(BIND_EVENT_METHOD(on_mouse_btn_pressed));
   dispatcher_.subscribe<MouseButtonReleasedEvent>(BIND_EVENT_METHOD(on_mouse_btn_released));
   dispatcher_.subscribe<KeyPressedEvent>(BIND_EVENT_METHOD(on_key_pressed));
   dispatcher_.subscribe<KeyReleasedEvent>(BIND_EVENT_METHOD(on_key_released));
-  dispatcher_.subscribe<ScrollEvent>(BIND_EVENT_METHOD(on_scroll));
+  dispatcher_.subscribe<MouseScrollEvent>(BIND_EVENT_METHOD(on_scroll));
 
+  // Setup window
   {
     WindowProperties properties;
     properties.eventDispatcher = dispatcher_;
 
     window_ = std::make_unique<Window>(std::move(properties));
   }
-  glClearColor(0.25F, 0.25F, 0.25F, 1.0F);
-  const std::filesystem::path path = std::filesystem::current_path() / "assets";
 
-  cube_mat_   = std::make_unique<Material>(glm::vec3(0.96F, 0.25F, 0.25F));
-  sphere_mat_ = std::make_unique<Material>(glm::vec3(0.25F, 0.25F, 0.96F));
+  // Setup framebuffer and raycaster
+  framebuffer_ = std::make_unique<Framebuffer>(window_->dimensions().x, window_->dimensions().y);
+  raycaster_   = std::make_unique<Raycaster>();
 
-  camera_             = std::make_unique<Camera>(false, 70.F, 16.F / 9.F, 0.75F, 100.F);
-  glm::vec3 pos       = glm::vec3(0, 2, 3);
-  glm::vec3 direction = glm::normalize(-pos);
-  camera_->transform.set_local_pos(glm::vec3(0.0F, 0.0F, 5.0F));
+  // Main resource path
+  const std::filesystem::path assets_path = std::filesystem::current_path() / "assets";
 
-  point_light_       = std::make_unique<PointLight>(glm::vec3(0.57F, 0.38F, 0.04F), glm::vec3(0.0F, 1.0F, 0.5F),
-                                                    PointLight::Attenuation(1.0F, 0.7F, 1.8F));
-  directional_light_ = std::make_unique<DirectionalLight>(glm::vec3(0.5F, 0.5F, 0.5F), 1.0F);
-  directional_light_->transform.set_local_rot(glm::quatLookAt(direction, glm::vec3(0, 1, 0)));
-
-  // TODO(anyone): temporary, move out somewhere else
-  float vertices[4 * 3]   = {-1.F, -1.F, 0.F, 1.F, -1.F, 0.F, -1.F, 1.F, 0.F, 1.F, 1.F, 0.F};
-  unsigned int indices[6] = {0, 1, 2, 1, 3, 2};
-
-  // Generate VAO
-  glGenVertexArrays(1, &vertex_array_);
-  glBindVertexArray(vertex_array_);
-
-  // Generate VBO and load data into it
-  glGenBuffers(1, &vertex_buffer_);
-  glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_);
-  glBufferData(GL_ARRAY_BUFFER, sizeof vertices, vertices, GL_STATIC_DRAW);
-
-  // Set vertex attrib pointers
-  glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
-
-  // Generate indices
-  glGenBuffers(1, &index_buffer_);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer_);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof indices, indices, GL_STATIC_DRAW);
-
-  // Example tree
+  // Setup example tree
   sdf_tree_.root().push_back_child<SphereNode>(SDFBinaryOperation::SmoothUnion);
   auto& group = sdf_tree_.root().push_back_child<GroupNode>(SDFBinaryOperation::SmoothUnion);
   group.push_back_child<CubeNode>(SDFBinaryOperation::SmoothUnion).transform().set_local_pos(glm::vec3(1, 1, 0));
   group.push_back_child<CubeNode>(SDFBinaryOperation::SmoothUnion).transform().set_local_pos(glm::vec3(-1, -1, 0));
 
-  // SDF Shader
-  ShaderResource grid_frag_shader = *shader_resource_manager_.get_res(path / "grid.frag");
-  ShaderResource frag_shader      = *shader_resource_manager_.get_res(path / "test.frag");
-
-  frag_shader.set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
-
+  // Setup shaders
   primitive_ubo_ = std::make_unique<PrimitiveUniformBuffer>(sdf_tree_.max_nodes_count());
-  frag_shader.set_ext_defi("MAX_UBO_NODE_COUNT", std::to_string(sdf_tree_.max_nodes_count()));
-
   primitive_ubo_->bind();
   primitive_ubo_->set(sdf_tree_);
   primitive_ubo_->unbind();
 
-  grid_shader_ = std::make_unique<RenderingShaderProgram>("grid", *shader_resource_manager_.get_res(path / "test.vert"),
-                                                          std::move(grid_frag_shader));
-  shader_ = std::make_unique<RenderingShaderProgram>("default", *shader_resource_manager_.get_res(path / "test.vert"),
-                                                     std::move(frag_shader));
+  ShaderResource grid_frag_shader = *shader_resource_manager_.get_res(assets_path / "grid.frag");
+  ShaderResource main_frag_shader = *shader_resource_manager_.get_res(assets_path / "main.frag");
+  main_frag_shader.set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
+  main_frag_shader.set_ext_defi("MAX_UBO_NODE_COUNT", std::to_string(sdf_tree_.max_nodes_count()));
+
+  grid_shader_ = std::make_unique<RenderingShaderProgram>(
+      "grid", *shader_resource_manager_.get_res(assets_path / "main.vert"), std::move(grid_frag_shader));
+  shader_ = std::make_unique<RenderingShaderProgram>(
+      "main", *shader_resource_manager_.get_res(assets_path / "main.vert"), std::move(main_frag_shader));
   shader_->bind_uniform_buffer("Data", *primitive_ubo_);
 
-  framebuffer_ = std::make_unique<Framebuffer>(window_->dimensions().x, window_->dimensions().y);
+  // Setup camera
+  camera_ = std::make_unique<Camera>(false, 70.F, 16.F / 9.F, 0.75F, 100.F);
+  camera_->transform.set_local_pos(glm::vec3(0.0F, 0.0F, 5.0F));
+
+  // Setup lights
+  point_light_       = std::make_unique<PointLight>(glm::vec3(0.57F, 0.38F, 0.04F), glm::vec3(-1.0F, 1.0F, 0.0F),
+                                                    PointLight::Attenuation(1.0F, 0.7F, 1.8F));
+  directional_light_ = std::make_unique<DirectionalLight>(glm::vec3(0.5F, 0.5F, 0.5F), 1.0F);
+  directional_light_->transform.set_local_rot(glm::quatLookAt(-glm::normalize(glm::vec3(0, 2, 3)), glm::vec3(0, 1, 0)));
+
+  // Setup example materials
+  cube_mat_   = std::make_unique<Material>(glm::vec3(0.96F, 0.25F, 0.25F));
+  sphere_mat_ = std::make_unique<Material>(glm::vec3(0.25F, 0.25F, 0.96F));
 
   setup_shader_uniforms();
 }
@@ -146,6 +129,7 @@ void Resin::setup_shader_uniforms() {
   grid_shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
   grid_shader_->set_uniform("u_resolution", glm::vec2(framebuffer_->width(), framebuffer_->height()));
   grid_shader_->set_uniform("u_nearPlane", camera_->near_plane());
+  grid_shader_->set_uniform("u_farPlane", camera_->far_plane());
   grid_shader_->set_uniform("u_ortho", camera_->is_orthographic());
   grid_shader_->set_uniform("u_camSize", camera_->height());
   grid_shader_->set_uniform("u_spacing", grid_spacing_);
@@ -160,6 +144,8 @@ void Resin::run() {
 
   uint16_t frames = 0U;
   uint16_t ticks  = 0U;
+
+  init_gl();
 
   while (running_) {
     auto current_time = clock::now();
@@ -205,6 +191,16 @@ void Resin::run() {
   }
 }
 
+void Resin::init_gl() {  // NOLINT
+  glClearColor(0.25F, 0.25F, 0.25F, 1.0F);
+
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LESS);
+}
+
 void Resin::update(duration_t delta) {
   const float seconds_dt = std ::chrono::duration_cast<std::chrono::duration<float>>(delta).count();
 
@@ -237,6 +233,24 @@ void Resin::update(duration_t delta) {
   FileDialog::instance().update();
 }
 
+void Resin::render() {
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  raycaster_->bind();
+
+  framebuffer_->begin_pick_render();
+  shader_->bind();
+  raycaster_->draw_call();
+  shader_->unbind();
+  framebuffer_->end_pick_render();
+
+  if (is_grid_) {
+    grid_shader_->bind();
+    raycaster_->draw_call();
+    grid_shader_->unbind();
+  }
+}
+
 void Resin::gui(duration_t delta) {
   const float seconds_dt = std ::chrono::duration_cast<std::chrono::duration<float>>(delta).count();
   ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
@@ -247,12 +261,12 @@ void Resin::gui(duration_t delta) {
     // These click checks allow for instant camera manipulation when viewport is not focused
     if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && ImGui::IsWindowHovered() && !ImGui::IsWindowFocused()) {
       ImGui::SetWindowFocus();
-      update_vieport_active(true);
+      update_viewport_active(true);
       activate_first_person_camera(window_->mouse_pos());
     }
     if (ImGui::IsMouseClicked(ImGuiMouseButton_Middle) && ImGui::IsWindowHovered() && !ImGui::IsWindowFocused()) {
       ImGui::SetWindowFocus();
-      update_vieport_active(true);
+      update_viewport_active(true);
       activate_orbiting_camera(window_->mouse_pos());
     }
 
@@ -280,7 +294,7 @@ void Resin::gui(duration_t delta) {
       ImGui::EndMenuBar();
     }
 
-    update_vieport_active(ImGui::IsWindowFocused());
+    update_viewport_active(ImGui::IsWindowFocused());
 
     auto width  = static_cast<float>(framebuffer_->width());
     auto height = static_cast<float>(framebuffer_->height());
@@ -408,25 +422,6 @@ void Resin::gui(duration_t delta) {
 #endif
 }
 
-void Resin::render() {
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  glBindVertexArray(vertex_array_);
-
-  if (is_grid_) {
-    grid_shader_->bind();
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-    grid_shader_->unbind();
-  }
-
-  shader_->bind();
-  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-  shader_->unbind();
-
-  glDisable(GL_BLEND);
-}
-
 bool Resin::on_window_close(WindowCloseEvent&) {
   running_ = false;
   return true;
@@ -501,15 +496,15 @@ bool Resin::on_key_pressed(KeyPressedEvent& e) {
 
 bool Resin::on_key_released(KeyReleasedEvent& e) { return stop_moving_first_person_camera(e.key_code()); }
 
-bool Resin::on_scroll(ScrollEvent& e) { return zoom_camera(e.offset()); }
+bool Resin::on_scroll(MouseScrollEvent& e) { return zoom_camera(e.offset()); }
 
-bool Resin::update_vieport_active(bool is_viewport_focused) {
-  if (current_vieport_state_ == ViewportState::InactiveIdle && is_viewport_focused) {
-    current_vieport_state_ = ViewportState::ActiveIdle;
+bool Resin::update_viewport_active(bool is_viewport_focused) {
+  if (current_viewport_state_ == ViewportState::InactiveIdle && is_viewport_focused) {
+    current_viewport_state_ = ViewportState::ActiveIdle;
     return true;
   }
-  if (current_vieport_state_ != ViewportState::InactiveIdle && !is_viewport_focused) {
-    current_vieport_state_ = ViewportState::InactiveIdle;
+  if (current_viewport_state_ != ViewportState::InactiveIdle && !is_viewport_focused) {
+    current_viewport_state_ = ViewportState::InactiveIdle;
     return true;
   }
   return false;
@@ -517,10 +512,10 @@ bool Resin::update_vieport_active(bool is_viewport_focused) {
 
 bool Resin::draw_transform_gizmo() {
   if (selected_node_ && !selected_node_->expired()) {
-    bool disabled = current_vieport_state_ != ViewportState::ActiveIdle &&
-                    current_vieport_state_ != ViewportState::InactiveIdle &&
-                    current_vieport_state_ != ViewportState::CameraInterpolation &&
-                    current_vieport_state_ != ViewportState::GizmoTransform;
+    bool disabled = current_viewport_state_ != ViewportState::ActiveIdle &&
+                    current_viewport_state_ != ViewportState::InactiveIdle &&
+                    current_viewport_state_ != ViewportState::CameraInterpolation &&
+                    current_viewport_state_ != ViewportState::GizmoTransform;
 
     auto& node = sdf_tree_.node(*selected_node_);
     if (ImGui::resin::gizmo::Transform(
@@ -528,13 +523,13 @@ bool Resin::draw_transform_gizmo() {
             use_local_gizmos_ ? ImGui::resin::gizmo::Mode::Local : ImGui::resin::gizmo::Mode::World, gizmo_operation_,
             disabled)) {
       node.mark_dirty();
-      current_vieport_state_ = ViewportState::GizmoTransform;
+      current_viewport_state_ = ViewportState::GizmoTransform;
       return true;
     }
   }
 
-  if (current_vieport_state_ == ViewportState::GizmoTransform && !ImGui::resin::gizmo::IsTransformUsed()) {
-    current_vieport_state_ = ViewportState::ActiveIdle;
+  if (current_viewport_state_ == ViewportState::GizmoTransform && !ImGui::resin::gizmo::IsTransformUsed()) {
+    current_viewport_state_ = ViewportState::ActiveIdle;
     return true;
   }
 
@@ -542,20 +537,20 @@ bool Resin::draw_transform_gizmo() {
 }
 
 bool Resin::draw_camera_gizmo(float dt) {
-  bool disabled = current_vieport_state_ != ViewportState::ActiveIdle &&
-                  current_vieport_state_ != ViewportState::InactiveIdle &&
-                  current_vieport_state_ != ViewportState::CameraInterpolation &&
-                  current_vieport_state_ != ViewportState::GizmoCamera;
+  bool disabled = current_viewport_state_ != ViewportState::ActiveIdle &&
+                  current_viewport_state_ != ViewportState::InactiveIdle &&
+                  current_viewport_state_ != ViewportState::CameraInterpolation &&
+                  current_viewport_state_ != ViewportState::GizmoCamera;
 
   if (ImGui::resin::gizmo::CameraView(*camera_, camera_distance_, dt, disabled)) {
     shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
     grid_shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
-    current_vieport_state_ = ViewportState::GizmoCamera;
+    current_viewport_state_ = ViewportState::GizmoCamera;
     return true;
   }
 
-  if (current_vieport_state_ == ViewportState::GizmoCamera) {
-    current_vieport_state_ = ViewportState::ActiveIdle;
+  if (current_viewport_state_ == ViewportState::GizmoCamera) {
+    current_viewport_state_ = ViewportState::ActiveIdle;
     return true;
   }
 
@@ -563,8 +558,8 @@ bool Resin::draw_camera_gizmo(float dt) {
 }
 
 bool Resin::update_camera_distance() {
-  if (current_vieport_state_ != ViewportState::GizmoCamera &&
-      current_vieport_state_ != ViewportState::CameraInterpolation) {
+  if (current_viewport_state_ != ViewportState::GizmoCamera &&
+      current_viewport_state_ != ViewportState::CameraInterpolation) {
     camera_distance_ = glm::length(camera_->transform.pos());
     return true;
   }
@@ -572,8 +567,8 @@ bool Resin::update_camera_distance() {
 }
 
 bool Resin::switch_ortho() {
-  if (current_vieport_state_ != ViewportState::InactiveIdle &&
-      current_vieport_state_ != ViewportState::CameraInterpolation) {
+  if (current_viewport_state_ != ViewportState::InactiveIdle &&
+      current_viewport_state_ != ViewportState::CameraInterpolation) {
     camera_->set_orthographic(!camera_->is_orthographic());
     shader_->set_uniform("u_ortho", camera_->is_orthographic());
     shader_->set_uniform("u_camSize", camera_->height());
@@ -586,8 +581,8 @@ bool Resin::switch_ortho() {
 }
 
 bool Resin::activate_first_person_camera(glm::vec2 mouse_pos) {
-  if (current_vieport_state_ == ViewportState::ActiveIdle) {
-    current_vieport_state_ = ViewportState::FirstPersonCamera;
+  if (current_viewport_state_ == ViewportState::ActiveIdle) {
+    current_viewport_state_ = ViewportState::FirstPersonCamera;
     window_->set_mouse_cursor_mode(mouse::CursorMode::Disabled);
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouse;
     first_person_camera_operator_.start(mouse_pos);
@@ -598,8 +593,8 @@ bool Resin::activate_first_person_camera(glm::vec2 mouse_pos) {
 }
 
 bool Resin::deactivate_first_person_camera() {
-  if (current_vieport_state_ == ViewportState::FirstPersonCamera) {
-    current_vieport_state_ = ViewportState::ActiveIdle;
+  if (current_viewport_state_ == ViewportState::FirstPersonCamera) {
+    current_viewport_state_ = ViewportState::ActiveIdle;
     window_->set_mouse_cursor_mode(mouse::CursorMode::Normal);
     ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
     first_person_camera_operator_.stop();
@@ -610,7 +605,7 @@ bool Resin::deactivate_first_person_camera() {
 }
 
 bool Resin::start_moving_first_person_camera(key::Code key_code) {
-  if (current_vieport_state_ == ViewportState::FirstPersonCamera) {
+  if (current_viewport_state_ == ViewportState::FirstPersonCamera) {
     first_person_camera_operator_.start_move(key_code);
     return true;
   }
@@ -623,8 +618,8 @@ bool Resin::stop_moving_first_person_camera(key::Code key_code) {
 }
 
 bool Resin::activate_orbiting_camera(glm::vec2 mouse_pos) {
-  if (current_vieport_state_ == ViewportState::ActiveIdle) {
-    current_vieport_state_ = ViewportState::OrbitingCamera;
+  if (current_viewport_state_ == ViewportState::ActiveIdle) {
+    current_viewport_state_ = ViewportState::OrbitingCamera;
 
     auto dir = glm::normalize(camera_->transform.pos());
     if (camera_->transform.local_up().y > 0.0F) {
@@ -642,8 +637,8 @@ bool Resin::activate_orbiting_camera(glm::vec2 mouse_pos) {
 }
 
 bool Resin::deactivate_orbiting_camera() {
-  if (current_vieport_state_ == ViewportState::OrbitingCamera) {
-    current_vieport_state_ = ViewportState::ActiveIdle;
+  if (current_viewport_state_ == ViewportState::OrbitingCamera) {
+    current_viewport_state_ = ViewportState::ActiveIdle;
     window_->set_mouse_cursor_mode(mouse::CursorMode::Normal);
     ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
     orbiting_camera_operator_.stop();
@@ -653,7 +648,7 @@ bool Resin::deactivate_orbiting_camera() {
 }
 
 bool Resin::update_camera_operators(float dt) {
-  if (current_vieport_state_ == ViewportState::OrbitingCamera) {
+  if (current_viewport_state_ == ViewportState::OrbitingCamera) {
     if (orbiting_camera_operator_.update(*camera_, camera_distance_, window_->mouse_pos(), dt)) {
       shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
       shader_->set_uniform("u_camSize", camera_->height());
@@ -661,7 +656,7 @@ bool Resin::update_camera_operators(float dt) {
       grid_shader_->set_uniform("u_camSize", camera_->height());
       return true;
     }
-  } else if (current_vieport_state_ == ViewportState::FirstPersonCamera) {
+  } else if (current_viewport_state_ == ViewportState::FirstPersonCamera) {
     if (first_person_camera_operator_.update(*camera_, window_->mouse_pos(), dt)) {
       shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
       shader_->set_uniform("u_camSize", camera_->height());
@@ -675,10 +670,10 @@ bool Resin::update_camera_operators(float dt) {
 }
 
 bool Resin::zoom_camera(glm::vec2 offset) {
-  if (current_vieport_state_ == ViewportState::InactiveIdle ||
-      current_vieport_state_ == ViewportState::FirstPersonCamera ||
-      current_vieport_state_ == ViewportState::OrbitingCamera ||
-      current_vieport_state_ == ViewportState::CameraInterpolation) {
+  if (current_viewport_state_ == ViewportState::InactiveIdle ||
+      current_viewport_state_ == ViewportState::FirstPersonCamera ||
+      current_viewport_state_ == ViewportState::OrbitingCamera ||
+      current_viewport_state_ == ViewportState::CameraInterpolation) {
     return false;
   }
 
@@ -712,7 +707,7 @@ bool Resin::zoom_camera(glm::vec2 offset) {
 }
 
 bool Resin::select_node(glm::vec2 relative_pos) {
-  if (current_vieport_state_ == ViewportState::ActiveIdle || current_vieport_state_ == ViewportState::InactiveIdle) {
+  if (current_viewport_state_ == ViewportState::ActiveIdle || current_viewport_state_ == ViewportState::InactiveIdle) {
     framebuffer_->bind();
     int id = framebuffer_->sample_mouse_pick(static_cast<size_t>(relative_pos.x), static_cast<size_t>(relative_pos.y));
     framebuffer_->unbind();
@@ -725,8 +720,8 @@ bool Resin::select_node(glm::vec2 relative_pos) {
 }
 
 bool Resin::start_interpolation() {
-  if (current_vieport_state_ == ViewportState::ActiveIdle || current_vieport_state_ == ViewportState::InactiveIdle) {
-    current_vieport_state_ = ViewportState::CameraInterpolation;
+  if (current_viewport_state_ == ViewportState::ActiveIdle || current_viewport_state_ == ViewportState::InactiveIdle) {
+    current_viewport_state_ = ViewportState::CameraInterpolation;
   }
 
   return true;
@@ -740,7 +735,7 @@ bool Resin::interpolate(float dt) {
   static glm::quat interpolation_start_quat;
   static glm::quat interpolation_end_quat;
 
-  if (current_vieport_state_ != ViewportState::CameraInterpolation) {
+  if (current_viewport_state_ != ViewportState::CameraInterpolation) {
     return false;
   }
 
@@ -754,8 +749,8 @@ bool Resin::interpolate(float dt) {
 
   interpolation_progress += dt;
   if (interpolation_progress > kInterpolationTime) {
-    current_vieport_state_ = ViewportState::ActiveIdle;
-    interpolation_started  = false;
+    current_viewport_state_ = ViewportState::ActiveIdle;
+    interpolation_started   = false;
     return true;
   }
 

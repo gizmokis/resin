@@ -45,11 +45,11 @@ class MouseButtonReleasedEvent : public Event<EventType::MouseButtonReleasedEven
   glm::vec2 pos_;
 };
 
-class ScrollEvent : public Event<EventType::ScrollEvent> {
+class MouseScrollEvent : public Event<EventType::MouseScrollEvent> {
  public:
-  EVENT_NAME(ScrollEvent)
+  EVENT_NAME(MouseScrollEvent)
 
-  explicit ScrollEvent(glm::vec2 offset) : offset_(offset) {}
+  explicit MouseScrollEvent(glm::vec2 offset) : offset_(offset) {}
 
   glm::vec2 offset() const { return offset_; }
 

@@ -6,6 +6,7 @@
 #include <glm/ext/vector_float2.hpp>
 #include <libresin/core/camera.hpp>
 #include <libresin/core/framebuffer.hpp>
+#include <libresin/core/raycaster.hpp>
 #include <libresin/core/resources/shader_resource.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
@@ -51,6 +52,7 @@ class Resin {
   void setup_shader_uniforms();
 
   void run();
+  void init_gl();
   void update(duration_t delta);
   void gui(duration_t delta);
   void render();
@@ -60,12 +62,12 @@ class Resin {
   bool on_window_resize(WindowResizeEvent& e);
   bool on_mouse_btn_pressed(MouseButtonPressedEvent& e);
   bool on_mouse_btn_released(MouseButtonReleasedEvent& e);
+  bool on_scroll(MouseScrollEvent& e);
   bool on_key_pressed(KeyPressedEvent& e);
   bool on_key_released(KeyReleasedEvent& e);
-  bool on_scroll(ScrollEvent& e);
 
-  // vieport actions -- these methods mutate the viewport state
-  bool update_vieport_active(bool is_viewport_focused);
+  // viewport actions -- these methods mutate the viewport state
+  bool update_viewport_active(bool is_viewport_focused);
   bool draw_transform_gizmo();
   bool draw_camera_gizmo(float dt);
   bool update_camera_distance();
@@ -86,7 +88,6 @@ class Resin {
   static constexpr duration_t kTickTime = 16666us;  // 60 TPS = 16.6(6) ms/t
 
  private:
-  unsigned int vertex_array_, vertex_buffer_, index_buffer_;
   EventDispatcher dispatcher_;
   ShaderResourceManager& shader_resource_manager_ = ResourceManagers::shader_manager();
 
@@ -102,11 +103,12 @@ class Resin {
     CameraInterpolation,
     _Count  // NOLINT
   };
-  ViewportState current_vieport_state_;
+  ViewportState current_viewport_state_;
 
   std::optional<IdView<SDFTreeNodeId>> selected_node_;
 
   std::unique_ptr<Window> window_;
+  std::unique_ptr<Raycaster> raycaster_;
   std::unique_ptr<RenderingShaderProgram> shader_;
   std::unique_ptr<RenderingShaderProgram> grid_shader_;
   std::unique_ptr<PrimitiveUniformBuffer> primitive_ubo_;

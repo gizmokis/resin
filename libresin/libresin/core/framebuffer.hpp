@@ -3,7 +3,6 @@
 
 #include <glad/gl.h>
 
-#include <array>
 #include <cstddef>
 
 namespace resin {
@@ -16,6 +15,9 @@ class Framebuffer {
   void bind() const;
   void unbind() const;  // remember to glViewport after!
 
+  void begin_pick_render() const;
+  void end_pick_render() const;
+
   void resize(size_t width, size_t height);
 
   inline size_t width() const { return width_; }
@@ -25,8 +27,6 @@ class Framebuffer {
   int sample_mouse_pick(size_t x, size_t y) const;
 
  private:
-  static constexpr std::array<GLenum, 2> kAttachments = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
-
   size_t width_, height_;
   GLuint framebuffer_id_;
   GLuint color_attachment_texture_, mouse_pick_attachment_texture_;

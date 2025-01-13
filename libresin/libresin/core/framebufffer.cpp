@@ -1,5 +1,6 @@
 #include <glad/gl.h>
 
+#include <array>
 #include <libresin/core/framebuffer.hpp>
 #include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/logger.hpp>
@@ -51,8 +52,6 @@ Framebuffer::Framebuffer(size_t width, size_t height)
     log_throw(FramebufferCreationException("Framebuffer is incomplete."));
   }
 
-  glDrawBuffers(static_cast<GLsizei>(kAttachments.size()), kAttachments.data());
-
   // Bind default framebuffer
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
@@ -69,6 +68,19 @@ void Framebuffer::bind() const {
 }
 
 void Framebuffer::unbind() const { glBindFramebuffer(GL_FRAMEBUFFER, 0); }  // NOLINT
+
+void Framebuffer::begin_pick_render() const {
+  static constexpr std::array<GLenum, 2> kAttachments = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+  glDrawBuffers(static_cast<GLsizei>(kAttachments.size()), kAttachments.data());
+
+  static constexpr int kClear = -1;
+  glClearTexImage(mouse_pick_attachment_texture_, 0, GL_RED_INTEGER, GL_INT, &kClear);
+}
+
+void Framebuffer::end_pick_render() const {  // NOLINT
+  static constexpr std::array<GLenum, 2> kAttachments = {GL_COLOR_ATTACHMENT0, GL_NONE};
+  glDrawBuffers(static_cast<GLsizei>(kAttachments.size()), kAttachments.data());
+}
 
 void Framebuffer::resize(size_t width, size_t height) {
   width_  = width;
