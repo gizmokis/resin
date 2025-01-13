@@ -325,14 +325,8 @@ std::unique_ptr<::resin::SDFTreeNode> SDFTreeComponentVisitor::fix_transform_and
   auto new_loc_mat                     = new_parent_world_inv_mat * old_world_mat;
 
   // decompose new mat
-  auto new_loc_pos    = glm::vec3(new_loc_mat[3]);
-  auto new_loc_rot    = glm::normalize(glm::quat_cast(new_loc_mat));
-  float new_loc_scale = glm::length(glm::vec3(new_loc_mat[0][0], new_loc_mat[1][0], new_loc_mat[2][0]));
-
   auto node_ptr = sdf_tree_.node(source).parent().detach_child(source);
-  node_ptr->transform().set_local_pos(new_loc_pos);
-  node_ptr->transform().set_local_rot(new_loc_rot);
-  node_ptr->transform().set_local_scale(new_loc_scale);
+  node_ptr->transform().set_local_from_matrix(new_loc_mat);
 
   return node_ptr;
 }

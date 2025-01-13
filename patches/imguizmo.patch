@@ -1,6 +1,6 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
 new file mode 100644
-index 0000000..73513a9
+index 0000000..deae67d
 --- /dev/null
 +++ b/CMakeLists.txt
 @@ -0,0 +1,14 @@
@@ -16,22 +16,26 @@ index 0000000..73513a9
 +  "src/imguizmo/*.cpp")
 +
 +add_library(${PROJECT_NAME} STATIC ${IMGUI_SOURCE_FILES})
-+target_link_libraries(${PROJECT_NAME} PUBLIC imgui)
++target_link_libraries(${PROJECT_NAME} PUBLIC imgui glm)
 +target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC src)
 diff --git a/ImGuizmo.cpp b/src/imguizmo/ImGuizmo.cpp
-similarity index 99%
+similarity index 95%
 rename from ImGuizmo.cpp
 rename to src/imguizmo/ImGuizmo.cpp
-index ed05fd8..82e503f 100644
+index ed05fd8..82762a4 100644
 --- a/ImGuizmo.cpp
 +++ b/src/imguizmo/ImGuizmo.cpp
-@@ -23,12 +23,9 @@
+@@ -23,12 +23,13 @@
  // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  // SOFTWARE.
  //
 -
 -#include "imgui.h"
 -#ifndef IMGUI_DEFINE_MATH_OPERATORS
++#define GLM_ENABLE_EXPERIMENTAL
++#include <glm/gtx/transform.hpp>
++#include <glm/ext/quaternion_common.hpp>
++#include <glm/gtc/type_ptr.hpp>
  #define IMGUI_DEFINE_MATH_OPERATORS
 -#endif
 -#include "imgui_internal.h"
@@ -40,7 +44,7 @@ index ed05fd8..82e503f 100644
  #include "ImGuizmo.h"
  
  #if defined(_MSC_VER) || defined(__MINGW32__)
-@@ -1878,7 +1875,7 @@ namespace ImGuizmo
+@@ -1878,7 +1879,7 @@ namespace ImGuizmo
        // move
        if (gContext.mbUsing && (gContext.mActualID == -1 || gContext.mActualID == gContext.mEditingID) && IsTranslateType(gContext.mCurrentOperation))
        {
@@ -49,7 +53,7 @@ index ed05fd8..82e503f 100644
           const float len = fabsf(IntersectRayPlane(gContext.mRayOrigin, gContext.mRayVector, gContext.mTranslationPlan)); // near plan
           vec_t newPos = gContext.mRayOrigin + gContext.mRayVector * len;
  
-@@ -1948,7 +1945,7 @@ namespace ImGuizmo
+@@ -1948,7 +1949,7 @@ namespace ImGuizmo
           type = GetMoveType(op, &gizmoHitProportion);
           if (type != MT_NONE)
           {
@@ -58,7 +62,7 @@ index ed05fd8..82e503f 100644
           }
           if (CanActivate() && type != MT_NONE)
           {
-@@ -1993,7 +1990,7 @@ namespace ImGuizmo
+@@ -1993,7 +1994,7 @@ namespace ImGuizmo
           type = GetScaleType(op);
           if (type != MT_NONE)
           {
@@ -67,7 +71,7 @@ index ed05fd8..82e503f 100644
           }
           if (CanActivate() && type != MT_NONE)
           {
-@@ -2016,7 +2013,7 @@ namespace ImGuizmo
+@@ -2016,7 +2017,7 @@ namespace ImGuizmo
        // scale
        if (gContext.mbUsing && (gContext.mActualID == -1 || gContext.mActualID == gContext.mEditingID) && IsScaleType(gContext.mCurrentOperation))
        {
@@ -76,7 +80,7 @@ index ed05fd8..82e503f 100644
           const float len = IntersectRayPlane(gContext.mRayOrigin, gContext.mRayVector, gContext.mTranslationPlan);
           vec_t newPos = gContext.mRayOrigin + gContext.mRayVector * len;
           vec_t newOrigin = newPos - gContext.mRelativeOrigin * gContext.mScreenFactor;
-@@ -2107,7 +2104,7 @@ namespace ImGuizmo
+@@ -2107,7 +2108,7 @@ namespace ImGuizmo
  
           if (type != MT_NONE)
           {
@@ -85,7 +89,7 @@ index ed05fd8..82e503f 100644
           }
  
           if (type == MT_ROTATE_SCREEN)
-@@ -2141,7 +2138,7 @@ namespace ImGuizmo
+@@ -2141,7 +2142,7 @@ namespace ImGuizmo
        // rotation
        if (gContext.mbUsing && (gContext.mActualID == -1 || gContext.mActualID == gContext.mEditingID) && IsRotateType(gContext.mCurrentOperation))
        {
@@ -94,19 +98,246 @@ index ed05fd8..82e503f 100644
           gContext.mRotationAngle = ComputeAngleOnPlan();
           if (snap)
           {
+@@ -2509,14 +2510,26 @@ namespace ImGuizmo
+       }
+    }
+ 
+-   void ViewManipulate(float* view, float length, ImVec2 position, ImVec2 size, ImU32 backgroundColor)
++   bool ViewManipulate(glm::mat4 viewMat, glm::vec3& invViewPos, glm::quat& invViewRot, float length, ImVec2 position, ImVec2 size, ImU32 backgroundColor, bool forceUpOrientation, float dt, float interpolationTime)
+    {
++      float* view = glm::value_ptr(viewMat);
+       static bool isDraging = false;
+       static bool isClicking = false;
+       static bool isInside = false;
+-      static vec_t interpolationUp;
+-      static vec_t interpolationDir;
+-      static int interpolationFrames = 0;
++
++      bool isNewViewCreated = false;
++
++      static bool isDuringInterpolation = false;
++
++      static float interpolationProgress = 0.F;
++      static vec_t interpolationStartUp;
++      static vec_t interpolationStartDir;
++      static glm::quat interpolationStartQuat;
++
++      static vec_t interpolationEndUp;
++      static vec_t interpolationEndDir;
++      static glm::quat interpolationEndQuat;
++
+       const vec_t referenceUp = makeVect(0.f, 1.f, 0.f);
+ 
+       matrix_t svgView, svgProjection;
+@@ -2525,10 +2538,13 @@ namespace ImGuizmo
+ 
+       ImGuiIO& io = ImGui::GetIO();
+       gContext.mDrawList->AddRectFilled(position, position + size, backgroundColor);
+-      matrix_t viewInverse;
+-      viewInverse.Inverse(*(matrix_t*)view);
+ 
+-      const vec_t camTarget = viewInverse.v.position - viewInverse.v.dir * length;
++      glm::mat4 invViewMat = glm::transpose(viewMat);
++      invViewMat[3] = -viewMat[3];
++      invViewMat[0][3] = 0.0F;
++      invViewMat[1][3] = 0.0F;
++      invViewMat[2][3] = 0.0F;
++      matrix_t viewInverse(*(matrix_t*)glm::value_ptr(invViewMat));
+ 
+       // view/projection matrices
+       const float distance = 3.f;
+@@ -2629,16 +2645,16 @@ namespace ImGuizmo
+                   {
+                      gContext.mDrawList->AddConvexPolyFilled(faceCoordsScreen, 4, IM_COL32(0xF0, 0xA0, 0x60, 0x80));
+ 
+-                     if (!io.MouseDown[0] && !isDraging && isClicking)
++                     if (!io.MouseDown[0] && !isDraging && isClicking && !isDuringInterpolation)
+                      {
+                         // apply new view direction
+                         int cx = boxCoordInt / 9;
+                         int cy = (boxCoordInt - cx * 9) / 3;
+                         int cz = boxCoordInt % 3;
+-                        interpolationDir = makeVect(1.f - cx, 1.f - cy, 1.f - cz);
+-                        interpolationDir.Normalize();
++                        interpolationEndDir = makeVect(1.f - cx, 1.f - cy, 1.f - cz);
++                        interpolationEndDir.Normalize();
+ 
+-                        if (fabsf(Dot(interpolationDir, referenceUp)) > 1.0f - 0.01f)
++                        if (fabsf(Dot(interpolationEndDir, referenceUp)) > 1.0f - 0.01f)
+                         {
+                            vec_t right = viewInverse.v.right;
+                            if (fabsf(right.x) > fabsf(right.z))
+@@ -2650,14 +2666,23 @@ namespace ImGuizmo
+                               right.x = 0.f;
+                            }
+                            right.Normalize();
+-                           interpolationUp = Cross(interpolationDir, right);
+-                           interpolationUp.Normalize();
++                           interpolationEndUp = Cross(interpolationEndDir, right);
++                           interpolationEndUp.Normalize();
++                           
+                         }
+                         else
+                         {
+-                           interpolationUp = referenceUp;
++                           interpolationEndUp = referenceUp;
+                         }
+-                        interpolationFrames = 40;
++                        auto endDir = glm::normalize(glm::vec3(interpolationEndDir.x, interpolationEndDir.y, interpolationEndDir.z));
++                        auto endUp = glm::normalize(glm::vec3(interpolationEndUp.x, interpolationEndUp.y, interpolationEndUp.z));
++                        interpolationEndQuat =  glm::quatLookAtLH(endDir, endUp);
++
++                        isDuringInterpolation = true;
++                        interpolationStartDir = viewInverse.v.dir;
++                        interpolationStartUp = viewInverse.v.up;
++                        interpolationStartQuat = invViewRot;
++
+                         isClicking = false;
+                      }
+                      if (io.MouseDown[0] && !isDraging)
+@@ -2669,62 +2694,74 @@ namespace ImGuizmo
+             }
+          }
+       }
+-      if (interpolationFrames)
++
++      if (isDuringInterpolation)
+       {
+-         interpolationFrames--;
+-         vec_t newDir = viewInverse.v.dir;
+-         newDir.Lerp(interpolationDir, 0.2f);
+-         newDir.Normalize();
++        float t = interpolationProgress / interpolationTime;
++        auto startDir = glm::normalize(glm::vec3(interpolationStartDir.x, interpolationStartDir.y, interpolationStartDir.z));
++        auto startEye = startDir * length;
++        auto endDir = glm::normalize(glm::vec3(interpolationEndDir.x, interpolationEndDir.y, interpolationEndDir.z));
++        auto endEye = endDir * length;
++        invViewRot = glm::slerp(interpolationStartQuat, interpolationEndQuat, t);
++        invViewPos = startEye + (endEye - startEye) * t;
+ 
+-         vec_t newUp = viewInverse.v.up;
+-         newUp.Lerp(interpolationUp, 0.3f);
+-         newUp.Normalize();
+-         newUp = interpolationUp;
+-         vec_t newEye = camTarget + newDir * length;
+-         LookAt(&newEye.x, &camTarget.x, &newUp.x, view);
++        interpolationProgress += dt;
++        if (interpolationProgress > interpolationTime) {
++            interpolationProgress = 0.0f;
++            isDuringInterpolation = false;
++        }
++        isNewViewCreated = true;
+       }
+       isInside = ImRect(position, position + size).Contains(io.MousePos);
+ 
+       // drag view
+-      if (!isDraging && io.MouseDown[0] && isInside && (fabsf(io.MouseDelta.x) > 0.f || fabsf(io.MouseDelta.y) > 0.f))
+-      {
+-         isDraging = true;
+-         isClicking = false;
+-      }
+-      else if (isDraging && !io.MouseDown[0])
+-      {
+-         isDraging = false;
+-      }
+-
+-      if (isDraging)
+-      {
+-         matrix_t rx, ry, roll;
+-
+-         rx.RotationAxis(referenceUp, -io.MouseDelta.x * 0.01f);
+-         ry.RotationAxis(viewInverse.v.right, -io.MouseDelta.y * 0.01f);
+-
+-         roll = rx * ry;
++      if (!isDuringInterpolation) {
++        if (!isDraging && io.MouseDown[0] && isInside && (fabsf(io.MouseDelta.x) > 0.f || fabsf(io.MouseDelta.y) > 0.f))
++        {
++            isDraging = true;
++            isClicking = false;
++        }
++        else if (isDraging && !io.MouseDown[0])
++        {
++            if (forceUpOrientation) 
++            {
++                if (Dot(viewInverse.v.up, referenceUp) < 0.0f) 
++                {
++                    isDuringInterpolation = true;
++                    interpolationProgress = 0.0f;
++
++                    interpolationStartDir = viewInverse.v.dir;
++                    interpolationStartUp = viewInverse.v.up;
++                    interpolationStartQuat = invViewRot;
++
++                    interpolationEndDir = viewInverse.v.dir;
++                    interpolationEndUp = referenceUp; 
++
++                    auto endDir = glm::normalize(glm::vec3(interpolationEndDir.x, interpolationEndDir.y, interpolationEndDir.z));
++                    auto endUp = glm::normalize(glm::vec3(interpolationEndUp.x, interpolationEndUp.y, interpolationEndUp.z));
++                    interpolationEndQuat =  glm::quatLookAtLH(endDir, endUp);
++                }
++            }
++            isDraging = false;
++        }
+ 
+-         vec_t newDir = viewInverse.v.dir;
+-         newDir.TransformVector(roll);
+-         newDir.Normalize();
++        if (isDraging)
++        {
++            auto right = glm::vec3(viewMat[0][0], viewMat[1][0], viewMat[2][0]);
++            auto yaw     = glm::angleAxis(-io.MouseDelta.x * 0.01f, glm::vec3(0.F, 1.F, 0.F));
++            auto pitch   = glm::angleAxis(-io.MouseDelta.y * 0.01f, right);
+ 
+-         // clamp
+-         vec_t planDir = Cross(viewInverse.v.right, referenceUp);
+-         planDir.y = 0.f;
+-         planDir.Normalize();
+-         float dt = Dot(planDir, newDir);
+-         if (dt < 0.0f)
+-         {
+-            newDir += planDir * dt;
+-            newDir.Normalize();
+-         }
++            invViewRot = yaw * pitch * invViewRot;
++            auto new_orient = glm::mat4_cast(invViewRot);
++            invViewPos = glm::vec3(new_orient[2][0], new_orient[2][1], new_orient[2][2]) * length;
+ 
+-         vec_t newEye = camTarget + newDir * length;
+-         LookAt(&newEye.x, &camTarget.x, &referenceUp.x, view);
++            isNewViewCreated = true;
++        } 
+       }
+ 
+       // restore view/projection because it was used to compute ray
+       ComputeContext(svgView.m16, svgProjection.m16, gContext.mModelSource.m16, gContext.mMode);
++      
++      return isNewViewCreated;
+    }
+ };
 diff --git a/ImGuizmo.h b/src/imguizmo/ImGuizmo.h
-similarity index 97%
+similarity index 95%
 rename from ImGuizmo.h
 rename to src/imguizmo/ImGuizmo.h
-index 155202d..d494ec1 100644
+index 155202d..fbc528f 100644
 --- a/ImGuizmo.h
 +++ b/src/imguizmo/ImGuizmo.h
-@@ -105,7 +105,7 @@ void EditTransform(const Camera& camera, matrix_t& matrix)
+@@ -104,8 +104,9 @@ void EditTransform(const Camera& camera, matrix_t& matrix)
+ #endif
  #pragma once
  
++#include <glm/fwd.hpp>
  #ifdef USE_IMGUI_API
 -#include "imconfig.h"
 +#include <imgui/imconfig.h>
  #endif
  #ifndef IMGUI_API
  #define IMGUI_API
+@@ -198,7 +199,7 @@ namespace ImGuizmo
+    // It seems to be a defensive patent in the US. I don't think it will bring troubles using it as
+    // other software are using the same mechanics. But just in case, you are now warned!
+    //
+-   IMGUI_API void ViewManipulate(float* view, float length, ImVec2 position, ImVec2 size, ImU32 backgroundColor);
++   IMGUI_API bool ViewManipulate(glm::mat4 viewMat, glm::vec3& invViewPos, glm::quat& invViewRot, float length, ImVec2 position, ImVec2 size, ImU32 backgroundColor, bool forceUpOrientation, float dt, float interpolationTime = 0.5F);
+ 
+    IMGUI_API void SetID(int id);
+ 

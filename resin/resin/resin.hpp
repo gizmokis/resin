@@ -14,11 +14,15 @@
 #include <libresin/core/shader.hpp>
 #include <libresin/core/uniform_buffer.hpp>
 #include <memory>
+#include <resin/camera/first_person_camera_operator.hpp>
+#include <resin/camera/orbiting_camera_operator.hpp>
+#include <resin/core/key_codes.hpp>
 #include <resin/core/window.hpp>
 #include <resin/event/event.hpp>
+#include <resin/event/key_events.hpp>
 #include <resin/event/mouse_events.hpp>
 #include <resin/event/window_events.hpp>
-#include <resin/imgui/transform_gizmo.hpp>
+#include <resin/imgui/gizmo.hpp>
 #include <resin/resources/resource_managers.hpp>
 
 int main();
@@ -50,14 +54,35 @@ class Resin {
   void run();
   void init_gl();
   void update(duration_t delta);
-  void gui();
+  void gui(duration_t delta);
   void render();
 
+  // events
   bool on_window_close(WindowCloseEvent& e);
   bool on_window_resize(WindowResizeEvent& e);
-  bool on_test(WindowTestEvent& e);
-  bool on_click(MouseButtonPressedEvent& e);
-  bool on_left_click(glm::vec2 relative_pos);
+  bool on_mouse_btn_pressed(MouseButtonPressedEvent& e);
+  bool on_mouse_btn_released(MouseButtonReleasedEvent& e);
+  bool on_key_pressed(KeyPressedEvent& e);
+  bool on_key_released(KeyReleasedEvent& e);
+  bool on_scroll(ScrollEvent& e);
+
+  // vieport actions -- these methods mutate the viewport state
+  bool update_vieport_active(bool is_viewport_focused);
+  bool draw_transform_gizmo();
+  bool draw_camera_gizmo(float dt);
+  bool update_camera_distance();
+  bool switch_ortho();
+  bool activate_first_person_camera(glm::vec2 mouse_pos);
+  bool deactivate_first_person_camera();
+  bool start_moving_first_person_camera(key::Code key_code);
+  bool stop_moving_first_person_camera(key::Code key_code);
+  bool activate_orbiting_camera(glm::vec2 mouse_pos);
+  bool deactivate_orbiting_camera();
+  bool update_camera_operators(float dt);
+  bool zoom_camera(glm::vec2 offset);
+  bool select_node(glm::vec2 relative_pos);
+  bool start_interpolation();
+  bool interpolate(float dt);
 
  public:
   static constexpr duration_t kTickTime = 16666us;  // 60 TPS = 16.6(6) ms/t
@@ -67,6 +92,19 @@ class Resin {
   ShaderResourceManager& shader_resource_manager_ = ResourceManagers::shader_manager();
 
   SDFTree sdf_tree_;
+
+  enum class ViewportState : uint8_t {
+    InactiveIdle,
+    ActiveIdle,
+    FirstPersonCamera,
+    OrbitingCamera,
+    GizmoCamera,
+    GizmoTransform,
+    CameraInterpolation,
+    _Count  // NOLINT
+  };
+  ViewportState current_vieport_state_;
+
   std::optional<IdView<SDFTreeNodeId>> selected_node_;
 
   std::unique_ptr<Window> window_;
@@ -82,12 +120,17 @@ class Resin {
   std::unique_ptr<PointLight> point_light_;
   std::unique_ptr<DirectionalLight> directional_light_;
   std::unique_ptr<Material> cube_mat_, sphere_mat_;
-  bool is_viewport_focused_{false};
+
   bool use_local_gizmos_{false};
   bool is_grid_{true};
   float grid_spacing_ = 1.0;
 
-  ImGui::resin::GizmoOperation gizmo_operation_;
+  float camera_distance_;
+
+  ImGui::resin::gizmo::Operation gizmo_operation_;
+
+  OrbitingCameraOperator orbiting_camera_operator_;
+  FirstPersonCameraOperator first_person_camera_operator_;
 
   bool running_   = true;
   bool minimized_ = false;
