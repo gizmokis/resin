@@ -8,11 +8,14 @@
 #include <libresin/utils/logger.hpp>
 #include <libresin/utils/path_utf.hpp>
 #include <resin/core/graphics_context.hpp>
+#include <resin/core/key_codes.hpp>
 #include <resin/core/mouse_codes.hpp>
 #include <resin/core/window.hpp>
 #include <resin/event/event.hpp>
+#include <resin/event/key_events.hpp>
 #include <resin/event/mouse_events.hpp>
 #include <resin/event/window_events.hpp>
+#include <resin/imgui/gizmo.hpp>
 #include <string>
 
 namespace resin {
@@ -38,7 +41,7 @@ void Window::api_init() {
   io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
   imgui_set_style();
-  ImGuizmo::SetImGuiContext(ImGui::GetCurrentContext());
+  ImGui::resin::gizmo::SetImGuiContext(ImGui::GetCurrentContext());
 
   Logger::debug("Api init");
 }
@@ -116,12 +119,25 @@ void Window::set_glfw_callbacks() const {
     properties.eventDispatcher->get().dispatch(window_resize_event);
   });
 
-  glfwSetKeyCallback(window_ptr_, [](GLFWwindow* window, int key, int /*scancode*/, int action, int /*mods*/) {
+  glfwSetKeyCallback(window_ptr_, [](GLFWwindow* window, int key_code, int /*scancode*/, int action, int /*mods*/) {
     const WindowProperties& properties = *static_cast<WindowProperties*>(glfwGetWindowUserPointer(window));
 
-    if (key == GLFW_KEY_V && action == GLFW_PRESS) {
-      WindowTestEvent window_test_event;
-      properties.eventDispatcher->get().dispatch(window_test_event);
+    auto key_val = key::GLFWKeyToCode(key_code);
+    if (!key_val) {
+      return;
+    }
+
+    switch (action) {
+      case GLFW_PRESS: {
+        KeyPressedEvent key_pressed_event(*key_val);
+        properties.eventDispatcher->get().dispatch(key_pressed_event);
+        break;
+      }
+      case GLFW_RELEASE: {
+        KeyReleasedEvent key_released_event(*key_val);
+        properties.eventDispatcher->get().dispatch(key_released_event);
+        break;
+      }
     }
   });
 
@@ -148,6 +164,13 @@ void Window::set_glfw_callbacks() const {
       }
     }
   });
+
+  glfwSetScrollCallback(window_ptr_, [](GLFWwindow* window, double xoffset, double yoffset) {
+    const WindowProperties& properties = *static_cast<WindowProperties*>(glfwGetWindowUserPointer(window));
+
+    ScrollEvent scroll_event(glm::vec2(xoffset, yoffset));
+    properties.eventDispatcher->get().dispatch(scroll_event);
+  });
 }
 
 Window::~Window() {
@@ -162,6 +185,17 @@ Window::~Window() {
 void Window::on_update() {
   glfwPollEvents();
   context_->swap_buffers();
+}
+
+glm::vec2 Window::mouse_pos() const {
+  double xpos = 0.0;
+  double ypos = 0.0;
+  glfwGetCursorPos(window_ptr_, &xpos, &ypos);
+  return glm::vec2(xpos, ypos);
+}
+
+void Window::set_mouse_cursor_mode(mouse::CursorMode cursor_mode) {
+  glfwSetInputMode(window_ptr_, GLFW_CURSOR, mouse::kMouseCursorModeGLFWMapping[cursor_mode]);
 }
 
 void Window::set_title(std::string_view title) {

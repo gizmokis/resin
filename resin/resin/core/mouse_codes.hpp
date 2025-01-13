@@ -49,6 +49,28 @@ constexpr EnumMapper<Code, int> kMouseCodeGLFWMapping({
     {Code::MouseButton8, GLFW_MOUSE_BUTTON_8}        //
 });
 
+enum class CursorMode : uint8_t {
+  Normal,
+  Hidden,
+  Disabled,
+  Captured,
+  _Count  // NOLINT
+};
+
+constexpr StringEnumMapper<CursorMode> kMouseCursorModeNames({
+    {CursorMode::Normal, "Normal"},      //
+    {CursorMode::Hidden, "Hidden"},      //
+    {CursorMode::Captured, "Captured"},  //
+    {CursorMode::Disabled, "Disabled"},  //
+});
+
+constexpr EnumMapper<CursorMode, int> kMouseCursorModeGLFWMapping({
+    {CursorMode::Normal, GLFW_CURSOR_NORMAL},      //
+    {CursorMode::Hidden, GLFW_CURSOR_HIDDEN},      //
+    {CursorMode::Captured, GLFW_CURSOR_CAPTURED},  //
+    {CursorMode::Disabled, GLFW_CURSOR_DISABLED},  //
+});
+
 }  // namespace mouse
 
 }  // namespace resin
