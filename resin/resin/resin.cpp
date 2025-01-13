@@ -766,7 +766,6 @@ bool Resin::interpolate(float dt) {
   grid_shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
   grid_shader_->set_uniform("u_camSize", camera_->height());
 
-
   return true;
 }
 
