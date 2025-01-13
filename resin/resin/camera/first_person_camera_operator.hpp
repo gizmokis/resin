@@ -45,7 +45,9 @@ class FirstPersonCameraOperator {
   bool update(Camera& camera, glm::vec2 mouse_pos, float dt);
   inline void set_sensitivity(float sensitivity) { sensitivity_ = sensitivity; }
   inline void set_speed(float speed) { speed_ = speed; }
+  inline void set_use_local_axises(bool use_local_up) { use_local_axises_ = use_local_up; }
   inline bool is_active() const { return is_active_; }
+  inline bool is_using_local_axises() const { return use_local_axises_; }
 
  private:
   bool& move_dir(Dir dir);
@@ -63,6 +65,7 @@ class FirstPersonCameraOperator {
   std::array<bool, kDirCount> move_dir_{};
   glm::vec2 last_mouse_pos_;
   bool is_active_;
+  bool use_local_axises_;
   float sensitivity_;
   float speed_;
 };

@@ -311,12 +311,16 @@ void Resin::gui(duration_t delta) {
   }
   ImGui::End();
 
-  if (ImGui::Begin("Tools [TEMP]")) {
+  if (ImGui::Begin("[TEMP] Tools")) {
     float fov = camera_->fov();
     if (ImGui::DragFloat("Camera FOV", &fov, 0.5F, 10.0F, 140.0F, "%.2f")) {
       camera_->set_fov(fov);
       shader_->set_uniform("u_camSize", camera_->height());
     }
+    ImGui::Text("First Person Camera:");
+    bool use_local_up = first_person_camera_operator_.is_using_local_axises();
+    ImGui::Checkbox("Use local axises", &use_local_up);
+    first_person_camera_operator_.set_use_local_axises(use_local_up);
   }
   ImGui::End();
 

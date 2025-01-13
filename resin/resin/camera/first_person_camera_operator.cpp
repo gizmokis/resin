@@ -7,7 +7,7 @@
 namespace resin {
 
 FirstPersonCameraOperator::FirstPersonCameraOperator()
-    : last_mouse_pos_(0.0F), is_active_(false), sensitivity_(0.08F), speed_(5.0F) {}
+    : last_mouse_pos_(0.0F), is_active_(false), use_local_axises_(false), sensitivity_(0.08F), speed_(5.0F) {}
 
 void FirstPersonCameraOperator::start_move(key::Code key_code) {
   auto it = key_mappings_.find(key_code);
@@ -67,8 +67,12 @@ bool FirstPersonCameraOperator::update(Camera& camera, glm::vec2 mouse_pos, floa
     }
 
     auto pos = camera.transform.local_pos();
-    pos += camera.transform.local_front() * forward + camera.transform.local_right() * right +
-           camera.transform.local_up() * up;
+    pos += (use_local_axises_
+                ? camera.transform.local_front()
+                : glm::normalize(glm::vec3(camera.transform.local_front().x, 0.0F, camera.transform.local_front().z))) *
+               forward +
+           camera.transform.local_right() * right +
+           (use_local_axises_ ? camera.transform.local_up() : glm::vec3(0.0F, 1.0F, 0.0F)) * up;
     camera.transform.set_local_pos(pos);
     camera.recalculate_projection();
 
