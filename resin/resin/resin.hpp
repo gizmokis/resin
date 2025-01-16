@@ -55,7 +55,8 @@ class Resin {
   void init_gl();
   void update(duration_t delta);
   void gui(duration_t delta);
-  void render();
+  void render_viewport();
+  void render_material_view(ImageFramebuffer& fb);
 
   // events
   bool on_window_close(WindowCloseEvent& e);
@@ -111,8 +112,12 @@ class Resin {
   std::unique_ptr<Raycaster> raycaster_;
   std::unique_ptr<RenderingShaderProgram> shader_;
   std::unique_ptr<RenderingShaderProgram> grid_shader_;
+  std::unique_ptr<RenderingShaderProgram> material_view_shader_;
   std::unique_ptr<PrimitiveUniformBuffer> primitive_ubo_;
-  std::unique_ptr<Framebuffer> framebuffer_;
+  std::unique_ptr<ViewportFramebuffer> framebuffer_;
+
+  std::unique_ptr<ImageFramebuffer> mat_poc_fb_;
+  bool mat_poc_flag_;
 
   glm::vec2 viewport_pos_;
 

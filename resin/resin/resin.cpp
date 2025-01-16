@@ -48,6 +48,8 @@
 #include <resin/resin.hpp>
 #include <string_view>
 
+#include "libresin/core/framebuffer.hpp"
+
 namespace resin {
 
 Resin::Resin()
@@ -73,8 +75,10 @@ Resin::Resin()
   }
 
   // Setup framebuffer and raycaster
-  framebuffer_ = std::make_unique<Framebuffer>(window_->dimensions().x, window_->dimensions().y);
+  framebuffer_ = std::make_unique<ViewportFramebuffer>(window_->dimensions().x, window_->dimensions().y);
   raycaster_   = std::make_unique<Raycaster>();
+
+  mat_poc_fb_ = std::make_unique<ImageFramebuffer>(128, 128);
 
   // Main resource path
   const std::filesystem::path assets_path = std::filesystem::current_path() / "assets";
@@ -98,6 +102,9 @@ Resin::Resin()
 
   grid_shader_ = std::make_unique<RenderingShaderProgram>(
       "grid", *shader_resource_manager_.get_res(assets_path / "main.vert"), std::move(grid_frag_shader));
+  material_view_shader_ = std::make_unique<RenderingShaderProgram>(
+      "material_view", *shader_resource_manager_.get_res(assets_path / "main.vert"),
+      *shader_resource_manager_.get_res(assets_path / "material_view.frag"));
   shader_ = std::make_unique<RenderingShaderProgram>(
       "main", *shader_resource_manager_.get_res(assets_path / "main.vert"), std::move(main_frag_shader));
   shader_->bind_uniform_buffer("Data", *primitive_ubo_);
@@ -142,6 +149,9 @@ void Resin::setup_shader_uniforms() {
   grid_shader_->set_uniform("u_ortho", camera_->is_orthographic());
   grid_shader_->set_uniform("u_camSize", camera_->height());
   grid_shader_->set_uniform("u_spacing", grid_spacing_);
+
+  material_view_shader_->set_uniform("u_camSize", 1.0F);
+  material_view_shader_->set_uniform("u_resolution", glm::vec2(framebuffer_->width(), framebuffer_->height()));
 }
 
 void Resin::run() {
@@ -249,8 +259,9 @@ void Resin::update(duration_t delta) {
   FileDialog::instance().update();
 }
 
-void Resin::render() {
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+void Resin::render_viewport() {
+  framebuffer_->bind();
+  framebuffer_->clear();
 
   raycaster_->bind();
 
@@ -265,6 +276,31 @@ void Resin::render() {
     raycaster_->draw_call();
     grid_shader_->unbind();
   }
+
+  framebuffer_->unbind();
+
+  glViewport(0, 0, static_cast<GLint>(window_->dimensions().x), static_cast<GLint>(window_->dimensions().y));
+}
+
+void Resin::render_material_view(ImageFramebuffer& fb) {
+  if (!mat_poc_flag_) {
+    return;
+  }
+
+  fb.bind();
+  fb.clear();
+
+  raycaster_->bind();
+
+  material_view_shader_->bind();
+  material_view_shader_->set_uniform("u_time",
+                                     std ::chrono::duration_cast<std::chrono::duration<float>>(time_).count());
+  raycaster_->draw_call();
+  material_view_shader_->unbind();
+
+  fb.unbind();
+
+  glViewport(0, 0, static_cast<GLint>(window_->dimensions().x), static_cast<GLint>(window_->dimensions().y));
 }
 
 // TEMP(SDF-131): remove
@@ -341,11 +377,7 @@ void Resin::gui(duration_t delta) {
       grid_shader_->set_uniform("u_camSize", camera_->height());
     }
 
-    framebuffer_->bind();
-    render();
-    framebuffer_->unbind();
-    glViewport(0, 0, static_cast<GLint>(window_->dimensions().x), static_cast<GLint>(window_->dimensions().y));
-
+    render_viewport();
     ImGui::Image((ImTextureID)(intptr_t)framebuffer_->color_texture(), ImVec2(width, height), ImVec2(0, 1),  // NOLINT
                  ImVec2(1, 0));
 
@@ -367,6 +399,11 @@ void Resin::gui(duration_t delta) {
   ImGui::End();
 
   if (ImGui::Begin("[TEMP] Tools")) {
+    render_material_view(*mat_poc_fb_);
+    ImGui::Image((ImTextureID)(intptr_t)mat_poc_fb_->color_texture(), ImVec2(128, 128), ImVec2(0, 1),  // NOLINT
+                 ImVec2(1, 0));
+    ImGui::Checkbox("test", &mat_poc_flag_);
+
     float fov = camera_->fov();
     if (ImGui::DragFloat("Camera FOV", &fov, 0.5F, 10.0F, 140.0F, "%.2f")) {
       camera_->set_fov(fov);
