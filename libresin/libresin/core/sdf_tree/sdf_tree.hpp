@@ -20,7 +20,6 @@ class SDFTree {
 
   std::optional<IdView<SDFTreeNodeId>> get_view_from_raw_id(size_t raw_id);
 
-  // Visits all dirty primitives AND clears the dirty primitives collection.
   void visit_dirty_primitives(ISDFTreeNodeVisitor& visitor);
   inline void mark_primitives_clean() { sdf_tree_registry_.dirty_primitives.clear(); }
 
@@ -69,17 +68,14 @@ class SDFTree {
   // Note: Throws if the `mat_id` is the default material id.
   void delete_material(IdView<MaterialId> mat_id);
 
-  inline void mark_material_dirty(IdView<MaterialId> mat_id) { sdf_tree_registry_.dirty_materials.insert(mat_id); }
-
   // Note: The vector does not contain the default material.
   inline const std::vector<IdView<MaterialId>>& materials() const { return material_active_ids_; }
 
   inline MaterialSDFTreeComponent& default_material() { return sdf_tree_registry_.default_material; }
   inline const MaterialSDFTreeComponent& default_material() const { return sdf_tree_registry_.default_material; }
 
-  // Visits all dirty materials AND clears the dirty materials collection.
   void visit_dirty_materials(const std::function<void(MaterialSDFTreeComponent&)>& mat_visitor);
-  inline void clear_dirty_materials() { sdf_tree_registry_.dirty_materials.clear(); }
+  inline void mark_materials_clean() { sdf_tree_registry_.dirty_materials.clear(); }
 
   inline size_t max_nodes_count() const { return sdf_tree_registry_.nodes_registry.get_max_objs(); }
 
@@ -91,7 +87,7 @@ class SDFTree {
   size_t tree_id_;
 
   std::vector<IdView<MaterialId>> material_active_ids_;
-  std::vector<std::optional<MaterialSDFTreeComponent>> materials_;
+  std::vector<std::optional<std::unique_ptr<MaterialSDFTreeComponent>>> materials_;
 };
 
 }  // namespace resin

@@ -35,11 +35,10 @@ class MaterialSDFTreeComponent {
   explicit MaterialSDFTreeComponent(SDFTreeRegistry& tree);
   MaterialSDFTreeComponent(SDFTreeRegistry& tree, Material mat);
 
-  MaterialSDFTreeComponent(const MaterialSDFTreeComponent&)            = delete;
-  MaterialSDFTreeComponent& operator=(const MaterialSDFTreeComponent&) = delete;
-
-  MaterialSDFTreeComponent(MaterialSDFTreeComponent&&)                  = default;
-  MaterialSDFTreeComponent& operator=(MaterialSDFTreeComponent&& other) = default;
+  MaterialSDFTreeComponent(const MaterialSDFTreeComponent&)             = delete;
+  MaterialSDFTreeComponent& operator=(const MaterialSDFTreeComponent&)  = delete;
+  MaterialSDFTreeComponent(MaterialSDFTreeComponent&&)                  = delete;
+  MaterialSDFTreeComponent& operator=(MaterialSDFTreeComponent&& other) = delete;
 
   inline bool operator==(const MaterialSDFTreeComponent& other) const { return material_id() == other.material_id(); }
   inline bool operator!=(const MaterialSDFTreeComponent& other) const { return material_id() != other.material_id(); }
@@ -48,12 +47,17 @@ class MaterialSDFTreeComponent {
   inline void rename(std::string&& new_name) { name_ = std::move(new_name); }
   inline std::string_view name() const { return name_; }
 
+  void mark_dirty();
+  bool is_dirty() const;
+
  public:
   Material material;
 
  private:
   MaterialId mat_id_;
   std::string name_;
+
+  SDFTreeRegistry& tree_registry_;  // NOLINT
 };
 
 }  // namespace resin

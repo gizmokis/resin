@@ -263,6 +263,9 @@ void Resin::update(duration_t delta) {
   interpolate(seconds_dt);
 
   FileDialog::instance().update();
+
+  sdf_tree_.mark_materials_clean();
+  sdf_tree_.mark_primitives_clean();
 }
 
 void Resin::render_viewport() {
@@ -425,7 +428,10 @@ void Resin::gui(duration_t delta) {
 
   if (ImGui::Begin("Edit Material")) {
     if (selected_material_ && !selected_material_->expired()) {
-      ImGui::resin::MaterialEdit(sdf_tree_.material(*selected_material_));
+      auto& mat = sdf_tree_.material(*selected_material_);
+      if (ImGui::resin::MaterialEdit(mat)) {
+        mat.mark_dirty();
+      }
     }
     ImGui::End();
   }

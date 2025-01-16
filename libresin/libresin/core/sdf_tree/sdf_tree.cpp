@@ -6,6 +6,7 @@
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/utils/exceptions.hpp>
+#include <memory>
 #include <optional>
 #include <utility>
 
@@ -60,7 +61,6 @@ void SDFTree::visit_dirty_primitives(ISDFTreeNodeVisitor& visitor) {
       sdf_tree_registry_.all_nodes[prim.raw()]->get().accept_visitor(visitor);
     }
   }
-  mark_primitives_clean();
 }
 
 void SDFTree::visit_all_primitives(ISDFTreeNodeVisitor& visitor) {
@@ -93,7 +93,7 @@ const MaterialSDFTreeComponent& SDFTree::material(IdView<MaterialId> mat_id) con
   if (!materials_[mat_id.raw()].has_value()) {
     log_throw(MaterialSDFTreeComponentDoesNotExist(mat_id.raw()));
   }
-  return *materials_[mat_id.raw()];
+  return **materials_[mat_id.raw()];
 }
 
 MaterialSDFTreeComponent& SDFTree::material(IdView<MaterialId> mat_id) {
@@ -101,11 +101,11 @@ MaterialSDFTreeComponent& SDFTree::material(IdView<MaterialId> mat_id) {
 }
 
 MaterialSDFTreeComponent& SDFTree::add_material(Material mat) {
-  auto new_mat = MaterialSDFTreeComponent(sdf_tree_registry_, std::move(mat));
-  auto id      = new_mat.material_id();
+  auto new_mat = std::make_unique<MaterialSDFTreeComponent>(sdf_tree_registry_, std::move(mat));
+  auto id      = new_mat->material_id();
   material_active_ids_.push_back(id);
   materials_[id.raw()] = std::move(new_mat);
-  return *materials_[id.raw()];
+  return **materials_[id.raw()];
 }
 
 void SDFTree::delete_material(IdView<MaterialId> mat_id) {
@@ -123,7 +123,7 @@ void SDFTree::delete_material(IdView<MaterialId> mat_id) {
 void SDFTree::visit_dirty_materials(const std::function<void(MaterialSDFTreeComponent&)>& mat_visitor) {
   for (const auto& mat_id : sdf_tree_registry_.dirty_materials) {
     if (materials_[mat_id.raw()].has_value()) {
-      mat_visitor(*materials_[mat_id.raw()]);
+      mat_visitor(**materials_[mat_id.raw()]);
     }
   }
 }
