@@ -3,6 +3,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <libresin/core/material.hpp>
 #include <libresin/core/sdf_shader_consts.hpp>
+#include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/primitive_base_node.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
@@ -14,17 +15,6 @@
   if (x) node.mark_dirty()
 
 namespace ImGui {
-static void edit_mat_tab(::resin::Material& mat) {
-  // TODO(SDF-87)
-  if (ImGui::BeginTabItem("Material")) {
-    ImGui::ColorEdit3("Color", glm::value_ptr(mat.albedo));
-    ImGui::DragFloat("Ambient", &mat.ambientFactor, 0.01F, 0.0F, 1.0F, "%.2f");
-    ImGui::DragFloat("Diffuse", &mat.diffuseFactor, 0.01F, 0.0F, 1.0F, "%.2f");
-    ImGui::DragFloat("Specular", &mat.specularFactor, 0.01F, 0.0F, 1.0F, "%.2f");
-    ImGui::DragFloat("Exponent", &mat.specularExponent, 0.1F, 0.0F, 100.0F, "%.1f");
-    ImGui::EndTabItem();
-  }
-}
 
 static void edit_op(::resin::SDFTreeNode& node) {
   if (ImGui::BeginCombo("Operation", ::resin::sdf_shader_consts::kSDFShaderBinOpFunctionNames[node.bin_op()].data())) {
@@ -38,13 +28,14 @@ static void edit_op(::resin::SDFTreeNode& node) {
   }
 }
 
+static void edit_mat(::resin::SDFTreeNode& node) {}
+
 void resin::SDFNodeEditVisitor::visit_sphere(::resin::SphereNode& node) {
   if (ImGui::BeginTabItem("Properties")) {
     NODE_DIRTY(ImGui::DragFloat("Radius", &node.radius, 0.01F, 0.0F, 2.0F, "%.2f"));
     edit_op(node);
     ImGui::EndTabItem();
   }
-  // edit_mat_tab(node.mat);
 }
 
 void resin::SDFNodeEditVisitor::visit_cube(::resin::CubeNode& node) {
@@ -122,7 +113,13 @@ void resin::SDFNodeEditVisitor::visit_prism(::resin::TriangularPrismNode& node) 
     edit_op(node);
     ImGui::EndTabItem();
   }
-  // edit_mat_tab(node.mat);
+}
+
+void resin::SDFNodeEditVisitor::visit_group(::resin::GroupNode& node) {
+  if (ImGui::BeginTabItem("Properties")) {
+    edit_op(node);
+    ImGui::EndTabItem();
+  }
 }
 
 namespace resin {

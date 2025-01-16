@@ -102,6 +102,10 @@ bool MaterialEdit(::resin::ImageFramebuffer& framebuffer, const ::resin::Renderi
   edited      = ImGui::DragFloat("Specular", &mat.material.specularFactor, 0.01F, 0.0F, 1.0F, "%.2f") || edited;
   edited      = ImGui::DragFloat("Exponent", &mat.material.specularExponent, 0.01F, 0.0F, 100.0F, "%.2f") || edited;
 
+  if (edited) {
+    mat.mark_dirty();
+  }
+
   return edited;
 }
 

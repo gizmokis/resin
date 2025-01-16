@@ -429,10 +429,7 @@ void Resin::gui(duration_t delta) {
   if (ImGui::Begin("Edit Material")) {
     if (selected_material_ && !selected_material_->expired()) {
       auto& mat = sdf_tree_.material(*selected_material_);
-      if (ImGui::resin::MaterialEdit(*material_main_img_framebuffer_, *material_img_shader_, mat,
-                                     kMaterialMainImageSize)) {
-        mat.mark_dirty();
-      }
+      ImGui::resin::MaterialEdit(*material_main_img_framebuffer_, *material_img_shader_, mat, kMaterialMainImageSize);
     }
     ImGui::End();
   }
