@@ -92,7 +92,8 @@ class Resin {
   static constexpr duration_t kTickTime = 16666us;  // 60 TPS = 16.6(6) ms/t
 
  private:
-  static constexpr size_t kMaterialImageSize = 64;
+  static constexpr size_t kMaterialImageSize     = 64;
+  static constexpr size_t kMaterialMainImageSize = 160;
 
   EventDispatcher dispatcher_;
   ShaderResourceManager& shader_resource_manager_ = ResourceManagers::shader_manager();
@@ -118,11 +119,12 @@ class Resin {
   std::unique_ptr<Raycaster> raycaster_;
   std::unique_ptr<RenderingShaderProgram> shader_;
   std::unique_ptr<RenderingShaderProgram> grid_shader_;
-  std::unique_ptr<RenderingShaderProgram> material_image_shader_;
+  std::unique_ptr<RenderingShaderProgram> material_img_shader_;
   std::unique_ptr<PrimitiveUniformBuffer> primitive_ubo_;
   std::unique_ptr<ViewportFramebuffer> framebuffer_;
   std::unordered_map<IdView<MaterialId>, std::unique_ptr<ImageFramebuffer>, IdViewHash<MaterialId>, std::equal_to<>>
-      material_view_framebuffers_;
+      material_img_framebuffers_;
+  std::unique_ptr<ImageFramebuffer> material_main_img_framebuffer_;
 
   glm::vec2 viewport_pos_;
 

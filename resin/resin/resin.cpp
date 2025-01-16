@@ -31,6 +31,7 @@
 #include <libresin/core/uniform_buffer.hpp>
 #include <libresin/utils/enum_mapper.hpp>
 #include <libresin/utils/logger.hpp>
+#include <memory>
 #include <nfd/nfd.hpp>
 #include <optional>
 #include <resin/camera/first_person_camera_operator.hpp>
@@ -44,7 +45,6 @@
 #include <resin/event/window_events.hpp>
 #include <resin/imgui/gizmo.hpp>
 #include <resin/imgui/material_edit.hpp>
-#include <resin/imgui/materials_list.hpp>
 #include <resin/imgui/node_edit.hpp>
 #include <resin/imgui/sdf_tree.hpp>
 #include <resin/imgui/transform_edit.hpp>
@@ -78,7 +78,8 @@ Resin::Resin()
 
   // Setup framebuffer and raycaster
   framebuffer_ = std::make_unique<ViewportFramebuffer>(window_->dimensions().x, window_->dimensions().y);
-  raycaster_   = std::make_unique<Raycaster>();
+  material_main_img_framebuffer_ = std::make_unique<ImageFramebuffer>(kMaterialMainImageSize, kMaterialMainImageSize);
+  raycaster_                     = std::make_unique<Raycaster>();
 
   // Main resource path
   const std::filesystem::path assets_path = std::filesystem::current_path() / "assets";
@@ -102,7 +103,7 @@ Resin::Resin()
 
   grid_shader_ = std::make_unique<RenderingShaderProgram>(
       "grid", *shader_resource_manager_.get_res(assets_path / "main.vert"), std::move(grid_frag_shader));
-  material_image_shader_ = std::make_unique<RenderingShaderProgram>(
+  material_img_shader_ = std::make_unique<RenderingShaderProgram>(
       "material_view", *shader_resource_manager_.get_res(assets_path / "main.vert"),
       *shader_resource_manager_.get_res(assets_path / "material_view.frag"));
   shader_ = std::make_unique<RenderingShaderProgram>(
@@ -156,8 +157,8 @@ void Resin::setup_shader_uniforms() {
   grid_shader_->set_uniform("u_camSize", camera_->height());
   grid_shader_->set_uniform("u_spacing", grid_spacing_);
 
-  material_image_shader_->set_uniform("u_camSize", 1.0F);
-  material_image_shader_->set_uniform("u_resolution", glm::vec2(kMaterialImageSize, kMaterialImageSize));
+  material_img_shader_->set_uniform("u_camSize", 1.0F);
+  material_img_shader_->set_uniform("u_resolution", glm::vec2(kMaterialImageSize, kMaterialImageSize));
 }
 
 void Resin::run() {
@@ -297,9 +298,9 @@ void Resin::render_material_view(ImageFramebuffer& fb) {
 
   raycaster_->bind();
 
-  material_image_shader_->bind();
+  material_img_shader_->bind();
   raycaster_->draw_call();
-  material_image_shader_->unbind();
+  material_img_shader_->unbind();
 
   fb.unbind();
 
@@ -420,21 +421,22 @@ void Resin::gui(duration_t delta) {
   ImGui::End();
 
   if (ImGui::Begin("Materials")) {
-    selected_material_ = ImGui::resin::MaterialsList(material_view_framebuffers_, *material_image_shader_, sdf_tree_,
+    selected_material_ = ImGui::resin::MaterialsList(material_img_framebuffers_, *material_img_shader_, sdf_tree_,
                                                      selected_material_, kMaterialImageSize);
-    glViewport(0, 0, static_cast<GLint>(window_->dimensions().x), static_cast<GLint>(window_->dimensions().y));
     ImGui::End();
   }
 
   if (ImGui::Begin("Edit Material")) {
     if (selected_material_ && !selected_material_->expired()) {
       auto& mat = sdf_tree_.material(*selected_material_);
-      if (ImGui::resin::MaterialEdit(mat)) {
+      if (ImGui::resin::MaterialEdit(*material_main_img_framebuffer_, *material_img_shader_, mat,
+                                     kMaterialMainImageSize)) {
         mat.mark_dirty();
       }
     }
     ImGui::End();
   }
+  glViewport(0, 0, static_cast<GLint>(window_->dimensions().x), static_cast<GLint>(window_->dimensions().y));
 
   ImGui::SetNextWindowSizeConstraints(ImVec2(350.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
   ImGui::Begin("[TEMP] Lights");
