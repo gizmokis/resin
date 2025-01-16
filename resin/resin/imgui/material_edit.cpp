@@ -29,7 +29,7 @@ static void render_img(::resin::ImageFramebuffer& framebuffer,
 
 std::optional<::resin::IdView<::resin::MaterialId>> MaterialsList(
     MaterialFramebuffers& material_view_framebuffers, const ::resin::RenderingShaderProgram& material_image_shader,
-    const ::resin::SDFTree& sdf_tree, const std::optional<::resin::IdView<::resin::MaterialId>>& selected_old,
+    ::resin::SDFTree& sdf_tree, const std::optional<::resin::IdView<::resin::MaterialId>>& selected_old,
     size_t img_size) {
   static const float kPadding = 4.0F;
   auto selected               = selected_old;
@@ -79,25 +79,30 @@ std::optional<::resin::IdView<::resin::MaterialId>> MaterialsList(
     selected = std::nullopt;
   }
 
+  if (selected && selected_old != selected) {
+    sdf_tree.material(*selected).mark_dirty();
+  }
+
   return selected;
 }
 
 bool MaterialEdit(::resin::ImageFramebuffer& framebuffer, const ::resin::RenderingShaderProgram& material_image_shader,
                   ::resin::MaterialSDFTreeComponent& mat, size_t img_size) {
-  material_image_shader.set_uniform("u_material", mat.material);
-  render_img(framebuffer, material_image_shader);
+  if (mat.is_dirty()) {
+    material_image_shader.set_uniform("u_material", mat.material);
+    render_img(framebuffer, material_image_shader);
+  }
+  ImGui::Image((ImTextureID)(intptr_t)framebuffer.color_texture(), ImVec2(img_size, img_size), ImVec2(0, 1),  // NOLINT
+               ImVec2(1, 0));
 
-  ImGui::ImageButton("img", (ImTextureID)(intptr_t)framebuffer.color_texture(), ImVec2(img_size, img_size),
-                     ImVec2(0, 1),  // NOLINT
-                     ImVec2(1, 0));
+  bool edited = false;
+  edited      = ImGui::ColorEdit3("Color", glm::value_ptr(mat.material.albedo)) || edited;
+  edited      = ImGui::DragFloat("Ambient", &mat.material.ambientFactor, 0.01F, 0.0F, 1.0F, "%.2f") || edited;
+  edited      = ImGui::DragFloat("Diffuse", &mat.material.diffuseFactor, 0.01F, 0.0F, 1.0F, "%.2f") || edited;
+  edited      = ImGui::DragFloat("Specular", &mat.material.specularFactor, 0.01F, 0.0F, 1.0F, "%.2f") || edited;
+  edited      = ImGui::DragFloat("Exponent", &mat.material.specularExponent, 0.01F, 0.0F, 100.0F, "%.2f") || edited;
 
-  ImGui::ColorEdit3("Color", glm::value_ptr(mat.material.albedo));
-  ImGui::DragFloat("Ambient", &mat.material.ambientFactor, 0.01F, 0.0F, 1.0F, "%.2f");
-  ImGui::DragFloat("Diffuse", &mat.material.diffuseFactor, 0.01F, 0.0F, 1.0F, "%.2f");
-  ImGui::DragFloat("Specular", &mat.material.specularFactor, 0.01F, 0.0F, 1.0F, "%.2f");
-  ImGui::DragFloat("Exponent", &mat.material.specularExponent, 0.01F, 0.0F, 100.0F, "%.2f");
-
-  return true;
+  return edited;
 }
 
 }  // namespace resin

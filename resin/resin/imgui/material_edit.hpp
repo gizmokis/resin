@@ -18,7 +18,7 @@ using MaterialFramebuffers =
 
 std::optional<::resin::IdView<::resin::MaterialId>> MaterialsList(
     MaterialFramebuffers& material_view_framebuffers, const ::resin::RenderingShaderProgram& material_image_shader,
-    const ::resin::SDFTree& sdf_tree, const std::optional<::resin::IdView<::resin::MaterialId>>& selected_old,
+    ::resin::SDFTree& sdf_tree, const std::optional<::resin::IdView<::resin::MaterialId>>& selected_old,
     size_t img_size = 64);
 
 bool MaterialEdit(::resin::ImageFramebuffer& framebuffer, const ::resin::RenderingShaderProgram& material_image_shader,
