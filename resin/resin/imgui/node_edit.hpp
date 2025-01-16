@@ -1,5 +1,5 @@
-#ifndef NODE_EDIT_HPP
-#define NODE_EDIT_HPP
+#ifndef RESIN_NODE_EDIT_HPP
+#define RESIN_NODE_EDIT_HPP
 
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 
@@ -38,4 +38,4 @@ bool NodeEdit(::resin::SDFTreeNode& node);
 
 }  // namespace ImGui
 
-#endif  // NODE_EDIT_HPP
+#endif  // RESIN_NODE_EDIT_HPP
