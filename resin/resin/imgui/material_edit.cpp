@@ -76,6 +76,12 @@ std::optional<::resin::IdView<::resin::MaterialId>> MaterialsList(
       selected           = std::make_optional(m);
       is_any_mat_clicked = true;
     }
+    if (ImGui::BeginDragDropSource()) {
+      auto curr_id = mat.material_id();
+      ImGui::SetDragDropPayload("MATERIAL_PAYLOAD", &curr_id, sizeof(::resin::IdView<::resin::MaterialId>));
+      ImGui::Text("%s", mat.name().data());
+      ImGui::EndDragDropSource();
+    }
     ImGui::TextWrapped("%s", mat.name().data());
     if (!is_selected) {
       ImGui::PopStyleColor();

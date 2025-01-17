@@ -133,10 +133,26 @@ bool NodeEdit(::resin::SDFTreeNode& node, const ::resin::SDFTree& tree, ::resin:
         ImGui::ImageButton("MaterialImage", (ImTextureID)(intptr_t)framebuffer.color_texture(),
                            ImVec2(framebuffer.width(), framebuffer.height()), ImVec2(0, 1),  // NOLINT
                            ImVec2(1, 0));
-        ImGui::SameLine();
-        ImGui::Button("Remove");
+
       } else {
         ImGui::Button("##MaterialImage", ImVec2(framebuffer.width(), framebuffer.height()));
+      }
+      if (ImGui::BeginDragDropTarget()) {
+        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("MATERIAL_PAYLOAD")) {
+          IM_ASSERT(payload->DataSize == sizeof(::resin::IdView<::resin::MaterialId>));
+          auto source_id = *static_cast<const ::resin::IdView<::resin::MaterialId>*>(payload->Data);
+
+          if (!source_id.expired()) {
+            node.set_material(source_id);
+          }
+        }
+      }
+
+      if (node.material_id()) {
+        ImGui::SameLine();
+        if (ImGui::Button("Remove")) {
+          node.remove_material();
+        }
       }
 
       ImGui::EndTabItem();
