@@ -92,6 +92,7 @@ class Resin {
   static constexpr duration_t kTickTime = 16666us;  // 60 TPS = 16.6(6) ms/t
 
  private:
+  static constexpr size_t kMaterialNodeImageSize = 32;
   static constexpr size_t kMaterialImageSize     = 64;
   static constexpr size_t kMaterialMainImageSize = 160;
 
@@ -125,6 +126,7 @@ class Resin {
   std::unordered_map<IdView<MaterialId>, std::unique_ptr<ImageFramebuffer>, IdViewHash<MaterialId>, std::equal_to<>>
       material_img_framebuffers_;
   std::unique_ptr<ImageFramebuffer> material_main_img_framebuffer_;
+  std::unique_ptr<ImageFramebuffer> material_node_img_framebuffer_;
 
   glm::vec2 viewport_pos_;
 

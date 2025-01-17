@@ -1,7 +1,9 @@
 #ifndef RESIN_NODE_EDIT_HPP
 #define RESIN_NODE_EDIT_HPP
 
+#include <libresin/core/framebuffer.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
+#include <libresin/core/shader.hpp>
 
 namespace ImGui {  // NOLINT
 
@@ -34,7 +36,8 @@ class SDFNodeEditVisitor : public ::resin::ISDFTreeNodeVisitor {
       });
 };
 
-bool NodeEdit(::resin::SDFTreeNode& node);
+bool NodeEdit(::resin::SDFTreeNode& node, const ::resin::SDFTree& tree, ::resin::ImageFramebuffer& framebuffer,
+              const ::resin::RenderingShaderProgram& material_image_shader);
 
 }  // namespace resin
 

@@ -79,13 +79,22 @@ Resin::Resin()
   // Setup framebuffer and raycaster
   framebuffer_ = std::make_unique<ViewportFramebuffer>(window_->dimensions().x, window_->dimensions().y);
   material_main_img_framebuffer_ = std::make_unique<ImageFramebuffer>(kMaterialMainImageSize, kMaterialMainImageSize);
+  material_node_img_framebuffer_ = std::make_unique<ImageFramebuffer>(kMaterialNodeImageSize, kMaterialNodeImageSize);
   raycaster_                     = std::make_unique<Raycaster>();
 
   // Main resource path
   const std::filesystem::path assets_path = std::filesystem::current_path() / "assets";
 
   // Setup example tree
-  sdf_tree_.root().push_back_child<SphereNode>(SDFBinaryOperation::SmoothUnion);
+
+  sdf_tree_.add_material(Material(glm::vec3(1.0F, 0.0F, 0.0F)));
+  sdf_tree_.add_material(Material(glm::vec3(1.0F, 1.0F, 0.0F)));
+  sdf_tree_.add_material(Material(glm::vec3(1.0F, 1.0F, 1.0F)));
+  sdf_tree_.add_material(Material(glm::vec3(0.0F, 1.0F, 0.0F)));
+  sdf_tree_.add_material(Material(glm::vec3(0.0F, 0.0F, 1.0F)));
+  auto& m = sdf_tree_.add_material(Material(glm::vec3(1.0F, 0.0F, 1.0F)));
+
+  sdf_tree_.root().push_back_child<SphereNode>(SDFBinaryOperation::SmoothUnion).set_material(m.material_id());
   auto& group = sdf_tree_.root().push_back_child<GroupNode>(SDFBinaryOperation::SmoothUnion);
   group.push_back_child<CubeNode>(SDFBinaryOperation::SmoothUnion).transform().set_local_pos(glm::vec3(1, 1, 0));
   group.push_back_child<CubeNode>(SDFBinaryOperation::SmoothUnion).transform().set_local_pos(glm::vec3(-1, -1, 0));
@@ -132,12 +141,6 @@ Resin::Resin()
   cylinder_mat_  = std::make_unique<Material>(glm::vec3(0.96F, 0.96F, 0.96F));
   prism_mat_     = std::make_unique<Material>(glm::vec3(0.1F, 0.6F, 0.9F));
 
-  sdf_tree_.add_material(Material(glm::vec3(1.0F, 0.0F, 0.0F)));
-  sdf_tree_.add_material(Material(glm::vec3(1.0F, 1.0F, 0.0F)));
-  sdf_tree_.add_material(Material(glm::vec3(1.0F, 1.0F, 1.0F)));
-  sdf_tree_.add_material(Material(glm::vec3(0.0F, 1.0F, 0.0F)));
-  sdf_tree_.add_material(Material(glm::vec3(0.0F, 0.0F, 1.0F)));
-  sdf_tree_.add_material(Material(glm::vec3(1.0F, 0.0F, 1.0F)));
   setup_shader_uniforms();
 }
 
@@ -480,7 +483,8 @@ void Resin::gui(duration_t delta) {
   ImGui::SetNextWindowSizeConstraints(ImVec2(350.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
   ImGui::Begin("Selection");
   if (selected_node_.has_value() && !selected_node_->expired()) {
-    ImGui::resin::NodeEdit(sdf_tree_.node(*selected_node_));
+    ImGui::resin::NodeEdit(sdf_tree_.node(*selected_node_), sdf_tree_, *material_node_img_framebuffer_,
+                           *material_img_shader_);
   }
   ImGui::End();
 
