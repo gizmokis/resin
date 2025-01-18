@@ -66,12 +66,17 @@ bool FirstPersonCameraOperator::update(Camera& camera, glm::vec2 mouse_pos, floa
       up += speed_ * dt;
     }
 
+    static constexpr float kFloatEqualityThreshold = 1e-5F;
+    auto front                                     = camera.transform.local_front();
+    if (!use_local_axises_) {
+      if (glm::abs(front.x) < kFloatEqualityThreshold && glm::abs(front.z) < kFloatEqualityThreshold) {
+        front = camera.transform.local_up();
+      } else {
+        front = glm::normalize(glm::vec3(camera.transform.local_front().x, 0.0F, camera.transform.local_front().z));
+      }
+    }
     auto pos = camera.transform.local_pos();
-    pos += (use_local_axises_
-                ? camera.transform.local_front()
-                : glm::normalize(glm::vec3(camera.transform.local_front().x, 0.0F, camera.transform.local_front().z))) *
-               forward +
-           camera.transform.local_right() * right +
+    pos += front * forward + camera.transform.local_right() * right +
            (use_local_axises_ ? camera.transform.local_up() : glm::vec3(0.0F, 1.0F, 0.0F)) * up;
     camera.transform.set_local_pos(pos);
     camera.recalculate_projection();

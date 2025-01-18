@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <glm/ext.hpp>
+#include <glm/ext/matrix_relational.hpp>
 #include <glm/ext/quaternion_trigonometric.hpp>
 #include <glm/ext/scalar_constants.hpp>
 #include <glm/fwd.hpp>
@@ -641,11 +642,14 @@ bool Resin::activate_orbiting_camera(glm::vec2 mouse_pos) {
   if (current_viewport_state_ == ViewportState::ActiveIdle) {
     current_viewport_state_ = ViewportState::OrbitingCamera;
 
-    auto dir = glm::normalize(camera_->transform.pos());
-    if (camera_->transform.local_up().y > 0.0F) {
-      camera_->transform.set_local_rot(glm::quatLookAt(-dir, glm::vec3(0.0F, 1.0F, 0.0F)));
-    } else {
-      camera_->transform.set_local_rot(glm::quatLookAt(-dir, glm::vec3(0.0F, -1.0F, 0.0F)));
+    static constexpr float kFloatEqualityThreshold = 1e-3F;
+    auto front                                     = -glm::normalize(camera_->transform.local_pos());
+    if (glm::any(glm::epsilonNotEqual(front, camera_->transform.local_front(), kFloatEqualityThreshold))) {
+      if (glm::abs(front.x) > kFloatEqualityThreshold || glm::abs(front.z) > kFloatEqualityThreshold) {
+        camera_->transform.set_local_rot(glm::quatLookAt(front, glm::vec3(0.0F, 1.0F, 0.0F)));
+      } else {
+        camera_->transform.set_local_rot(glm::quatLookAt(front, camera_->transform.local_up()));
+      }
     }
 
     window_->set_mouse_cursor_mode(mouse::CursorMode::Disabled);
@@ -704,13 +708,16 @@ bool Resin::zoom_camera(glm::vec2 offset) {
       camera_distance_ = 0.0F;
     }
 
-    auto dir = glm::normalize(camera_->transform.local_pos());
-    camera_->transform.set_local_pos(dir * camera_distance_);
-    if (camera_->transform.local_up().y > 0.0F) {
-      camera_->transform.set_local_rot(glm::quatLookAt(-dir, glm::vec3(0.0F, 1.0F, 0.0F)));
-    } else {
-      camera_->transform.set_local_rot(glm::quatLookAt(-dir, glm::vec3(0.0F, -1.0F, 0.0F)));
+    static constexpr float kFloatEqualityThreshold = 1e-3F;
+    auto front                                     = -glm::normalize(camera_->transform.local_pos());
+    if (glm::any(glm::epsilonNotEqual(front, camera_->transform.local_front(), kFloatEqualityThreshold))) {
+      if (glm::abs(front.x) > kFloatEqualityThreshold || glm::abs(front.z) > kFloatEqualityThreshold) {
+        camera_->transform.set_local_rot(glm::quatLookAt(front, glm::vec3(0.0F, 1.0F, 0.0F)));
+      } else {
+        camera_->transform.set_local_rot(glm::quatLookAt(front, camera_->transform.local_up()));
+      }
     }
+    camera_->transform.set_local_pos(-front * camera_distance_);
 
     shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
     grid_shader_->set_uniform("u_iV", camera_->inverse_view_matrix());
