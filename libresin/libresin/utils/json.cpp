@@ -94,7 +94,7 @@ void JSONSerializerSDFTreeNodeVisitor::visit_capsule(CapsuleNode& node) {
 }
 
 void JSONSerializerSDFTreeNodeVisitor::visit_link(LinkNode& node) {
-  json_["link"]["length"]       = node.length;
+  json_["link"]["length"]      = node.length;
   json_["link"]["majorRadius"] = node.major_radius;
   json_["link"]["minorRadius"] = node.minor_radius;
 }

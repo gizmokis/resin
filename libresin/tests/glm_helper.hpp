@@ -55,13 +55,18 @@ template <typename T, glm::qualifier Q>
 
 // Macro for glm vector comparison.
 #define EXPECT_GLM_VEC_NEAR(expected, actual, epsilon) EXPECT_PRED_FORMAT3(AreGLMVectorsNear, expected, actual, epsilon)
+#define ASSERT_GLM_VEC_NEAR(expected, actual, epsilon) ASSERT_PRED_FORMAT3(AreGLMVectorsNear, expected, actual, epsilon)
 
 // Macro for glm matrix comparison.
 #define EXPECT_GLM_MAT_NEAR(expected, actual, epsilon) \
   EXPECT_PRED_FORMAT3(AreGLMMatricesNear, expected, actual, epsilon)
+#define ASSERT_GLM_MAT_NEAR(expected, actual, epsilon) \
+  ASSERT_PRED_FORMAT3(AreGLMMatricesNear, expected, actual, epsilon)
 
 // Macro for glm quaternion comparison.
 #define EXPECT_GLM_ROT_NEAR(expected, actual, epsilon) \
   EXPECT_PRED_FORMAT3(AreGLMQuaternionRotationsNear, expected, actual, epsilon)
+#define ASSERT_GLM_ROT_NEAR(expected, actual, epsilon) \
+  ASSERT_PRED_FORMAT3(AreGLMQuaternionRotationsNear, expected, actual, epsilon)
 
 #endif
