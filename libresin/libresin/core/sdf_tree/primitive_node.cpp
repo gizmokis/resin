@@ -8,7 +8,7 @@ SphereNode::SphereNode(SDFTreeRegistry& tree, float _radius)
     : PrimitiveNode<SDFTreePrimitiveType::Sphere>(tree), radius(_radius) {}
 
 CubeNode::CubeNode(SDFTreeRegistry& tree, glm::vec3 _size)
-    : PrimitiveNode<SDFTreePrimitiveType::Cube>(tree), size(std::move(_size)) {}
+    : PrimitiveNode<SDFTreePrimitiveType::Cube>(tree), size(_size) {}
 
 TorusNode::TorusNode(SDFTreeRegistry& tree, float _major_radius, float _minor_radius)
     : PrimitiveNode<SDFTreePrimitiveType::Torus>(tree), major_radius(_major_radius), minor_radius(_minor_radius) {}
@@ -23,7 +23,7 @@ LinkNode::LinkNode(SDFTreeRegistry& tree, float _length, float _major_radius, fl
       minor_radius(_minor_radius) {}
 
 EllipsoidNode::EllipsoidNode(SDFTreeRegistry& tree, glm::vec3 _radii)
-    : PrimitiveNode<SDFTreePrimitiveType::Ellipsoid>(tree), radii(std::move(_radii)) {}
+    : PrimitiveNode<SDFTreePrimitiveType::Ellipsoid>(tree), radii(_radii) {}
 
 PyramidNode::PyramidNode(SDFTreeRegistry& tree, float _height)
     : PrimitiveNode<SDFTreePrimitiveType::Pyramid>(tree), height(_height) {}
