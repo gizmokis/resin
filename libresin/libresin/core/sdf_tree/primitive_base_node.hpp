@@ -11,8 +11,15 @@ class GroupNode;
 
 using SDFTreePrimitiveType = sdf_shader_consts::SDFShaderPrim;
 constexpr StringEnumMapper<SDFTreePrimitiveType> kSDFTreePrimitiveNames({
-    {SDFTreePrimitiveType::Sphere, "Sphere"},  //
-    {SDFTreePrimitiveType::Cube, "Cube"}       //
+    {SDFTreePrimitiveType::Sphere, "Sphere"},                    //
+    {SDFTreePrimitiveType::Cube, "Cube"},                        //
+    {SDFTreePrimitiveType::Torus, "Torus"},                      //
+    {SDFTreePrimitiveType::Capsule, "Capsule"},                  //
+    {SDFTreePrimitiveType::Link, "Link"},                        //
+    {SDFTreePrimitiveType::Ellipsoid, "Ellipsoid"},              //
+    {SDFTreePrimitiveType::Pyramid, "Pyramid"},                  //
+    {SDFTreePrimitiveType::Cylinder, "Cylinder"},                //
+    {SDFTreePrimitiveType::TriangularPrism, "Triangular Prism"}  //
 });
 
 class BasePrimitiveNode;

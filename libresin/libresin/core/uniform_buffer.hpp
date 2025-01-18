@@ -61,6 +61,13 @@ class PrimitiveUniformBuffer : public UniformBuffer {
   class PrimitiveNodeVisitor : public ISDFTreeNodeVisitor {
     void visit_sphere(SphereNode& node) override;
     void visit_cube(CubeNode& node) override;
+    void visit_torus(TorusNode&) override;
+    void visit_capsule(CapsuleNode&) override;
+    void visit_link(LinkNode&) override;
+    void visit_ellipsoid(EllipsoidNode&) override;
+    void visit_pyramid(PyramidNode&) override;
+    void visit_cylinder(CylinderNode&) override;
+    void visit_prism(TriangularPrismNode&) override;
   };
 
   const size_t max_count_;
