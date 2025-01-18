@@ -20,15 +20,15 @@ using json = nlohmann::json;
 constexpr int kNewestResinPrefabJSONSchemaVersion = 1;
 
 constexpr StringEnumMapper<SDFTreePrimitiveType> kSDFTreePrimitiveNodesJSONNames({
-    {SDFTreePrimitiveType::Sphere, "sphere"},                    //
-    {SDFTreePrimitiveType::Cube, "cube"},                        //
-    {SDFTreePrimitiveType::Torus, "torus"},                      //
-    {SDFTreePrimitiveType::Capsule, "capsule"},                  //
-    {SDFTreePrimitiveType::Link, "link"},                        //
-    {SDFTreePrimitiveType::Ellipsoid, "ellipsoid"},              //
-    {SDFTreePrimitiveType::Pyramid, "pyramid"},                  //
-    {SDFTreePrimitiveType::Cylinder, "cylinder"},                //
-    {SDFTreePrimitiveType::TriangularPrism, "triangular_prism"}  //
+    {SDFTreePrimitiveType::Sphere, "sphere"},                   //
+    {SDFTreePrimitiveType::Cube, "cube"},                       //
+    {SDFTreePrimitiveType::Torus, "torus"},                     //
+    {SDFTreePrimitiveType::Capsule, "capsule"},                 //
+    {SDFTreePrimitiveType::Link, "link"},                       //
+    {SDFTreePrimitiveType::Ellipsoid, "ellipsoid"},             //
+    {SDFTreePrimitiveType::Pyramid, "pyramid"},                 //
+    {SDFTreePrimitiveType::Cylinder, "cylinder"},               //
+    {SDFTreePrimitiveType::TriangularPrism, "triangularPrism"}  //
 });
 
 constexpr StringEnumMapper<SDFBinaryOperation> kSDFBinaryOperationsJSONNames({
