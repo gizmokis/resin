@@ -23,8 +23,6 @@ class SDFNodeEditVisitor : public ::resin::ISDFTreeNodeVisitor {
   void visit_cylinder(::resin::CylinderNode&) override;
   void visit_prism(::resin::TriangularPrismNode&) override;
 
-  void visit_group(::resin::GroupNode& node) override;
-
   static constexpr ::resin::StringEnumMapper<::resin::SDFBinaryOperation> kOperationSymbol =
       ::resin::StringEnumMapper<::resin::SDFBinaryOperation>({
           {::resin::SDFBinaryOperation::Union, "+"},         //
