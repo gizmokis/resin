@@ -22,6 +22,7 @@
 #include <libresin/core/camera.hpp>
 #include <libresin/core/framebuffer.hpp>
 #include <libresin/core/material.hpp>
+#include <libresin/core/raycaster.hpp>
 #include <libresin/core/resources/shader_resource.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
@@ -44,7 +45,7 @@
 #include <resin/event/mouse_events.hpp>
 #include <resin/event/window_events.hpp>
 #include <resin/imgui/gizmo.hpp>
-#include <resin/imgui/material_edit.hpp>
+#include <resin/imgui/material.hpp>
 #include <resin/imgui/node_edit.hpp>
 #include <resin/imgui/sdf_tree.hpp>
 #include <resin/imgui/transform_edit.hpp>
@@ -77,10 +78,10 @@ Resin::Resin()
   }
 
   // Setup framebuffer and raycaster
-  framebuffer_ = std::make_unique<ViewportFramebuffer>(window_->dimensions().x, window_->dimensions().y);
-  material_main_img_framebuffer_ = std::make_unique<ImageFramebuffer>(kMaterialMainImageSize, kMaterialMainImageSize);
-  material_node_img_framebuffer_ = std::make_unique<ImageFramebuffer>(kMaterialNodeImageSize, kMaterialNodeImageSize);
-  raycaster_                     = std::make_unique<Raycaster>();
+  framebuffer_     = std::make_unique<ViewportFramebuffer>(window_->dimensions().x, window_->dimensions().y);
+  raycaster_       = std::make_unique<Raycaster>();
+  material_images_ = std::make_unique<ImGui::resin::LazyMaterialImageFramebuffers>(
+      kMaterialNodeImageSize, kMaterialMainImageSize, kMaterialImageSize);
 
   // Main resource path
   const std::filesystem::path assets_path = std::filesystem::current_path() / "assets";
@@ -295,7 +296,7 @@ void Resin::render_viewport() {
   glViewport(0, 0, static_cast<GLint>(window_->dimensions().x), static_cast<GLint>(window_->dimensions().y));
 }
 
-void Resin::render_material_view(ImageFramebuffer& fb) {
+void Resin::render_material_image(ImageFramebuffer& fb) {
   fb.bind();
   fb.clear();
 
@@ -306,6 +307,33 @@ void Resin::render_material_view(ImageFramebuffer& fb) {
   material_img_shader_->unbind();
 
   fb.unbind();
+}
+
+void Resin::render_material_images() {
+  for (auto& mat : material_images_->material_preview_fbs_map) {
+    if (mat.second->is_dirty && !mat.first.expired()) {
+      material_img_shader_->set_uniform("u_material", sdf_tree_.material(mat.first).material);
+      render_material_image(mat.second->fb);
+    }
+    mat.second->mark_clean();
+  }
+
+  if (material_images_->main_material_fb.is_dirty) {
+    if (material_images_->main_material_id && !material_images_->main_material_id->expired()) {
+      material_img_shader_->set_uniform("u_material", sdf_tree_.material(*material_images_->main_material_id).material);
+      render_material_image(material_images_->main_material_fb.fb);
+    }
+    material_images_->main_material_fb.mark_clean();
+  }
+
+  if (material_images_->node_material_preview_fb.is_dirty) {
+    if (material_images_->node_material_preview_id && !material_images_->node_material_preview_id->expired()) {
+      material_img_shader_->set_uniform("u_material",
+                                        sdf_tree_.material(*material_images_->node_material_preview_id).material);
+      render_material_image(material_images_->node_material_preview_fb.fb);
+    }
+    material_images_->node_material_preview_fb.mark_clean();
+  }
 
   glViewport(0, 0, static_cast<GLint>(window_->dimensions().x), static_cast<GLint>(window_->dimensions().y));
 }
@@ -399,9 +427,11 @@ void Resin::gui(duration_t delta) {
 
   ImGui::End();
 
+  ImGui::ShowDemoWindow();
+
   ImGui::SetNextWindowSizeConstraints(ImVec2(280.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
   if (ImGui::Begin("SDF Tree")) {
-    selected_node_ = ImGui::resin::SDFTreeView(sdf_tree_, selected_node_);
+    ImGui::resin::SDFTreeView(sdf_tree_, selected_node_);
   }
   ImGui::End();
 
@@ -424,19 +454,16 @@ void Resin::gui(duration_t delta) {
   ImGui::End();
 
   if (ImGui::Begin("Materials")) {
-    selected_material_ = ImGui::resin::MaterialsList(material_img_framebuffers_, *material_img_shader_, sdf_tree_,
-                                                     selected_material_, kMaterialImageSize);
+    ImGui::resin::MaterialsListEdit(selected_material_, *material_images_, sdf_tree_);
     ImGui::End();
   }
 
   if (ImGui::Begin("Edit Material")) {
     if (selected_material_ && !selected_material_->expired()) {
-      auto& mat = sdf_tree_.material(*selected_material_);
-      ImGui::resin::MaterialEdit(*material_main_img_framebuffer_, *material_img_shader_, mat, kMaterialMainImageSize);
+      ImGui::resin::MaterialEdit(selected_material_, *material_images_, sdf_tree_);
     }
     ImGui::End();
   }
-  glViewport(0, 0, static_cast<GLint>(window_->dimensions().x), static_cast<GLint>(window_->dimensions().y));
 
   ImGui::SetNextWindowSizeConstraints(ImVec2(350.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
   ImGui::Begin("[TEMP] Lights");
@@ -483,8 +510,7 @@ void Resin::gui(duration_t delta) {
   ImGui::SetNextWindowSizeConstraints(ImVec2(350.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
   ImGui::Begin("Selection");
   if (selected_node_.has_value() && !selected_node_->expired()) {
-    ImGui::resin::NodeEdit(sdf_tree_.node(*selected_node_), sdf_tree_, *material_node_img_framebuffer_,
-                           *material_img_shader_);
+    ImGui::resin::NodeEdit(sdf_tree_.node(*selected_node_), *material_images_, sdf_tree_);
   }
   ImGui::End();
 
@@ -496,6 +522,8 @@ void Resin::gui(duration_t delta) {
   }
   ImGui::End();
 #endif
+
+  render_material_images();
 }
 
 bool Resin::on_window_close(WindowCloseEvent&) {

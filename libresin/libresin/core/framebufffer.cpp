@@ -20,6 +20,13 @@ Framebuffer::Framebuffer(size_t width, size_t height) : width_(width), height_(h
 
 Framebuffer::~Framebuffer() { glDeleteFramebuffers(1, &framebuffer_id_); }
 
+Framebuffer::Framebuffer(Framebuffer&& other) noexcept
+    : width_(other.width_), height_(other.height_), framebuffer_id_(other.framebuffer_id_) {
+  other.framebuffer_id_ = 0;
+  other.width_          = 0;
+  other.height_         = 0;
+}
+
 void Framebuffer::bind() const {
   glBindFramebuffer(GL_FRAMEBUFFER, framebuffer_id_);
   glViewport(0, 0, static_cast<GLsizei>(width_), static_cast<GLsizei>(height_));
@@ -68,11 +75,30 @@ ViewportFramebuffer::ViewportFramebuffer(size_t width, size_t height)
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, mouse_pick_attachment_texture_, 0);
 
   end_init();
+
+  resin::Logger::info("Created new image framebuffer with id {}", color_attachment_texture_);
 }
 
 ViewportFramebuffer::~ViewportFramebuffer() {
+  if (color_attachment_texture_ == 0) {
+    return;
+  }
+
   glDeleteRenderbuffers(1, &depth_renderbuffer_);
   glDeleteTextures(1, &color_attachment_texture_);
+  glDeleteTextures(1, &mouse_pick_attachment_texture_);
+
+  resin::Logger::info("Deleted image framebuffer with id {}", framebuffer_id_);
+}
+
+ViewportFramebuffer::ViewportFramebuffer(ViewportFramebuffer&& other) noexcept
+    : Framebuffer(std::move(other)),
+      color_attachment_texture_(other.color_attachment_texture_),
+      mouse_pick_attachment_texture_(other.mouse_pick_attachment_texture_),
+      depth_renderbuffer_(other.depth_renderbuffer_) {
+  other.color_attachment_texture_      = 0;
+  other.mouse_pick_attachment_texture_ = 0;
+  other.depth_renderbuffer_            = 0;
 }
 
 void ViewportFramebuffer::begin_pick_render() const {
@@ -127,9 +153,22 @@ ImageFramebuffer::ImageFramebuffer(size_t width, size_t height)
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color_attachment_texture_, 0);
 
   end_init();
+
+  resin::Logger::info("Created new image framebuffer with id {}", color_attachment_texture_);
 }
 
-ImageFramebuffer::~ImageFramebuffer() { glDeleteTextures(1, &color_attachment_texture_); }
+ImageFramebuffer::~ImageFramebuffer() {
+  if (color_attachment_texture_ == 0) {
+    return;
+  }
+  glDeleteTextures(1, &color_attachment_texture_);
+  resin::Logger::info("Deleted image framebuffer with id {}", framebuffer_id_);
+}
+
+ImageFramebuffer::ImageFramebuffer(ImageFramebuffer&& other) noexcept
+    : Framebuffer(std::move(other)), color_attachment_texture_(other.color_attachment_texture_) {
+  other.color_attachment_texture_ = 0;
+}
 
 void ImageFramebuffer::clear() { glClear(GL_COLOR_BUFFER_BIT); }
 

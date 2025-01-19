@@ -27,6 +27,9 @@
 #include <resin/resources/resource_managers.hpp>
 #include <unordered_map>
 
+#include "resin/imgui/material.hpp"
+#include "resin/imgui/types.hpp"
+
 int main();
 
 namespace resin {
@@ -59,7 +62,8 @@ class Resin {
   void update(duration_t delta);
   void gui(duration_t delta);
   void render_viewport();
-  void render_material_view(ImageFramebuffer& fb);
+  void render_material_image(ImageFramebuffer& fb);
+  void render_material_images();
 
   // events
   bool on_window_close(WindowCloseEvent& e);
@@ -123,10 +127,7 @@ class Resin {
   std::unique_ptr<RenderingShaderProgram> material_img_shader_;
   std::unique_ptr<PrimitiveUniformBuffer> primitive_ubo_;
   std::unique_ptr<ViewportFramebuffer> framebuffer_;
-  std::unordered_map<IdView<MaterialId>, std::unique_ptr<ImageFramebuffer>, IdViewHash<MaterialId>, std::equal_to<>>
-      material_img_framebuffers_;
-  std::unique_ptr<ImageFramebuffer> material_main_img_framebuffer_;
-  std::unique_ptr<ImageFramebuffer> material_node_img_framebuffer_;
+  std::unique_ptr<ImGui::resin::LazyMaterialImageFramebuffers> material_images_;
 
   glm::vec2 viewport_pos_;
 

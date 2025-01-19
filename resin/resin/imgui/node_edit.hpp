@@ -4,6 +4,7 @@
 #include <libresin/core/framebuffer.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/core/shader.hpp>
+#include <resin/imgui/material.hpp>
 
 namespace ImGui {  // NOLINT
 
@@ -36,8 +37,8 @@ class SDFNodeEditVisitor : public ::resin::ISDFTreeNodeVisitor {
       });
 };
 
-bool NodeEdit(::resin::SDFTreeNode& node, const ::resin::SDFTree& tree, ::resin::ImageFramebuffer& framebuffer,
-              const ::resin::RenderingShaderProgram& material_image_shader);
+bool NodeEdit(::resin::SDFTreeNode& node, LazyMaterialImageFramebuffers& material_img_fbs,
+              const ::resin::SDFTree& sdf_tree);
 
 }  // namespace resin
 

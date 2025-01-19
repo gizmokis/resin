@@ -11,6 +11,7 @@
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/core/shader.hpp>
 #include <ranges>
+#include <resin/imgui/material.hpp>
 #include <resin/imgui/node_edit.hpp>
 #include <resin/imgui/transform_edit.hpp>
 
@@ -18,21 +19,8 @@
   if (x) node.mark_dirty()
 
 namespace ImGui {
+
 namespace resin {
-
-static void render_img(::resin::ImageFramebuffer& framebuffer,
-                       const ::resin::RenderingShaderProgram& material_image_shader) {
-  static ::resin::Raycaster raycaster;
-  framebuffer.bind();
-  framebuffer.clear();
-  raycaster.bind();
-
-  material_image_shader.bind();
-  raycaster.draw_call();
-  material_image_shader.unbind();
-
-  framebuffer.unbind();
-}
 
 void resin::SDFNodeEditVisitor::visit_sphere(::resin::SphereNode& node) {
   if (ImGui::BeginTabItem("Properties")) {
@@ -103,8 +91,8 @@ void resin::SDFNodeEditVisitor::visit_prism(::resin::TriangularPrismNode& node) 
   }
 }
 
-bool NodeEdit(::resin::SDFTreeNode& node, const ::resin::SDFTree& tree, ::resin::ImageFramebuffer& framebuffer,
-              const ::resin::RenderingShaderProgram& material_image_shader) {
+bool NodeEdit(::resin::SDFTreeNode& node, LazyMaterialImageFramebuffers& material_img_fbs,
+              const ::resin::SDFTree& sdf_tree) {
   SDFNodeEditVisitor vs;
 
   if (ImGui::BeginTabBar("NodeTabBar", ImGuiTabBarFlags_None)) {
@@ -124,19 +112,35 @@ bool NodeEdit(::resin::SDFTreeNode& node, const ::resin::SDFTree& tree, ::resin:
         }
         ImGui::EndCombo();
       }
-      node.accept_visitor(vs);
-      if (node.material_id() && !node.material_id()->expired()) {
-        const auto& mat = tree.material(*node.material_id());
 
-        material_image_shader.set_uniform("u_material", mat.material);
-        render_img(framebuffer, material_image_shader);
-        ImGui::ImageButton("MaterialImage", (ImTextureID)(intptr_t)framebuffer.color_texture(),
-                           ImVec2(framebuffer.width(), framebuffer.height()), ImVec2(0, 1),  // NOLINT
-                           ImVec2(1, 0));
+      node.accept_visitor(vs);
+
+      const auto img_size = static_cast<float>(material_img_fbs.node_material_preview_fb.fb.width());
+      if (node.material_id() && !node.material_id()->expired()) {
+        if (node.material_id() != material_img_fbs.node_material_preview_id) {
+          material_img_fbs.node_material_preview_id = node.material_id();
+          material_img_fbs.node_material_preview_fb.mark_dirty();
+        }
+
+        ImGui::ImageButton(
+            "##MaterialButton",                                                                   //
+            (ImTextureID)(intptr_t)material_img_fbs.node_material_preview_fb.fb.color_texture(),  // NOLINT
+            ImVec2(img_size, img_size),                                                           //
+            ImVec2(0, 1),                                                                         //
+            ImVec2(1, 0)                                                                          //
+        );
 
       } else {
-        ImGui::Button("##MaterialImage", ImVec2(framebuffer.width(), framebuffer.height()));
+        ImGui::Button("##MaterialButton", ImVec2(img_size, img_size));
       }
+
+      if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
+        if (node.material_id()) {
+          ImGui::OpenPopup("Select material");
+        } else {
+        }
+      }
+
       if (ImGui::BeginDragDropTarget()) {
         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("MATERIAL_PAYLOAD")) {
           IM_ASSERT(payload->DataSize == sizeof(::resin::IdView<::resin::MaterialId>));
@@ -144,6 +148,9 @@ bool NodeEdit(::resin::SDFTreeNode& node, const ::resin::SDFTree& tree, ::resin:
 
           if (!source_id.expired()) {
             node.set_material(source_id);
+            ::resin::Logger::debug("hej");
+            material_img_fbs.node_material_preview_id = source_id;
+            material_img_fbs.node_material_preview_fb.mark_dirty();
           }
         }
       }
@@ -155,11 +162,30 @@ bool NodeEdit(::resin::SDFTreeNode& node, const ::resin::SDFTree& tree, ::resin:
         }
       }
 
+      if (ImGui::BeginPopupModal("Select material", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+        if (ImGui::Button("OK", ImVec2(120, 0))) {
+          ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::SetItemDefaultFocus();
+
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+          ImGui::CloseCurrentPopup();
+        }
+
+        auto mat_id = node.material_id();
+        MaterialsList(mat_id, material_img_fbs, sdf_tree);
+
+        ImGui::EndPopup();
+      }
+
       ImGui::EndTabItem();
     }
 
     ImGui::EndTabBar();
   }
+
   return false;
 }
 

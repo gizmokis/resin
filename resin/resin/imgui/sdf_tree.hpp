@@ -64,8 +64,7 @@ class SDFTreeComponentVisitor : public ::resin::ISDFTreeNodeVisitor {
   ::resin::SDFTree& sdf_tree_;  // NOLINT
 };
 
-std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(
-    ::resin::SDFTree& tree, const std::optional<::resin::IdView<::resin::SDFTreeNodeId>>& old_selected);
+void SDFTreeView(::resin::SDFTree& tree, std::optional<::resin::IdView<::resin::SDFTreeNodeId>>& old_selected);
 
 }  // namespace resin
 

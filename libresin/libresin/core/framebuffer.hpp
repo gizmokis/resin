@@ -12,6 +12,11 @@ class Framebuffer {
   Framebuffer(size_t width, size_t height);
   virtual ~Framebuffer();
 
+  Framebuffer(const Framebuffer& other) = delete;
+  Framebuffer(Framebuffer&& other) noexcept;
+  Framebuffer& operator=(const Framebuffer& other) = delete;
+  Framebuffer& operator=(Framebuffer&& other)      = delete;
+
   void bind() const;
   void unbind() const;  // remember to glVieport after
 
@@ -35,6 +40,11 @@ class ViewportFramebuffer : public Framebuffer {
   ViewportFramebuffer(size_t width, size_t height);
   virtual ~ViewportFramebuffer();
 
+  ViewportFramebuffer(const ViewportFramebuffer& other) = delete;
+  ViewportFramebuffer(ViewportFramebuffer&& other) noexcept;
+  ViewportFramebuffer& operator=(const ViewportFramebuffer& other) = delete;
+  ViewportFramebuffer& operator=(ViewportFramebuffer&& other)      = delete;
+
   void begin_pick_render() const;
   void end_pick_render() const;
 
@@ -54,6 +64,11 @@ class ImageFramebuffer : public Framebuffer {
  public:
   ImageFramebuffer(size_t width, size_t height);
   virtual ~ImageFramebuffer();
+
+  ImageFramebuffer(const ImageFramebuffer& other) = delete;
+  ImageFramebuffer(ImageFramebuffer&& other) noexcept;
+  ImageFramebuffer& operator=(const ImageFramebuffer& other) = delete;
+  ImageFramebuffer& operator=(ImageFramebuffer&& other)      = delete;
 
   void clear() override;
   void resize(size_t width, size_t height) override;
