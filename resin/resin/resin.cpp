@@ -510,7 +510,7 @@ void Resin::gui(duration_t delta) {
   ImGui::SetNextWindowSizeConstraints(ImVec2(350.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
   ImGui::Begin("Selection");
   if (selected_node_.has_value() && !selected_node_->expired()) {
-    ImGui::resin::NodeEdit(sdf_tree_.node(*selected_node_), *material_images_, sdf_tree_);
+    ImGui::resin::NodeEdit(sdf_tree_.node(*selected_node_), *material_images_, selected_material_, sdf_tree_);
   }
   ImGui::End();
 

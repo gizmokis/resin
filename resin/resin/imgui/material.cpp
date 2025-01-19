@@ -23,63 +23,76 @@ bool MaterialsList(std::optional<::resin::IdView<::resin::MaterialId>>& selected
   if (sdf_tree.materials().empty()) {
     return false;
   }
-  const auto img_size = static_cast<float>(material_img_fbs.material_preview_img_size);
 
+  auto selected_new       = selected;
   bool is_any_mat_clicked = false;
+  const auto img_size     = static_cast<float>(material_img_fbs.material_preview_img_size);
   auto cols               = std::max(1, static_cast<int>(ImGui::GetContentRegionAvail().x / (2 * kPadding + img_size)));
-  ImGui::BeginTable("MaterialsTable", cols);
 
-  for (const auto& mat_id : sdf_tree.materials()) {
-    ImGui::PushID(static_cast<int>(mat_id.raw()));
+  ImGui::BeginChild("ResizeableMaterialsList");
+  if (ImGui::BeginTable("MaterialsTable", cols)) {
+    for (const auto& mat_id : sdf_tree.materials()) {
+      ImGui::PushID(static_cast<int>(mat_id.raw()));
 
-    // Add missing material framebuffers to the preview map
-    auto it = material_img_fbs.material_preview_fbs_map.find(mat_id);
-    if (it == material_img_fbs.material_preview_fbs_map.end()) {
-      it = material_img_fbs               //
-               .material_preview_fbs_map  //
-               .emplace(mat_id,
-                        std::make_unique<LazyImageFramebuffer>(::resin::ImageFramebuffer(
-                            material_img_fbs.material_preview_img_size, material_img_fbs.material_preview_img_size)))
-               .first;
+      // Add missing material framebuffers to the preview map
+      auto it = material_img_fbs.material_preview_fbs_map.find(mat_id);
+      if (it == material_img_fbs.material_preview_fbs_map.end()) {
+        it = material_img_fbs               //
+                 .material_preview_fbs_map  //
+                 .emplace(mat_id,
+                          std::make_unique<LazyImageFramebuffer>(::resin::ImageFramebuffer(
+                              material_img_fbs.material_preview_img_size, material_img_fbs.material_preview_img_size)))
+                 .first;
 
-      it->second->mark_dirty();
+        it->second->mark_dirty();
 
-      ::resin::Logger::info("Added material image framebuffer for material with id {}", it->first.raw());
+        ::resin::Logger::info("Added material image framebuffer for material with id {}", it->first.raw());
+      }
+
+      bool is_selected = selected_new && *selected_new == mat_id;
+      const auto& mat  = sdf_tree.material(mat_id);
+
+      if (!is_selected) {
+        ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetColorU32(ImGuiCol_MenuBarBg));
+      };
+      ImGui::ImageButton("##MaterialButton",                                     //
+                         (ImTextureID)(intptr_t)it->second->fb.color_texture(),  // NOLINT
+                         ImVec2(img_size, img_size),                             //
+                         ImVec2(0, 1),                                           //
+                         ImVec2(1, 0)                                            //
+      );
+
+      if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+        selected_new       = std::make_optional(mat_id);
+        is_any_mat_clicked = true;
+      }
+
+      if (!is_selected) {
+        ImGui::PopStyleColor();
+      }
+
+      if (ImGui::BeginDragDropSource()) {
+        auto curr_id = mat.material_id();
+        ImGui::SetDragDropPayload(kMaterialPayloadName.data(), &curr_id, sizeof(::resin::IdView<::resin::MaterialId>));
+        ImGui::Text("%s", mat.name().data());
+        ImGui::EndDragDropSource();
+      }
+
+      ImGui::TextWrapped("%s", mat.name().data());
+
+      ImGui::PopID();
+      ImGui::TableNextColumn();
     }
 
-    bool is_selected = selected && *selected == mat_id;
-    const auto& mat  = sdf_tree.material(mat_id);
-
-    if (!is_selected) {
-      ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetColorU32(ImGuiCol_MenuBarBg));
-    };
-    if (ImGui::ImageButton("##MaterialButton",                                     //
-                           (ImTextureID)(intptr_t)it->second->fb.color_texture(),  // NOLINT
-                           ImVec2(img_size, img_size),                             //
-                           ImVec2(0, 1),                                           //
-                           ImVec2(1, 0)                                            //
-                           )) {
-      selected           = std::make_optional(mat_id);
-      is_any_mat_clicked = true;
-    }
-    if (!is_selected) {
-      ImGui::PopStyleColor();
+    auto child_rect = ImGui::GetCurrentWindow()->Rect();
+    if (!is_any_mat_clicked && ImGui::IsMouseClicked(ImGuiMouseButton_Left) &&
+        ImGui::IsMouseHoveringRect(child_rect.Min, child_rect.Max)) {
+      selected_new = std::nullopt;
     }
 
-    if (ImGui::BeginDragDropSource()) {
-      auto curr_id = mat.material_id();
-      ImGui::SetDragDropPayload(kMaterialPayloadName.data(), &curr_id, sizeof(::resin::IdView<::resin::MaterialId>));
-      ImGui::Text("%s", mat.name().data());
-      ImGui::EndDragDropSource();
-    }
-
-    ImGui::TextWrapped("%s", mat.name().data());
-
-    ImGui::PopID();
-    ImGui::TableNextColumn();
+    ImGui::EndTable();
   }
-
-  ImGui::EndTable();
+  ImGui::EndChild();
 
   // Remove outdated material framebuffers if the number of stored framebuffers exceeds twice the number of materials.
   // This heuristic minimizes the number of framebuffer deletions and enables reusage of the already created
@@ -89,7 +102,9 @@ bool MaterialsList(std::optional<::resin::IdView<::resin::MaterialId>>& selected
     ::resin::Logger::info("Deleted obselete material framebuffers");
   }
 
-  return is_any_mat_clicked;
+  bool edited = selected != selected_new;
+  selected    = selected_new;
+  return edited;
 }
 
 bool MaterialsListEdit(std::optional<::resin::IdView<::resin::MaterialId>>& selected,
@@ -113,22 +128,11 @@ bool MaterialsListEdit(std::optional<::resin::IdView<::resin::MaterialId>>& sele
     edited = true;
   }
 
-  ImGui::BeginChild("ResizeableInnerChild");
-  bool is_any_mat_clicked = MaterialsList(selected_new, material_img_fbs, sdf_tree);
-  edited                  = is_any_mat_clicked || edited;
-
-  auto child_rect = ImGui::GetCurrentWindow()->Rect();
-  if (!is_any_mat_clicked && ImGui::IsMouseClicked(ImGuiMouseButton_Left) &&
-      ImGui::IsMouseHoveringRect(child_rect.Min, child_rect.Max)) {
-    selected_new = std::nullopt;
-    edited       = true;
-  }
+  edited = MaterialsList(selected_new, material_img_fbs, sdf_tree) || edited;
 
   if (selected_new && selected != selected_new) {
     material_img_fbs.material_preview_fbs_map[*selected_new]->mark_dirty();
   }
-
-  ImGui::EndChild();
 
   selected = selected_new;
 
@@ -154,14 +158,15 @@ bool MaterialEdit(std::optional<::resin::IdView<::resin::MaterialId>>& selected,
                ImVec2(1, 0)                                                                  //
   );
 
-  if (ImGui::Button("Delete")) {
-    if (selected && !selected->expired()) {
-      sdf_tree.delete_material(*selected);
-      return true;
-    }
-  }
+  auto& mat = sdf_tree.material(*selected);
 
-  auto& mat   = sdf_tree.material(*selected);
+  if (ImGui::Button("Delete")) {
+    sdf_tree.delete_material(*selected);
+    return true;
+  }
+  ImGui::SameLine();
+  ImGui::Text("%s", mat.name().data());
+
   bool edited = false;
   edited      = ImGui::ColorEdit3("Color", glm::value_ptr(mat.material.albedo)) || edited;
   edited      = ImGui::DragFloat("Ambient", &mat.material.ambientFactor, 0.01F, 0.0F, 1.0F, "%.2f") || edited;

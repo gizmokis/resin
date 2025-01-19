@@ -92,7 +92,10 @@ void resin::SDFNodeEditVisitor::visit_prism(::resin::TriangularPrismNode& node) 
 }
 
 bool NodeEdit(::resin::SDFTreeNode& node, LazyMaterialImageFramebuffers& material_img_fbs,
+              std::optional<::resin::IdView<::resin::MaterialId>>& selected_material,
               const ::resin::SDFTree& sdf_tree) {
+  static std::optional<::resin::IdView<::resin::MaterialId>> modal_selected_material;
+
   SDFNodeEditVisitor vs;
 
   if (ImGui::BeginTabBar("NodeTabBar", ImGuiTabBarFlags_None)) {
@@ -134,11 +137,18 @@ bool NodeEdit(::resin::SDFTreeNode& node, LazyMaterialImageFramebuffers& materia
         ImGui::Button("##MaterialButton", ImVec2(img_size, img_size));
       }
 
-      if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
-        if (node.material_id()) {
+      if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+        if (!node.material_id()) {
           ImGui::OpenPopup("Select material");
+          modal_selected_material = node.material_id();
         } else {
+          selected_material = node.material_id();
         }
+      }
+
+      if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+        ImGui::OpenPopup("Select material");
+        modal_selected_material = node.material_id();
       }
 
       if (ImGui::BeginDragDropTarget()) {
@@ -148,7 +158,6 @@ bool NodeEdit(::resin::SDFTreeNode& node, LazyMaterialImageFramebuffers& materia
 
           if (!source_id.expired()) {
             node.set_material(source_id);
-            ::resin::Logger::debug("hej");
             material_img_fbs.node_material_preview_id = source_id;
             material_img_fbs.node_material_preview_fb.mark_dirty();
           }
@@ -157,14 +166,27 @@ bool NodeEdit(::resin::SDFTreeNode& node, LazyMaterialImageFramebuffers& materia
 
       if (node.material_id()) {
         ImGui::SameLine();
+        ImGui::Text("%s", sdf_tree.material(*node.material_id()).name().data());
         if (ImGui::Button("Remove")) {
           node.remove_material();
         }
       }
 
       if (ImGui::BeginPopupModal("Select material", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+        if (!modal_selected_material) {
+          ImGui::BeginDisabled();
+        }
+
         if (ImGui::Button("OK", ImVec2(120, 0))) {
+          if (modal_selected_material && !modal_selected_material->expired()) {
+            selected_material = modal_selected_material;
+            node.set_material(*modal_selected_material);
+          }
           ImGui::CloseCurrentPopup();
+        }
+
+        if (!modal_selected_material) {
+          ImGui::EndDisabled();
         }
 
         ImGui::SetItemDefaultFocus();
@@ -174,8 +196,8 @@ bool NodeEdit(::resin::SDFTreeNode& node, LazyMaterialImageFramebuffers& materia
           ImGui::CloseCurrentPopup();
         }
 
-        auto mat_id = node.material_id();
-        MaterialsList(mat_id, material_img_fbs, sdf_tree);
+        ImGui::SetNextWindowSizeConstraints(ImVec2(240.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
+        MaterialsList(modal_selected_material, material_img_fbs, sdf_tree);
 
         ImGui::EndPopup();
       }
