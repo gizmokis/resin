@@ -127,7 +127,7 @@ TEST_F(JSONTest, PrefabIsProperlySerializedAndDeserialized) {
   ASSERT_NO_THROW({
     auto& prim        = static_cast<resin::CubeNode&>(group2.get_child(*it));          // NOLINT
     auto& prefab_prim = static_cast<resin::CubeNode&>(prefab->get_child(*prefab_it));  // NOLINT
-    ASSERT_NEAR(prim.size, prefab_prim.size, 1e-4F);
+    ASSERT_GLM_VEC_NEAR(prim.size, prefab_prim.size, 1e-4F);
   });
 
   it++;
@@ -164,6 +164,6 @@ TEST_F(JSONTest, PrefabIsProperlySerializedAndDeserialized) {
   ASSERT_NO_THROW({
     auto& prim        = static_cast<resin::CubeNode&>(tree.node(*it));         // NOLINT
     auto& prefab_prim = static_cast<resin::CubeNode&>(tree.node(*prefab_it));  // NOLINT
-    ASSERT_NEAR(prim.size, prefab_prim.size, 1e-4F);
+    ASSERT_GLM_VEC_NEAR(prim.size, prefab_prim.size, 1e-4F);
   });
 }

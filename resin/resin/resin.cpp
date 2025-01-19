@@ -113,8 +113,16 @@ Resin::Resin()
   directional_light_->transform.set_local_rot(glm::quatLookAt(-glm::normalize(glm::vec3(0, 2, 3)), glm::vec3(0, 1, 0)));
 
   // Setup example materials
-  cube_mat_   = std::make_unique<Material>(glm::vec3(0.96F, 0.25F, 0.25F));
-  sphere_mat_ = std::make_unique<Material>(glm::vec3(0.25F, 0.25F, 0.96F));
+  // TEMP(SDF-131): remove
+  sphere_mat_    = std::make_unique<Material>(glm::vec3(0.25F, 0.25F, 0.96F));
+  cube_mat_      = std::make_unique<Material>(glm::vec3(0.96F, 0.25F, 0.25F));
+  torus_mat_     = std::make_unique<Material>(glm::vec3(0.25F, 0.96F, 0.25F));
+  capsule_mat_   = std::make_unique<Material>(glm::vec3(0.96F, 0.96F, 0.25F));
+  link_mat_      = std::make_unique<Material>(glm::vec3(0.96F, 0.25F, 0.96F));
+  ellipsoid_mat_ = std::make_unique<Material>(glm::vec3(0.25F, 0.96F, 0.96F));
+  pyramid_mat_   = std::make_unique<Material>(glm::vec3(0.25F, 0.25F, 0.25F));
+  cylinder_mat_  = std::make_unique<Material>(glm::vec3(0.96F, 0.96F, 0.96F));
+  prism_mat_     = std::make_unique<Material>(glm::vec3(0.1F, 0.6F, 0.9F));
 
   setup_shader_uniforms();
 }
@@ -220,9 +228,16 @@ void Resin::update(duration_t delta) {
   primitive_ubo_->update_dirty(sdf_tree_);
   primitive_ubo_->unbind();
 
-  // TODO(SDF-87)
+  // TEMP(SDF-131): remove
   shader_->set_uniform("u_sdf_materials[0]", *sphere_mat_);
   shader_->set_uniform("u_sdf_materials[1]", *cube_mat_);
+  shader_->set_uniform("u_sdf_materials[2]", *torus_mat_);
+  shader_->set_uniform("u_sdf_materials[3]", *capsule_mat_);
+  shader_->set_uniform("u_sdf_materials[4]", *link_mat_);
+  shader_->set_uniform("u_sdf_materials[5]", *ellipsoid_mat_);
+  shader_->set_uniform("u_sdf_materials[6]", *pyramid_mat_);
+  shader_->set_uniform("u_sdf_materials[7]", *cylinder_mat_);
+  shader_->set_uniform("u_sdf_materials[8]", *prism_mat_);
 
   shader_->set_uniform("u_dirLight", *directional_light_);
   shader_->set_uniform("u_pointLight", *point_light_);
@@ -249,6 +264,18 @@ void Resin::render() {
     grid_shader_->bind();
     raycaster_->draw_call();
     grid_shader_->unbind();
+  }
+}
+
+// TEMP(SDF-131): remove
+void Resin::material_inspect(Material& mat, std::string_view name) {
+  if (ImGui::BeginTabItem(name.data())) {
+    ImGui::ColorEdit3("Color", glm::value_ptr(mat.albedo));
+    ImGui::DragFloat("Ambient", &mat.ambientFactor, 0.01F, 0.0F, 1.0F, "%.2f");
+    ImGui::DragFloat("Diffuse", &mat.diffuseFactor, 0.01F, 0.0F, 1.0F, "%.2f");
+    ImGui::DragFloat("Specular", &mat.specularFactor, 0.01F, 0.0F, 1.0F, "%.2f");
+    ImGui::DragFloat("Exponent", &mat.specularExponent, 0.1F, 0.0F, 100.0F, "%.1f");
+    ImGui::EndTabItem();
   }
 }
 
@@ -385,23 +412,16 @@ void Resin::gui(duration_t delta) {
 
   ImGui::Begin("[TEMP] Materials");
   if (ImGui::BeginTabBar("MaterialTabBar", ImGuiTabBarFlags_None)) {
-    // TODO(SDF-87)
-    if (ImGui::BeginTabItem("CubeMat")) {
-      ImGui::ColorEdit3("Color", glm::value_ptr(cube_mat_->albedo));
-      ImGui::DragFloat("Ambient", &cube_mat_->ambientFactor, 0.01F, 0.0F, 1.0F, "%.2f");
-      ImGui::DragFloat("Diffuse", &cube_mat_->diffuseFactor, 0.01F, 0.0F, 1.0F, "%.2f");
-      ImGui::DragFloat("Specular", &cube_mat_->specularFactor, 0.01F, 0.0F, 1.0F, "%.2f");
-      ImGui::DragFloat("Exponent", &cube_mat_->specularExponent, 0.1F, 0.0F, 100.0F, "%.1f");
-      ImGui::EndTabItem();
-    }
-    if (ImGui::BeginTabItem("SphereMat")) {
-      ImGui::ColorEdit3("Color", glm::value_ptr(sphere_mat_->albedo));
-      ImGui::DragFloat("Ambient", &sphere_mat_->ambientFactor, 0.01F, 0.0F, 1.0F, "%.2f");
-      ImGui::DragFloat("Diffuse", &sphere_mat_->diffuseFactor, 0.01F, 0.0F, 1.0F, "%.2f");
-      ImGui::DragFloat("Specular", &sphere_mat_->specularFactor, 0.01F, 0.0F, 1.0F, "%.2f");
-      ImGui::DragFloat("Exponent", &sphere_mat_->specularExponent, 0.1F, 0.0F, 100.0F, "%.1f");
-      ImGui::EndTabItem();
-    }
+    // TEMP(SDF-131): remove
+    material_inspect(*sphere_mat_, "SphereMat");
+    material_inspect(*cube_mat_, "CubeMat");
+    material_inspect(*torus_mat_, "TorusMat");
+    material_inspect(*capsule_mat_, "CapsuleMat");
+    material_inspect(*link_mat_, "LinkMat");
+    material_inspect(*ellipsoid_mat_, "EllipsoidMat");
+    material_inspect(*pyramid_mat_, "PyramidMat");
+    material_inspect(*cylinder_mat_, "CylinderMat");
+    material_inspect(*prism_mat_, "PrismMat");
     ImGui::EndTabBar();
   }
   ImGui::End();

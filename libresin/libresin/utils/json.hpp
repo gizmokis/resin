@@ -20,8 +20,15 @@ using json = nlohmann::json;
 constexpr int kNewestResinPrefabJSONSchemaVersion = 1;
 
 constexpr StringEnumMapper<SDFTreePrimitiveType> kSDFTreePrimitiveNodesJSONNames({
-    {SDFTreePrimitiveType::Sphere, "sphere"},  //
-    {SDFTreePrimitiveType::Cube, "cube"}       //
+    {SDFTreePrimitiveType::Sphere, "sphere"},                   //
+    {SDFTreePrimitiveType::Cube, "cube"},                       //
+    {SDFTreePrimitiveType::Torus, "torus"},                     //
+    {SDFTreePrimitiveType::Capsule, "capsule"},                 //
+    {SDFTreePrimitiveType::Link, "link"},                       //
+    {SDFTreePrimitiveType::Ellipsoid, "ellipsoid"},             //
+    {SDFTreePrimitiveType::Pyramid, "pyramid"},                 //
+    {SDFTreePrimitiveType::Cylinder, "cylinder"},               //
+    {SDFTreePrimitiveType::TriangularPrism, "triangularPrism"}  //
 });
 
 constexpr StringEnumMapper<SDFBinaryOperation> kSDFBinaryOperationsJSONNames({
@@ -50,9 +57,16 @@ class JSONSerializerSDFTreeNodeVisitor : public ISDFTreeNodeVisitor {
  public:
   explicit JSONSerializerSDFTreeNodeVisitor(json& node_json);
 
+  void visit_group(GroupNode& node) override;
   void visit_sphere(SphereNode& node) override;
   void visit_cube(CubeNode& node) override;
-  void visit_group(GroupNode& node) override;
+  void visit_torus(TorusNode&) override;
+  void visit_capsule(CapsuleNode&) override;
+  void visit_link(LinkNode&) override;
+  void visit_ellipsoid(EllipsoidNode&) override;
+  void visit_pyramid(PyramidNode&) override;
+  void visit_cylinder(CylinderNode&) override;
+  void visit_prism(TriangularPrismNode&) override;
 
  private:
   json& json_;
@@ -82,9 +96,16 @@ class JSONDeserializerSDFTreeNodeVisitor : public ISDFTreeNodeVisitor {
   explicit JSONDeserializerSDFTreeNodeVisitor(const json& node_json,
                                               const std::unordered_map<size_t, IdView<MaterialId>>& material_ids_map);
 
+  void visit_group(GroupNode& node) override;
   void visit_sphere(SphereNode& node) override;
   void visit_cube(CubeNode& node) override;
-  void visit_group(GroupNode& node) override;
+  void visit_torus(TorusNode&) override;
+  void visit_capsule(CapsuleNode&) override;
+  void visit_link(LinkNode&) override;
+  void visit_ellipsoid(EllipsoidNode&) override;
+  void visit_pyramid(PyramidNode&) override;
+  void visit_cylinder(CylinderNode&) override;
+  void visit_prism(TriangularPrismNode&) override;
 
  private:
   const json& node_json_;

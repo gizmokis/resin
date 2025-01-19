@@ -19,7 +19,14 @@ struct SDFTreeRegistry {
   // TODO(SDF-98): allow specifying the sizes
   SDFTreeRegistry()
       : sphere_components_registry(IdRegistry<PrimitiveNode<sdf_shader_consts::SDFShaderPrim::Sphere>>(100)),
-        cubes_components_registry(IdRegistry<PrimitiveNode<sdf_shader_consts::SDFShaderPrim::Cube>>(100)),
+        cube_components_registry(IdRegistry<PrimitiveNode<sdf_shader_consts::SDFShaderPrim::Cube>>(100)),
+        torus_components_registry(IdRegistry<PrimitiveNode<sdf_shader_consts::SDFShaderPrim::Torus>>(100)),
+        capsule_components_registry(IdRegistry<PrimitiveNode<sdf_shader_consts::SDFShaderPrim::Capsule>>(100)),
+        link_components_registry(IdRegistry<PrimitiveNode<sdf_shader_consts::SDFShaderPrim::Link>>(100)),
+        ellipsoid_components_registry(IdRegistry<PrimitiveNode<sdf_shader_consts::SDFShaderPrim::Ellipsoid>>(100)),
+        pyramid_components_registry(IdRegistry<PrimitiveNode<sdf_shader_consts::SDFShaderPrim::Pyramid>>(100)),
+        cylinder_components_registry(IdRegistry<PrimitiveNode<sdf_shader_consts::SDFShaderPrim::Cylinder>>(100)),
+        prism_components_registry(IdRegistry<PrimitiveNode<sdf_shader_consts::SDFShaderPrim::TriangularPrism>>(100)),
         transform_component_registry(IdRegistry<Transform>(100)),
         primitives_registry(IdRegistry<BasePrimitiveNode>(100)),
         nodes_registry(IdRegistry<SDFTreeNode>(100)),
@@ -30,14 +37,35 @@ struct SDFTreeRegistry {
   }
 
   IdRegistry<PrimitiveNode<sdf_shader_consts::SDFShaderPrim::Sphere>> sphere_components_registry;
-  IdRegistry<PrimitiveNode<sdf_shader_consts::SDFShaderPrim::Cube>> cubes_components_registry;
+  IdRegistry<PrimitiveNode<sdf_shader_consts::SDFShaderPrim::Cube>> cube_components_registry;
+  IdRegistry<PrimitiveNode<sdf_shader_consts::SDFShaderPrim::Torus>> torus_components_registry;
+  IdRegistry<PrimitiveNode<sdf_shader_consts::SDFShaderPrim::Capsule>> capsule_components_registry;
+  IdRegistry<PrimitiveNode<sdf_shader_consts::SDFShaderPrim::Link>> link_components_registry;
+  IdRegistry<PrimitiveNode<sdf_shader_consts::SDFShaderPrim::Ellipsoid>> ellipsoid_components_registry;
+  IdRegistry<PrimitiveNode<sdf_shader_consts::SDFShaderPrim::Pyramid>> pyramid_components_registry;
+  IdRegistry<PrimitiveNode<sdf_shader_consts::SDFShaderPrim::Cylinder>> cylinder_components_registry;
+  IdRegistry<PrimitiveNode<sdf_shader_consts::SDFShaderPrim::TriangularPrism>> prism_components_registry;
 
   template <sdf_shader_consts::SDFShaderPrim EnumType>
   constexpr IdRegistry<PrimitiveNode<EnumType>>& primitive_components_registry() {
     if constexpr (sdf_shader_consts::SDFShaderPrim::Sphere == EnumType) {
       return sphere_components_registry;
     } else if constexpr (sdf_shader_consts::SDFShaderPrim::Cube == EnumType) {
-      return cubes_components_registry;
+      return cube_components_registry;
+    } else if constexpr (sdf_shader_consts::SDFShaderPrim::Torus == EnumType) {
+      return torus_components_registry;
+    } else if constexpr (sdf_shader_consts::SDFShaderPrim::Capsule == EnumType) {
+      return capsule_components_registry;
+    } else if constexpr (sdf_shader_consts::SDFShaderPrim::Link == EnumType) {
+      return link_components_registry;
+    } else if constexpr (sdf_shader_consts::SDFShaderPrim::Ellipsoid == EnumType) {
+      return ellipsoid_components_registry;
+    } else if constexpr (sdf_shader_consts::SDFShaderPrim::Pyramid == EnumType) {
+      return pyramid_components_registry;
+    } else if constexpr (sdf_shader_consts::SDFShaderPrim::Cylinder == EnumType) {
+      return cylinder_components_registry;
+    } else if constexpr (sdf_shader_consts::SDFShaderPrim::TriangularPrism == EnumType) {
+      return prism_components_registry;
     } else {
       static_assert(false, "Unsupported registry");
     }

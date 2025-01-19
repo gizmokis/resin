@@ -30,18 +30,40 @@ constexpr StringEnumMapper<SDFShaderBinOp> kSDFShaderBinOpFunctionNames({
 });
 
 enum class SDFShaderPrim : uint8_t {
-  Sphere = 0,
-  Cube   = 1,
-  _Count = 2,  // NOLINT
+  Sphere          = 0,
+  Cube            = 1,
+  Torus           = 2,
+  Capsule         = 3,
+  Link            = 4,
+  Ellipsoid       = 5,
+  Pyramid         = 6,
+  Cylinder        = 7,
+  TriangularPrism = 8,
+  _Count          = 9,  // NOLINT
 };
 constexpr StringEnumMapper<SDFShaderPrim> kSDFShaderPrimFunctionNames({
-    {SDFShaderPrim::Sphere, "sdSphere"},  //
-    {SDFShaderPrim::Cube, "sdCube"}       //
+    {SDFShaderPrim::Sphere, "sdSphere"},         //
+    {SDFShaderPrim::Cube, "sdCube"},             //
+    {SDFShaderPrim::Torus, "sdTorus"},           //
+    {SDFShaderPrim::Capsule, "sdCapsule"},       //
+    {SDFShaderPrim::Link, "sdLink"},             //
+    {SDFShaderPrim::Ellipsoid, "sdEllipsoid"},   //
+    {SDFShaderPrim::Pyramid, "sdPyramid"},       //
+    {SDFShaderPrim::Cylinder, "sdCylinder"},     //
+    {SDFShaderPrim::TriangularPrism, "sdPrism"}  //
+
 });
 
 constexpr StringEnumMapper<SDFShaderPrim> kSDFShaderPrimComponentArrayNames({
-    {SDFShaderPrim::Sphere, "u_spheres"},  //
-    {SDFShaderPrim::Cube, "u_cubes"}       //
+    {SDFShaderPrim::Sphere, "u_spheres"},         //
+    {SDFShaderPrim::Cube, "u_cubes"},             //
+    {SDFShaderPrim::Torus, "u_tori"},             //
+    {SDFShaderPrim::Capsule, "u_capsules"},       //
+    {SDFShaderPrim::Link, "u_links"},             //
+    {SDFShaderPrim::Ellipsoid, "u_ellipsoids"},   //
+    {SDFShaderPrim::Pyramid, "u_pyramids"},       //
+    {SDFShaderPrim::Cylinder, "u_cylinders"},     //
+    {SDFShaderPrim::TriangularPrism, "u_prisms"}  //
 });
 
 constexpr std::string_view kSDFPrimitivesArrayName = "u_sdf_primitives";

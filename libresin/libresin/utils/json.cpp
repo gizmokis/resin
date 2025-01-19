@@ -75,13 +75,47 @@ void JSONSerializerSDFTreeNodeVisitor::visit_group(GroupNode& node) {
   json_["group"]["children"] = children;
 }
 
+void JSONSerializerSDFTreeNodeVisitor::visit_sphere(SphereNode& node) { json_["sphere"]["radius"] = node.radius; }
+
 void JSONSerializerSDFTreeNodeVisitor::visit_cube(CubeNode& node) {
-  json_["cube"]["size"]["x"] = node.size;
-  json_["cube"]["size"]["y"] = node.size;
-  json_["cube"]["size"]["z"] = node.size;
+  json_["cube"]["size"]["x"] = node.size.x;
+  json_["cube"]["size"]["y"] = node.size.y;
+  json_["cube"]["size"]["z"] = node.size.z;
 }
 
-void JSONSerializerSDFTreeNodeVisitor::visit_sphere(SphereNode& node) { json_["sphere"]["radius"] = node.radius; }
+void JSONSerializerSDFTreeNodeVisitor::visit_torus(TorusNode& node) {
+  json_["torus"]["majorRadius"] = node.major_radius;
+  json_["torus"]["minorRadius"] = node.minor_radius;
+}
+
+void JSONSerializerSDFTreeNodeVisitor::visit_capsule(CapsuleNode& node) {
+  json_["capsule"]["height"] = node.height;
+  json_["capsule"]["radius"] = node.radius;
+}
+
+void JSONSerializerSDFTreeNodeVisitor::visit_link(LinkNode& node) {
+  json_["link"]["length"]      = node.length;
+  json_["link"]["majorRadius"] = node.major_radius;
+  json_["link"]["minorRadius"] = node.minor_radius;
+}
+
+void JSONSerializerSDFTreeNodeVisitor::visit_ellipsoid(EllipsoidNode& node) {
+  json_["ellipsoid"]["radii"]["x"] = node.radii.x;
+  json_["ellipsoid"]["radii"]["y"] = node.radii.y;
+  json_["ellipsoid"]["radii"]["z"] = node.radii.z;
+}
+
+void JSONSerializerSDFTreeNodeVisitor::visit_pyramid(PyramidNode& node) { json_["pyramid"]["height"] = node.height; }
+
+void JSONSerializerSDFTreeNodeVisitor::visit_cylinder(CylinderNode& node) {
+  json_["cylinder"]["height"] = node.height;
+  json_["cylinder"]["radius"] = node.radius;
+}
+
+void JSONSerializerSDFTreeNodeVisitor::visit_prism(TriangularPrismNode& node) {
+  json_["triangularPrism"]["prismHeight"] = node.prismHeight;
+  json_["triangularPrism"]["baseHeight"]  = node.baseHeight;
+}
 
 static void find_used_materials(
     std::unordered_set<IdView<MaterialId>, IdViewHash<MaterialId>, std::equal_to<>>& used_materials,
@@ -225,24 +259,6 @@ JSONDeserializerSDFTreeNodeVisitor::JSONDeserializerSDFTreeNodeVisitor(
     const json& node_json, const std::unordered_map<size_t, IdView<MaterialId>>& material_ids_map)
     : node_json_(node_json), material_ids_map_(material_ids_map) {}
 
-void JSONDeserializerSDFTreeNodeVisitor::visit_sphere(SphereNode& node) {
-  try {
-    node.radius = node_json_["sphere"]["radius"];
-  } catch (...) {
-    log_throw(JSONNodeDeserializationException(
-        std::format("Sphere definition for node with name {} is invalid.", node.name())));
-  }
-}
-
-void JSONDeserializerSDFTreeNodeVisitor::visit_cube(CubeNode& node) {
-  try {
-    node.size = node_json_["cube"]["size"]["x"];  // TODO(SDF-29): update json deserializer for node
-  } catch (...) {
-    log_throw(JSONNodeDeserializationException(
-        std::format("Cube definition for node with name {} is invalid.", node.name())));
-  }
-}
-
 void JSONDeserializerSDFTreeNodeVisitor::visit_group(GroupNode& node) {
   try {
     for (const auto& child_json : node_json_["group"]["children"]) {
@@ -273,6 +289,97 @@ void JSONDeserializerSDFTreeNodeVisitor::visit_group(GroupNode& node) {
     Logger::warn("JSON prefab serialization failed");
     log_throw(JSONNodeDeserializationException(
         std::format("Group definition for node with name {} is invalid.", node.name())));
+  }
+}
+
+void JSONDeserializerSDFTreeNodeVisitor::visit_sphere(SphereNode& node) {
+  try {
+    node.radius = node_json_["sphere"]["radius"];
+  } catch (...) {
+    log_throw(JSONNodeDeserializationException(
+        std::format("Sphere definition for node with name {} is invalid.", node.name())));
+  }
+}
+
+void JSONDeserializerSDFTreeNodeVisitor::visit_cube(CubeNode& node) {
+  try {
+    node.size.x = node_json_["cube"]["size"]["x"];
+    node.size.y = node_json_["cube"]["size"]["y"];
+    node.size.z = node_json_["cube"]["size"]["z"];
+  } catch (...) {
+    log_throw(JSONNodeDeserializationException(
+        std::format("Cube definition for node with name {} is invalid.", node.name())));
+  }
+}
+
+void JSONDeserializerSDFTreeNodeVisitor::visit_torus(TorusNode& node) {
+  try {
+    node.major_radius = node_json_["torus"]["majorRadius"];
+    node.minor_radius = node_json_["torus"]["minorRadius"];
+  } catch (...) {
+    log_throw(JSONNodeDeserializationException(
+        std::format("Torus definition for node with name {} is invalid.", node.name())));
+  }
+}
+
+void JSONDeserializerSDFTreeNodeVisitor::visit_capsule(CapsuleNode& node) {
+  try {
+    node.height = node_json_["capsule"]["height"];
+    node.radius = node_json_["capsule"]["radius"];
+  } catch (...) {
+    log_throw(JSONNodeDeserializationException(
+        std::format("Capsule definition for node with name {} is invalid.", node.name())));
+  }
+}
+
+void JSONDeserializerSDFTreeNodeVisitor::visit_link(LinkNode& node) {
+  try {
+    node.length       = node_json_["link"]["length"];
+    node.major_radius = node_json_["link"]["majorRadius"];
+    node.minor_radius = node_json_["link"]["minorRadius"];
+  } catch (...) {
+    log_throw(JSONNodeDeserializationException(
+        std::format("Link definition for node with name {} is invalid.", node.name())));
+  }
+}
+
+void JSONDeserializerSDFTreeNodeVisitor::visit_ellipsoid(EllipsoidNode& node) {
+  try {
+    node.radii.x = node_json_["ellipsoid"]["radii"]["x"];
+    node.radii.y = node_json_["ellipsoid"]["radii"]["y"];
+    node.radii.z = node_json_["ellipsoid"]["radii"]["z"];
+  } catch (...) {
+    log_throw(JSONNodeDeserializationException(
+        std::format("Ellipsoid definition for node with name {} is invalid.", node.name())));
+  }
+}
+
+void JSONDeserializerSDFTreeNodeVisitor::visit_pyramid(PyramidNode& node) {
+  try {
+    node.height = node_json_["pyramid"]["height"];
+  } catch (...) {
+    log_throw(JSONNodeDeserializationException(
+        std::format("Pyramid definition for node with name {} is invalid.", node.name())));
+  }
+}
+
+void JSONDeserializerSDFTreeNodeVisitor::visit_cylinder(CylinderNode& node) {
+  try {
+    node.height = node_json_["cylinder"]["height"];
+    node.radius = node_json_["cylinder"]["radius"];
+  } catch (...) {
+    log_throw(JSONNodeDeserializationException(
+        std::format("Cylinder definition for node with name {} is invalid.", node.name())));
+  }
+}
+
+void JSONDeserializerSDFTreeNodeVisitor::visit_prism(TriangularPrismNode& node) {
+  try {
+    node.prismHeight = node_json_["triangularPrism"]["prismHeight"];
+    node.baseHeight  = node_json_["triangularPrism"]["baseHeight"];
+  } catch (...) {
+    log_throw(JSONNodeDeserializationException(
+        std::format("Triangular prism definition for node with name {} is invalid.", node.name())));
   }
 }
 
