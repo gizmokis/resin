@@ -31,7 +31,7 @@ void main() {
     directional_light dir_light;
     dir_light.color = vec3(1.0, 1.0, 1.0);
     dir_light.dir = normalize(sphere_pos - vec3(1.0, 2.0, 0.5));
-    dir_light.ambient_impact = 0.5;
+    dir_light.ambient_impact = 0.15;
 
     vec3 ray = normalize(vec3(v_Pos, -focal_length));
 
