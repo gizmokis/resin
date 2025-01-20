@@ -34,9 +34,10 @@ class BasePrimitiveNode : public SDFTreeNode {
   virtual size_t get_component_raw_id() const         = 0;
 
   inline IdView<MaterialId> default_material_id() const { return tree_registry_.default_material.material_id(); }
-  std::optional<IdView<MaterialId>> active_material_id() const { return ancestor_mat_id_ ? ancestor_mat_id_ : mat_id_; }
+  std::optional<IdView<MaterialId>> active_material_id() const { return mat_id_ ? mat_id_ : ancestor_mat_id_; }
   IdView<MaterialId> active_material_id_or_defualt() const {
-    return ancestor_mat_id_ ? *ancestor_mat_id_ : mat_id_ ? *mat_id_ : default_material_id();
+    auto mat = active_material_id();
+    return mat ? *mat : default_material_id();
   }
 
   inline void set_material(IdView<MaterialId> mat_id) final {
