@@ -56,7 +56,7 @@ class BasePrimitiveNode : public SDFTreeNode {
 
   explicit BasePrimitiveNode(SDFTreeRegistry& tree, std::string_view name)
       : SDFTreeNode(tree, name), prim_id_(tree.primitives_registry) {
-    this->mark_dirty();
+    mark_dirty();
   }
 
   ~BasePrimitiveNode() override = default;

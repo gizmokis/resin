@@ -87,18 +87,18 @@ Resin::Resin()
   const std::filesystem::path assets_path = std::filesystem::current_path() / "assets";
 
   // Setup example tree
-
-  sdf_tree_.add_material(Material(glm::vec3(1.0F, 0.0F, 0.0F)));
+  auto& m1 = sdf_tree_.add_material(Material(glm::vec3(0.25F, 0.25F, 0.96F)));
+  auto& m2 = sdf_tree_.add_material(Material(glm::vec3(0.96F, 0.25F, 0.25F)));
   sdf_tree_.add_material(Material(glm::vec3(1.0F, 1.0F, 0.0F)));
-  sdf_tree_.add_material(Material(glm::vec3(1.0F, 1.0F, 1.0F)));
   sdf_tree_.add_material(Material(glm::vec3(0.0F, 1.0F, 0.0F)));
   sdf_tree_.add_material(Material(glm::vec3(0.0F, 0.0F, 1.0F)));
-  auto& m = sdf_tree_.add_material(Material(glm::vec3(1.0F, 0.0F, 1.0F)));
+  sdf_tree_.add_material(Material(glm::vec3(1.0F, 0.0F, 1.0F)));
 
-  sdf_tree_.root().push_back_child<SphereNode>(SDFBinaryOperation::SmoothUnion).set_material(m.material_id());
+  sdf_tree_.root().push_back_child<SphereNode>(SDFBinaryOperation::SmoothUnion).set_material(m1.material_id());
   auto& group = sdf_tree_.root().push_back_child<GroupNode>(SDFBinaryOperation::SmoothUnion);
   group.push_back_child<CubeNode>(SDFBinaryOperation::SmoothUnion).transform().set_local_pos(glm::vec3(1, 1, 0));
   group.push_back_child<CubeNode>(SDFBinaryOperation::SmoothUnion).transform().set_local_pos(glm::vec3(-1, -1, 0));
+  group.set_material(m2.material_id());
 
   // Setup shaders
   primitive_ubo_ = std::make_unique<PrimitiveUniformBuffer>(sdf_tree_.max_node_count());
@@ -136,18 +136,6 @@ Resin::Resin()
                                                     PointLight::Attenuation(1.0F, 0.7F, 1.8F));
   directional_light_ = std::make_unique<DirectionalLight>(glm::vec3(0.5F, 0.5F, 0.5F), 1.0F);
   directional_light_->transform.set_local_rot(glm::quatLookAt(-glm::normalize(glm::vec3(0, 2, 3)), glm::vec3(0, 1, 0)));
-
-  // Setup example materials
-  // TEMP(SDF-131): remove
-  sphere_mat_    = std::make_unique<Material>(glm::vec3(0.25F, 0.25F, 0.96F));
-  cube_mat_      = std::make_unique<Material>(glm::vec3(0.96F, 0.25F, 0.25F));
-  torus_mat_     = std::make_unique<Material>(glm::vec3(0.25F, 0.96F, 0.25F));
-  capsule_mat_   = std::make_unique<Material>(glm::vec3(0.96F, 0.96F, 0.25F));
-  link_mat_      = std::make_unique<Material>(glm::vec3(0.96F, 0.25F, 0.96F));
-  ellipsoid_mat_ = std::make_unique<Material>(glm::vec3(0.25F, 0.96F, 0.96F));
-  pyramid_mat_   = std::make_unique<Material>(glm::vec3(0.25F, 0.25F, 0.25F));
-  cylinder_mat_  = std::make_unique<Material>(glm::vec3(0.96F, 0.96F, 0.96F));
-  prism_mat_     = std::make_unique<Material>(glm::vec3(0.1F, 0.6F, 0.9F));
 
   setup_shader_uniforms();
 }

@@ -38,9 +38,6 @@ void ShaderProgram::recompile() {
   for (auto& pair : uniform_block_bindings_) {
     glUniformBlockBinding(program_id_, pair.first, pair.second);
   }
-
-  // TEMP(SDF-131) when materials will be in UBO this won't be needed
-  uniform_locations_.clear();
 }
 
 std::optional<std::string> ShaderProgram::get_shader_status(GLuint shader, GLenum type) {
