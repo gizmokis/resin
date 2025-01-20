@@ -338,18 +338,6 @@ void Resin::render_material_images() {
   glViewport(0, 0, static_cast<GLint>(window_->dimensions().x), static_cast<GLint>(window_->dimensions().y));
 }
 
-// TEMP(SDF-131): remove
-void Resin::material_inspect(Material& mat, std::string_view name) {
-  if (ImGui::BeginTabItem(name.data())) {
-    ImGui::ColorEdit3("Color", glm::value_ptr(mat.albedo));
-    ImGui::DragFloat("Ambient", &mat.ambientFactor, 0.01F, 0.0F, 1.0F, "%.2f");
-    ImGui::DragFloat("Diffuse", &mat.diffuseFactor, 0.01F, 0.0F, 1.0F, "%.2f");
-    ImGui::DragFloat("Specular", &mat.specularFactor, 0.01F, 0.0F, 1.0F, "%.2f");
-    ImGui::DragFloat("Exponent", &mat.specularExponent, 0.1F, 0.0F, 100.0F, "%.1f");
-    ImGui::EndTabItem();
-  }
-}
-
 void Resin::gui(duration_t delta) {
   const float seconds_dt = std ::chrono::duration_cast<std::chrono::duration<float>>(delta).count();
   ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
@@ -487,22 +475,6 @@ void Resin::gui(duration_t delta) {
       }
       ImGui::EndTabItem();
     }
-    ImGui::EndTabBar();
-  }
-  ImGui::End();
-
-  ImGui::Begin("[TEMP] Materials");
-  if (ImGui::BeginTabBar("MaterialTabBar", ImGuiTabBarFlags_None)) {
-    // TEMP(SDF-131): remove
-    material_inspect(*sphere_mat_, "SphereMat");
-    material_inspect(*cube_mat_, "CubeMat");
-    material_inspect(*torus_mat_, "TorusMat");
-    material_inspect(*capsule_mat_, "CapsuleMat");
-    material_inspect(*link_mat_, "LinkMat");
-    material_inspect(*ellipsoid_mat_, "EllipsoidMat");
-    material_inspect(*pyramid_mat_, "PyramidMat");
-    material_inspect(*cylinder_mat_, "CylinderMat");
-    material_inspect(*prism_mat_, "PrismMat");
     ImGui::EndTabBar();
   }
   ImGui::End();

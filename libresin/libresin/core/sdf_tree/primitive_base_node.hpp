@@ -40,15 +40,14 @@ class BasePrimitiveNode : public SDFTreeNode {
   }
 
   inline void set_material(IdView<MaterialId> mat_id) final {
-    tree_registry_.is_tree_dirty = true;
-    mat_id_                      = mat_id;
-  }
-  inline void remove_material() final {
-    tree_registry_.is_tree_dirty = true;
-    mat_id_                      = std::nullopt;
+    mark_dirty();
+    mat_id_ = mat_id;
   }
 
-  inline bool is_material_default() const { return mat_id_ == tree_registry_.default_material.material_id(); }
+  inline void remove_material() final {
+    mark_dirty();
+    mat_id_ = std::nullopt;
+  }
 
   inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override { visitor.visit_primitive(*this); }
   bool is_leaf() final { return true; }
