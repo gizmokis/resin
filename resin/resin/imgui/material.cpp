@@ -173,7 +173,7 @@ bool MaterialEdit(std::optional<::resin::IdView<::resin::MaterialId>>& selected,
   edited      = ImGui::DragFloat("Ambient", &mat.material.ambientFactor, 0.01F, 0.0F, 1.0F, "%.2f") || edited;
   edited      = ImGui::DragFloat("Diffuse", &mat.material.diffuseFactor, 0.01F, 0.0F, 1.0F, "%.2f") || edited;
   edited      = ImGui::DragFloat("Specular", &mat.material.specularFactor, 0.01F, 0.0F, 1.0F, "%.2f") || edited;
-  edited      = ImGui::DragFloat("Exponent", &mat.material.specularExponent, 0.01F, 0.0F, 100.0F, "%.2f") || edited;
+  edited      = ImGui::DragFloat("Exponent", &mat.material.specularExponent, 0.1F, 0.0F, 100.0F, "%.2f") || edited;
 
   if (edited) {
     auto it = material_img_fbs.material_preview_fbs_map.find(*selected);
