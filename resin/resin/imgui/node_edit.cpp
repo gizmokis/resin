@@ -23,64 +23,40 @@ namespace ImGui {
 namespace resin {
 
 void resin::SDFNodeEditVisitor::visit_sphere(::resin::SphereNode& node) {
-  if (ImGui::BeginTabItem("Properties")) {
-    NODE_DIRTY(ImGui::DragFloat("Radius", &node.radius, 0.01F, 0.0F, 2.0F, "%.2f"));
-    ImGui::EndTabItem();
-  }
+  NODE_DIRTY(ImGui::DragFloat("Radius", &node.radius, 0.01F, 0.0F, 2.0F, "%.2f"));
 }
 
 void resin::SDFNodeEditVisitor::visit_cube(::resin::CubeNode& node) {
-  if (ImGui::BeginTabItem("Properties")) {
-    NODE_DIRTY(ImGui::DragFloat3("Size", glm::value_ptr(node.size), 0.01F, 0.0F, 2.0F, "%.2f"));
-    ImGui::EndTabItem();
-  }
+  NODE_DIRTY(ImGui::DragFloat3("Size", glm::value_ptr(node.size), 0.01F, 0.0F, 2.0F, "%.2f"));
 }
 
 void resin::SDFNodeEditVisitor::visit_torus(::resin::TorusNode& node) {
-  if (ImGui::BeginTabItem("Properties")) {
-    NODE_DIRTY(ImGui::DragFloat("Major radius", &node.major_radius, 0.01F, 0.0F, 2.0F, "%.2f"));
-    NODE_DIRTY(ImGui::DragFloat("Minor radius", &node.minor_radius, 0.01F, 0.0F, 2.0F, "%.2f"));
-    ImGui::EndTabItem();
-  }
+  NODE_DIRTY(ImGui::DragFloat("Major radius", &node.major_radius, 0.01F, 0.0F, 2.0F, "%.2f"));
+  NODE_DIRTY(ImGui::DragFloat("Minor radius", &node.minor_radius, 0.01F, 0.0F, 2.0F, "%.2f"));
 }
 
 void resin::SDFNodeEditVisitor::visit_capsule(::resin::CapsuleNode& node) {
-  if (ImGui::BeginTabItem("Properties")) {
-    NODE_DIRTY(ImGui::DragFloat("Height", &node.height, 0.01F, 0.0F, 2.0F, "%.2f"));
-    NODE_DIRTY(ImGui::DragFloat("Radius", &node.radius, 0.01F, 0.0F, 2.0F, "%.2f"));
-    ImGui::EndTabItem();
-  }
+  NODE_DIRTY(ImGui::DragFloat("Height", &node.height, 0.01F, 0.0F, 2.0F, "%.2f"));
+  NODE_DIRTY(ImGui::DragFloat("Radius", &node.radius, 0.01F, 0.0F, 2.0F, "%.2f"));
 }
 
 void resin::SDFNodeEditVisitor::visit_link(::resin::LinkNode& node) {
-  if (ImGui::BeginTabItem("Properties")) {
-    NODE_DIRTY(ImGui::DragFloat("Length", &node.length, 0.01F, 0.0F, 2.0F, "%.2f"));
-    NODE_DIRTY(ImGui::DragFloat("Major radius", &node.major_radius, 0.01F, 0.0F, 2.0F, "%.2f"));
-    NODE_DIRTY(ImGui::DragFloat("Minor radius", &node.minor_radius, 0.01F, 0.0F, 2.0F, "%.2f"));
-    ImGui::EndTabItem();
-  }
+  NODE_DIRTY(ImGui::DragFloat("Length", &node.length, 0.01F, 0.0F, 2.0F, "%.2f"));
+  NODE_DIRTY(ImGui::DragFloat("Major radius", &node.major_radius, 0.01F, 0.0F, 2.0F, "%.2f"));
+  NODE_DIRTY(ImGui::DragFloat("Minor radius", &node.minor_radius, 0.01F, 0.0F, 2.0F, "%.2f"));
 }
 
 void resin::SDFNodeEditVisitor::visit_ellipsoid(::resin::EllipsoidNode& node) {
-  if (ImGui::BeginTabItem("Properties")) {
-    NODE_DIRTY(ImGui::DragFloat3("Size", glm::value_ptr(node.radii), 0.01F, 0.0F, 2.0F, "%.2f"));
-    ImGui::EndTabItem();
-  }
+  NODE_DIRTY(ImGui::DragFloat3("Size", glm::value_ptr(node.radii), 0.01F, 0.0F, 2.0F, "%.2f"));
 }
 
 void resin::SDFNodeEditVisitor::visit_pyramid(::resin::PyramidNode& node) {
-  if (ImGui::BeginTabItem("Properties")) {
-    NODE_DIRTY(ImGui::DragFloat("Height", &node.height, 0.01F, 0.0F, 2.0F, "%.2f"));
-    ImGui::EndTabItem();
-  }
+  NODE_DIRTY(ImGui::DragFloat("Height", &node.height, 0.01F, 0.0F, 2.0F, "%.2f"));
 }
 
 void resin::SDFNodeEditVisitor::visit_cylinder(::resin::CylinderNode& node) {
-  if (ImGui::BeginTabItem("Properties")) {
-    NODE_DIRTY(ImGui::DragFloat("Height", &node.height, 0.01F, 0.0F, 2.0F, "%.2f"));
-    NODE_DIRTY(ImGui::DragFloat("Radius", &node.radius, 0.01F, 0.0F, 2.0F, "%.2f"));
-    ImGui::EndTabItem();
-  }
+  NODE_DIRTY(ImGui::DragFloat("Height", &node.height, 0.01F, 0.0F, 2.0F, "%.2f"));
+  NODE_DIRTY(ImGui::DragFloat("Radius", &node.radius, 0.01F, 0.0F, 2.0F, "%.2f"));
 }
 
 void resin::SDFNodeEditVisitor::visit_prism(::resin::TriangularPrismNode& node) {

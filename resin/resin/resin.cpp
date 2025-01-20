@@ -241,6 +241,9 @@ void Resin::init_gl() {  // NOLINT
 void Resin::update(duration_t delta) {
   const float seconds_dt = std ::chrono::duration_cast<std::chrono::duration<float>>(delta).count();
 
+  // FileDialog update must go before ubo updates
+  FileDialog::instance().update();
+
   directional_light_->transform.rotate(glm::angleAxis(std::chrono::duration<float>(delta).count(), glm::vec3(0, 1, 0)));
 
   if (sdf_tree_.is_dirty()) {
@@ -266,8 +269,6 @@ void Resin::update(duration_t delta) {
   update_camera_operators(seconds_dt);
   update_camera_distance();
   interpolate(seconds_dt);
-
-  FileDialog::instance().update();
 
   sdf_tree_.mark_materials_clean();
   sdf_tree_.mark_primitives_clean();
