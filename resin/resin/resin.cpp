@@ -404,8 +404,6 @@ void Resin::gui(duration_t delta) {
 
   ImGui::End();
 
-  ImGui::ShowDemoWindow();
-
   ImGui::SetNextWindowSizeConstraints(ImVec2(280.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
   if (ImGui::Begin("SDF Tree")) {
     ImGui::resin::SDFTreeView(sdf_tree_, selected_node_);
@@ -432,15 +430,15 @@ void Resin::gui(duration_t delta) {
 
   if (ImGui::Begin("Materials")) {
     ImGui::resin::MaterialsListEdit(selected_material_, *material_images_, sdf_tree_);
-    ImGui::End();
   }
+  ImGui::End();
 
   if (ImGui::Begin("Edit Material")) {
     if (selected_material_ && !selected_material_->expired()) {
       ImGui::resin::MaterialEdit(selected_material_, *material_images_, sdf_tree_);
     }
-    ImGui::End();
   }
+  ImGui::End();
 
   ImGui::SetNextWindowSizeConstraints(ImVec2(350.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
   ImGui::Begin("[TEMP] Lights");
