@@ -133,8 +133,6 @@ class Resin {
   std::unique_ptr<Camera> camera_;
   std::unique_ptr<PointLight> point_light_;
   std::unique_ptr<DirectionalLight> directional_light_;
-  // TEMP(SDF-131): remove
-  void material_inspect(Material& mat, std::string_view name);
   std::unique_ptr<Material> sphere_mat_, cube_mat_, torus_mat_, capsule_mat_, link_mat_, ellipsoid_mat_, pyramid_mat_,
       cylinder_mat_, prism_mat_;
 
