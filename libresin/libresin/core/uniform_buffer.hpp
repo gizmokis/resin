@@ -39,9 +39,14 @@ class PrimitiveUniformBuffer : public UniformBuffer {
     glm::mat4 transform;
     glm::vec3 size;
     float scale;
+    int mat_id;
+    float _padding[3]{0.0F, 0.0F, 0.F};  // required for std140 alignment
 
-    PrimitiveNode(const Transform& _transform, const glm::vec3& _size)
-        : transform(_transform.world_to_local_matrix()), size(_size), scale(_transform.scale()) {}
+    PrimitiveNode(const BasePrimitiveNode& _node, const glm::vec3& _size)
+        : transform(_node.transform().world_to_local_matrix()),
+          size(_size),
+          scale(_node.transform().scale()),
+          mat_id(static_cast<int>(_node.active_material_id_or_defualt().raw())) {}
   };
 
   explicit PrimitiveUniformBuffer(size_t max_count);
@@ -70,6 +75,25 @@ class PrimitiveUniformBuffer : public UniformBuffer {
     void visit_prism(TriangularPrismNode&) override;
   };
 
+  const size_t max_count_;
+};
+
+class MaterialUniformBuffer : public UniformBuffer {
+ public:
+  explicit MaterialUniformBuffer(size_t max_count);
+  ~MaterialUniformBuffer() override = default;
+
+  size_t max_count() const { return max_count_; }
+
+  void set(SDFTree& tree);
+  void update_dirty(SDFTree& tree);
+
+  MaterialUniformBuffer(const MaterialUniformBuffer&)            = delete;
+  MaterialUniformBuffer(MaterialUniformBuffer&&)                 = delete;
+  MaterialUniformBuffer& operator=(const MaterialUniformBuffer&) = delete;
+  MaterialUniformBuffer& operator=(MaterialUniformBuffer&&)      = delete;
+
+ private:
   const size_t max_count_;
 };
 

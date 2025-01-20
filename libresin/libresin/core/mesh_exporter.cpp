@@ -41,7 +41,7 @@ void MeshExporter::execute_shader(const glm::vec3 bb_start, const glm::vec3 bb_e
                                   IdView<SDFTreeNodeId> node_id) {
   GroupNode& group_node = sdf_tree.group(node_id);
   shader_resource_.set_ext_defi("SDF_CODE", group_node.gen_shader_code(GenShaderMode::SinglePrimitiveArray));
-  shader_resource_.set_ext_defi("MAX_UBO_NODE_COUNT", std::to_string(sdf_tree.max_nodes_count()));
+  shader_resource_.set_ext_defi("MAX_UBO_NODE_COUNT", std::to_string(sdf_tree.max_node_count()));
 
   // Set up compute shader
   ComputeShaderProgram compute_shader_program("marching_cubes", shader_resource_);

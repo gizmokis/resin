@@ -101,15 +101,21 @@ Resin::Resin()
   group.push_back_child<CubeNode>(SDFBinaryOperation::SmoothUnion).transform().set_local_pos(glm::vec3(-1, -1, 0));
 
   // Setup shaders
-  primitive_ubo_ = std::make_unique<PrimitiveUniformBuffer>(sdf_tree_.max_nodes_count());
+  primitive_ubo_ = std::make_unique<PrimitiveUniformBuffer>(sdf_tree_.max_node_count());
   primitive_ubo_->bind();
   primitive_ubo_->set(sdf_tree_);
   primitive_ubo_->unbind();
 
+  material_ubo_ = std::make_unique<MaterialUniformBuffer>(sdf_tree_.max_material_count());
+  material_ubo_->bind();
+  material_ubo_->set(sdf_tree_);
+  material_ubo_->unbind();
+
   ShaderResource grid_frag_shader = *shader_resource_manager_.get_res(assets_path / "grid.frag");
   ShaderResource main_frag_shader = *shader_resource_manager_.get_res(assets_path / "main.frag");
   main_frag_shader.set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
-  main_frag_shader.set_ext_defi("MAX_UBO_NODE_COUNT", std::to_string(sdf_tree_.max_nodes_count()));
+  main_frag_shader.set_ext_defi("MAX_UBO_NODE_COUNT", std::to_string(sdf_tree_.max_node_count()));
+  main_frag_shader.set_ext_defi("MAX_UBO_MATERIAL_COUNT", std::to_string(sdf_tree_.max_material_count()));
 
   grid_shader_ = std::make_unique<RenderingShaderProgram>(
       "grid", *shader_resource_manager_.get_res(assets_path / "main.vert"), std::move(grid_frag_shader));
@@ -118,7 +124,8 @@ Resin::Resin()
       *shader_resource_manager_.get_res(assets_path / "material_view.frag"));
   shader_ = std::make_unique<RenderingShaderProgram>(
       "main", *shader_resource_manager_.get_res(assets_path / "main.vert"), std::move(main_frag_shader));
-  shader_->bind_uniform_buffer("Data", *primitive_ubo_);
+  shader_->bind_uniform_buffer("NodeData", *primitive_ubo_);
+  shader_->bind_uniform_buffer("MaterialData", *material_ubo_);
 
   // Setup camera
   camera_ = std::make_unique<Camera>(false, 70.F, 16.F / 9.F, 0.75F, 100.F);
@@ -249,16 +256,9 @@ void Resin::update(duration_t delta) {
   primitive_ubo_->update_dirty(sdf_tree_);
   primitive_ubo_->unbind();
 
-  // TEMP(SDF-131): remove
-  shader_->set_uniform("u_sdf_materials[0]", *sphere_mat_);
-  shader_->set_uniform("u_sdf_materials[1]", *cube_mat_);
-  shader_->set_uniform("u_sdf_materials[2]", *torus_mat_);
-  shader_->set_uniform("u_sdf_materials[3]", *capsule_mat_);
-  shader_->set_uniform("u_sdf_materials[4]", *link_mat_);
-  shader_->set_uniform("u_sdf_materials[5]", *ellipsoid_mat_);
-  shader_->set_uniform("u_sdf_materials[6]", *pyramid_mat_);
-  shader_->set_uniform("u_sdf_materials[7]", *cylinder_mat_);
-  shader_->set_uniform("u_sdf_materials[8]", *prism_mat_);
+  material_ubo_->bind();
+  material_ubo_->update_dirty(sdf_tree_);
+  material_ubo_->unbind();
 
   shader_->set_uniform("u_dirLight", *directional_light_);
   shader_->set_uniform("u_pointLight", *point_light_);

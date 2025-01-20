@@ -120,6 +120,16 @@ void SDFTree::delete_material(IdView<MaterialId> mat_id) {
   materials_[mat_id.raw()] = std::nullopt;
 }
 
+void SDFTree::visit_all_materials(const std::function<void(MaterialSDFTreeComponent&)>& mat_visitor) {
+  mat_visitor(sdf_tree_registry_.default_material);
+
+  for (const auto& mat_id : this->material_active_ids_) {
+    if (materials_[mat_id.raw()].has_value()) {
+      mat_visitor(**materials_[mat_id.raw()]);
+    }
+  }
+}
+
 void SDFTree::visit_dirty_materials(const std::function<void(MaterialSDFTreeComponent&)>& mat_visitor) {
   for (const auto& mat_id : sdf_tree_registry_.dirty_materials) {
     if (materials_[mat_id.raw()].has_value()) {

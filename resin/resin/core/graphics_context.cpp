@@ -26,6 +26,12 @@ void GraphicsContext::init() {
   resin::Logger::info("\tVendor: {}", reinterpret_cast<const char*>(glGetString(GL_VENDOR)));
   resin::Logger::info("\tRenderer: {}", reinterpret_cast<const char*>(glGetString(GL_RENDERER)));
   resin::Logger::info("\tVersion: {}", reinterpret_cast<const char*>(glGetString(GL_VERSION)));
+  GLint max_uniform_block_size     = 0;
+  GLint max_uniform_block_bindings = 0;
+  glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &max_uniform_block_size);
+  glGetIntegerv(GL_MAX_UNIFORM_BUFFER_BINDINGS, &max_uniform_block_bindings);
+  resin::Logger::info("\tMax uniform block size: {}", max_uniform_block_size);
+  resin::Logger::info("\tMax uniform block bindings: {}", max_uniform_block_bindings);
 }
 
 void GraphicsContext::swap_buffers() { glfwSwapBuffers(window_ptr_); }

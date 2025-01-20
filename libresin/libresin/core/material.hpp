@@ -18,7 +18,11 @@ struct Material {
         specularFactor(_specularFactor),
         specularExponent(_specularExponent) {}
 
+  // WARNING: The properties order matters for the shader!
+
   glm::vec3 albedo;
+
+  float _padding = 0.0F;  // required for std140 alignment
 
   float ambientFactor;
   float diffuseFactor;

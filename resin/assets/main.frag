@@ -1,4 +1,4 @@
-#version 330 core
+#version 430 core
 
 layout(location = 0) out vec4 fragColor;
 layout(location = 1) out int id;
@@ -15,7 +15,6 @@ uniform float u_farPlane;
 #include "blinn_phong.glsl"
 #include "sdf.glsl"
 #external_definition SDF_CODE
-#external_definition MAX_UBO_NODE_COUNT
 
 // rendering
 const vec3 u_Ambient = vec3(0.25,0.25,0.25);

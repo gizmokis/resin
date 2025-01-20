@@ -126,6 +126,7 @@ class Resin {
   std::unique_ptr<RenderingShaderProgram> grid_shader_;
   std::unique_ptr<RenderingShaderProgram> material_img_shader_;
   std::unique_ptr<PrimitiveUniformBuffer> primitive_ubo_;
+  std::unique_ptr<MaterialUniformBuffer> material_ubo_;
   std::unique_ptr<ViewportFramebuffer> framebuffer_;
   std::unique_ptr<ImGui::resin::LazyMaterialImageFramebuffers> material_images_;
 

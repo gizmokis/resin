@@ -74,10 +74,14 @@ class SDFTree {
   inline MaterialSDFTreeComponent& default_material() { return sdf_tree_registry_.default_material; }
   inline const MaterialSDFTreeComponent& default_material() const { return sdf_tree_registry_.default_material; }
 
+  // Visits all materials including the default material.
+  void visit_all_materials(const std::function<void(MaterialSDFTreeComponent&)>& mat_visitor);
+
   void visit_dirty_materials(const std::function<void(MaterialSDFTreeComponent&)>& mat_visitor);
   inline void mark_materials_clean() { sdf_tree_registry_.dirty_materials.clear(); }
 
-  inline size_t max_nodes_count() const { return sdf_tree_registry_.nodes_registry.get_max_objs(); }
+  inline size_t max_node_count() const { return sdf_tree_registry_.nodes_registry.get_max_objs(); }
+  inline size_t max_material_count() const { return sdf_tree_registry_.materials_registry.get_max_objs(); }
 
  private:
   static size_t curr_id_;
