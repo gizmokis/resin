@@ -24,11 +24,9 @@
 #include <resin/event/mouse_events.hpp>
 #include <resin/event/window_events.hpp>
 #include <resin/imgui/gizmo.hpp>
+#include <resin/imgui/material.hpp>
+#include <resin/imgui/types.hpp>
 #include <resin/resources/resource_managers.hpp>
-#include <unordered_map>
-
-#include "resin/imgui/material.hpp"
-#include "resin/imgui/types.hpp"
 
 int main();
 

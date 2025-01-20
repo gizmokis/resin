@@ -1,5 +1,5 @@
-#ifndef RESIN_NODE_EDIT_HPP
-#define RESIN_NODE_EDIT_HPP
+#ifndef IMGUI_RESIN_NODE_EDIT_HPP
+#define IMGUI_RESIN_NODE_EDIT_HPP
 
 #include <libresin/core/framebuffer.hpp>
 #include <libresin/core/id_registry.hpp>

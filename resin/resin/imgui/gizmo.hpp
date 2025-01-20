@@ -1,5 +1,5 @@
-#ifndef RESIN_GIZMO_HPP
-#define RESIN_GIZMO_HPP
+#ifndef IMGUI_RESIN_GIZMO_HPP
+#define IMGUI_RESIN_GIZMO_HPP
 
 #include <imgui/imgui.h>
 

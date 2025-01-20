@@ -67,7 +67,7 @@ void FileDialog::start_file_dialog(FileDialog::DialogType type, std::optional<st
         }
 
         nfdu8char_t* out_path = nullptr;
-        nfdresult_t result = NFD_ERROR;
+        nfdresult_t result    = NFD_ERROR;
 
         if (type == DialogType::OpenFile) {
           result = NFD_OpenDialogU8(

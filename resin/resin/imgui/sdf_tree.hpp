@@ -1,5 +1,5 @@
-#ifndef RESIN_TREE_COMPONENT_HPP
-#define RESIN_TREE_COMPONENT_HPP
+#ifndef IMGUI_RESIN_TREE_COMPONENT_HPP
+#define IMGUI_RESIN_TREE_COMPONENT_HPP
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>

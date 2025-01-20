@@ -1,5 +1,5 @@
-#ifndef RESIN_IMGUI_TYPES_HPP
-#define RESIN_IMGUI_TYPES_HPP
+#ifndef IMGUI_RESIN_TYPES_HPP
+#define IMGUI_RESIN_TYPES_HPP
 
 #include <libresin/core/framebuffer.hpp>
 #include <libresin/core/id_registry.hpp>
