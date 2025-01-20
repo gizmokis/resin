@@ -22,12 +22,11 @@ struct Material {
 
   glm::vec3 albedo;
 
-  float _padding = 0.0F;  // required for std140 alignment
-
   float ambientFactor;
   float diffuseFactor;
   float specularFactor;
   float specularExponent;
+  float _padding = 0.0F;  // required for std140 alignment
 };
 
 struct SDFTreeRegistry;

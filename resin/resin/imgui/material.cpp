@@ -18,7 +18,7 @@ namespace resin {
 
 bool MaterialsList(std::optional<::resin::IdView<::resin::MaterialId>>& selected,
                    LazyMaterialImageFramebuffers& material_img_fbs, const ::resin::SDFTree& sdf_tree) {
-  static const float kPadding = 4.0F;
+  static const float kPadding = 6.0F;
 
   if (sdf_tree.materials().empty()) {
     return false;

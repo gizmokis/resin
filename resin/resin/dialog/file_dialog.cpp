@@ -66,7 +66,7 @@ void FileDialog::start_file_dialog(FileDialog::DialogType type, std::optional<st
           resin::Logger::err("Failed to open the file dialog");
         }
 
-        nfdu8char_t* out_path;
+        nfdu8char_t* out_path = nullptr;
         nfdresult_t result = NFD_ERROR;
 
         if (type == DialogType::OpenFile) {

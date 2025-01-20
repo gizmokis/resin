@@ -42,6 +42,7 @@ void MeshExporter::execute_shader(const glm::vec3 bb_start, const glm::vec3 bb_e
   GroupNode& group_node = sdf_tree.group(node_id);
   shader_resource_.set_ext_defi("SDF_CODE", group_node.gen_shader_code(GenShaderMode::SinglePrimitiveArray));
   shader_resource_.set_ext_defi("MAX_UBO_NODE_COUNT", std::to_string(sdf_tree.max_node_count()));
+  shader_resource_.set_ext_defi("MAX_UBO_MATERIAL_COUNT", std::to_string(sdf_tree.max_material_count()));
 
   // Set up compute shader
   ComputeShaderProgram compute_shader_program("marching_cubes", shader_resource_);
@@ -50,7 +51,7 @@ void MeshExporter::execute_shader(const glm::vec3 bb_start, const glm::vec3 bb_e
   compute_shader_program.set_uniform("u_boundingBoxEnd", bb_end);
   compute_shader_program.set_uniform("u_marchRes", resolution_);
   compute_shader_program.set_uniform("u_farPlane", 100.F);  // remove this uniform later
-  compute_shader_program.bind_uniform_buffer("Data", 0);
+  compute_shader_program.bind_uniform_buffer("NodeData", 0);
 
   // Dispatch compute shader.
   glDispatchCompute(resolution_ / 8, resolution_ / 8, resolution_ / 8);
