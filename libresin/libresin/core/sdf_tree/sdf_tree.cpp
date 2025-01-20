@@ -103,6 +103,7 @@ MaterialSDFTreeComponent& SDFTree::material(IdView<MaterialId> mat_id) {
 MaterialSDFTreeComponent& SDFTree::add_material(Material mat) {
   auto new_mat = std::make_unique<MaterialSDFTreeComponent>(sdf_tree_registry_, std::move(mat));
   auto id      = new_mat->material_id();
+  Logger::info("Created new material with id {}", id.raw());
   material_active_ids_.push_back(id);
   materials_[id.raw()] = std::move(new_mat);
   return **materials_[id.raw()];

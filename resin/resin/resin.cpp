@@ -91,7 +91,6 @@ Resin::Resin()
   auto& m2 = sdf_tree_.add_material(Material(glm::vec3(0.96F, 0.25F, 0.25F)));
   sdf_tree_.add_material(Material(glm::vec3(1.0F, 1.0F, 0.0F)));
   sdf_tree_.add_material(Material(glm::vec3(0.0F, 1.0F, 0.0F)));
-  sdf_tree_.add_material(Material(glm::vec3(0.0F, 0.0F, 1.0F)));
   sdf_tree_.add_material(Material(glm::vec3(1.0F, 0.0F, 1.0F)));
 
   sdf_tree_.root().push_back_child<SphereNode>(SDFBinaryOperation::SmoothUnion).set_material(m1.material_id());

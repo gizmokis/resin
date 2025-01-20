@@ -31,6 +31,7 @@ bool MaterialsList(std::optional<::resin::IdView<::resin::MaterialId>>& selected
 
   ImGui::BeginChild("ResizeableMaterialsList");
   if (ImGui::BeginTable("MaterialsTable", cols)) {
+    ImGui::TableNextColumn();
     for (const auto& mat_id : sdf_tree.materials()) {
       ImGui::PushID(static_cast<int>(mat_id.raw()));
 
