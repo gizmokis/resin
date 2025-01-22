@@ -200,7 +200,7 @@ sdf_result opSmoothDiff(sdf_result d1, sdf_result d2, float k)
     sdf_result result;
     result.mat = material_mix(d1.mat, d2.mat, clamp(0.5-0.75*(d1.dist+d2.dist)/k, 0.0, 1.0)); // TODO(SDF-117): optimize math?
     result.dist = smooth_max(d1.dist,-d2.dist,k); 
-    result.id = d1.dist < d2.dist ? d1.id : d2.id;
+    result.id = d1.dist > -d2.dist ? d1.id : d2.id;
     return result;
 }
 
@@ -209,7 +209,7 @@ sdf_result opSmoothInter(sdf_result d1, sdf_result d2, float k)
     sdf_result result;
     result.mat = material_mix(d1.mat, d2.mat, clamp(0.5-0.75*(d1.dist-d2.dist)/k, 0.0, 1.0)); // TODO(SDF-117): optimize math?
     result.dist = smooth_max(d1.dist,d2.dist,k); 
-    result.id = d1.dist < d2.dist ? d1.id : d2.id;
+    result.id = d1.dist > d2.dist ? d1.id : d2.id;
     return result;
 }
 
