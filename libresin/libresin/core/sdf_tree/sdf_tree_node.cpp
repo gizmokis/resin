@@ -17,6 +17,11 @@ SDFTreeNode::~SDFTreeNode() {
   Logger::debug("Destructed node with id={}.", node_id_.raw());
 }
 
+void SDFTreeNode::set_bin_op(SDFBinaryOperation bin_op) {
+  bin_op_                      = bin_op;
+  tree_registry_.is_tree_dirty = true;
+}
+
 void SDFTreeNode::mark_dirty() { push_dirty_primitives(); }
 
 }  // namespace resin

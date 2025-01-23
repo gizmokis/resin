@@ -156,13 +156,64 @@ sdf_result opUnion(sdf_result d1, sdf_result d2, float k) // FIXME(SDF-117)
 	return (d1.dist<d2.dist) ? d1 : d2;
 }
 
+sdf_result opDiff(sdf_result d1, sdf_result d2, float k) // FIXME(SDF-117)
+{
+	return (d1.dist>-d2.dist) ? d1 : sdf_result(d2.mat, -d2.dist, d2.id);
+} 
+
+sdf_result opInter(sdf_result d1, sdf_result d2, float k) // FIXME(SDF-117)
+{
+	return (d1.dist>d2.dist) ? d1 : d2;
+}
+
+sdf_result opXor(sdf_result d1, sdf_result d2, float k) // FIXME(SDF-117)
+{
+    sdf_result mn = (d1.dist < d2.dist) ? d1 : d2;
+    sdf_result mx = (d1.dist < d2.dist) ? d2 : d1;
+    mx.dist = -mx.dist;
+	return (mn.dist > mx.dist) ? mn : mx;
+}
+
+float smooth_min(float a, float b, float k) 
+{
+    float h = max(k - abs(a-b), 0.0)/k;
+    return min(a, b) - 0.1666*h*h*h*k;
+}
+
+float smooth_max(float a, float b, float k) 
+{
+    float h = max(k - abs(a-b), 0.0)/k;
+    return max(a, b) + 0.1666*h*h*h*k;
+}
+
 sdf_result opSmoothUnion(sdf_result d1, sdf_result d2, float k)
 {
-    k *= 6.0/4.0;
-    float h = max(k - abs(d1.dist-d2.dist), 0.0)/k;
     sdf_result result;
-    result.mat = material_mix(d1.mat, d2.mat, clamp( 0.5+0.5*(d1.dist-d2.dist)/(4*k/6), 0.0, 1.0 )); // TODO(SDF-117): optimize math
-    result.dist = min(d1.dist,d2.dist) - h*h*h*k*(1.0/6.0); 
+    result.mat = material_mix(d1.mat, d2.mat, clamp(0.5+0.75*(d1.dist-d2.dist)/k, 0.0, 1.0)); // TODO(SDF-117): optimize math?
+    result.dist = smooth_min(d1.dist,d2.dist,k); 
     result.id = d1.dist < d2.dist ? d1.id : d2.id;
     return result;
+}
+
+sdf_result opSmoothDiff(sdf_result d1, sdf_result d2, float k)
+{
+    sdf_result result;
+    result.mat = material_mix(d1.mat, d2.mat, clamp(0.5-0.75*(d1.dist+d2.dist)/k, 0.0, 1.0)); // TODO(SDF-117): optimize math?
+    result.dist = smooth_max(d1.dist,-d2.dist,k); 
+    result.id = d1.dist > -d2.dist ? d1.id : d2.id;
+    return result;
+}
+
+sdf_result opSmoothInter(sdf_result d1, sdf_result d2, float k)
+{
+    sdf_result result;
+    result.mat = material_mix(d1.mat, d2.mat, clamp(0.5-0.75*(d1.dist-d2.dist)/k, 0.0, 1.0)); // TODO(SDF-117): optimize math?
+    result.dist = smooth_max(d1.dist,d2.dist,k); 
+    result.id = d1.dist > d2.dist ? d1.id : d2.id;
+    return result;
+}
+
+sdf_result opSmoothXor(sdf_result d1, sdf_result d2, float k)
+{
+    return opDiff(opSmoothUnion(d1, d2, k), opSmoothInter(d1, d2, k), k); // TODO(SDF-117): optimize math?
 }

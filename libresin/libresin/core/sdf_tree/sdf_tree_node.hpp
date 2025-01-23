@@ -65,7 +65,7 @@ class SDFTreeNode {
   inline const Transform& transform() const { return transform_; }
 
   inline SDFBinaryOperation bin_op() const { return bin_op_; }
-  inline void set_bin_op(SDFBinaryOperation bin_op) { bin_op_ = bin_op; }
+  void set_bin_op(SDFBinaryOperation bin_op);
 
   inline bool has_parent() const { return parent_.has_value(); }
   inline GroupNode& parent() { return parent_.value(); }
