@@ -6,8 +6,8 @@
 
 namespace resin {
 
-UniformBuffer::UniformBuffer(size_t binding, size_t item_count, size_t item_size, size_t item_end_padding)
-    : buffer_id_(0), binding_(binding), buffer_size_(item_size * item_count), item_end_padding_(item_end_padding) {
+UniformBuffer::UniformBuffer(size_t binding, size_t item_max_count, size_t item_size, size_t item_end_padding)
+    : buffer_id_(0), binding_(binding), buffer_size_(item_size * item_max_count), item_end_padding_(item_end_padding) {
   glGenBuffers(1, &buffer_id_);
   glBindBuffer(GL_UNIFORM_BUFFER, buffer_id_);
   glBufferData(GL_UNIFORM_BUFFER, static_cast<GLsizeiptr>(buffer_size_), nullptr, GL_STATIC_DRAW);
