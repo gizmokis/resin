@@ -14,7 +14,7 @@ namespace resin {
 
 class UniformBuffer {
  public:
-  explicit UniformBuffer(size_t binding, size_t buffer_size);
+  explicit UniformBuffer(size_t binding, size_t item_max_count, size_t item_size, size_t item_end_padding);
   virtual ~UniformBuffer();
 
   void bind() const;
@@ -22,6 +22,8 @@ class UniformBuffer {
 
   size_t binding() const { return binding_; }
   size_t buffer_size() const { return buffer_size_; }
+  size_t buffer_size_without_end_padding() const { return buffer_size_ - item_end_padding_; }
+  size_t item_end_padding() const { return item_end_padding_; }
 
   UniformBuffer(const UniformBuffer&)            = delete;
   UniformBuffer(UniformBuffer&&)                 = delete;
@@ -30,7 +32,7 @@ class UniformBuffer {
 
  private:
   GLuint buffer_id_;
-  const size_t binding_, buffer_size_;
+  const size_t binding_, buffer_size_, item_end_padding_;
 };
 
 class PrimitiveUniformBuffer : public UniformBuffer {

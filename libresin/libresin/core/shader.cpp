@@ -131,9 +131,14 @@ void ShaderProgram::bind_uniform_buffer(std::string_view name, const UniformBuff
 
   GLint size = 0;
   glGetActiveUniformBlockiv(program_id_, index, GL_UNIFORM_BLOCK_DATA_SIZE, &size);
-  if (size != static_cast<GLint>(ubo.buffer_size())) {
+
+  // According to std140 standard the padding at the end of an array MAY be added
+  // https://registry.khronos.org/OpenGL/specs/gl/glspec45.core.pdf#page=159
+  if (size != static_cast<GLint>(ubo.buffer_size()) &&
+      size != static_cast<GLint>(ubo.buffer_size_without_end_padding())) {
     log_throw(ShaderProgramValidationException(
-        shader_name_, std::format(R"(Unexpected uniform block size: {}. Expected: {})", size, ubo.buffer_size())));
+        shader_name_, std::format(R"(Unexpected uniform block size: {}. Expected: {} or {})", size, ubo.buffer_size(),
+                                  ubo.buffer_size_without_end_padding())));
   }
 
   uniform_block_bindings_[index] = static_cast<GLuint>(ubo.binding());
