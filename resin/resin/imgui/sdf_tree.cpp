@@ -362,8 +362,7 @@ void SDFTreeComponentVisitor::apply_move_operation() {
   }
 }
 
-std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(
-    ::resin::SDFTree& tree, const std::optional<::resin::IdView<::resin::SDFTreeNodeId>>& old_selected) {
+void SDFTreeView(::resin::SDFTree& tree, std::optional<::resin::IdView<::resin::SDFTreeNodeId>>& old_selected) {
   static std::string_view delete_label    = "Delete";
   static std::string_view add_prim_label  = "Add Primitive";
   static std::string_view add_group_label = "Add Group";
@@ -483,7 +482,7 @@ std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(
 
   ImGui::PopID();
 
-  return selected;
+  old_selected = selected;
 }
 
 }  // namespace resin

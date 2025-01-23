@@ -24,8 +24,8 @@ int main() {
   resin::Logger::get_instance().add_scribe(
       std::make_unique<resin::RotatedFileLoggerScribe>(logs_dir, max_logs_backups));
 
-  resin::Logger::info("Project version: {0}.{1}.{2}({3})", RESIN_VERSION_MAJOR, RESIN_VERSION_MINOR,
-                      RESIN_VERSION_PATCH, RESIN_IS_STABLE ? "stable" : "unstable");
+  resin::Logger::info("Resin version: {0}.{1}.{2}({3})", RESIN_VERSION_MAJOR, RESIN_VERSION_MINOR, RESIN_VERSION_PATCH,
+                      RESIN_IS_STABLE ? "stable" : "unstable");
   resin::Logger::info("ImGui version: {0}", IMGUI_VERSION);
 
   resin::Logger::info("GLFW version: {0}.{1}.{2}", GLFW_VERSION_MAJOR, GLFW_VERSION_MINOR, GLFW_VERSION_REVISION);
@@ -33,15 +33,6 @@ int main() {
   resin::Logger::info("nlohmann/json version: {0}.{1}.{2}", NLOHMANN_JSON_VERSION_MAJOR, NLOHMANN_JSON_VERSION_MINOR,
                       NLOHMANN_JSON_VERSION_PATCH);
   resin::Logger::info("assimp version: {0}.{1}.{2}", aiGetVersionMajor(), aiGetVersionMinor(), aiGetVersionPatch());
-
-  try {
-    resin::log_throw(resin::FileDoesNotExistException("test"));
-  } catch (...) {
-  }
-
-  resin::Logger::warn("Potato");
-  resin::Logger::err("Paprica");
-  resin::Logger::debug("Blueberry");
 
   resin::Resin::instance().run();
 

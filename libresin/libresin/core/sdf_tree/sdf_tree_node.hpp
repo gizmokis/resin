@@ -64,8 +64,6 @@ class SDFTreeNode {
   inline Transform& transform() { return transform_; }
   inline const Transform& transform() const { return transform_; }
 
-  // TODO(SDF-96): add material component
-
   inline SDFBinaryOperation bin_op() const { return bin_op_; }
   inline void set_bin_op(SDFBinaryOperation bin_op) { bin_op_ = bin_op; }
 

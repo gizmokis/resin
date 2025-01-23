@@ -1,5 +1,5 @@
-#ifndef RESIN_VIEWPORT_HPP
-#define RESIN_VIEWPORT_HPP
+#ifndef IMGUI_RESIN_VIEWPORT_HPP
+#define IMGUI_RESIN_VIEWPORT_HPP
 
 #include <imgui/imgui.h>
 
@@ -9,7 +9,7 @@ namespace ImGui {  // NOLINT
 
 namespace resin {
 
-bool Viewport(::resin::Framebuffer& framebuffer, bool& resized);
+bool Viewport(::resin::ViewportFramebuffer& framebuffer, bool& resized);
 
 }  // namespace resin
 

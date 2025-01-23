@@ -20,6 +20,9 @@
 #include <glm/matrix.hpp>
 #include <glm/trigonometric.hpp>
 #include <libresin/core/camera.hpp>
+#include <libresin/core/framebuffer.hpp>
+#include <libresin/core/material.hpp>
+#include <libresin/core/raycaster.hpp>
 #include <libresin/core/resources/shader_resource.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
@@ -29,6 +32,7 @@
 #include <libresin/core/uniform_buffer.hpp>
 #include <libresin/utils/enum_mapper.hpp>
 #include <libresin/utils/logger.hpp>
+#include <memory>
 #include <nfd/nfd.hpp>
 #include <optional>
 #include <resin/camera/first_person_camera_operator.hpp>
@@ -41,6 +45,7 @@
 #include <resin/event/mouse_events.hpp>
 #include <resin/event/window_events.hpp>
 #include <resin/imgui/gizmo.hpp>
+#include <resin/imgui/material.hpp>
 #include <resin/imgui/node_edit.hpp>
 #include <resin/imgui/sdf_tree.hpp>
 #include <resin/imgui/transform_edit.hpp>
@@ -73,34 +78,53 @@ Resin::Resin()
   }
 
   // Setup framebuffer and raycaster
-  framebuffer_ = std::make_unique<Framebuffer>(window_->dimensions().x, window_->dimensions().y);
-  raycaster_   = std::make_unique<Raycaster>();
+  framebuffer_     = std::make_unique<ViewportFramebuffer>(window_->dimensions().x, window_->dimensions().y);
+  raycaster_       = std::make_unique<Raycaster>();
+  material_images_ = std::make_unique<ImGui::resin::LazyMaterialImageFramebuffers>(
+      kMaterialNodeImageSize, kMaterialMainImageSize, kMaterialImageSize);
 
   // Main resource path
   const std::filesystem::path assets_path = std::filesystem::current_path() / "assets";
 
   // Setup example tree
-  sdf_tree_.root().push_back_child<SphereNode>(SDFBinaryOperation::SmoothUnion);
+  auto& m1 = sdf_tree_.add_material(Material(glm::vec3(0.25F, 0.25F, 0.96F)));
+  auto& m2 = sdf_tree_.add_material(Material(glm::vec3(0.96F, 0.25F, 0.25F)));
+  sdf_tree_.add_material(Material(glm::vec3(1.0F, 1.0F, 0.0F)));
+  sdf_tree_.add_material(Material(glm::vec3(0.0F, 1.0F, 0.0F)));
+  sdf_tree_.add_material(Material(glm::vec3(1.0F, 0.0F, 1.0F)));
+
+  sdf_tree_.root().push_back_child<SphereNode>(SDFBinaryOperation::SmoothUnion).set_material(m1.material_id());
   auto& group = sdf_tree_.root().push_back_child<GroupNode>(SDFBinaryOperation::SmoothUnion);
   group.push_back_child<CubeNode>(SDFBinaryOperation::SmoothUnion).transform().set_local_pos(glm::vec3(1, 1, 0));
   group.push_back_child<CubeNode>(SDFBinaryOperation::SmoothUnion).transform().set_local_pos(glm::vec3(-1, -1, 0));
+  group.set_material(m2.material_id());
 
   // Setup shaders
-  primitive_ubo_ = std::make_unique<PrimitiveUniformBuffer>(sdf_tree_.max_nodes_count());
+  primitive_ubo_ = std::make_unique<PrimitiveUniformBuffer>(sdf_tree_.max_node_count());
   primitive_ubo_->bind();
   primitive_ubo_->set(sdf_tree_);
   primitive_ubo_->unbind();
 
+  material_ubo_ = std::make_unique<MaterialUniformBuffer>(sdf_tree_.max_material_count());
+  material_ubo_->bind();
+  material_ubo_->set(sdf_tree_);
+  material_ubo_->unbind();
+
   ShaderResource grid_frag_shader = *shader_resource_manager_.get_res(assets_path / "grid.frag");
   ShaderResource main_frag_shader = *shader_resource_manager_.get_res(assets_path / "main.frag");
   main_frag_shader.set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
-  main_frag_shader.set_ext_defi("MAX_UBO_NODE_COUNT", std::to_string(sdf_tree_.max_nodes_count()));
+  main_frag_shader.set_ext_defi("MAX_UBO_NODE_COUNT", std::to_string(sdf_tree_.max_node_count()));
+  main_frag_shader.set_ext_defi("MAX_UBO_MATERIAL_COUNT", std::to_string(sdf_tree_.max_material_count()));
 
   grid_shader_ = std::make_unique<RenderingShaderProgram>(
       "grid", *shader_resource_manager_.get_res(assets_path / "main.vert"), std::move(grid_frag_shader));
+  material_img_shader_ = std::make_unique<RenderingShaderProgram>(
+      "material_view", *shader_resource_manager_.get_res(assets_path / "main.vert"),
+      *shader_resource_manager_.get_res(assets_path / "material_view.frag"));
   shader_ = std::make_unique<RenderingShaderProgram>(
       "main", *shader_resource_manager_.get_res(assets_path / "main.vert"), std::move(main_frag_shader));
-  shader_->bind_uniform_buffer("Data", *primitive_ubo_);
+  shader_->bind_uniform_buffer("NodeData", *primitive_ubo_);
+  shader_->bind_uniform_buffer("MaterialData", *material_ubo_);
 
   // Setup camera
   camera_ = std::make_unique<Camera>(false, 70.F, 16.F / 9.F, 0.75F, 100.F);
@@ -111,18 +135,6 @@ Resin::Resin()
                                                     PointLight::Attenuation(1.0F, 0.7F, 1.8F));
   directional_light_ = std::make_unique<DirectionalLight>(glm::vec3(0.5F, 0.5F, 0.5F), 1.0F);
   directional_light_->transform.set_local_rot(glm::quatLookAt(-glm::normalize(glm::vec3(0, 2, 3)), glm::vec3(0, 1, 0)));
-
-  // Setup example materials
-  // TEMP(SDF-131): remove
-  sphere_mat_    = std::make_unique<Material>(glm::vec3(0.25F, 0.25F, 0.96F));
-  cube_mat_      = std::make_unique<Material>(glm::vec3(0.96F, 0.25F, 0.25F));
-  torus_mat_     = std::make_unique<Material>(glm::vec3(0.25F, 0.96F, 0.25F));
-  capsule_mat_   = std::make_unique<Material>(glm::vec3(0.96F, 0.96F, 0.25F));
-  link_mat_      = std::make_unique<Material>(glm::vec3(0.96F, 0.25F, 0.96F));
-  ellipsoid_mat_ = std::make_unique<Material>(glm::vec3(0.25F, 0.96F, 0.96F));
-  pyramid_mat_   = std::make_unique<Material>(glm::vec3(0.25F, 0.25F, 0.25F));
-  cylinder_mat_  = std::make_unique<Material>(glm::vec3(0.96F, 0.96F, 0.96F));
-  prism_mat_     = std::make_unique<Material>(glm::vec3(0.1F, 0.6F, 0.9F));
 
   setup_shader_uniforms();
 }
@@ -142,6 +154,9 @@ void Resin::setup_shader_uniforms() {
   grid_shader_->set_uniform("u_ortho", camera_->is_orthographic());
   grid_shader_->set_uniform("u_camSize", camera_->height());
   grid_shader_->set_uniform("u_spacing", grid_spacing_);
+
+  material_img_shader_->set_uniform("u_camSize", 1.0F);
+  material_img_shader_->set_uniform("u_resolution", glm::vec2(kMaterialImageSize, kMaterialImageSize));
 }
 
 void Resin::run() {
@@ -213,6 +228,9 @@ void Resin::init_gl() {  // NOLINT
 void Resin::update(duration_t delta) {
   const float seconds_dt = std ::chrono::duration_cast<std::chrono::duration<float>>(delta).count();
 
+  // FileDialog update must go before ubo updates
+  FileDialog::instance().update();
+
   directional_light_->transform.rotate(glm::angleAxis(std::chrono::duration<float>(delta).count(), glm::vec3(0, 1, 0)));
 
   if (sdf_tree_.is_dirty()) {
@@ -228,16 +246,9 @@ void Resin::update(duration_t delta) {
   primitive_ubo_->update_dirty(sdf_tree_);
   primitive_ubo_->unbind();
 
-  // TEMP(SDF-131): remove
-  shader_->set_uniform("u_sdf_materials[0]", *sphere_mat_);
-  shader_->set_uniform("u_sdf_materials[1]", *cube_mat_);
-  shader_->set_uniform("u_sdf_materials[2]", *torus_mat_);
-  shader_->set_uniform("u_sdf_materials[3]", *capsule_mat_);
-  shader_->set_uniform("u_sdf_materials[4]", *link_mat_);
-  shader_->set_uniform("u_sdf_materials[5]", *ellipsoid_mat_);
-  shader_->set_uniform("u_sdf_materials[6]", *pyramid_mat_);
-  shader_->set_uniform("u_sdf_materials[7]", *cylinder_mat_);
-  shader_->set_uniform("u_sdf_materials[8]", *prism_mat_);
+  material_ubo_->bind();
+  material_ubo_->update_dirty(sdf_tree_);
+  material_ubo_->unbind();
 
   shader_->set_uniform("u_dirLight", *directional_light_);
   shader_->set_uniform("u_pointLight", *point_light_);
@@ -246,11 +257,13 @@ void Resin::update(duration_t delta) {
   update_camera_distance();
   interpolate(seconds_dt);
 
-  FileDialog::instance().update();
+  sdf_tree_.mark_materials_clean();
+  sdf_tree_.mark_primitives_clean();
 }
 
-void Resin::render() {
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+void Resin::render_viewport() {
+  framebuffer_->bind();
+  framebuffer_->clear();
 
   raycaster_->bind();
 
@@ -265,18 +278,52 @@ void Resin::render() {
     raycaster_->draw_call();
     grid_shader_->unbind();
   }
+
+  framebuffer_->unbind();
+
+  glViewport(0, 0, static_cast<GLint>(window_->dimensions().x), static_cast<GLint>(window_->dimensions().y));
 }
 
-// TEMP(SDF-131): remove
-void Resin::material_inspect(Material& mat, std::string_view name) {
-  if (ImGui::BeginTabItem(name.data())) {
-    ImGui::ColorEdit3("Color", glm::value_ptr(mat.albedo));
-    ImGui::DragFloat("Ambient", &mat.ambientFactor, 0.01F, 0.0F, 1.0F, "%.2f");
-    ImGui::DragFloat("Diffuse", &mat.diffuseFactor, 0.01F, 0.0F, 1.0F, "%.2f");
-    ImGui::DragFloat("Specular", &mat.specularFactor, 0.01F, 0.0F, 1.0F, "%.2f");
-    ImGui::DragFloat("Exponent", &mat.specularExponent, 0.1F, 0.0F, 100.0F, "%.1f");
-    ImGui::EndTabItem();
+void Resin::render_material_image(ImageFramebuffer& fb) {
+  fb.bind();
+  fb.clear();
+
+  raycaster_->bind();
+
+  material_img_shader_->bind();
+  raycaster_->draw_call();
+  material_img_shader_->unbind();
+
+  fb.unbind();
+}
+
+void Resin::render_material_images() {
+  for (auto& mat : material_images_->material_preview_fbs_map) {
+    if (mat.second->is_dirty && !mat.first.expired()) {
+      material_img_shader_->set_uniform("u_material", sdf_tree_.material(mat.first).material);
+      render_material_image(mat.second->fb);
+    }
+    mat.second->mark_clean();
   }
+
+  if (material_images_->main_material_fb.is_dirty) {
+    if (material_images_->main_material_id && !material_images_->main_material_id->expired()) {
+      material_img_shader_->set_uniform("u_material", sdf_tree_.material(*material_images_->main_material_id).material);
+      render_material_image(material_images_->main_material_fb.fb);
+    }
+    material_images_->main_material_fb.mark_clean();
+  }
+
+  if (material_images_->node_material_preview_fb.is_dirty) {
+    if (material_images_->node_material_preview_id && !material_images_->node_material_preview_id->expired()) {
+      material_img_shader_->set_uniform("u_material",
+                                        sdf_tree_.material(*material_images_->node_material_preview_id).material);
+      render_material_image(material_images_->node_material_preview_fb.fb);
+    }
+    material_images_->node_material_preview_fb.mark_clean();
+  }
+
+  glViewport(0, 0, static_cast<GLint>(window_->dimensions().x), static_cast<GLint>(window_->dimensions().y));
 }
 
 void Resin::gui(duration_t delta) {
@@ -341,11 +388,7 @@ void Resin::gui(duration_t delta) {
       grid_shader_->set_uniform("u_camSize", camera_->height());
     }
 
-    framebuffer_->bind();
-    render();
-    framebuffer_->unbind();
-    glViewport(0, 0, static_cast<GLint>(window_->dimensions().x), static_cast<GLint>(window_->dimensions().y));
-
+    render_viewport();
     ImGui::Image((ImTextureID)(intptr_t)framebuffer_->color_texture(), ImVec2(width, height), ImVec2(0, 1),  // NOLINT
                  ImVec2(1, 0));
 
@@ -362,7 +405,7 @@ void Resin::gui(duration_t delta) {
 
   ImGui::SetNextWindowSizeConstraints(ImVec2(280.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
   if (ImGui::Begin("SDF Tree")) {
-    selected_node_ = ImGui::resin::SDFTreeView(sdf_tree_, selected_node_);
+    ImGui::resin::SDFTreeView(sdf_tree_, selected_node_);
   }
   ImGui::End();
 
@@ -381,6 +424,18 @@ void Resin::gui(duration_t delta) {
     bool use_local_up = first_person_camera_operator_.is_using_local_axises();
     ImGui::Checkbox("Use local axises", &use_local_up);
     first_person_camera_operator_.set_use_local_axises(use_local_up);
+  }
+  ImGui::End();
+
+  if (ImGui::Begin("Materials")) {
+    ImGui::resin::MaterialsListEdit(selected_material_, *material_images_, sdf_tree_);
+  }
+  ImGui::End();
+
+  if (ImGui::Begin("Edit Material")) {
+    if (selected_material_ && !selected_material_->expired()) {
+      ImGui::resin::MaterialEdit(selected_material_, *material_images_, sdf_tree_);
+    }
   }
   ImGui::End();
 
@@ -410,26 +465,10 @@ void Resin::gui(duration_t delta) {
   }
   ImGui::End();
 
-  ImGui::Begin("[TEMP] Materials");
-  if (ImGui::BeginTabBar("MaterialTabBar", ImGuiTabBarFlags_None)) {
-    // TEMP(SDF-131): remove
-    material_inspect(*sphere_mat_, "SphereMat");
-    material_inspect(*cube_mat_, "CubeMat");
-    material_inspect(*torus_mat_, "TorusMat");
-    material_inspect(*capsule_mat_, "CapsuleMat");
-    material_inspect(*link_mat_, "LinkMat");
-    material_inspect(*ellipsoid_mat_, "EllipsoidMat");
-    material_inspect(*pyramid_mat_, "PyramidMat");
-    material_inspect(*cylinder_mat_, "CylinderMat");
-    material_inspect(*prism_mat_, "PrismMat");
-    ImGui::EndTabBar();
-  }
-  ImGui::End();
-
   ImGui::SetNextWindowSizeConstraints(ImVec2(350.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
   ImGui::Begin("Selection");
   if (selected_node_.has_value() && !selected_node_->expired()) {
-    ImGui::resin::NodeEdit(sdf_tree_.node(*selected_node_));
+    ImGui::resin::NodeEdit(sdf_tree_.node(*selected_node_), *material_images_, selected_material_, sdf_tree_);
   }
   ImGui::End();
 
@@ -441,6 +480,8 @@ void Resin::gui(duration_t delta) {
   }
   ImGui::End();
 #endif
+
+  render_material_images();
 }
 
 bool Resin::on_window_close(WindowCloseEvent&) {

@@ -1,5 +1,5 @@
-#ifndef RESIN_TREE_COMPONENT_HPP
-#define RESIN_TREE_COMPONENT_HPP
+#ifndef IMGUI_RESIN_TREE_COMPONENT_HPP
+#define IMGUI_RESIN_TREE_COMPONENT_HPP
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
@@ -64,8 +64,7 @@ class SDFTreeComponentVisitor : public ::resin::ISDFTreeNodeVisitor {
   ::resin::SDFTree& sdf_tree_;  // NOLINT
 };
 
-std::optional<::resin::IdView<::resin::SDFTreeNodeId>> SDFTreeView(
-    ::resin::SDFTree& tree, const std::optional<::resin::IdView<::resin::SDFTreeNodeId>>& old_selected);
+void SDFTreeView(::resin::SDFTree& tree, std::optional<::resin::IdView<::resin::SDFTreeNodeId>>& old_selected);
 
 }  // namespace resin
 

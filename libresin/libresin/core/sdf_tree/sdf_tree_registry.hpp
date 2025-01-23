@@ -30,7 +30,7 @@ struct SDFTreeRegistry {
         transform_component_registry(IdRegistry<Transform>(100)),
         primitives_registry(IdRegistry<BasePrimitiveNode>(100)),
         nodes_registry(IdRegistry<SDFTreeNode>(100)),
-        materials_registry(IdRegistry<Material>(2000)),
+        materials_registry(IdRegistry<Material>(100)),
         default_material(*this) {
     all_nodes.resize(nodes_registry.get_max_objs());
     all_group_nodes.resize(nodes_registry.get_max_objs());

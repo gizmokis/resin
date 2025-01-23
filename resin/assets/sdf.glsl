@@ -1,7 +1,11 @@
-struct sdf_node {
-    mat4 transform;
-    vec3 size;
-    float scale;
+#external_definition MAX_UBO_NODE_COUNT
+#external_definition MAX_UBO_MATERIAL_COUNT
+
+struct sdf_node {   
+    mat4 transform; 
+    vec3 size;      
+    float scale;    
+    int mat_id;     
 };
 
 struct sdf_result {
@@ -11,14 +15,20 @@ struct sdf_result {
 };
 
 const int kMaxNodeCount = MAX_UBO_NODE_COUNT;
-layout (std140) uniform Data 
+layout (std140, binding = 0) uniform NodeData 
 {
     sdf_node u_sdf_primitives[kMaxNodeCount];
 };
 
-void prepare(inout sdf_result res, inout vec3 pos, int node_id, int primitive_id, int material_id) {
+const int kMaxMaterialCount = MAX_UBO_MATERIAL_COUNT;
+layout (std140, binding = 1) uniform MaterialData 
+{
+    material u_sdf_materials[kMaxMaterialCount];
+};
+
+void prepare(inout sdf_result res, inout vec3 pos, int node_id, int primitive_id) {
     pos = (u_sdf_primitives[primitive_id].transform * vec4(pos,1)).xyz;
-    res.mat = u_sdf_materials[material_id];
+    res.mat = u_sdf_materials[u_sdf_primitives[primitive_id].mat_id];
     res.id = node_id;
 }
 
@@ -26,7 +36,7 @@ sdf_result sdSphere(vec3 pos, int node_id, int primitive_id)
 {
     sdf_result res;
 
-    prepare(res, pos, node_id, primitive_id, 0);
+    prepare(res, pos, node_id, primitive_id);
 
     sdf_node prop = u_sdf_primitives[primitive_id];
     res.dist = prop.scale == 0 ? u_farPlane : prop.scale * (length(pos) - prop.size.x);
@@ -37,7 +47,7 @@ sdf_result sdCube(vec3 pos, int node_id, int primitive_id)
 {
     sdf_result res;
 
-    prepare(res, pos, node_id, primitive_id, 1);
+    prepare(res, pos, node_id, primitive_id);
 
     sdf_node prop = u_sdf_primitives[primitive_id];
     vec3 d = abs(pos) - 0.5*prop.size;
@@ -49,7 +59,7 @@ sdf_result sdTorus(vec3 pos, int node_id, int primitive_id)
 {
     sdf_result res;
 
-    prepare(res, pos, node_id, primitive_id, 2);
+    prepare(res, pos, node_id, primitive_id);
 
     sdf_node prop = u_sdf_primitives[primitive_id];
     vec2 d = vec2(length(pos.xz) - prop.size.x, pos.y);
@@ -61,7 +71,7 @@ sdf_result sdCapsule(vec3 pos, int node_id, int primitive_id)
 {
     sdf_result res;
 
-    prepare(res, pos, node_id, primitive_id, 3);
+    prepare(res, pos, node_id, primitive_id);
 
     sdf_node prop = u_sdf_primitives[primitive_id];
     vec3 d = vec3(pos.x, pos.y - clamp(pos.y, -0.5*prop.size.x, 0.5*prop.size.x), pos.z);
@@ -73,7 +83,7 @@ sdf_result sdLink(vec3 pos, int node_id, int primitive_id)
 {
     sdf_result res;
 
-    prepare(res, pos, node_id, primitive_id, 4);
+    prepare(res, pos, node_id, primitive_id);
 
     sdf_node prop = u_sdf_primitives[primitive_id];
     vec3 d = vec3(pos.x, max(abs(pos.y) - 0.5*prop.size.x, 0.0), pos.z);
@@ -85,7 +95,7 @@ sdf_result sdEllipsoid(vec3 pos, int node_id, int primitive_id)
 {
     sdf_result res;
 
-    prepare(res, pos, node_id, primitive_id, 5);
+    prepare(res, pos, node_id, primitive_id);
 
     sdf_node prop = u_sdf_primitives[primitive_id];
     vec2 d = vec2(length(pos/prop.size), length(pos/(prop.size*prop.size)));
@@ -98,7 +108,7 @@ sdf_result sdPyramid(vec3 pos, int node_id, int primitive_id)
 {
     sdf_result res;
 
-    prepare(res, pos, node_id, primitive_id, 6);
+    prepare(res, pos, node_id, primitive_id);
 
     sdf_node prop = u_sdf_primitives[primitive_id];
     float h = prop.size.x;
@@ -120,7 +130,7 @@ sdf_result sdCylinder(vec3 pos, int node_id, int primitive_id)
 {
     sdf_result res;
 
-    prepare(res, pos, node_id, primitive_id, 7);
+    prepare(res, pos, node_id, primitive_id);
 
     sdf_node prop = u_sdf_primitives[primitive_id];
     vec2 d = abs(vec2(pos.y,length(pos.xz))) - vec2(prop.size.x/2, prop.size.y);
@@ -133,7 +143,7 @@ sdf_result sdPrism(vec3 pos, int node_id, int primitive_id)
 {
     sdf_result res;
 
-    prepare(res, pos, node_id, primitive_id, 8);
+    prepare(res, pos, node_id, primitive_id);
 
     sdf_node prop = u_sdf_primitives[primitive_id];
     vec3 d = abs(pos);

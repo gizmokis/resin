@@ -14,7 +14,7 @@ namespace resin {
 
 class UniformBuffer {
  public:
-  explicit UniformBuffer(size_t binding, size_t buffer_size);
+  explicit UniformBuffer(size_t binding, size_t item_max_count, size_t item_size, size_t item_end_padding);
   virtual ~UniformBuffer();
 
   void bind() const;
@@ -22,6 +22,8 @@ class UniformBuffer {
 
   size_t binding() const { return binding_; }
   size_t buffer_size() const { return buffer_size_; }
+  size_t buffer_size_without_end_padding() const { return buffer_size_ - item_end_padding_; }
+  size_t item_end_padding() const { return item_end_padding_; }
 
   UniformBuffer(const UniformBuffer&)            = delete;
   UniformBuffer(UniformBuffer&&)                 = delete;
@@ -30,7 +32,7 @@ class UniformBuffer {
 
  private:
   GLuint buffer_id_;
-  const size_t binding_, buffer_size_;
+  const size_t binding_, buffer_size_, item_end_padding_;
 };
 
 class PrimitiveUniformBuffer : public UniformBuffer {
@@ -39,9 +41,14 @@ class PrimitiveUniformBuffer : public UniformBuffer {
     glm::mat4 transform;
     glm::vec3 size;
     float scale;
+    int mat_id;
+    float _padding[3]{0.0F, 0.0F, 0.F};  // required for std140 alignment
 
-    PrimitiveNode(const Transform& _transform, const glm::vec3& _size)
-        : transform(_transform.world_to_local_matrix()), size(_size), scale(_transform.scale()) {}
+    PrimitiveNode(const BasePrimitiveNode& _node, const glm::vec3& _size)
+        : transform(_node.transform().world_to_local_matrix()),
+          size(_size),
+          scale(_node.transform().scale()),
+          mat_id(static_cast<int>(_node.active_material_id_or_defualt().raw())) {}
   };
 
   explicit PrimitiveUniformBuffer(size_t max_count);
@@ -70,6 +77,25 @@ class PrimitiveUniformBuffer : public UniformBuffer {
     void visit_prism(TriangularPrismNode&) override;
   };
 
+  const size_t max_count_;
+};
+
+class MaterialUniformBuffer : public UniformBuffer {
+ public:
+  explicit MaterialUniformBuffer(size_t max_count);
+  ~MaterialUniformBuffer() override = default;
+
+  size_t max_count() const { return max_count_; }
+
+  void set(SDFTree& tree);
+  void update_dirty(SDFTree& tree);
+
+  MaterialUniformBuffer(const MaterialUniformBuffer&)            = delete;
+  MaterialUniformBuffer(MaterialUniformBuffer&&)                 = delete;
+  MaterialUniformBuffer& operator=(const MaterialUniformBuffer&) = delete;
+  MaterialUniformBuffer& operator=(MaterialUniformBuffer&&)      = delete;
+
+ private:
   const size_t max_count_;
 };
 

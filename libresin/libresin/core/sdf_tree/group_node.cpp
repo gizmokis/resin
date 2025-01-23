@@ -13,6 +13,7 @@ namespace resin {
 
 GroupNode::GroupNode(SDFTreeRegistry& tree) : SDFTreeNode(tree, "Group") {
   tree_registry_.all_group_nodes[node_id_.raw()] = *this;
+  mark_dirty();
 }
 GroupNode::~GroupNode() { tree_registry_.all_group_nodes[node_id_.raw()] = std::nullopt; }
 
@@ -102,10 +103,15 @@ std::string GroupNode::gen_shader_code(GenShaderMode mode) const {
 }
 
 void GroupNode::set_parent(std::unique_ptr<SDFTreeNode>& node_ptr) {
+  Logger::info("Setting new parent with id {} for node with id {}", node_id().raw(), node_ptr->node_id().raw());
   node_ptr->set_parent(*this);
   node_ptr->transform().set_parent(transform_);
-  if (ancestor_mat_id_.has_value()) {
+  if (ancestor_mat_id_) {
     node_ptr->set_ancestor_mat_id(*ancestor_mat_id_);
+    node_ptr->mark_dirty();
+  } else if (mat_id_) {
+    node_ptr->set_ancestor_mat_id(*mat_id_);
+    node_ptr->mark_dirty();
   }
   insert_leaves_up(node_ptr);
 }
@@ -113,8 +119,9 @@ void GroupNode::set_parent(std::unique_ptr<SDFTreeNode>& node_ptr) {
 void GroupNode::remove_from_parent(std::unique_ptr<SDFTreeNode>& node_ptr) {
   node_ptr->remove_from_parent();
   node_ptr->transform().remove_from_parent();
-  if (ancestor_mat_id_.has_value()) {
+  if (ancestor_mat_id_ || mat_id_) {
     node_ptr->remove_ancestor_mat_id();
+    node_ptr->mark_dirty();
   }
   remove_leaves_up(node_ptr);
 }
@@ -154,7 +161,7 @@ void GroupNode::remove_ancestor_mat_id() {
 }
 
 void GroupNode::fix_material_ancestors() {
-  tree_registry_.is_tree_dirty = true;
+  mark_dirty();
 
   if (!parent_.has_value()) {
     ancestor_mat_id_ = std::nullopt;
@@ -173,8 +180,8 @@ void GroupNode::fix_material_ancestors() {
 }
 
 void GroupNode::set_material(IdView<MaterialId> mat_id) {
-  tree_registry_.is_tree_dirty = true;
-  mat_id_                      = mat_id;
+  mark_dirty();
+  mat_id_ = mat_id;
 
   if (!ancestor_mat_id_.has_value()) {
     for (auto& it : *this) {
@@ -184,8 +191,8 @@ void GroupNode::set_material(IdView<MaterialId> mat_id) {
 }
 
 void GroupNode::remove_material() {
-  tree_registry_.is_tree_dirty = true;
-  mat_id_                      = std::nullopt;
+  mark_dirty();
+  mat_id_ = std::nullopt;
 
   if (!ancestor_mat_id_.has_value()) {
     for (auto& it : *this) {
@@ -195,7 +202,7 @@ void GroupNode::remove_material() {
 }
 
 void GroupNode::delete_material_from_subtree(IdView<MaterialId> mat_id) {
-  tree_registry_.is_tree_dirty = true;
+  mark_dirty();
   if (mat_id == mat_id_) {
     mat_id_ = std::nullopt;
   }

@@ -6,6 +6,7 @@
 #include <glm/ext/vector_float2.hpp>
 #include <libresin/core/camera.hpp>
 #include <libresin/core/framebuffer.hpp>
+#include <libresin/core/material.hpp>
 #include <libresin/core/raycaster.hpp>
 #include <libresin/core/resources/shader_resource.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
@@ -23,6 +24,8 @@
 #include <resin/event/mouse_events.hpp>
 #include <resin/event/window_events.hpp>
 #include <resin/imgui/gizmo.hpp>
+#include <resin/imgui/material.hpp>
+#include <resin/imgui/types.hpp>
 #include <resin/resources/resource_managers.hpp>
 
 int main();
@@ -50,12 +53,15 @@ class Resin {
   ~Resin() = default;
 
   void setup_shader_uniforms();
+  void setup_material_framebuffers();
 
   void run();
   void init_gl();
   void update(duration_t delta);
   void gui(duration_t delta);
-  void render();
+  void render_viewport();
+  void render_material_image(ImageFramebuffer& fb);
+  void render_material_images();
 
   // events
   bool on_window_close(WindowCloseEvent& e);
@@ -88,6 +94,10 @@ class Resin {
   static constexpr duration_t kTickTime = 16666us;  // 60 TPS = 16.6(6) ms/t
 
  private:
+  static constexpr size_t kMaterialNodeImageSize = 32;
+  static constexpr size_t kMaterialImageSize     = 64;
+  static constexpr size_t kMaterialMainImageSize = 160;
+
   EventDispatcher dispatcher_;
   ShaderResourceManager& shader_resource_manager_ = ResourceManagers::shader_manager();
 
@@ -106,21 +116,23 @@ class Resin {
   ViewportState current_viewport_state_;
 
   std::optional<IdView<SDFTreeNodeId>> selected_node_;
+  std::optional<IdView<MaterialId>> selected_material_;
 
   std::unique_ptr<Window> window_;
   std::unique_ptr<Raycaster> raycaster_;
   std::unique_ptr<RenderingShaderProgram> shader_;
   std::unique_ptr<RenderingShaderProgram> grid_shader_;
+  std::unique_ptr<RenderingShaderProgram> material_img_shader_;
   std::unique_ptr<PrimitiveUniformBuffer> primitive_ubo_;
-  std::unique_ptr<Framebuffer> framebuffer_;
+  std::unique_ptr<MaterialUniformBuffer> material_ubo_;
+  std::unique_ptr<ViewportFramebuffer> framebuffer_;
+  std::unique_ptr<ImGui::resin::LazyMaterialImageFramebuffers> material_images_;
 
   glm::vec2 viewport_pos_;
 
   std::unique_ptr<Camera> camera_;
   std::unique_ptr<PointLight> point_light_;
   std::unique_ptr<DirectionalLight> directional_light_;
-  // TEMP(SDF-131): remove
-  void material_inspect(Material& mat, std::string_view name);
   std::unique_ptr<Material> sphere_mat_, cube_mat_, torus_mat_, capsule_mat_, link_mat_, ellipsoid_mat_, pyramid_mat_,
       cylinder_mat_, prism_mat_;
 
