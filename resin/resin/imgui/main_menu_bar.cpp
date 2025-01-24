@@ -11,7 +11,10 @@ namespace resin {
 static const std::array<::resin::FileDialog::FilterItem, 1> kPrefabFiltersArray = {
     ::resin::FileDialog::FilterItem("Resin prefab", "rsnpfb")};
 
-void MainMenuBar(::resin::SDFTree& sdf_tree) {
+static const std::array<::resin::FileDialog::FilterItem, 1> kResinFiltersArray = {
+    ::resin::FileDialog::FilterItem("Resin project", "resin")};
+
+void MainMenuBar(::resin::Scene& scene) {
   if (ImGui::BeginMainMenuBar()) {
     if (ImGui::BeginMenu("File")) {
       if (ImGui::MenuItem("New")) {
@@ -20,18 +23,31 @@ void MainMenuBar(::resin::SDFTree& sdf_tree) {
       }
       ImGui::Separator();
       if (ImGui::MenuItem("Save As...")) {
-      }
-      if (ImGui::MenuItem("Export as prefab...")) {
         ::resin::FileDialog::instance().save_file(
-            [&sdf_tree](const std::filesystem::path& path) {
+            [&scene](const std::filesystem::path& path) {
               std::ofstream file(path);
               if (!file.is_open()) {
                 ::resin::Logger::warn("Could not save to path {}", path.string());
                 ::resin::log_throw(::resin::FileStreamNotAvailableException(path.string()));
                 return;
               }
-              sdf_tree.root().rename(std::format("{}", path.stem().string()));
-              file << ::resin::json::serialize_prefab(sdf_tree, sdf_tree.root().node_id());
+              scene.tree().root().rename(std::format("{}", path.stem().string()));
+              file << ::resin::json::serialize_scene(scene);
+              ::resin::Logger::info("Saved prefab to {}", path.string());
+            },
+            std::span<const ::resin::FileDialog::FilterItem>(kPrefabFiltersArray), "Scene.resin");
+      }
+      if (ImGui::MenuItem("Export as prefab...")) {
+        ::resin::FileDialog::instance().save_file(
+            [&scene](const std::filesystem::path& path) {
+              std::ofstream file(path);
+              if (!file.is_open()) {
+                ::resin::Logger::warn("Could not save to path {}", path.string());
+                ::resin::log_throw(::resin::FileStreamNotAvailableException(path.string()));
+                return;
+              }
+              scene.tree().root().rename(std::format("{}", path.stem().string()));
+              file << ::resin::json::serialize_prefab(scene.tree(), scene.tree().root().node_id());
               ::resin::Logger::info("Saved prefab to {}", path.string());
             },
             std::span<const ::resin::FileDialog::FilterItem>(kPrefabFiltersArray), "Scene Prefab.rsnpfb");

@@ -1,5 +1,6 @@
 #include <glm/fwd.hpp>
 #include <json_schemas/json_schemas.hpp>
+#include <libresin/core/light.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/utils/exceptions.hpp>
@@ -176,6 +177,57 @@ std::string serialize_prefab(SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_i
 
     Logger::info("JSON prefab serialization succceeded");
     return prefab_json.dump(2);
+  } catch (const ResinException& e) {
+    throw e;
+  } catch (...) {
+    log_throw(JSONSerializationException());
+  }
+}
+
+void serialize_attenuation(json& target_json, const PointLight::Attenuation& attenuation) {
+  target_json["constant"]  = attenuation.constant;
+  target_json["linear"]    = attenuation.linear;
+  target_json["quadratic"] = attenuation.quadratic;
+}
+
+void serialize_light_common(json& target_json, const BaseLightSceneComponent& light) {
+  serialize_transform(target_json["transform"], light.light_base().transform);
+  target_json["color"]["r"] = light.light_base().color.r;
+  target_json["color"]["g"] = light.light_base().color.g;
+  target_json["color"]["b"] = light.light_base().color.b;
+  target_json["name"]       = light.name();
+}
+
+JSONSerializerLightSceneComponent::JSONSerializerLightSceneComponent(json& light_json) : json_(light_json) {}
+
+void JSONSerializerLightSceneComponent::visit_point_light(LightSceneComponent<PointLight>& point_light) {
+  serialize_light_common(json_, point_light);
+  serialize_attenuation(json_["pointLight"]["attenuation"], point_light.light().attenuation);
+}
+
+void JSONSerializerLightSceneComponent::visit_directional_light(LightSceneComponent<DirectionalLight>& dir_light) {
+  serialize_light_common(json_, dir_light);
+  json_["directionalLight"]["ambientImpact"] = dir_light.light().ambient_impact;
+}
+
+std::string serialize_scene(Scene& scene) {
+  Logger::info("JSON resin project serialization started");
+  try {
+    json scene_json;
+    scene_json["version"] = kNewestResinPrefabJSONSchemaVersion;
+    serialize_sdf_tree(scene_json, scene.tree(), scene.tree().root().node_id(), false);
+
+    json lights_json = json::array();
+    for (const auto& light : scene.lights()) {
+      json light_json;
+      auto visitor = JSONSerializerLightSceneComponent(light_json);
+      light.second->accept_visitor(visitor);
+      lights_json.push_back(light_json);
+    }
+    scene_json["lights"] = lights_json;
+
+    Logger::info("JSON resin project serialization succceeded");
+    return scene_json.dump(2);
   } catch (const ResinException& e) {
     throw e;
   } catch (...) {

@@ -9,6 +9,7 @@
 #include <libresin/core/material.hpp>
 #include <libresin/core/raycaster.hpp>
 #include <libresin/core/resources/shader_resource.hpp>
+#include <libresin/core/scene.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
@@ -101,7 +102,7 @@ class Resin {
   EventDispatcher dispatcher_;
   ShaderResourceManager& shader_resource_manager_ = ResourceManagers::shader_manager();
 
-  SDFTree sdf_tree_;
+  Scene scene_;
 
   enum class ViewportState : uint8_t {
     InactiveIdle,
@@ -132,10 +133,10 @@ class Resin {
   glm::vec2 viewport_pos_;
 
   std::unique_ptr<Camera> camera_;
+
+  // TODO(SDF-86): remove
   std::unique_ptr<PointLight> point_light_;
   std::unique_ptr<DirectionalLight> directional_light_;
-  std::unique_ptr<Material> sphere_mat_, cube_mat_, torus_mat_, capsule_mat_, link_mat_, ellipsoid_mat_, pyramid_mat_,
-      cylinder_mat_, prism_mat_;
 
   bool use_local_gizmos_{false};
   bool is_grid_{true};

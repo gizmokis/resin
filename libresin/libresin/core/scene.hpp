@@ -15,21 +15,23 @@ class Scene {
   using LightsMap = std::unordered_map<IdView<LightId>, std::unique_ptr<BaseLightSceneComponent>, IdViewHash<LightId>,
                                        std::equal_to<>>;
 
+  Scene() : lights_registry_(25) {}
+
   template <LightConcept Light, typename... Args>
-    requires std::constructible_from<Light, IdRegistry<BaseLight>&, Args...>
+    requires std::constructible_from<Light, Args...>
   void add_light(Args&&... args) {
-    auto light_ptr = std::make_unique(lights_registry_, std::forward<Args>(args)...);
-    lights_.emplace(light_ptr->id, std::move(light_ptr));
+    auto light_ptr = std::make_unique<LightSceneComponent<Light>>(lights_registry_,
+                                                                  std::make_unique<Light>(std::forward<Args>(args)...));
+    lights_.emplace(light_ptr->light_id(), std::move(light_ptr));
   }
 
-  const LightsMap& lights_map() const { return lights_; }
-  LightsMap& lights_map() { return lights_; }
+  const LightsMap& lights() const { return lights_; }
+  LightsMap& lights() { return lights_; }
   SDFTree& tree() { return tree_; }
 
  private:
-  LightsMap lights_;
   IdRegistry<BaseLight> lights_registry_;
-
+  LightsMap lights_;
   SDFTree tree_;
 };
 
