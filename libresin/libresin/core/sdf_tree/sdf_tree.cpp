@@ -83,7 +83,7 @@ void SDFTree::delete_node(IdView<SDFTreeNodeId> node_id) {
 
 std::string SDFTree::gen_shader_code(GenShaderMode mode) const {
   std::string root_code = root_->gen_shader_code(mode);
-  return root_code.empty() ? "vec2(u_farPlane,0)" : root_code;
+  return root_code.empty() ? "sdEmpty()" : root_code;
 }
 
 const MaterialSDFTreeComponent& SDFTree::material(IdView<MaterialId> mat_id) const {
