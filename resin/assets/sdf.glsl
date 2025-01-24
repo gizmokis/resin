@@ -32,6 +32,13 @@ void prepare(inout sdf_result res, inout vec3 pos, int node_id, int primitive_id
     res.id = node_id;
 }
 
+sdf_result sdEmpty()
+{
+    sdf_result res;
+    res.dist = u_farPlane;
+    return res;
+}
+
 sdf_result sdSphere(vec3 pos, int node_id, int primitive_id)
 {
     sdf_result res;
@@ -189,7 +196,7 @@ float smooth_max(float a, float b, float k)
 sdf_result opSmoothUnion(sdf_result d1, sdf_result d2, float k)
 {
     sdf_result result;
-    result.mat = material_mix(d1.mat, d2.mat, clamp(0.5+0.75*(d1.dist-d2.dist)/k, 0.0, 1.0)); // TODO(SDF-117): optimize math?
+    result.mat = material_mix(d1.mat, d2.mat, clamp(0.5+0.75*(d1.dist-d2.dist)/k, 0.0, 1.0)); // TODO(SDF-157): optimize math?
     result.dist = smooth_min(d1.dist,d2.dist,k); 
     result.id = d1.dist < d2.dist ? d1.id : d2.id;
     return result;
@@ -198,7 +205,7 @@ sdf_result opSmoothUnion(sdf_result d1, sdf_result d2, float k)
 sdf_result opSmoothDiff(sdf_result d1, sdf_result d2, float k)
 {
     sdf_result result;
-    result.mat = material_mix(d1.mat, d2.mat, clamp(0.5-0.75*(d1.dist+d2.dist)/k, 0.0, 1.0)); // TODO(SDF-117): optimize math?
+    result.mat = material_mix(d1.mat, d2.mat, clamp(0.5-0.75*(d1.dist+d2.dist)/k, 0.0, 1.0)); // TODO(SDF-157): optimize math?
     result.dist = smooth_max(d1.dist,-d2.dist,k); 
     result.id = d1.dist > -d2.dist ? d1.id : d2.id;
     return result;
@@ -207,7 +214,7 @@ sdf_result opSmoothDiff(sdf_result d1, sdf_result d2, float k)
 sdf_result opSmoothInter(sdf_result d1, sdf_result d2, float k)
 {
     sdf_result result;
-    result.mat = material_mix(d1.mat, d2.mat, clamp(0.5-0.75*(d1.dist-d2.dist)/k, 0.0, 1.0)); // TODO(SDF-117): optimize math?
+    result.mat = material_mix(d1.mat, d2.mat, clamp(0.5-0.75*(d1.dist-d2.dist)/k, 0.0, 1.0)); // TODO(SDF-157): optimize math?
     result.dist = smooth_max(d1.dist,d2.dist,k); 
     result.id = d1.dist > d2.dist ? d1.id : d2.id;
     return result;
@@ -215,5 +222,5 @@ sdf_result opSmoothInter(sdf_result d1, sdf_result d2, float k)
 
 sdf_result opSmoothXor(sdf_result d1, sdf_result d2, float k)
 {
-    return opDiff(opSmoothUnion(d1, d2, k), opSmoothInter(d1, d2, k), k); // TODO(SDF-117): optimize math?
+    return opDiff(opSmoothUnion(d1, d2, k), opSmoothInter(d1, d2, k), k); // TODO(SDF-157): optimize math?
 }
