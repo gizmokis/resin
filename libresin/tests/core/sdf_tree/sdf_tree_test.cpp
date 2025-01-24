@@ -265,7 +265,7 @@ TEST_F(SDFTreeTest, DirtyPrimitivesAreCorrectlyAdded) {
 
   // when
   tree.mark_primitives_clean();
-  group2.mark_dirty();
+  group2.mark_primitives_dirty();
 
   // then
   ASSERT_EQ(tree.dirty_primitives().size(), group2.primitives().size());

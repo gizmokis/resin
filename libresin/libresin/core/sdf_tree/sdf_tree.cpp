@@ -63,6 +63,22 @@ void SDFTree::visit_dirty_primitives(ISDFTreeNodeVisitor& visitor) {
   }
 }
 
+void SDFTree::visit_dirty_node_attributes(ISDFTreeNodeVisitor& visitor) {
+  for (auto node : sdf_tree_registry_.dirty_node_attributes) {
+    if (sdf_tree_registry_.all_nodes[node.raw()].has_value()) {
+      sdf_tree_registry_.all_nodes[node.raw()]->get().accept_visitor(visitor);
+    }
+  }
+}
+
+void SDFTree::visit_all_nodes(ISDFTreeNodeVisitor& visitor) {
+  for (auto node : sdf_tree_registry_.all_nodes) {
+    if (node.has_value()) {
+      node->get().accept_visitor(visitor);
+    }
+  }
+}
+
 void SDFTree::visit_all_primitives(ISDFTreeNodeVisitor& visitor) {
   for (auto prim : root_->primitives()) {
     sdf_tree_registry_.all_nodes[prim.raw()]->get().accept_visitor(visitor);

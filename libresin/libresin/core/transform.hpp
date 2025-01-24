@@ -67,7 +67,7 @@ struct Transform final {
 
   void shallow_copy(const Transform& otherl);
 
-  void remove_from_parent();
+  void remove_parent();
 
  private:
   std::optional<std::reference_wrapper<Transform>> parent_;

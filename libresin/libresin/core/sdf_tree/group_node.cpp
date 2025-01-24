@@ -7,12 +7,14 @@
 #include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/logger.hpp>
 #include <optional>
+#include <string>
 #include <utility>
 
 namespace resin {
 
 GroupNode::GroupNode(SDFTreeRegistry& tree) : SDFTreeNode(tree, "Group") {
   tree_registry_.all_group_nodes[node_id_.raw()] = *this;
+  mark_primitives_dirty();
   mark_dirty();
 }
 GroupNode::~GroupNode() { tree_registry_.all_group_nodes[node_id_.raw()] = std::nullopt; }
@@ -78,6 +80,8 @@ std::string GroupNode::gen_shader_code(GenShaderMode mode) const {
   }
 
   std::string sdf;
+  sdf += sdf_shader_consts::kSDFScaleFunctionName;
+  sdf += "(";
   for (auto it = last_non_shallow_node; it != first_non_shallow_node; --it) {
     if (is_node_shallow(*it)) {
       continue;
@@ -94,34 +98,39 @@ std::string GroupNode::gen_shader_code(GenShaderMode mode) const {
       continue;
     }
 
-    sdf += get_child(*it).gen_shader_code(mode);
-    sdf += ",0.5),";  // FIXME(SDF-117)
+    auto& child = get_child(*it);
+    sdf += child.gen_shader_code(mode);
+    if (child.has_smooth_bin_op()) {
+      sdf += ",";
+      sdf += std::to_string(child.node_id().raw());
+    }
+    sdf += "),";
   }
-  sdf.pop_back();
-
+  sdf += std::to_string(node_id_.raw());
+  sdf += ")";
   return sdf;
 }
 
-void GroupNode::set_parent(std::unique_ptr<SDFTreeNode>& node_ptr) {
+void GroupNode::set_as_parent_of(std::unique_ptr<SDFTreeNode>& node_ptr) {
   Logger::info("Setting new parent with id {} for node with id {}", node_id().raw(), node_ptr->node_id().raw());
   node_ptr->set_parent(*this);
   node_ptr->transform().set_parent(transform_);
-  if (ancestor_mat_id_) {
-    node_ptr->set_ancestor_mat_id(*ancestor_mat_id_);
-    node_ptr->mark_dirty();
-  } else if (mat_id_) {
+  if (mat_id_) {
     node_ptr->set_ancestor_mat_id(*mat_id_);
-    node_ptr->mark_dirty();
+    node_ptr->mark_primitives_dirty();
+  } else if (ancestor_mat_id_) {
+    node_ptr->set_ancestor_mat_id(*ancestor_mat_id_);
+    node_ptr->mark_primitives_dirty();
   }
   insert_leaves_up(node_ptr);
 }
 
-void GroupNode::remove_from_parent(std::unique_ptr<SDFTreeNode>& node_ptr) {
-  node_ptr->remove_from_parent();
-  node_ptr->transform().remove_from_parent();
-  if (ancestor_mat_id_ || mat_id_) {
+void GroupNode::remove_from_parent_of(std::unique_ptr<SDFTreeNode>& node_ptr) {
+  node_ptr->remove_parent();
+  node_ptr->transform().remove_parent();
+  if (mat_id_ || ancestor_mat_id_) {
     node_ptr->remove_ancestor_mat_id();
-    node_ptr->mark_dirty();
+    node_ptr->mark_primitives_dirty();
   }
   remove_leaves_up(node_ptr);
 }
@@ -141,19 +150,17 @@ SDFTreeNode& GroupNode::get_child(IdView<SDFTreeNodeId> node_id) const {
 void GroupNode::set_ancestor_mat_id(IdView<MaterialId> mat_id) {
   ancestor_mat_id_ = mat_id;
 
-  for (auto& it : *this) {
-    get_child(it).set_ancestor_mat_id(mat_id);
+  if (!mat_id_.has_value()) {
+    for (auto& it : *this) {
+      get_child(it).set_ancestor_mat_id(mat_id);
+    }
   }
 }
 
 void GroupNode::remove_ancestor_mat_id() {
   ancestor_mat_id_ = std::nullopt;
 
-  if (mat_id_.has_value()) {
-    for (auto& it : *this) {
-      get_child(it).set_ancestor_mat_id(*mat_id_);
-    }
-  } else {
+  if (!mat_id_.has_value()) {
     for (auto& it : *this) {
       get_child(it).remove_ancestor_mat_id();
     }
@@ -161,17 +168,12 @@ void GroupNode::remove_ancestor_mat_id() {
 }
 
 void GroupNode::fix_material_ancestors() {
-  mark_dirty();
+  mark_primitives_dirty();
 
   if (!parent_.has_value()) {
     ancestor_mat_id_ = std::nullopt;
   } else {
-    auto ancestor = parent_->get().ancestor_material_id();
-    if (ancestor.has_value()) {
-      ancestor_mat_id_ = ancestor;
-    } else {
-      ancestor_mat_id_ = parent_->get().material_id();
-    }
+    ancestor_mat_id_ = parent_->get().active_material_id();
   }
 
   for (auto& it : *this) {
@@ -180,21 +182,23 @@ void GroupNode::fix_material_ancestors() {
 }
 
 void GroupNode::set_material(IdView<MaterialId> mat_id) {
-  mark_dirty();
+  mark_primitives_dirty();
   mat_id_ = mat_id;
 
-  if (!ancestor_mat_id_.has_value()) {
-    for (auto& it : *this) {
-      get_child(it).set_ancestor_mat_id(mat_id);
-    }
+  for (auto& it : *this) {
+    get_child(it).set_ancestor_mat_id(mat_id);
   }
 }
 
 void GroupNode::remove_material() {
-  mark_dirty();
+  mark_primitives_dirty();
   mat_id_ = std::nullopt;
 
-  if (!ancestor_mat_id_.has_value()) {
+  if (ancestor_mat_id_) {
+    for (auto& it : *this) {
+      get_child(it).set_ancestor_mat_id(*ancestor_mat_id_);
+    }
+  } else {
     for (auto& it : *this) {
       get_child(it).remove_ancestor_mat_id();
     }
@@ -202,7 +206,7 @@ void GroupNode::remove_material() {
 }
 
 void GroupNode::delete_material_from_subtree(IdView<MaterialId> mat_id) {
-  mark_dirty();
+  mark_primitives_dirty();
   if (mat_id == mat_id_) {
     mat_id_ = std::nullopt;
   }
@@ -219,7 +223,7 @@ void GroupNode::delete_child(IdView<SDFTreeNodeId> node_id) {
   }
 
   tree_registry_.is_tree_dirty = true;
-  remove_from_parent(it->second.second);
+  remove_from_parent_of(it->second.second);
 
   nodes_order_.erase(it->second.first);
   nodes_.erase(it);
@@ -283,14 +287,14 @@ std::unique_ptr<SDFTreeNode> GroupNode::detach_child(IdView<SDFTreeNodeId> node_
   auto child_ptr = std::move(map_it->second.second);
   nodes_.erase(map_it);
 
-  remove_from_parent(child_ptr);
+  remove_from_parent_of(child_ptr);
 
   return child_ptr;
 }
 
 void GroupNode::push_back_child(std::unique_ptr<SDFTreeNode> node_ptr) {
   tree_registry_.is_tree_dirty = true;
-  set_parent(node_ptr);
+  set_as_parent_of(node_ptr);
   auto node_id = node_ptr->node_id();
 
   nodes_order_.push_back(node_id);
@@ -299,7 +303,7 @@ void GroupNode::push_back_child(std::unique_ptr<SDFTreeNode> node_ptr) {
 
 void GroupNode::push_front_child(std::unique_ptr<SDFTreeNode> node_ptr) {
   tree_registry_.is_tree_dirty = true;
-  set_parent(node_ptr);
+  set_as_parent_of(node_ptr);
   auto node_id = node_ptr->node_id();
 
   nodes_order_.push_front(node_id);
@@ -313,7 +317,7 @@ void GroupNode::insert_before_child(std::optional<IdView<SDFTreeNodeId>> before_
     return;
   }
   tree_registry_.is_tree_dirty = true;
-  set_parent(node_ptr);
+  set_as_parent_of(node_ptr);
 
   auto map_it = nodes_.find(*before_child_id);
   if (map_it == nodes_.end()) {
@@ -333,7 +337,7 @@ void GroupNode::insert_after_child(std::optional<IdView<SDFTreeNodeId>> after_ch
     return;
   }
   tree_registry_.is_tree_dirty = true;
-  set_parent(node_ptr);
+  set_as_parent_of(node_ptr);
 
   auto map_it = nodes_.find(*after_child_id);
   if (map_it == nodes_.end()) {

@@ -23,7 +23,7 @@ void UniformBuffer::unbind() const { glBindBuffer(GL_UNIFORM_BUFFER, 0); }  // N
 // Primitive UBO
 
 PrimitiveUniformBuffer::PrimitiveUniformBuffer(size_t max_count)
-    : UniformBuffer(0, max_count, sizeof(PrimitiveNode), 12), max_count_(max_count) {}
+    : UniformBuffer(0, max_count, sizeof(PrimitiveNode), 0), max_count_(max_count) {}
 
 void PrimitiveUniformBuffer::set(SDFTree& tree) {  // NOLINT
   PrimitiveNodeVisitor visitor;
@@ -98,8 +98,33 @@ void PrimitiveUniformBuffer::PrimitiveNodeVisitor::visit_prism(TriangularPrismNo
                   sizeof(PrimitiveNode), &ubo_node);
 }
 
+// Node Attribute UBO
+NodeAttributesUniformBuffer::NodeAttributesUniformBuffer(size_t max_count)
+    : UniformBuffer(1, max_count, sizeof(NodeAttributes), 8), max_count_(max_count) {
+  Logger::debug("{}", sizeof(NodeAttributes));
+}
+
+void NodeAttributesUniformBuffer::set(SDFTree& tree) {  // NOLINT
+  NodeAttributesVisitor visitor;
+  tree.visit_all_nodes(visitor);
+}
+
+void NodeAttributesUniformBuffer::update_dirty(SDFTree& tree) {  // NOLINT
+  NodeAttributesVisitor visitor;
+  tree.visit_dirty_node_attributes(visitor);
+}
+
+void NodeAttributesUniformBuffer::NodeAttributesVisitor::visit_node(SDFTreeNode& node) {
+  NodeAttributes ubo_attribute(node);
+
+  glBufferSubData(GL_UNIFORM_BUFFER, static_cast<GLintptr>(node.node_id().raw() * sizeof(NodeAttributes)),
+                  sizeof(NodeAttributes), &ubo_attribute);
+}
+
+// Material UBO
+
 MaterialUniformBuffer::MaterialUniformBuffer(size_t max_count)
-    : UniformBuffer(1, sizeof(Material), max_count, 4), max_count_(max_count) {}
+    : UniformBuffer(2, sizeof(Material), max_count, 4), max_count_(max_count) {}
 
 void MaterialUniformBuffer::set(SDFTree& tree) {  // NOLINT
   tree.visit_all_materials([](auto& mat) {

@@ -40,15 +40,12 @@ class PrimitiveUniformBuffer : public UniformBuffer {
   struct PrimitiveNode {
     glm::mat4 transform;
     glm::vec3 size;
-    float scale;
     int mat_id;
-    float _padding[3]{0.0F, 0.0F, 0.F};  // required for std140 alignment
 
     PrimitiveNode(const BasePrimitiveNode& _node, const glm::vec3& _size)
         : transform(_node.transform().world_to_local_matrix()),
           size(_size),
-          scale(_node.transform().scale()),
-          mat_id(static_cast<int>(_node.active_material_id_or_defualt().raw())) {}
+          mat_id(static_cast<int>(_node.active_material_id_or_default().raw())) {}
   };
 
   explicit PrimitiveUniformBuffer(size_t max_count);
@@ -68,13 +65,44 @@ class PrimitiveUniformBuffer : public UniformBuffer {
   class PrimitiveNodeVisitor : public ISDFTreeNodeVisitor {
     void visit_sphere(SphereNode& node) override;
     void visit_cube(CubeNode& node) override;
-    void visit_torus(TorusNode&) override;
-    void visit_capsule(CapsuleNode&) override;
-    void visit_link(LinkNode&) override;
-    void visit_ellipsoid(EllipsoidNode&) override;
-    void visit_pyramid(PyramidNode&) override;
-    void visit_cylinder(CylinderNode&) override;
-    void visit_prism(TriangularPrismNode&) override;
+    void visit_torus(TorusNode& node) override;
+    void visit_capsule(CapsuleNode& node) override;
+    void visit_link(LinkNode& node) override;
+    void visit_ellipsoid(EllipsoidNode& node) override;
+    void visit_pyramid(PyramidNode& node) override;
+    void visit_cylinder(CylinderNode& node) override;
+    void visit_prism(TriangularPrismNode& node) override;
+  };
+
+  const size_t max_count_;
+};
+
+class NodeAttributesUniformBuffer : public UniformBuffer {
+ public:
+  struct NodeAttributes {
+    float scale;
+    float factor;
+    float padding[2]{0.0F, 0.0F};
+
+    explicit NodeAttributes(const SDFTreeNode& node) : scale(node.transform().scale()), factor(node.factor()) {}
+  };
+
+  explicit NodeAttributesUniformBuffer(size_t max_count);
+  ~NodeAttributesUniformBuffer() override = default;
+
+  size_t max_count() const { return max_count_; }
+
+  void set(SDFTree& tree);
+  void update_dirty(SDFTree& tree);
+
+  NodeAttributesUniformBuffer(const NodeAttributesUniformBuffer&)            = delete;
+  NodeAttributesUniformBuffer(NodeAttributesUniformBuffer&&)                 = delete;
+  NodeAttributesUniformBuffer& operator=(const NodeAttributesUniformBuffer&) = delete;
+  NodeAttributesUniformBuffer& operator=(NodeAttributesUniformBuffer&&)      = delete;
+
+ private:
+  class NodeAttributesVisitor : public ISDFTreeNodeVisitor {
+    void visit_node(SDFTreeNode&) override;
   };
 
   const size_t max_count_;

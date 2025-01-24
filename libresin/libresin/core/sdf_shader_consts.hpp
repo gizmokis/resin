@@ -66,7 +66,7 @@ constexpr StringEnumMapper<SDFShaderPrim> kSDFShaderPrimComponentArrayNames({
     {SDFShaderPrim::TriangularPrism, "u_prisms"}  //
 });
 
-constexpr std::string_view kSDFPrimitivesArrayName = "u_sdf_primitives";
+constexpr std::string_view kSDFScaleFunctionName = "opScale";
 
 enum class SDFShaderCoreComponents : uint8_t {
   Transforms = 0,

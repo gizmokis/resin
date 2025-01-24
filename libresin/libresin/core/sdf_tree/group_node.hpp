@@ -30,7 +30,10 @@ class GroupNode final : public SDFTreeNode {
 
   std::string gen_shader_code(GenShaderMode mode) const override;
 
-  inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override { visitor.visit_group(*this); }
+  inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override {
+    SDFTreeNode::accept_visitor(visitor);
+    visitor.visit_group(*this);
+  }
   [[nodiscard]] std::unique_ptr<SDFTreeNode> copy() override;
   inline bool is_leaf() override { return nodes_.size() == 0; }
   void set_material(IdView<MaterialId> mat_id) override;
@@ -137,8 +140,8 @@ class GroupNode final : public SDFTreeNode {
   void insert_leaves_up(const std::unique_ptr<SDFTreeNode>& source);
   void remove_leaves_up(const std::unique_ptr<SDFTreeNode>& source);
 
-  void set_parent(std::unique_ptr<SDFTreeNode>& node_ptr);
-  void remove_from_parent(std::unique_ptr<SDFTreeNode>& node_ptr);
+  void set_as_parent_of(std::unique_ptr<SDFTreeNode>& node_ptr);
+  void remove_from_parent_of(std::unique_ptr<SDFTreeNode>& node_ptr);
 
   bool is_node_shallow(IdView<SDFTreeNodeId> id) const;
 

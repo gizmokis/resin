@@ -9,6 +9,7 @@
 #include <libresin/core/transform.hpp>
 #include <string>
 #include <unordered_set>
+#include <utility>
 
 namespace resin {
 
@@ -42,8 +43,9 @@ class SDFTreeNode {
 
   virtual ~SDFTreeNode();
 
+  inline virtual void accept_visitor(ISDFTreeNodeVisitor& visitor) { visitor.visit_node(*this); }
+
   virtual std::string gen_shader_code(GenShaderMode mode) const = 0;
-  virtual void accept_visitor(ISDFTreeNodeVisitor& visitor)     = 0;
   [[nodiscard]] virtual std::unique_ptr<SDFTreeNode> copy()     = 0;
   virtual bool is_leaf()                                        = 0;
   virtual void set_material(IdView<MaterialId> mat_id)          = 0;
@@ -51,6 +53,9 @@ class SDFTreeNode {
 
   inline std::optional<IdView<MaterialId>> material_id() const { return mat_id_; }
   inline std::optional<IdView<MaterialId>> ancestor_material_id() const { return ancestor_mat_id_; }
+  inline virtual std::optional<IdView<MaterialId>> active_material_id() const {
+    return mat_id_ ? mat_id_ : ancestor_mat_id_;
+  }
 
   inline void remove_material_from_subtree(IdView<MaterialId> mat_id) {
     delete_material_from_subtree(mat_id);
@@ -65,7 +70,11 @@ class SDFTreeNode {
   inline const Transform& transform() const { return transform_; }
 
   inline SDFBinaryOperation bin_op() const { return bin_op_; }
+  inline bool has_smooth_bin_op() const { return (std::to_underlying(bin_op_) & 1) != 0; }
   void set_bin_op(SDFBinaryOperation bin_op);
+
+  inline float factor() const { return factor_; }
+  void set_factor(float factor);
 
   inline bool has_parent() const { return parent_.has_value(); }
   inline GroupNode& parent() { return parent_.value(); }
@@ -75,13 +84,14 @@ class SDFTreeNode {
   void rename(std::string&& name) { name_ = std::move(name); }
 
   void mark_dirty();
+  void mark_primitives_dirty();
 
  protected:
   friend SDFTree;
   friend GroupNode;
 
   inline void set_parent(GroupNode& parent) { parent_ = parent; }
-  inline void remove_from_parent() { parent_.reset(); }
+  inline void remove_parent() { parent_.reset(); }
 
   virtual void insert_leaves_to(
       std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& leaves) = 0;
@@ -102,6 +112,7 @@ class SDFTreeNode {
   TransformId transform_id_;
   Transform transform_;
   SDFBinaryOperation bin_op_;
+  float factor_;
   std::optional<IdView<MaterialId>> mat_id_;
   std::optional<IdView<MaterialId>> ancestor_mat_id_;
 

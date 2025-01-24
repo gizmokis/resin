@@ -7,6 +7,7 @@ SDFTreeNode::SDFTreeNode(SDFTreeRegistry& tree, std::string_view name)
     : node_id_(tree.nodes_registry),
       transform_id_(tree.transform_component_registry),
       bin_op_(SDFBinaryOperation::Union),
+      factor_(0.5F),
       tree_registry_(tree),
       name_(std::format("{} {}", name, tree.node_index++)) {
   tree_registry_.all_nodes[node_id_.raw()] = *this;
@@ -30,6 +31,13 @@ void SDFTreeNode::copy_common(SDFTreeNode& target, SDFTreeNode& source) {
   target.name_            = source.name_;
 }
 
-void SDFTreeNode::mark_dirty() { push_dirty_primitives(); }
+void SDFTreeNode::set_factor(float factor) {
+  factor_ = factor;
+  mark_dirty();
+}
+
+void SDFTreeNode::mark_dirty() { tree_registry_.dirty_node_attributes.emplace(node_id()); }
+
+void SDFTreeNode::mark_primitives_dirty() { push_dirty_primitives(); }
 
 }  // namespace resin

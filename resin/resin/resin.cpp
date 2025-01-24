@@ -105,6 +105,11 @@ Resin::Resin()
   primitive_ubo_->set(sdf_tree_);
   primitive_ubo_->unbind();
 
+  node_attributes_ubo_ = std::make_unique<NodeAttributesUniformBuffer>(sdf_tree_.max_node_count());
+  node_attributes_ubo_->bind();
+  node_attributes_ubo_->set(sdf_tree_);
+  node_attributes_ubo_->unbind();
+
   material_ubo_ = std::make_unique<MaterialUniformBuffer>(sdf_tree_.max_material_count());
   material_ubo_->bind();
   material_ubo_->set(sdf_tree_);
@@ -123,7 +128,8 @@ Resin::Resin()
       *shader_resource_manager_.get_res(assets_path / "material_view.frag"));
   shader_ = std::make_unique<RenderingShaderProgram>(
       "main", *shader_resource_manager_.get_res(assets_path / "main.vert"), std::move(main_frag_shader));
-  shader_->bind_uniform_buffer("NodeData", *primitive_ubo_);
+  shader_->bind_uniform_buffer("PrimitiveNodeData", *primitive_ubo_);
+  shader_->bind_uniform_buffer("NodeAttributesData", *node_attributes_ubo_);
   shader_->bind_uniform_buffer("MaterialData", *material_ubo_);
 
   // Setup camera
@@ -246,6 +252,10 @@ void Resin::update(duration_t delta) {
   primitive_ubo_->update_dirty(sdf_tree_);
   primitive_ubo_->unbind();
 
+  node_attributes_ubo_->bind();
+  node_attributes_ubo_->update_dirty(sdf_tree_);
+  node_attributes_ubo_->unbind();
+
   material_ubo_->bind();
   material_ubo_->update_dirty(sdf_tree_);
   material_ubo_->unbind();
@@ -259,6 +269,7 @@ void Resin::update(duration_t delta) {
 
   sdf_tree_.mark_materials_clean();
   sdf_tree_.mark_primitives_clean();
+  sdf_tree_.mark_node_attributes_clean();
 }
 
 void Resin::render_viewport() {
@@ -584,7 +595,10 @@ bool Resin::draw_transform_gizmo() {
             node.transform(), *camera_,
             use_local_gizmos_ ? ImGui::resin::gizmo::Mode::Local : ImGui::resin::gizmo::Mode::World, gizmo_operation_,
             disabled)) {
-      node.mark_dirty();
+      node.mark_primitives_dirty();
+      if (gizmo_operation_ == ImGui::resin::gizmo::Operation::Scale) {
+        node.mark_dirty();
+      }
       current_viewport_state_ = ViewportState::GizmoTransform;
       return true;
     }
