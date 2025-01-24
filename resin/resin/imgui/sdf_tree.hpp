@@ -28,6 +28,7 @@ class SDFTreeComponentVisitor : public ::resin::ISDFTreeNodeVisitor {
   void render_rename_popup_modal(const char* name);
   void apply_move_operation();
   void apply_duplicate_operation();
+  void apply_delete_operation();
 
   inline std::optional<::resin::IdView<::resin::SDFTreeNodeId>> selected() const { return selected_; }
 
@@ -51,6 +52,7 @@ class SDFTreeComponentVisitor : public ::resin::ISDFTreeNodeVisitor {
   std::optional<::resin::IdView<::resin::SDFTreeNodeId>> move_into_target_   = std::nullopt;
 
   std::optional<::resin::IdView<::resin::SDFTreeNodeId>> duplicate_target_ = std::nullopt;
+  std::optional<::resin::IdView<::resin::SDFTreeNodeId>> delete_target_    = std::nullopt;
 
   std::string payload_type_;
   static constexpr ::resin::StringEnumMapper<::resin::SDFBinaryOperation> kOperationSymbol =
