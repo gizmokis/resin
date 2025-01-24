@@ -354,6 +354,7 @@ void GroupNode::push_dirty_primitives() {
 
 std::unique_ptr<SDFTreeNode> GroupNode::copy() {
   auto result = std::make_unique<GroupNode>(tree_registry_);
+  copy_common(*result, *this);
   for (auto& list_it : nodes_order_) {
     result->push_back_child(nodes_.find(list_it)->second.second->copy());
   }

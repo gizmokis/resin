@@ -1,5 +1,6 @@
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
+#include <imgui/imgui_stdlib.h>
 
 #include <filesystem>
 #include <fstream>
@@ -19,6 +20,7 @@
 #include <optional>
 #include <ranges>
 #include <resin/dialog/file_dialog.hpp>
+#include <resin/imgui/modals.hpp>
 #include <resin/imgui/sdf_tree.hpp>
 #include <resin/resources/resource_managers.hpp>
 #include <utility>
@@ -91,6 +93,7 @@ void SDFTreeComponentVisitor::drag_and_drop(::resin::SDFTreeNode& node, bool ign
 }
 
 void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
+  static std::string group_name;
   static const ImGuiTreeNodeFlags kBaseFlags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick |
                                                ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_FramePadding |
                                                ImGuiTreeNodeFlags_Selected;
@@ -137,7 +140,18 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
     ImGui::OpenPopup("GroupPopUpMenu");
   }
 
+  ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {4.0F, 4.0F});
+  bool open_rename_modal = false;
   if (ImGui::BeginPopup("GroupPopUpMenu")) {
+    if (ImGui::Selectable("Rename")) {
+      open_rename_modal = true;
+    }
+    if (ImGui::Selectable("Duplicate")) {
+      duplicate_target_ = node.node_id();
+    }
+
+    ImGui::Separator();
+
     if (ImGui::Selectable("Save as prefab")) {
       auto curr_id   = node.node_id();
       auto name      = node.name();
@@ -199,7 +213,24 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
         ImGui::EndMenu();
       }
     }
+
+    ImGui::Separator();
+
+    if (ImGui::Selectable("Delete")) {
+      delete_target_ = node.node_id();
+    }
+
     ImGui::EndPopup();
+  }
+  ImGui::PopStyleVar();
+
+  if (open_rename_modal) {
+    OpenModal("Rename node");
+    group_name = std::string(node.name());
+  }
+
+  if (RenameModal("Rename node", group_name)) {
+    node.rename(std::string(group_name));
   }
 
   if (!is_node_dragged) {
@@ -227,6 +258,7 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
 }
 
 void SDFTreeComponentVisitor::visit_primitive(::resin::BasePrimitiveNode& node) {
+  static std::string node_name;
   auto source_id = get_curr_payload();
 
   bool is_node_selected = is_parent_selected_ || selected_ == node.node_id();
@@ -252,6 +284,39 @@ void SDFTreeComponentVisitor::visit_primitive(::resin::BasePrimitiveNode& node) 
   if (ImGui::IsItemClicked()) {
     selected_            = node.node_id();
     is_any_node_clicked_ = true;
+  }
+
+  if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
+    ImGui::OpenPopup("PrimitivePopUpMenu");
+  }
+
+  bool open_rename_modal = false;
+  ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {4.0F, 4.0F});
+  if (ImGui::BeginPopup("PrimitivePopUpMenu")) {
+    if (ImGui::Selectable("Rename")) {
+      open_rename_modal = true;
+    }
+    if (ImGui::Selectable("Duplicate")) {
+      duplicate_target_ = node.node_id();
+    }
+
+    ImGui::Separator();
+
+    if (ImGui::Selectable("Delete")) {
+      delete_target_ = node.node_id();
+    }
+    ImGui::EndPopup();
+  }
+
+  ImGui::PopStyleVar();
+
+  if (open_rename_modal) {
+    OpenModal("Rename node");
+    node_name = std::string(node.name());
+  }
+
+  if (RenameModal("Rename node", node_name)) {
+    node.rename(std::string(node_name));
   }
 
   if (is_node_dragged) {
@@ -330,7 +395,6 @@ std::unique_ptr<::resin::SDFTreeNode> SDFTreeComponentVisitor::fix_transform_and
 
   return node_ptr;
 }
-
 void SDFTreeComponentVisitor::apply_move_operation() {
   if (!move_source_target_.has_value() || move_source_target_->expired()) {
     return;
@@ -362,6 +426,26 @@ void SDFTreeComponentVisitor::apply_move_operation() {
   }
 }
 
+void SDFTreeComponentVisitor::apply_duplicate_operation() {
+  if (!duplicate_target_ || duplicate_target_->expired()) {
+    return;
+  }
+
+  auto& duplicate_target = sdf_tree_.node(*duplicate_target_);
+  if (!duplicate_target.has_parent()) {
+    return;
+  }
+  auto target_copy = duplicate_target.copy();
+  duplicate_target.parent().insert_after_child(duplicate_target_, std::move(target_copy));
+}
+
+void SDFTreeComponentVisitor::apply_delete_operation() {
+  if (!delete_target_ || delete_target_->expired()) {
+    return;
+  }
+  sdf_tree_.delete_node(*delete_target_);
+}
+
 void SDFTreeView(::resin::SDFTree& tree, std::optional<::resin::IdView<::resin::SDFTreeNodeId>>& old_selected) {
   static std::string_view delete_label    = "Delete";
   static std::string_view add_prim_label  = "Add Primitive";
@@ -388,6 +472,8 @@ void SDFTreeView(::resin::SDFTree& tree, std::optional<::resin::IdView<::resin::
   ImGui::EndChild();
 
   comp_vs.apply_move_operation();
+  comp_vs.apply_duplicate_operation();
+  comp_vs.apply_delete_operation();
 
   ImGui::IsItemClicked();
   ImGui::GetMouseDragDelta();

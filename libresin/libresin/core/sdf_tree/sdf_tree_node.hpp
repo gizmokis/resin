@@ -95,6 +95,8 @@ class SDFTreeNode {
   virtual void delete_material_from_subtree(IdView<MaterialId> mat_id) = 0;
   virtual void fix_material_ancestors()                                = 0;
 
+  static void copy_common(SDFTreeNode& target, SDFTreeNode& source);
+
  protected:
   SDFTreeNodeId node_id_;
   TransformId transform_id_;

@@ -1,9 +1,9 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
 new file mode 100644
-index 00000000..5e32a907
+index 00000000..fe754340
 --- /dev/null
 +++ b/CMakeLists.txt
-@@ -0,0 +1,14 @@
+@@ -0,0 +1,16 @@
 +cmake_minimum_required(VERSION 3.20)
 +
 +project(imgui)
@@ -13,7 +13,9 @@ index 00000000..5e32a907
 +set(CMAKE_DISABLE_IN_SOURCE_BUILD TRUE)
 +
 +file(GLOB IMGUI_SOURCE_FILES
-+  "src/imgui/*.cpp")
++  "src/imgui/*.cpp"
++  "src/imgui/imgui_stdlib.cpp"
++  )
 +
 +add_library(${PROJECT_NAME} STATIC ${IMGUI_SOURCE_FILES})
 +target_link_libraries(${PROJECT_NAME} PUBLIC glfw)
@@ -62,6 +64,14 @@ diff --git a/imgui_internal.h b/src/imgui/imgui_internal.h
 similarity index 100%
 rename from imgui_internal.h
 rename to src/imgui/imgui_internal.h
+diff --git a/misc/cpp/imgui_stdlib.cpp b/src/imgui/imgui_stdlib.cpp
+similarity index 100%
+rename from misc/cpp/imgui_stdlib.cpp
+rename to src/imgui/imgui_stdlib.cpp
+diff --git a/misc/cpp/imgui_stdlib.h b/src/imgui/imgui_stdlib.h
+similarity index 100%
+rename from misc/cpp/imgui_stdlib.h
+rename to src/imgui/imgui_stdlib.h
 diff --git a/imgui_tables.cpp b/src/imgui/imgui_tables.cpp
 similarity index 100%
 rename from imgui_tables.cpp

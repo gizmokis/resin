@@ -10,6 +10,7 @@
 #include <memory>
 #include <resin/imgui/dnd_payloads.hpp>
 #include <resin/imgui/material.hpp>
+#include <resin/imgui/modals.hpp>
 #include <resin/imgui/types.hpp>
 
 namespace ImGui {
@@ -165,6 +166,17 @@ bool MaterialEdit(std::optional<::resin::IdView<::resin::MaterialId>>& selected,
     sdf_tree.delete_material(*selected);
     return true;
   }
+  ImGui::SameLine();
+
+  static std::string material_name;
+  if (ImGui::Button("Rename")) {
+    OpenModal("Rename material");
+    material_name = std::string(mat.name());
+  }
+  if (RenameModal("Rename material", material_name)) {
+    mat.rename(std::string(material_name));
+  }
+
   ImGui::SameLine();
   ImGui::Text("%s", mat.name().data());
 
