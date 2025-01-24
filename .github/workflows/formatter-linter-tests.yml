@@ -34,7 +34,7 @@ jobs:
         id: run-clang-tidy
         if: success() || failure()
         run: |
-          python3 run-clang-tidy.py -p build -warnings-as-errors *
+          python3 run-clang-tidy.py -j 4 -p build -warnings-as-errors *
 
       - name: Run tests
         id: run-tests 
