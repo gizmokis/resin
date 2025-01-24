@@ -19,7 +19,9 @@ class SphereNode final : public PrimitiveNode<SDFTreePrimitiveType::Sphere> {
   ~SphereNode() override = default;
 
   [[nodiscard]] inline std::unique_ptr<SDFTreeNode> copy() override {
-    return std::make_unique<SphereNode>(tree_registry_, radius);
+    auto result = std::make_unique<SphereNode>(tree_registry_, radius);
+    copy_common(*result, *this);
+    return result;
   }
 
  public:
@@ -38,7 +40,9 @@ class CubeNode final : public PrimitiveNode<SDFTreePrimitiveType::Cube> {
   ~CubeNode() override = default;
 
   [[nodiscard]] inline std::unique_ptr<SDFTreeNode> copy() override {
-    return std::make_unique<CubeNode>(tree_registry_, size);
+    auto result = std::make_unique<CubeNode>(tree_registry_, size);
+    copy_common(*result, *this);
+    return result;
   }
 
  public:
@@ -57,7 +61,9 @@ class TorusNode final : public PrimitiveNode<SDFTreePrimitiveType::Torus> {
   ~TorusNode() override = default;
 
   [[nodiscard]] inline std::unique_ptr<SDFTreeNode> copy() override {
-    return std::make_unique<TorusNode>(tree_registry_, major_radius, minor_radius);
+    auto result = std::make_unique<TorusNode>(tree_registry_, major_radius, minor_radius);
+    copy_common(*result, *this);
+    return result;
   }
 
  public:
@@ -76,7 +82,9 @@ class CapsuleNode final : public PrimitiveNode<SDFTreePrimitiveType::Capsule> {
   ~CapsuleNode() override = default;
 
   [[nodiscard]] inline std::unique_ptr<SDFTreeNode> copy() override {
-    return std::make_unique<CapsuleNode>(tree_registry_, height, radius);
+    auto result = std::make_unique<CapsuleNode>(tree_registry_, height, radius);
+    copy_common(*result, *this);
+    return result;
   }
 
  public:
@@ -95,7 +103,9 @@ class LinkNode final : public PrimitiveNode<SDFTreePrimitiveType::Link> {
   ~LinkNode() override = default;
 
   [[nodiscard]] inline std::unique_ptr<SDFTreeNode> copy() override {
-    return std::make_unique<LinkNode>(tree_registry_, length, major_radius, minor_radius);
+    auto result = std::make_unique<LinkNode>(tree_registry_, length, major_radius, minor_radius);
+    copy_common(*result, *this);
+    return result;
   }
 
  public:
@@ -114,7 +124,9 @@ class EllipsoidNode final : public PrimitiveNode<SDFTreePrimitiveType::Ellipsoid
   ~EllipsoidNode() override = default;
 
   [[nodiscard]] inline std::unique_ptr<SDFTreeNode> copy() override {
-    return std::make_unique<EllipsoidNode>(tree_registry_, radii);
+    auto result = std::make_unique<EllipsoidNode>(tree_registry_, radii);
+    copy_common(*result, *this);
+    return result;
   }
 
  public:
@@ -133,7 +145,9 @@ class PyramidNode final : public PrimitiveNode<SDFTreePrimitiveType::Pyramid> {
   ~PyramidNode() override = default;
 
   [[nodiscard]] inline std::unique_ptr<SDFTreeNode> copy() override {
-    return std::make_unique<PyramidNode>(tree_registry_, height);
+    auto result = std::make_unique<PyramidNode>(tree_registry_, height);
+    copy_common(*result, *this);
+    return result;
   }
 
  public:
@@ -152,7 +166,9 @@ class CylinderNode final : public PrimitiveNode<SDFTreePrimitiveType::Cylinder> 
   ~CylinderNode() override = default;
 
   [[nodiscard]] inline std::unique_ptr<SDFTreeNode> copy() override {
-    return std::make_unique<CylinderNode>(tree_registry_, height, radius);
+    auto result = std::make_unique<CylinderNode>(tree_registry_, height, radius);
+    copy_common(*result, *this);
+    return result;
   }
 
  public:
@@ -171,7 +187,9 @@ class TriangularPrismNode final : public PrimitiveNode<SDFTreePrimitiveType::Tri
   ~TriangularPrismNode() override = default;
 
   [[nodiscard]] inline std::unique_ptr<SDFTreeNode> copy() override {
-    return std::make_unique<TriangularPrismNode>(tree_registry_, prismHeight, prismHeight);
+    auto result = std::make_unique<TriangularPrismNode>(tree_registry_, prismHeight, prismHeight);
+    copy_common(*result, *this);
+    return result;
   }
 
  public:

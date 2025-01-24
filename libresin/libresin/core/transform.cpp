@@ -167,6 +167,12 @@ void Transform::mark_dirty() const {
   }
 }
 
+void Transform::shallow_copy(const Transform& other) {
+  pos_   = other.pos_;
+  rot_   = other.rot_;
+  scale_ = other.scale_;
+}
+
 void Transform::remove_from_parent() {
   std::erase_if(parent_->get().children_, [this](auto ref) { return std::addressof(ref.get()) == this; });
 

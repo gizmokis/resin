@@ -138,6 +138,9 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
   }
 
   if (ImGui::BeginPopup("GroupPopUpMenu")) {
+    if (ImGui::Selectable("Duplicate")) {
+      duplicate_target_ = node.node_id();
+    }
     if (ImGui::Selectable("Save as prefab")) {
       auto curr_id   = node.node_id();
       auto name      = node.name();
@@ -254,6 +257,17 @@ void SDFTreeComponentVisitor::visit_primitive(::resin::BasePrimitiveNode& node) 
     is_any_node_clicked_ = true;
   }
 
+  if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
+    ImGui::OpenPopup("PrimitivePopUpMenu");
+  }
+
+  if (ImGui::BeginPopup("PrimitivePopUpMenu")) {
+    if (ImGui::Selectable("Duplicate")) {
+      duplicate_target_ = node.node_id();
+    }
+    ImGui::EndPopup();
+  }
+
   if (is_node_dragged) {
     ImGui::EndDisabled();
   }
@@ -330,7 +344,6 @@ std::unique_ptr<::resin::SDFTreeNode> SDFTreeComponentVisitor::fix_transform_and
 
   return node_ptr;
 }
-
 void SDFTreeComponentVisitor::apply_move_operation() {
   if (!move_source_target_.has_value() || move_source_target_->expired()) {
     return;
@@ -362,6 +375,19 @@ void SDFTreeComponentVisitor::apply_move_operation() {
   }
 }
 
+void SDFTreeComponentVisitor::apply_duplicate_operation() {
+  if (!duplicate_target_ || duplicate_target_->expired()) {
+    return;
+  }
+
+  auto& duplicate_target = sdf_tree_.node(*duplicate_target_);
+  if (!duplicate_target.has_parent()) {
+    return;
+  }
+  auto target_copy = duplicate_target.copy();
+  duplicate_target.parent().insert_after_child(duplicate_target_, std::move(target_copy));
+}
+
 void SDFTreeView(::resin::SDFTree& tree, std::optional<::resin::IdView<::resin::SDFTreeNodeId>>& old_selected) {
   static std::string_view delete_label    = "Delete";
   static std::string_view add_prim_label  = "Add Primitive";
@@ -388,6 +414,7 @@ void SDFTreeView(::resin::SDFTree& tree, std::optional<::resin::IdView<::resin::
   ImGui::EndChild();
 
   comp_vs.apply_move_operation();
+  comp_vs.apply_duplicate_operation();
 
   ImGui::IsItemClicked();
   ImGui::GetMouseDragDelta();

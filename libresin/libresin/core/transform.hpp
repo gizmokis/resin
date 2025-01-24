@@ -65,6 +65,8 @@ struct Transform final {
   Transform& operator=(const Transform&) = delete;
   Transform& operator=(Transform&&)      = delete;
 
+  void shallow_copy(const Transform& otherl);
+
   void remove_from_parent();
 
  private:

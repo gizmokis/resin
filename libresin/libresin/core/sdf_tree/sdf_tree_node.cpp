@@ -22,6 +22,14 @@ void SDFTreeNode::set_bin_op(SDFBinaryOperation bin_op) {
   tree_registry_.is_tree_dirty = true;
 }
 
+void SDFTreeNode::copy_common(SDFTreeNode& target, SDFTreeNode& source) {
+  target.transform_.shallow_copy(source.transform_);
+  target.ancestor_mat_id_ = source.ancestor_mat_id_;
+  target.mat_id_          = source.mat_id_;
+  target.bin_op_          = source.bin_op_;
+  target.name_            = source.name_;
+}
+
 void SDFTreeNode::mark_dirty() { push_dirty_primitives(); }
 
 }  // namespace resin
