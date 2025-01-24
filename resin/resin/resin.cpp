@@ -45,6 +45,7 @@
 #include <resin/event/mouse_events.hpp>
 #include <resin/event/window_events.hpp>
 #include <resin/imgui/gizmo.hpp>
+#include <resin/imgui/main_menu_bar.hpp>
 #include <resin/imgui/material.hpp>
 #include <resin/imgui/node_edit.hpp>
 #include <resin/imgui/sdf_tree.hpp>
@@ -342,6 +343,8 @@ void Resin::gui(duration_t delta) {
   ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
 
   bool resized = false;
+
+  ImGui::resin::MainMenuBar(sdf_tree_);
 
   if (ImGui::resin::Viewport(*framebuffer_, resized)) {
     // These click checks allow for instant camera manipulation when viewport is not focused

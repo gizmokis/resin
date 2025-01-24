@@ -30,7 +30,7 @@ namespace ImGui {  // NOLINT
 namespace resin {
 
 static const std::array<::resin::FileDialog::FilterItem, 1> kPrefabFiltersArray = {
-    ::resin::FileDialog::FilterItem("Resin prefab", "json")};
+    ::resin::FileDialog::FilterItem("Resin prefab", "rsnpfb")};
 
 static const std::array<::resin::FileDialog::FilterItem, 2> kMeshFiltersArray = {
     ::resin::FileDialog::FilterItem("Wavefront obj", "obj"), ::resin::FileDialog::FilterItem("GLTF2", "gltf")};
@@ -169,7 +169,7 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
             file << ::resin::json::serialize_prefab(sdf_tree, curr_id);
             ::resin::Logger::info("Saved prefab to {}", path.string());
           },
-          std::span<const ::resin::FileDialog::FilterItem>(kPrefabFiltersArray), std::string(name) += ".json");
+          std::span<const ::resin::FileDialog::FilterItem>(kPrefabFiltersArray), std::string(name) += ".rsnpfb");
     }
     if (node.primitives().size() > 0) {
       if (ImGui::BeginMenu("Export mesh as...")) {
