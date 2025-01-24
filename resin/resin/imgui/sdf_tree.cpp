@@ -1,5 +1,6 @@
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
+#include <imgui/misc/cpp/imgui_stdlib.h>
 
 #include <filesystem>
 #include <fstream>
@@ -19,6 +20,7 @@
 #include <optional>
 #include <ranges>
 #include <resin/dialog/file_dialog.hpp>
+#include <resin/imgui/modals.hpp>
 #include <resin/imgui/sdf_tree.hpp>
 #include <resin/resources/resource_managers.hpp>
 #include <utility>
@@ -91,6 +93,7 @@ void SDFTreeComponentVisitor::drag_and_drop(::resin::SDFTreeNode& node, bool ign
 }
 
 void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
+  static std::string group_name;
   static const ImGuiTreeNodeFlags kBaseFlags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick |
                                                ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_FramePadding |
                                                ImGuiTreeNodeFlags_Selected;
@@ -137,9 +140,13 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
     ImGui::OpenPopup("GroupPopUpMenu");
   }
 
+  bool open_rename_modal = false;
   if (ImGui::BeginPopup("GroupPopUpMenu")) {
     if (ImGui::Selectable("Duplicate")) {
       duplicate_target_ = node.node_id();
+    }
+    if (ImGui::Selectable("Rename")) {
+      open_rename_modal = true;
     }
     if (ImGui::Selectable("Save as prefab")) {
       auto curr_id   = node.node_id();
@@ -202,7 +209,17 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
         ImGui::EndMenu();
       }
     }
+
     ImGui::EndPopup();
+  }
+
+  if (open_rename_modal) {
+    OpenModal("Rename node");
+    group_name = std::string(node.name());
+  }
+
+  if (RenameModal("Rename node", group_name)) {
+    node.rename(std::string(group_name));
   }
 
   if (!is_node_dragged) {
@@ -230,6 +247,7 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
 }
 
 void SDFTreeComponentVisitor::visit_primitive(::resin::BasePrimitiveNode& node) {
+  static std::string node_name;
   auto source_id = get_curr_payload();
 
   bool is_node_selected = is_parent_selected_ || selected_ == node.node_id();
@@ -261,11 +279,24 @@ void SDFTreeComponentVisitor::visit_primitive(::resin::BasePrimitiveNode& node) 
     ImGui::OpenPopup("PrimitivePopUpMenu");
   }
 
+  bool open_rename_modal = false;
   if (ImGui::BeginPopup("PrimitivePopUpMenu")) {
+    if (ImGui::Selectable("Rename")) {
+      open_rename_modal = true;
+    }
     if (ImGui::Selectable("Duplicate")) {
       duplicate_target_ = node.node_id();
     }
     ImGui::EndPopup();
+  }
+
+  if (open_rename_modal) {
+    OpenModal("Rename node");
+    node_name = std::string(node.name());
+  }
+
+  if (RenameModal("Rename node", node_name)) {
+    node.rename(std::string(node_name));
   }
 
   if (is_node_dragged) {

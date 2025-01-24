@@ -25,6 +25,7 @@ class SDFTreeComponentVisitor : public ::resin::ISDFTreeNodeVisitor {
   void visit_primitive(::resin::BasePrimitiveNode& node) override;
 
   void render_tree();
+  void render_rename_popup_modal(const char* name);
   void apply_move_operation();
   void apply_duplicate_operation();
 
