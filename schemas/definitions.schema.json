@@ -136,53 +136,66 @@
         }
       }
     },
-    "directionalLight": {
+    "lightCommon": {
       "type": "object",
-      "additionalProperties": false,
       "required": [
-        "transform",
         "color",
-        "ambient_impact"
+        "transform",
+        "name"
       ],
       "properties": {
-        "transform": {
-          "$ref": "#/$defs/transform"
-        },
         "color": {
           "$ref": "#/$defs/color"
         },
-        "ambientImpact": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1.0
+        "transform": {
+          "$ref": "#/$defs/transform"
         },
         "name": {
           "type": "string"
         }
       }
     },
+    "directionalLight": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/lightCommon"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "ambient_impact"
+          ],
+          "properties": {
+            "ambientImpact": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1.0
+            }
+          }
+        }
+      ]
+    },
     "pointLight": {
       "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "transform",
-        "color",
-        "attenuation"
-      ],
-      "properties": {
-        "transform": {
-          "$ref": "#/$defs/transform"
+      "allOf": [
+        {
+          "$ref": "#/$defs/lightCommon"
         },
-        "color": {
-          "$ref": "#/$defs/color"
-        },
-        "attenuation": {
-          "$ref": "#/$defs/attenuation"
-        },
-        "name": {
-          "type": "string"
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "attenuation"
+          ],
+          "properties": {
+            "attenuation": {
+              "$ref": "#/$defs/attenuation"
+            }
+          }
         }
-      }
+      ]
     },
     "light": {
       "oneOf": [
@@ -718,7 +731,7 @@
         "lights": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/lights"
+            "$ref": "#/$defs/light"
           }
         }
       }
