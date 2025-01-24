@@ -7,6 +7,7 @@ message(STATUS "Configuring " ${PROJECT_NAME})
 message(STATUS "Injecting JSON schemas")
 include(${PROJECT_SOURCE_DIR}/../cmake/inject_defs_into_schema.cmake)
 inject_defs_into_schema(PREFAB_JSON_SCHEMA ${PROJECT_SOURCE_DIR}/../schemas/definitions.schema.json ${PROJECT_SOURCE_DIR}/../schemas/prefab.schema.json)
+inject_defs_into_schema(RESIN_JSON_SCHEMA ${PROJECT_SOURCE_DIR}/../schemas/definitions.schema.json ${PROJECT_SOURCE_DIR}/../schemas/resin.schema.json)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/json_schemas.hpp.in
         ${CMAKE_BINARY_DIR}/generated/json_schemas/json_schemas.hpp)
 

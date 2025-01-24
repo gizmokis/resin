@@ -28,6 +28,15 @@ TEST_F(JSONTest, PrefabJSONSchemaIsValid) {
   ASSERT_NO_THROW(schema_parser.populateSchema(schema_adapter, schema));
 }
 
+TEST_F(JSONTest, ResinJSONSchemaIsValid) {
+  auto schema_json    = nlohmann::json::parse(RESIN_JSON_SCHEMA);
+  auto schema_adapter = valijson::adapters::NlohmannJsonAdapter(schema_json);
+  auto schema         = valijson::Schema();
+  auto schema_parser  = valijson::SchemaParser();
+
+  ASSERT_NO_THROW(schema_parser.populateSchema(schema_adapter, schema));
+}
+
 TEST_F(JSONTest, SerializedPrefabSatisfiesPrefabJSONSchema) {
   // given
   //       o

@@ -58,6 +58,11 @@
     "transform": {
       "type": "object",
       "additionalProperties": false,
+      "required": [
+        "position",
+        "rotation",
+        "scale"
+      ],
       "properties": {
         "position": {
           "type": "object",
@@ -107,6 +112,87 @@
           "type": "number"
         }
       }
+    },
+    "attenuation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "constant",
+        "linear",
+        "quadratic"
+      ],
+      "properties": {
+        "constant": {
+          "type": "number",
+          "minimum": 0.0
+        },
+        "linear": {
+          "type": "number",
+          "minimum": 0.0
+        },
+        "quadratic": {
+          "type": "number",
+          "minimum": 0.0
+        }
+      }
+    },
+    "directionalLight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "transform",
+        "color",
+        "ambient_impact"
+      ],
+      "properties": {
+        "transform": {
+          "$ref": "#/$defs/transform"
+        },
+        "color": {
+          "$ref": "#/$defs/color"
+        },
+        "ambientImpact": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1.0
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "pointLight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "transform",
+        "color",
+        "attenuation"
+      ],
+      "properties": {
+        "transform": {
+          "$ref": "#/$defs/transform"
+        },
+        "color": {
+          "$ref": "#/$defs/color"
+        },
+        "attenuation": {
+          "$ref": "#/$defs/attenuation"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "light": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/pointLight"
+        },
+        {
+          "$ref": "#/$defs/directionalLight"
+        }
+      ]
     },
     "sphere": {
       "type": "object",
@@ -605,7 +691,6 @@
     },
     "tree": {
       "type": "object",
-      "additionalProperties": false,
       "required": [
         "rootGroup"
       ],
@@ -618,6 +703,23 @@
         },
         "rootGroup": {
           "$ref": "#/$defs/groupNode"
+        }
+      }
+    },
+    "scene": {
+      "type": "object",
+      "required": [
+        "tree"
+      ],
+      "properties": {
+        "tree": {
+          "$ref": "#/$defs/tree"
+        },
+        "lights": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/lights"
+          }
         }
       }
     }

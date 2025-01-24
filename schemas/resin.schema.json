@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/gizmokis/resin/refs/heads/master/schemas/prefab.schema.json",
+  "title": "Resin project",
+  "description": "Defines a resin project tree and lights.",
+  "type": "object",
+  "required": [
+    "scene",
+    "version"
+  ],
+  "properties": {
+    "version": {
+      "type": "number"
+    },
+    "scene": {
+      "$ref": "https://raw.githubusercontent.com/gizmokis/resin/refs/heads/master/schemas/definitions.schema.json#/$defs/scene"
+    }
+  }
+}
