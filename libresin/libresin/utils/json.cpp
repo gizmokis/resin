@@ -52,9 +52,7 @@ void serialize_node_bin_op(json& target_json, const SDFTreeNode& node) {
   target_json["binaryOperation"] = kSDFBinaryOperationsJSONNames[node.bin_op()];
 }
 
-void serialize_node_factor(json& target_json, const SDFTreeNode& node) {
-  target_json["factor"] = node.factor();
-}
+void serialize_node_factor(json& target_json, const SDFTreeNode& node) { target_json["factor"] = node.factor(); }
 
 void serialize_node_common(json& target_json, const SDFTreeNode& node) {
   serialize_transform(target_json["transform"], node.transform());
