@@ -10,7 +10,7 @@
       "name": "linux-pedantic",
       "hidden": true,
       "cacheVariables": {
-        "PROJ_CXX_FLAGS": "-Os;-U_FORTIFY_SOURCE;-D_FORTIFY_SOURCE=3;-D_GLIBCXX_ASSERTIONS=1;-fstack-protector-strong;-fcf-protection=full;-fstack-clash-protection;-Wall;-Wextra;-Wpedantic;-Wconversion;-Wsign-conversion;-Wcast-qual;-Wformat=2;-Wundef;-Werror=float-equal;-Werror=switch;-Wshadow;-Wcast-align;-Wunused;-Wnull-dereference;-Wdouble-promotion;-Wimplicit-fallthrough;-Wextra-semi;-Woverloaded-virtual;-Wnon-virtual-dtor;-Wold-style-cast",
+        "PROJ_CXX_FLAGS": "-O3;-U_FORTIFY_SOURCE;-D_FORTIFY_SOURCE=3;-D_GLIBCXX_ASSERTIONS=1;-fstack-protector-strong;-fcf-protection=full;-fstack-clash-protection;-Wall;-Wextra;-Wpedantic;-Wconversion;-Wsign-conversion;-Wcast-qual;-Wformat=2;-Wundef;-Werror=float-equal;-Werror=switch;-Wshadow;-Wcast-align;-Wunused;-Wnull-dereference;-Wdouble-promotion;-Wimplicit-fallthrough;-Wextra-semi;-Woverloaded-virtual;-Wnon-virtual-dtor;-Wold-style-cast",
         "PROJ_EXE_LINKER_FLAGS": "-Wl,--allow-shlib-undefined,--as-needed;SHELL: -z noexecstack;SHELL: -z relro;SHELL: -z now;SHELL: -z nodlopen",
         "PROJ_SHARED_LINKER_FLAGS": "-Wl,--allow-shlib-undefined,--as-needed;SHELL: -z noexecstack;SHELL: -z relro;SHELL: -z now;SHELL: -z nodlopen"
       }
