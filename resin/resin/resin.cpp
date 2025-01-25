@@ -21,6 +21,7 @@
 #include <glm/trigonometric.hpp>
 #include <libresin/core/camera.hpp>
 #include <libresin/core/framebuffer.hpp>
+#include <libresin/core/light.hpp>
 #include <libresin/core/material.hpp>
 #include <libresin/core/raycaster.hpp>
 #include <libresin/core/resources/shader_resource.hpp>
@@ -53,8 +54,6 @@
 #include <resin/imgui/viewport.hpp>
 #include <resin/resin.hpp>
 #include <string_view>
-
-#include "libresin/core/light.hpp"
 
 namespace resin {
 
@@ -89,7 +88,9 @@ Resin::Resin()
   // Main resource path
   const std::filesystem::path assets_path = std::filesystem::current_path() / "assets";
 
-  // Setup example tree
+  // Setup scene
+  scene_ = std::make_unique<Scene>();
+
   auto& m1 = scene_->tree().add_material(Material(glm::vec3(0.25F, 0.25F, 0.96F)));
   auto& m2 = scene_->tree().add_material(Material(glm::vec3(0.96F, 0.25F, 0.25F)));
   scene_->tree().add_material(Material(glm::vec3(1.0F, 1.0F, 0.0F)));

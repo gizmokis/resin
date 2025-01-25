@@ -45,8 +45,8 @@ constexpr StringEnumMapper<SDFBinaryOperation> kSDFBinaryOperationsJSONNames({
 });
 
 constexpr StringEnumMapper<LightType> kLightJSONNames({
-    {LightType::DirectionalLight, "pointLight"},  //
-    {LightType::PointLight, "directionalLight"},  //
+    {LightType::DirectionalLight, "directionalLight"},  //
+    {LightType::PointLight, "pointLight"},  //
 });
 
 // Serializes node specific data
@@ -131,7 +131,7 @@ class JSONDeserializerLightSceneComponentVisitor : public ILightSceneComponentVi
   void visit_directional_light(LightSceneComponent<DirectionalLight>& dir_light) override;
 
  private:
-  const json& json_;  // NOLINT
+  const json& light_json_;  // NOLINT
 };
 
 void deserialize_transform(Transform& transform, const json& trans_json);
