@@ -39,6 +39,7 @@ void Window::api_init() {
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
   io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+  io.IniFilename = nullptr;
 
   imgui_set_style();
   ImGui::resin::gizmo::SetImGuiContext(ImGui::GetCurrentContext());
@@ -55,10 +56,13 @@ void Window::api_terminate() {
   Logger::debug("Api shutdown");
 }
 
-Window::Window(WindowProperties properties) : properties_(std::move(properties)) {
+Window::Window(WindowProperties properties)
+    : properties_(std::move(properties)), imgui_init_path_(get_executable_dir() / "imgui.ini") {
   if (glfw_window_count_ == 0) {
     api_init();
   }
+  ImGui::LoadIniSettingsFromDisk(path_to_utf8str(imgui_init_path_).c_str());
+  Logger::info("Loaded imgui ini file from {}", imgui_init_path_.string());
 
 #ifndef NDEBUG
   glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
@@ -176,6 +180,9 @@ void Window::set_glfw_callbacks() const {
 Window::~Window() {
   glfwDestroyWindow(window_ptr_);
   --glfw_window_count_;
+
+  ImGui::SaveIniSettingsToDisk(path_to_utf8str(imgui_init_path_).c_str());
+  Logger::info("Saved imgui ini file to {}", imgui_init_path_.string());
 
   if (glfw_window_count_ == 0) {
     api_terminate();

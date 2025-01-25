@@ -4,6 +4,7 @@
 #include <GLFW/glfw3.h>
 
 #include <cstdint>
+#include <filesystem>
 #include <functional>
 #include <glm/vec2.hpp>
 #include <memory>
@@ -69,6 +70,7 @@ class Window {
   static uint8_t glfw_window_count_;
   WindowProperties properties_;
   GLFWwindow* window_ptr_;
+  std::filesystem::path imgui_init_path_;
 
   std::unique_ptr<GraphicsContext> context_;
 };
