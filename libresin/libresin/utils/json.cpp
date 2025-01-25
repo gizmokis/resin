@@ -560,9 +560,7 @@ void deserialize_scene(Scene& scene, std::string_view scene_json_str) {
     std::unique_ptr<GroupNode> root = deserialize_sdf_tree(scene.tree(), scene_json["tree"]);
     scene.tree().set_root(std::move(root));
 
-    ::resin::Logger::info("Light start");
     if (property_exists(scene_json, "lights")) {
-      ::resin::Logger::info("lights found");
       for (const auto& light_json : scene_json["lights"]) {
         for (const auto& light_mapping : kLightJSONNames) {
           if (property_exists(light_json, light_mapping.second)) {
