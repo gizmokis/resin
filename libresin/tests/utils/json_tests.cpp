@@ -31,7 +31,7 @@ TEST_F(JSONTest, PrefabJSONSchemaIsValid) {
 }
 
 TEST_F(JSONTest, ResinJSONSchemaIsValid) {
-  auto schema_json    = nlohmann::json::parse(RESIN_JSON_SCHEMA);
+  auto schema_json    = nlohmann::json::parse(RESIN_SCENE_JSON_SCHEMA);
   auto schema_adapter = valijson::adapters::NlohmannJsonAdapter(schema_json);
   auto schema         = valijson::Schema();
   auto schema_parser  = valijson::SchemaParser();
