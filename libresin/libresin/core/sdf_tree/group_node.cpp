@@ -73,7 +73,7 @@ std::string GroupNode::gen_shader_code(GenShaderMode mode) const {
     // The current node must be a root
     return "";
   }
-  
+
   if (non_shallow_nodes_count == 1) {
     // If there is one node only, the operation is ignored
     std::string sdf;
