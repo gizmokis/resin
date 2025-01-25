@@ -28,6 +28,7 @@ void SDFTreeNode::copy_common(SDFTreeNode& target, SDFTreeNode& source) {
   target.ancestor_mat_id_ = source.ancestor_mat_id_;
   target.mat_id_          = source.mat_id_;
   target.bin_op_          = source.bin_op_;
+  target.factor_          = source.factor_;
   target.name_            = source.name_;
 }
 

@@ -21,6 +21,10 @@
         "smoothXor"
       ]
     },
+    "factor": {
+      "type": "number",
+      "minimum": 0
+    },
     "color": {
       "type": "object",
       "description": "Color in RGB format",
@@ -293,12 +297,16 @@
       "type": "object",
       "required": [
         "binaryOperation",
+        "factor",
         "name",
         "transform"
       ],
       "properties": {
         "binaryOperation": {
           "$ref": "#/$defs/binaryOperation"
+        },
+        "factor": {
+          "$ref": "#/$defs/factor"
         },
         "name": {
           "type": "string"

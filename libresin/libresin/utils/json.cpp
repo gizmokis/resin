@@ -52,12 +52,17 @@ void serialize_node_bin_op(json& target_json, const SDFTreeNode& node) {
   target_json["binaryOperation"] = kSDFBinaryOperationsJSONNames[node.bin_op()];
 }
 
+void serialize_node_factor(json& target_json, const SDFTreeNode& node) {
+  target_json["factor"] = node.factor();
+}
+
 void serialize_node_common(json& target_json, const SDFTreeNode& node) {
   serialize_transform(target_json["transform"], node.transform());
 
   serialize_node_material(target_json, node);
   serialize_node_name(target_json, node);
   serialize_node_bin_op(target_json, node);
+  serialize_node_factor(target_json, node);
 }
 
 JSONSerializerSDFTreeNodeVisitor::JSONSerializerSDFTreeNodeVisitor(json& node_json) : json_(node_json) {}
@@ -246,6 +251,14 @@ void deserialize_node_bin_op(SDFTreeNode& node, const json& node_json) {
       std::format("Provided binary operation '{}' is invalid.", node_json["binaryOperation"].get<std::string>())));
 }
 
+void deserialize_node_factor(SDFTreeNode& node, const json& node_json) {
+  try {
+    node.set_factor(node_json["factor"]);
+  } catch (...) {
+    log_throw(JSONNodeDeserializationException());
+  }
+}
+
 void deserialize_node_common(SDFTreeNode& node, const json& node_json,
                              const std::unordered_map<size_t, IdView<MaterialId>>& material_ids_map) {
   deserialize_transform(node.transform(), node_json["transform"]);
@@ -253,6 +266,7 @@ void deserialize_node_common(SDFTreeNode& node, const json& node_json,
   deserialize_node_material(node, node_json, material_ids_map);
   deserialize_node_name(node, node_json);
   deserialize_node_bin_op(node, node_json);
+  deserialize_node_factor(node, node_json);
 }
 
 JSONDeserializerSDFTreeNodeVisitor::JSONDeserializerSDFTreeNodeVisitor(

@@ -48,6 +48,7 @@ void serialize_material(json& target_json, const MaterialSDFTreeComponent& mater
 void serialize_node_material(json& target_json, const SDFTreeNode& node);
 void serialize_node_name(json& target_json, const SDFTreeNode& node);
 void serialize_node_bin_op(json& target_json, const SDFTreeNode& node);
+void serialize_node_factor(json& target_json, const SDFTreeNode& node);
 
 // Serializes material id, name, transform and binary operation
 void serialize_node_common(json& target_json, const SDFTreeNode& node);
@@ -85,6 +86,7 @@ void deserialize_node_material(SDFTreeNode& node, const json& node_json,
                                const std::unordered_map<size_t, IdView<MaterialId>>& material_ids_map);
 void deserialize_node_name(SDFTreeNode& node, const json& node_json);
 void deserialize_node_bin_op(SDFTreeNode& node, const json& node_json);
+void deserialize_node_factor(SDFTreeNode& node, const json& node_json);
 
 // Deserializes material id, name, transform and binary operation
 void deserialize_node_common(SDFTreeNode& node, const json& node_json,
