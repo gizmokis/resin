@@ -6,7 +6,7 @@
 #include <imguizmo/ImGuizmo.h>
 
 #include <libresin/utils/logger.hpp>
-#include <libresin/utils/path_utf.hpp>
+#include <libresin/utils/path.hpp>
 #include <resin/core/graphics_context.hpp>
 #include <resin/core/key_codes.hpp>
 #include <resin/core/mouse_codes.hpp>
@@ -243,7 +243,7 @@ void Window::imgui_setup() const {
 void Window::imgui_set_style() {
   ImGuiIO& io = ImGui::GetIO();
 
-  std::filesystem::path path = std::filesystem::current_path() / "assets" / "fonts" / "OpenSans-Regular.ttf";
+  std::filesystem::path path = get_executable_dir() / "assets" / "fonts" / "OpenSans-Regular.ttf";
   if (std::filesystem::exists(path)) {
     io.Fonts->AddFontFromFileTTF(path_to_utf8str(path).c_str(), 18.0f);
   } else {

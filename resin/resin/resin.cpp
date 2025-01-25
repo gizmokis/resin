@@ -33,6 +33,7 @@
 #include <libresin/core/uniform_buffer.hpp>
 #include <libresin/utils/enum_mapper.hpp>
 #include <libresin/utils/logger.hpp>
+#include <libresin/utils/path.hpp>
 #include <memory>
 #include <nfd/nfd.hpp>
 #include <optional>
@@ -86,7 +87,7 @@ Resin::Resin()
       kMaterialNodeImageSize, kMaterialMainImageSize, kMaterialImageSize);
 
   // Main resource path
-  const std::filesystem::path assets_path = std::filesystem::current_path() / "assets";
+  const std::filesystem::path assets_path = resin::get_executable_dir() / "assets";
 
   // Setup scene
   scene_ = std::make_unique<Scene>();

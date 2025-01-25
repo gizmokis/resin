@@ -9,7 +9,7 @@
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/shader.hpp>
 #include <libresin/core/uniform_buffer.hpp>
-#include <libresin/utils/path_utf.hpp>
+#include <libresin/utils/path.hpp>
 #include <memory>
 
 namespace resin {
