@@ -152,7 +152,7 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
 
     ImGui::Separator();
 
-    if (ImGui::Selectable("Save as prefab")) {
+    if (ImGui::Selectable("Save as prefab...")) {
       auto curr_id   = node.node_id();
       auto name      = node.name();
       auto& sdf_tree = sdf_tree_;
@@ -161,15 +161,18 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
           [curr_id, &sdf_tree](const std::filesystem::path& path) {
             std::ofstream file(path);
             if (!file.is_open()) {
-              ::resin::Logger::warn("Could not save to path {}", path.string());
-              ::resin::log_throw(::resin::FileStreamNotAvailableException(path.string()));
+              ::resin::Logger::err("Could not save to path {}", path.string());
               return;
             }
 
-            file << ::resin::json::serialize_prefab(sdf_tree, curr_id);
-            ::resin::Logger::info("Saved prefab to {}", path.string());
+            try {
+              file << ::resin::json::serialize_prefab(sdf_tree, curr_id);
+              ::resin::Logger::info("Saved prefab to {}", path.string());
+            } catch (...) {
+              ::resin::Logger::info("Could not save prefab to {}", path.string());
+            }
           },
-          std::span<const ::resin::FileDialog::FilterItem>(kPrefabFiltersArray), std::string(name) += ".rsnpfb");
+          std::span<const ::resin::FileDialog::FilterItem>(kPrefabFiltersArray), std::string(name) += ".amber");
     }
     if (node.primitives().size() > 0) {
       if (ImGui::BeginMenu("Export mesh as...")) {
@@ -518,8 +521,7 @@ void SDFTreeView(::resin::SDFTree& tree, std::optional<::resin::IdView<::resin::
             std::string json_content;
             std::ifstream file(path);
             if (!file.is_open()) {
-              ::resin::Logger::warn("Could not open a file with path {}", path.string());
-              ::resin::log_throw(::resin::FileStreamNotAvailableException(path.string()));
+              ::resin::Logger::err("Could not open a file with path {}", path.string());
               return;
             }
 
@@ -527,17 +529,21 @@ void SDFTreeView(::resin::SDFTree& tree, std::optional<::resin::IdView<::resin::
             ss << file.rdbuf();
             json_content = ss.str();
 
-            auto group = ::resin::json::deserialize_prefab(sdf_tree, json_content);
-            if (selected.has_value()) {
-              if (sdf_tree.is_group(*selected)) {
-                sdf_tree.group(*selected).push_back_child(std::move(group));
+            try {
+              auto group = ::resin::json::deserialize_prefab(sdf_tree, json_content);
+              if (selected.has_value()) {
+                if (sdf_tree.is_group(*selected)) {
+                  sdf_tree.group(*selected).push_back_child(std::move(group));
+                } else {
+                  sdf_tree.node(*selected).parent().push_back_child(std::move(group));
+                }
               } else {
-                sdf_tree.node(*selected).parent().push_back_child(std::move(group));
+                sdf_tree.root().push_back_child(std::move(group));
               }
-            } else {
-              sdf_tree.root().push_back_child(std::move(group));
+              ::resin::Logger::info("Loaded prefab from {}", path.string());
+            } catch (...) {
+              ::resin::Logger::err("Could not load scene from {}", path.string());
             }
-            ::resin::Logger::info("Loaded prefab from {}", path.string());
           },
           std::span<const ::resin::FileDialog::FilterItem>(kPrefabFiltersArray));
     }

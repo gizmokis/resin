@@ -6,8 +6,7 @@
 #include <libresin/utils/json.hpp>
 #include <resin/dialog/file_dialog.hpp>
 #include <resin/imgui/main_menu_bar.hpp>
-
-#include "resin/imgui/modals.hpp"
+#include <resin/imgui/modals.hpp>
 
 namespace ImGui {
 namespace resin {
@@ -34,26 +33,32 @@ void MainMenuBar(LazyMaterialImageFramebuffers& material_img_fbs, ::resin::Scene
             std::ofstream file(path);
             if (!file.is_open()) {
               ::resin::Logger::warn("Could not save to path {}", path.string());
-              ::resin::log_throw(::resin::FileStreamNotAvailableException(path.string()));
               return;
             }
             scene.tree().root().rename(std::format("{}", path.stem().string()));
-            file << ::resin::json::serialize_scene(scene);
-            ::resin::Logger::info("Saved prefab to {}", path.string());
+            try {
+              file << ::resin::json::serialize_scene(scene);
+              ::resin::Logger::info("Saved scene to {}", path.string());
+            } catch (...) {
+              ::resin::Logger::err("Could not save scene to {}", path.string());
+            }
           },
           std::span<const ::resin::FileDialog::FilterItem>(kResinFiltersArray), "Scene.resin");
     }
-    if (ImGui::MenuItem("Export as prefab...")) {
+    if (ImGui::MenuItem("Save as prefab...")) {
       ::resin::FileDialog::instance().save_file(
           [&scene](const std::filesystem::path& path) {
             std::ofstream file(path);
             if (!file.is_open()) {
               ::resin::Logger::warn("Could not save to path {}", path.string());
-              ::resin::log_throw(::resin::FileStreamNotAvailableException(path.string()));
               return;
             }
             scene.tree().root().rename(std::format("{}", path.stem().string()));
-            file << ::resin::json::serialize_prefab(scene.tree(), scene.tree().root().node_id());
+            try {
+              file << ::resin::json::serialize_prefab(scene.tree(), scene.tree().root().node_id());
+            } catch (...) {
+              ::resin::Logger::err("Could not save prefab to {}", path.string());
+            }
             ::resin::Logger::info("Saved prefab to {}", path.string());
           },
           std::span<const ::resin::FileDialog::FilterItem>(kPrefabFiltersArray), "Scene Prefab.amber");
@@ -71,6 +76,8 @@ void MainMenuBar(LazyMaterialImageFramebuffers& material_img_fbs, ::resin::Scene
                            "Cancel")) {
     scene.set_default();
     material_img_fbs.reset();
+
+    ::resin::Logger::info("New scene created");
   }
 
   if (open_scene_modal) {
@@ -92,8 +99,13 @@ void MainMenuBar(LazyMaterialImageFramebuffers& material_img_fbs, ::resin::Scene
           ss << file.rdbuf();
           json_content = ss.str();
 
-          ::resin::json::deserialize_scene(scene, json_content);
-          ::resin::Logger::info("Loaded scene from {}", path.string());
+          try {
+            ::resin::json::deserialize_scene(scene, json_content);
+            ::resin::Logger::info("Loaded scene from {}", path.string());
+          } catch (...) {
+            ::resin::Logger::err("Could not load scene from {}", path.string());
+          }
+
           material_img_fbs.reset();
         },
         std::span<const ::resin::FileDialog::FilterItem>(kResinFiltersArray));
