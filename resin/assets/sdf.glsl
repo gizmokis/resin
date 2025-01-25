@@ -132,6 +132,12 @@ sdf_result sdPyramid(vec3 pos, int node_id, int primitive_id)
 
     prepare(res, pos, node_id, primitive_id);
 
+    if (pos.y <= 0.0) //https://www.shadertoy.com/view/Ws3SDl
+    { 
+        res.dist = length(max(abs(pos)-vec3(0.5,0.0,0.5),0.0));
+        return opScale(res, node_id);
+    }
+
     sdf_node prop = u_sdf_primitives[primitive_id];
     float h = prop.size.x;
     float m2 = h*h + 0.25;
