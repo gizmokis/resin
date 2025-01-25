@@ -400,6 +400,14 @@ class JSONNodeDeserializationException : public JSONDeserializationException {
       : JSONDeserializationException(std::format("Expected a valid node definition: {}", msg)) {}
 };
 
+class JSONLightDeserializationException : public JSONDeserializationException {
+ public:
+  EXCEPTION_NAME(JSONLightDeserializationException)
+
+  explicit JSONLightDeserializationException()
+      : JSONDeserializationException("Expected a valid material definition.") {}
+};
+
 class InvalidJSONException : public ResinException {
  public:
   EXCEPTION_NAME(InvalidJSONException)
@@ -419,6 +427,14 @@ class NonExhaustiveEnumException : public ResinException {
   EXCEPTION_NAME(NonExhaustiveEnumException)
 
   explicit NonExhaustiveEnumException() : ResinException(std::format(R"(Enum is not exhaustive.)")) {}
+};
+
+class StringViewIsNotNullTerminatedException : public ResinException {
+ public:
+  EXCEPTION_NAME(StringViewIsNotNullTerminatedException)
+
+  explicit StringViewIsNotNullTerminatedException()
+      : ResinException(std::format(R"(The provided string_view is not null-terminated.)")) {}
 };
 
 }  // namespace resin

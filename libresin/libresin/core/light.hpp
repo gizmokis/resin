@@ -41,6 +41,12 @@ struct PointLight : public BaseLight {
   Attenuation attenuation;
 };
 
+enum class LightType : uint8_t {
+  DirectionalLight = 0,
+  PointLight       = 1,
+  _Count           = 2  // NOLINT
+};
+
 template <typename L>
 concept LightConcept = std::derived_from<L, BaseLight>;
 

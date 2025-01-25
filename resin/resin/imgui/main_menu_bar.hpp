@@ -9,7 +9,7 @@ class Scene;
 namespace ImGui {
 namespace resin {
 
-void MainMenuBar(::resin::Scene& scene);
+void MainMenuBar(std::unique_ptr<::resin::Scene>& scene);
 
 }  // namespace resin
 

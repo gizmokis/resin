@@ -155,4 +155,6 @@ void SDFTree::visit_dirty_materials(const std::function<void(MaterialSDFTreeComp
   }
 }
 
+void SDFTree::set_root(std::unique_ptr<GroupNode> root) { root_ = std::move(root); }
+
 }  // namespace resin

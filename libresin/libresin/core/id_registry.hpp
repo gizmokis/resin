@@ -1,5 +1,6 @@
-#ifndef RESIN_COMPONENTS_HPP
-#define RESIN_COMPONENTS_HPP
+#ifndef RESIN_ID_REGISTRY_HPP
+#define RESIN_ID_REGISTRY_HPP
+
 #include <functional>
 #include <glm/fwd.hpp>
 #include <glm/glm.hpp>
@@ -141,7 +142,7 @@ struct IdView {
 
 template <typename IdType>
 struct IdViewHash {
-  size_t operator()(const IdView<IdType>& id_view) const { return std::hash<size_t>{}(id_view.raw()); }
+  [[nodiscard]] size_t operator()(const IdView<IdType>& id_view) const { return std::hash<size_t>{}(id_view.raw()); }
 };
 
 }  // namespace resin

@@ -6,6 +6,7 @@
 #include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/json.hpp>
 #include <libresin/utils/logger.hpp>
+#include <memory>
 #include <nlohmann/json.hpp>
 #include <unordered_map>
 #include <unordered_set>
@@ -14,7 +15,26 @@ namespace resin {
 
 namespace json {
 
-static bool property_exists(const json& j, std::string_view key) { return j.find(key) != j.end(); }
+namespace {
+
+bool property_exists(const json& j, std::string_view key) { return j.find(key) != j.end(); }
+
+void find_used_materials(
+    std::unordered_set<IdView<MaterialId>, IdViewHash<MaterialId>, std::equal_to<>>& used_materials,
+    const SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id) {
+  if (tree.is_group(subtree_root_id)) {
+    for (const auto& child_id : tree.group(subtree_root_id)) {
+      find_used_materials(used_materials, tree, child_id);
+    }
+  }
+
+  auto mat_id = tree.node(subtree_root_id).material_id();
+  if (mat_id.has_value() && *mat_id != tree.default_material().material_id()) {
+    used_materials.insert(*mat_id);
+  }
+}
+
+}  // namespace
 
 void serialize_transform(json& target_json, const Transform& transform) {
   target_json["position"]["x"] = transform.local_pos().x;
@@ -121,21 +141,6 @@ void JSONSerializerSDFTreeNodeVisitor::visit_prism(TriangularPrismNode& node) {
   json_["triangularPrism"]["baseHeight"]  = node.baseHeight;
 }
 
-static void find_used_materials(
-    std::unordered_set<IdView<MaterialId>, IdViewHash<MaterialId>, std::equal_to<>>& used_materials,
-    const SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id) {
-  if (tree.is_group(subtree_root_id)) {
-    for (const auto& child_id : tree.group(subtree_root_id)) {
-      find_used_materials(used_materials, tree, child_id);
-    }
-  }
-
-  auto mat_id = tree.node(subtree_root_id).material_id();
-  if (mat_id.has_value() && *mat_id != tree.default_material().material_id()) {
-    used_materials.insert(*mat_id);
-  }
-}
-
 void serialize_sdf_tree(json& target_json, SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id,
                         bool ignore_unused_materials) {
   auto materials = json::array();
@@ -198,14 +203,16 @@ void serialize_light_common(json& target_json, const BaseLightSceneComponent& li
   target_json["name"]       = light.name();
 }
 
-JSONSerializerLightSceneComponent::JSONSerializerLightSceneComponent(json& light_json) : json_(light_json) {}
+JSONSerializerLightSceneComponentVisitor::JSONSerializerLightSceneComponentVisitor(json& light_json)
+    : json_(light_json) {}
 
-void JSONSerializerLightSceneComponent::visit_point_light(LightSceneComponent<PointLight>& point_light) {
+void JSONSerializerLightSceneComponentVisitor::visit_point_light(LightSceneComponent<PointLight>& point_light) {
   serialize_light_common(json_, point_light);
   serialize_attenuation(json_["pointLight"]["attenuation"], point_light.light().attenuation);
 }
 
-void JSONSerializerLightSceneComponent::visit_directional_light(LightSceneComponent<DirectionalLight>& dir_light) {
+void JSONSerializerLightSceneComponentVisitor::visit_directional_light(
+    LightSceneComponent<DirectionalLight>& dir_light) {
   serialize_light_common(json_, dir_light);
   json_["directionalLight"]["ambientImpact"] = dir_light.light().ambient_impact;
 }
@@ -220,7 +227,7 @@ std::string serialize_scene(Scene& scene) {
     json lights_json = json::array();
     for (const auto& light : scene.lights()) {
       json light_json;
-      auto visitor = JSONSerializerLightSceneComponent(light_json);
+      auto visitor = JSONSerializerLightSceneComponentVisitor(light_json);
       light.second->accept_visitor(visitor);
       lights_json.push_back(light_json);
     }
@@ -447,6 +454,81 @@ void JSONDeserializerSDFTreeNodeVisitor::visit_prism(TriangularPrismNode& node) 
   }
 }
 
+void deserialize_light_common(BaseLightSceneComponent& light, const json& light_json) {
+  try {
+    deserialize_transform(light.light_base().transform, light_json["transform"]);
+    light.light_base().color.r = light_json["color"]["r"];
+    light.light_base().color.g = light_json["color"]["g"];
+    light.light_base().color.b = light_json["color"]["b"];
+    light.rename(light_json["name"]);
+  } catch (const ResinException& e) {
+    throw e;
+  } catch (...) {
+    log_throw(JSONLightDeserializationException());
+  }
+}
+
+void deserialize_attenuation(PointLight::Attenuation& attenuation, const json& attenuation_json) {
+  try {
+    attenuation.constant  = attenuation_json["constant"];
+    attenuation.linear    = attenuation_json["linear"];
+    attenuation.quadratic = attenuation_json["quadratic"];
+  } catch (...) {
+    log_throw(JSONLightDeserializationException());
+  }
+}
+
+JSONDeserializerLightSceneComponentVisitor::JSONDeserializerLightSceneComponentVisitor(const json& light_json)
+    : json_(light_json) {}
+
+void JSONDeserializerLightSceneComponentVisitor::visit_point_light(LightSceneComponent<PointLight>& point_light) {
+  try {
+    deserialize_light_common(point_light, json_);
+    deserialize_attenuation(point_light.light().attenuation, json_["pointLight"]["attenuation"]);
+  } catch (const ResinException& e) {
+    throw e;
+  } catch (...) {
+    log_throw(JSONLightDeserializationException());
+  }
+}
+
+void JSONDeserializerLightSceneComponentVisitor::visit_directional_light(
+    LightSceneComponent<DirectionalLight>& dir_light) {
+  try {
+    deserialize_light_common(dir_light, json_);
+    dir_light.light().ambient_impact = json_["directionalLight"]["ambientImpact"];
+  } catch (const ResinException& e) {
+    throw e;
+  } catch (...) {
+    log_throw(JSONLightDeserializationException());
+  }
+}
+
+std::unique_ptr<GroupNode> deserialize_sdf_tree(SDFTree& tree, const json& tree_json) {
+  std::unordered_map<size_t, IdView<MaterialId>> material_ids_map;
+  for (const auto& mat_json : tree_json["materials"]) {
+    auto& mat = tree.add_material(Material());
+    deserialize_material(mat, mat_json);
+
+    auto mat_it = material_ids_map.find(mat_json["id"]);
+    if (mat_it != material_ids_map.end()) {
+      log_throw(JSONDeserializationException(
+          std::format("More than one definition of a material with id {} found.", mat_it->first)));
+    }
+
+    material_ids_map.emplace(mat_json["id"].get<size_t>(), mat.material_id());
+  }
+
+  Logger::info("Materials deserialization succeeded");
+
+  auto root = tree.create_detached_node<GroupNode>();
+  deserialize_node_common(*root, tree_json["rootGroup"], material_ids_map);
+  auto visitor = JSONDeserializerSDFTreeNodeVisitor(tree_json["rootGroup"], material_ids_map);
+  root->accept_visitor(visitor);
+
+  return root;
+}
+
 std::unique_ptr<GroupNode> deserialize_prefab(SDFTree& tree, std::string_view prefab_json_str) {
   if (!json::accept(prefab_json_str)) {
     log_throw(InvalidJSONException());
@@ -454,29 +536,8 @@ std::unique_ptr<GroupNode> deserialize_prefab(SDFTree& tree, std::string_view pr
   Logger::info("JSON prefab deserialization started");
 
   try {
-    auto tree_json = json::parse(prefab_json_str)["tree"];
-
-    std::unordered_map<size_t, IdView<MaterialId>> material_ids_map;
-    for (const auto& mat_json : tree_json["materials"]) {
-      auto& mat = tree.add_material(Material());
-      deserialize_material(mat, mat_json);
-
-      auto mat_it = material_ids_map.find(mat_json["id"]);
-      if (mat_it != material_ids_map.end()) {
-        log_throw(JSONDeserializationException(
-            std::format("More than one definition of a material with id {} found.", mat_it->first)));
-      }
-
-      material_ids_map.emplace(mat_json["id"].get<size_t>(), mat.material_id());
-    }
-
-    Logger::info("Materials deserialization succeeded");
-
-    auto prefab_root = tree.create_detached_node<GroupNode>();
-    deserialize_node_common(*prefab_root, tree_json["rootGroup"], material_ids_map);
-    auto visitor = JSONDeserializerSDFTreeNodeVisitor(tree_json["rootGroup"], material_ids_map);
-    prefab_root->accept_visitor(visitor);
-
+    auto tree_json                         = json::parse(prefab_json_str)["tree"];
+    std::unique_ptr<GroupNode> prefab_root = deserialize_sdf_tree(tree, tree_json);
     Logger::info("JSON prefab deserialization succeeded");
     return prefab_root;
   } catch (const ResinException& e) {
@@ -484,6 +545,42 @@ std::unique_ptr<GroupNode> deserialize_prefab(SDFTree& tree, std::string_view pr
     throw e;
   } catch (...) {
     Logger::warn("JSON prefab deserialization failed");
+    log_throw(JSONDeserializationException());
+  }
+}
+
+[[nodiscard]] std::unique_ptr<Scene> deserialize_scene(std::string_view scene_json_str) {
+  if (!json::accept(scene_json_str)) {
+    log_throw(InvalidJSONException());
+  }
+  Logger::info("JSON resin scene resin deserialization started");
+
+  try {
+    auto scene      = std::make_unique<Scene>();
+    auto scene_json = json::parse(scene_json_str);
+
+    std::unique_ptr<GroupNode> root = deserialize_sdf_tree(scene->tree(), scene_json["tree"]);
+    scene->tree().set_root(std::move(root));
+
+    if (property_exists(scene_json, "lights")) {
+      for (const auto& light_json : scene_json["lights"]) {
+        for (const auto& light_mapping : kLightJSONNames) {
+          if (property_exists(light_json, light_mapping.second)) {
+            auto visitor = JSONDeserializerLightSceneComponentVisitor(light_json);
+            scene->add_light(light_mapping.first).accept_visitor(visitor);
+            break;
+          }
+        }
+      }
+    }
+
+    Logger::info("JSON resin scene deserialization succeeded");
+    return scene;
+  } catch (const ResinException& e) {
+    Logger::warn("JSON resin scene deserialization failed");
+    throw e;
+  } catch (...) {
+    Logger::warn("JSON resin scene deserialization failed");
     log_throw(JSONDeserializationException());
   }
 }

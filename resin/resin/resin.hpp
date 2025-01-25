@@ -102,8 +102,6 @@ class Resin {
   EventDispatcher dispatcher_;
   ShaderResourceManager& shader_resource_manager_ = ResourceManagers::shader_manager();
 
-  Scene scene_;
-
   enum class ViewportState : uint8_t {
     InactiveIdle,
     ActiveIdle,
@@ -148,6 +146,8 @@ class Resin {
 
   OrbitingCameraOperator orbiting_camera_operator_;
   FirstPersonCameraOperator first_person_camera_operator_;
+
+  std::unique_ptr<Scene> scene_;
 
   bool running_   = true;
   bool minimized_ = false;
