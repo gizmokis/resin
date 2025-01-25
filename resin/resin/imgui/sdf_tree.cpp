@@ -30,7 +30,7 @@ namespace ImGui {  // NOLINT
 namespace resin {
 
 static const std::array<::resin::FileDialog::FilterItem, 1> kPrefabFiltersArray = {
-    ::resin::FileDialog::FilterItem("Resin prefab", "rsnpfb")};
+    ::resin::FileDialog::FilterItem("Resin prefab", "amber")};
 
 static const std::array<::resin::FileDialog::FilterItem, 2> kMeshFiltersArray = {
     ::resin::FileDialog::FilterItem("Wavefront obj", "obj"), ::resin::FileDialog::FilterItem("GLTF2", "gltf")};

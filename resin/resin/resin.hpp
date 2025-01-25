@@ -147,7 +147,7 @@ class Resin {
   OrbitingCameraOperator orbiting_camera_operator_;
   FirstPersonCameraOperator first_person_camera_operator_;
 
-  std::unique_ptr<Scene> scene_;
+  Scene scene_;
 
   bool running_   = true;
   bool minimized_ = false;

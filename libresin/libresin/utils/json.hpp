@@ -46,7 +46,7 @@ constexpr StringEnumMapper<SDFBinaryOperation> kSDFBinaryOperationsJSONNames({
 
 constexpr StringEnumMapper<LightType> kLightJSONNames({
     {LightType::DirectionalLight, "directionalLight"},  //
-    {LightType::PointLight, "pointLight"},  //
+    {LightType::PointLight, "pointLight"},              //
 });
 
 // Serializes node specific data
@@ -153,7 +153,7 @@ void deserialize_attenuation(PointLight::Attenuation& attenuation, const json& a
 std::unique_ptr<GroupNode> deserialize_sdf_tree(SDFTree& tree, const json& tree_json);
 
 [[nodiscard]] std::unique_ptr<GroupNode> deserialize_prefab(SDFTree& tree, std::string_view prefab_json_str);
-[[nodiscard]] std::unique_ptr<Scene> deserialize_scene(std::string_view scene_json_str);
+void deserialize_scene(Scene& scene, std::string_view scene_json_str);
 
 }  // namespace json
 

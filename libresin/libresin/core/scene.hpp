@@ -34,6 +34,9 @@ class Scene {
   LightsMap& lights() { return lights_; }
   SDFTree& tree() { return tree_; }
 
+  void set_default();
+  void clear();
+
  private:
   IdRegistry<BaseLight> lights_registry_;
   LightsMap lights_;

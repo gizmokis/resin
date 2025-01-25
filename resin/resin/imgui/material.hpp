@@ -25,6 +25,12 @@ struct LazyMaterialImageFramebuffers {
         main_material_fb(::resin::ImageFramebuffer(main_material_img_size, main_material_img_size)),
         material_preview_img_size(_material_preview_img_size) {}
 
+  void reset() {
+    main_material_fb.mark_dirty();
+    material_preview_fbs_map.clear();
+    node_material_preview_fb.mark_dirty();
+  }
+
   LazyImageFramebuffer node_material_preview_fb;
   std::optional<::resin::IdView<::resin::MaterialId>> node_material_preview_id;
   LazyImageFramebuffer main_material_fb;

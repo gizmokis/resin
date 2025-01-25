@@ -547,18 +547,18 @@ std::unique_ptr<GroupNode> deserialize_prefab(SDFTree& tree, std::string_view pr
   }
 }
 
-[[nodiscard]] std::unique_ptr<Scene> deserialize_scene(std::string_view scene_json_str) {
+void deserialize_scene(Scene& scene, std::string_view scene_json_str) {
   if (!json::accept(scene_json_str)) {
     log_throw(InvalidJSONException());
   }
   Logger::info("JSON resin scene resin deserialization started");
 
   try {
-    auto scene      = std::make_unique<Scene>();
+    scene.clear();
     auto scene_json = json::parse(scene_json_str);
 
-    std::unique_ptr<GroupNode> root = deserialize_sdf_tree(scene->tree(), scene_json["tree"]);
-    scene->tree().set_root(std::move(root));
+    std::unique_ptr<GroupNode> root = deserialize_sdf_tree(scene.tree(), scene_json["tree"]);
+    scene.tree().set_root(std::move(root));
 
     ::resin::Logger::info("Light start");
     if (property_exists(scene_json, "lights")) {
@@ -566,7 +566,7 @@ std::unique_ptr<GroupNode> deserialize_prefab(SDFTree& tree, std::string_view pr
       for (const auto& light_json : scene_json["lights"]) {
         for (const auto& light_mapping : kLightJSONNames) {
           if (property_exists(light_json, light_mapping.second)) {
-            auto& light = scene->add_light(light_mapping.first);
+            auto& light = scene.add_light(light_mapping.first);
             deserialize_light_common(light, light_json);
             auto visitor = JSONDeserializerLightSceneComponentVisitor(light_json[light_mapping.second]);
             light.accept_visitor(visitor);
@@ -577,7 +577,6 @@ std::unique_ptr<GroupNode> deserialize_prefab(SDFTree& tree, std::string_view pr
     }
 
     Logger::info("JSON resin scene deserialization succeeded");
-    return scene;
   } catch (const ResinException& e) {
     Logger::warn("JSON resin scene deserialization failed");
     throw e;
