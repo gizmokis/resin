@@ -1,8 +1,8 @@
 #ifndef RESIN_SDF_TREE_NODE_VISITOR_HPP
 #define RESIN_SDF_TREE_NODE_VISITOR_HPP
-
 namespace resin {
 
+class SDFTreeNode;
 class GroupNode;
 class BasePrimitiveNode;
 class SphereNode;
@@ -17,6 +17,7 @@ class TriangularPrismNode;
 
 class ISDFTreeNodeVisitor {
  public:
+  void virtual visit_node(SDFTreeNode&) {}
   void virtual visit_group(GroupNode&) {}
   void virtual visit_primitive(BasePrimitiveNode&) {}
   void virtual visit_sphere(SphereNode&) {}

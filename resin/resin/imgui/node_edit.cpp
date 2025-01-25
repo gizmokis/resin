@@ -16,7 +16,7 @@
 #include <resin/imgui/transform_edit.hpp>
 
 #define NODE_DIRTY(x) \
-  if (x) node.mark_dirty()
+  if (x) node.mark_primitives_dirty()
 
 namespace ImGui {
 
@@ -76,7 +76,10 @@ bool NodeEdit(::resin::SDFTreeNode& node, LazyMaterialImageFramebuffers& materia
 
   if (ImGui::BeginTabBar("NodeTabBar", ImGuiTabBarFlags_None)) {
     if (ImGui::BeginTabItem("Transform")) {
-      NODE_DIRTY(ImGui::resin::TransformEdit(&node.transform()));
+      if (ImGui::resin::TransformEdit(&node.transform())) {
+        node.mark_dirty();
+        node.mark_primitives_dirty();
+      }
       ImGui::EndTabItem();
     }
 
@@ -90,6 +93,13 @@ bool NodeEdit(::resin::SDFTreeNode& node, LazyMaterialImageFramebuffers& materia
           }
         }
         ImGui::EndCombo();
+      }
+
+      if (node.has_smooth_bin_op()) {
+        float factor = node.factor();
+        if (ImGui::DragFloat("Factor", &factor, 0.01F, 0.F, 2.F, "%.2F")) {
+          node.set_factor(factor);
+        }
       }
 
       node.accept_visitor(vs);

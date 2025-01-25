@@ -50,8 +50,9 @@ void MeshExporter::execute_shader(const glm::vec3 bb_start, const glm::vec3 bb_e
   compute_shader_program.set_uniform("u_boundingBoxStart", bb_start);
   compute_shader_program.set_uniform("u_boundingBoxEnd", bb_end);
   compute_shader_program.set_uniform("u_marchRes", resolution_);
-  compute_shader_program.set_uniform("u_farPlane", 100.F);  // remove this uniform later
-  compute_shader_program.bind_uniform_buffer("NodeData", 0);
+  compute_shader_program.bind_uniform_buffer("PrimitiveNodeData", 0);
+  compute_shader_program.bind_uniform_buffer("NodeAttributesData", 1);
+  compute_shader_program.bind_uniform_buffer("MaterialData", 2);
 
   // Dispatch compute shader.
   glDispatchCompute(resolution_ / 8, resolution_ / 8, resolution_ / 8);

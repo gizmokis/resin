@@ -33,11 +33,11 @@ float raycast(vec3 ray_origin, vec3 ray_direction, out sdf_result hit)
     float tmax = u_farPlane;
 
     float t = tmin;
-    for( int i=0; i<256 && t<tmax; i++ )
+    for(int i=0; i<256 && t<tmax; i++)
     {
         vec3 pos = ray_origin + t*ray_direction;
         sdf_result res = map(pos);
-        if( abs(res.dist)<(0.0001*t) )
+        if(abs(res.dist) < 0.0001)
         { 
             hit = res;
             return t;
@@ -69,10 +69,10 @@ float render( vec3 ray_origin, vec3 ray_direction )
 
     sdf_result result;
     float t = raycast(ray_origin, ray_direction, result);
-    if( t>-0.5 && t < u_farPlane )
+    if(t>0 && t < u_farPlane)
     {
         vec3 pos = ray_origin + t*ray_direction;
-        vec3 nor = calcNormal( pos );
+        vec3 nor = calcNormal(pos);
         material mat = result.mat;
 
         vec3 totalAmbient = u_Ambient + u_dirLight.ambient_impact * u_dirLight.color;

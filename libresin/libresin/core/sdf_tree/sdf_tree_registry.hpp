@@ -13,8 +13,8 @@ template <sdf_shader_consts::SDFShaderPrim PrimType>
 class PrimitiveNode;
 
 struct SDFTreeRegistry {
-  using PrimitivesSet = std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>;
-  using MaterialsSet  = std::unordered_set<IdView<MaterialId>, IdViewHash<MaterialId>, std::equal_to<>>;
+  using NodesSet     = std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>;
+  using MaterialsSet = std::unordered_set<IdView<MaterialId>, IdViewHash<MaterialId>, std::equal_to<>>;
 
   // TODO(SDF-98): allow specifying the sizes
   SDFTreeRegistry()
@@ -79,7 +79,8 @@ struct SDFTreeRegistry {
   std::vector<std::optional<std::reference_wrapper<SDFTreeNode>>> all_nodes;
   std::vector<std::optional<std::reference_wrapper<GroupNode>>> all_group_nodes;
 
-  PrimitivesSet dirty_primitives;
+  NodesSet dirty_primitives;
+  NodesSet dirty_node_attributes;
 
   IdRegistry<Material> materials_registry;
   MaterialsSet dirty_materials;

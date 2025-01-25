@@ -23,10 +23,17 @@ class SDFTree {
   void visit_dirty_primitives(ISDFTreeNodeVisitor& visitor);
   inline void mark_primitives_clean() { sdf_tree_registry_.dirty_primitives.clear(); }
 
+  void visit_dirty_node_attributes(ISDFTreeNodeVisitor& visitor);
+  inline void mark_node_attributes_clean() { sdf_tree_registry_.dirty_node_attributes.clear(); }
+
+  void visit_all_nodes(ISDFTreeNodeVisitor& visitor);
   void visit_all_primitives(ISDFTreeNodeVisitor& visitor);
   void visit_node(IdView<SDFTreeNodeId> node_id, ISDFTreeNodeVisitor& visitor);
 
-  inline const SDFTreeRegistry::PrimitivesSet& dirty_primitives() const { return sdf_tree_registry_.dirty_primitives; }
+  inline const SDFTreeRegistry::NodesSet& dirty_primitives() const { return sdf_tree_registry_.dirty_primitives; }
+  inline const SDFTreeRegistry::NodesSet& dirty_node_attributes() const {
+    return sdf_tree_registry_.dirty_node_attributes;
+  }
 
   // Cost O(1)
   SDFTreeNode& node(IdView<SDFTreeNodeId> node_id);

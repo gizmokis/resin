@@ -10,14 +10,14 @@ Transform::~Transform() {
   }
 
   if (parent_.has_value()) {
-    remove_from_parent();
+    remove_parent();
   }
 }
 
 void Transform::set_parent(const std::optional<std::reference_wrapper<Transform>> parent) {
   // clear reference from old parent
   if (parent_.has_value()) {
-    remove_from_parent();
+    remove_parent();
   }
 
   mark_dirty();
@@ -173,7 +173,7 @@ void Transform::shallow_copy(const Transform& other) {
   scale_ = other.scale_;
 }
 
-void Transform::remove_from_parent() {
+void Transform::remove_parent() {
   std::erase_if(parent_->get().children_, [this](auto ref) { return std::addressof(ref.get()) == this; });
 
   parent_.reset();

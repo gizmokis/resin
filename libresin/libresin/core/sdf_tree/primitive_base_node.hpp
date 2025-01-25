@@ -34,29 +34,32 @@ class BasePrimitiveNode : public SDFTreeNode {
   virtual size_t get_component_raw_id() const         = 0;
 
   inline IdView<MaterialId> default_material_id() const { return tree_registry_.default_material.material_id(); }
-  std::optional<IdView<MaterialId>> active_material_id() const { return mat_id_ ? mat_id_ : ancestor_mat_id_; }
-  IdView<MaterialId> active_material_id_or_defualt() const {
+  IdView<MaterialId> active_material_id_or_default() const {
     auto mat = active_material_id();
     return mat ? *mat : default_material_id();
   }
 
   inline void set_material(IdView<MaterialId> mat_id) final {
-    mark_dirty();
+    mark_primitives_dirty();
     mat_id_ = mat_id;
   }
 
   inline void remove_material() final {
-    mark_dirty();
+    mark_primitives_dirty();
     mat_id_ = std::nullopt;
   }
 
-  inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override { visitor.visit_primitive(*this); }
+  inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override {
+    SDFTreeNode::accept_visitor(visitor);
+    visitor.visit_primitive(*this);
+  }
   bool is_leaf() final { return true; }
 
   inline IdView<PrimitiveNodeId> primitive_id() const { return prim_id_; }
 
   explicit BasePrimitiveNode(SDFTreeRegistry& tree, std::string_view name)
       : SDFTreeNode(tree, name), prim_id_(tree.primitives_registry) {
+    mark_primitives_dirty();
     mark_dirty();
   }
 

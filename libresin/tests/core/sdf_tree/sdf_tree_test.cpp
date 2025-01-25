@@ -33,8 +33,8 @@ TEST_F(SDFTreeTest, SDFShaderIsCorrectlyGenerated) {
 
   // then
   ASSERT_EQ(
-      "opDiff(sdCube(pos,1,0),opDiff(opInter(sdCube(pos,3,1),opDiff(sdSphere(pos,6,3),sdCube(pos,7,4),0.5),0.5),"
-      "sdSphere(pos,5,2),0.5),0.5)",
+      "opScale(opDiff(sdCube(pos,1,0),opScale(opDiff(opInter(sdCube(pos,3,1),opScale(opDiff(sdSphere(pos,6,3),sdCube("
+      "pos,7,4)),4)),sdSphere(pos,5,2)),2)),0)",
       sh_code_single_prim_arr);
 }
 
@@ -69,8 +69,8 @@ TEST_F(SDFTreeTest, SDFShaderGenerationOmitsShallowNodes) {
 
   // then
   ASSERT_EQ(
-      "opDiff(sdCube(pos,1,0),opDiff(opInter(sdCube(pos,3,1),opDiff(sdSphere(pos,6,3),sdCube(pos,13,4),0.5),0.5),"
-      "sdSphere(pos,5,2),0.5),0.5)",
+      "opScale(opDiff(sdCube(pos,1,0),opScale(opDiff(opInter(sdCube(pos,3,1),opScale(opDiff(sdSphere(pos,6,3),sdCube("
+      "pos,13,4)),4)),sdSphere(pos,5,2)),2)),0)",
       sh_code_single_prim_arr);
 }
 
@@ -265,7 +265,7 @@ TEST_F(SDFTreeTest, DirtyPrimitivesAreCorrectlyAdded) {
 
   // when
   tree.mark_primitives_clean();
-  group2.mark_dirty();
+  group2.mark_primitives_dirty();
 
   // then
   ASSERT_EQ(tree.dirty_primitives().size(), group2.primitives().size());
@@ -327,8 +327,8 @@ TEST_F(SDFTreeTest, MaterialsAreProperlyDerivedWhenMaterialSetOrRemoved) {
   //   materials        materials derivation
   //       o                    o
   //    o     1              o     1
-  //  o   o o   2          o   o 1   1
-  //           o o                  1 1
+  //  o   o o   2          o   o 1   2
+  //           o o                  2 2
   //
   ASSERT_EQ(group3.material_id(), mat2.material_id());
 
@@ -338,9 +338,9 @@ TEST_F(SDFTreeTest, MaterialsAreProperlyDerivedWhenMaterialSetOrRemoved) {
   ASSERT_EQ(tree.node(*it).ancestor_material_id(), mat1.material_id());
 
   it = group3.begin();
-  ASSERT_EQ(tree.node(*it).ancestor_material_id(), mat1.material_id());
+  ASSERT_EQ(tree.node(*it).ancestor_material_id(), mat2.material_id());
   ++it;
-  ASSERT_EQ(tree.node(*it).ancestor_material_id(), mat1.material_id());
+  ASSERT_EQ(tree.node(*it).ancestor_material_id(), mat2.material_id());
 
   // when
   group2.remove_material();
