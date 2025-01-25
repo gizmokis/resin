@@ -73,10 +73,17 @@ std::string GroupNode::gen_shader_code(GenShaderMode mode) const {
     // The current node must be a root
     return "";
   }
-
+  
   if (non_shallow_nodes_count == 1) {
     // If there is one node only, the operation is ignored
-    return get_child(*last_non_shallow_node).gen_shader_code(mode);
+    std::string sdf;
+    sdf += sdf_shader_consts::kSDFScaleFunctionName;
+    sdf += "(";
+    sdf += get_child(*last_non_shallow_node).gen_shader_code(mode);
+    sdf += ",";
+    sdf += std::to_string(node_id_.raw());
+    sdf += ")";
+    return sdf;
   }
 
   std::string sdf;
@@ -122,6 +129,7 @@ void GroupNode::set_as_parent_of(std::unique_ptr<SDFTreeNode>& node_ptr) {
     node_ptr->set_ancestor_mat_id(*ancestor_mat_id_);
     node_ptr->mark_primitives_dirty();
   }
+  node_ptr->mark_dirty();
   insert_leaves_up(node_ptr);
 }
 
@@ -132,6 +140,7 @@ void GroupNode::remove_from_parent_of(std::unique_ptr<SDFTreeNode>& node_ptr) {
     node_ptr->remove_ancestor_mat_id();
     node_ptr->mark_primitives_dirty();
   }
+  node_ptr->mark_dirty();
   remove_leaves_up(node_ptr);
 }
 

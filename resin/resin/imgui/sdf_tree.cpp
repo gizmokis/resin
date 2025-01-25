@@ -339,7 +339,7 @@ void SDFTreeComponentVisitor::render_op(::resin::SDFTreeNode& node) const {
 
   // TODO(SDF-100): Use operation icons
   ImGui::SameLine(op_offset);
-  if (is_first_ && node.bin_op() != ::resin::SDFBinaryOperation::SmoothUnion) {
+  if (is_first_) {
     ImGui::TextColored(ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled), " (%s)",
                        kOperationSymbol.value(node.bin_op()).data());
     if (ImGui::BeginItemTooltip()) {

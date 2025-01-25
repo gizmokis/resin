@@ -14,7 +14,7 @@ layout (std430, binding = 5) buffer uvBuffer { vec2 uv_buffer[];};
 uniform vec3 u_boundingBoxStart;
 uniform vec3 u_boundingBoxEnd;
 uniform uint u_marchRes;
-uniform float u_farPlane;
+const float u_farPlane = 100.0;
 
 #include "blinn_phong.glsl"
 #include "sdf.glsl"

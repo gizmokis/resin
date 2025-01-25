@@ -84,7 +84,7 @@ class NodeAttributesUniformBuffer : public UniformBuffer {
     float factor;
     float padding[2]{0.0F, 0.0F};
 
-    explicit NodeAttributes(const SDFTreeNode& node) : scale(node.transform().scale()), factor(node.factor()) {}
+    explicit NodeAttributes(const SDFTreeNode& node) : scale(node.transform().local_scale()), factor(node.factor()) {}
   };
 
   explicit NodeAttributesUniformBuffer(size_t max_count);
