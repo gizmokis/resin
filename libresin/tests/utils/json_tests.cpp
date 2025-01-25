@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
 
 #include <json_schemas/json_schemas.hpp>
+#include <libresin/core/light.hpp>
 #include <libresin/core/material.hpp>
+#include <libresin/core/scene.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
@@ -175,4 +177,75 @@ TEST_F(JSONTest, PrefabIsProperlySerializedAndDeserialized) {
     auto& prefab_prim = static_cast<resin::CubeNode&>(tree.node(*prefab_it));  // NOLINT
     ASSERT_GLM_VEC_NEAR(prim.size, prefab_prim.size, 1e-4F);
   });
+}
+
+TEST_F(JSONTest, SerializedSceneSatisfiesSceneJSONSchema) {
+  // given
+  //      o
+  //      o
+  //    o   o
+
+  resin::Scene scene;
+  scene.add_light<resin::DirectionalLight>();
+  scene.add_light<resin::PointLight>();
+
+  auto& mat = scene.tree().add_material(resin::Material(glm::vec3(1.F)));
+
+  auto& group = scene.tree().root().push_back_child<resin::GroupNode>(resin::SDFBinaryOperation::Union);
+  group.push_back_child<resin::TorusNode>(resin::SDFBinaryOperation::Union);
+  group.push_back_child<resin::CylinderNode>(resin::SDFBinaryOperation::Union).set_material(mat.material_id());
+
+  // when
+  auto prefab_json_str = resin::json::serialize_scene(scene);
+  auto prefab_json     = nlohmann::json::parse(prefab_json_str);
+  auto prefab_adapter  = valijson::adapters::NlohmannJsonAdapter(prefab_json);
+
+  auto schema_json    = nlohmann::json::parse(RESIN_PREFAB_JSON_SCHEMA);
+  auto schema_adapter = valijson::adapters::NlohmannJsonAdapter(schema_json);
+
+  auto schema        = valijson::Schema();
+  auto schema_parser = valijson::SchemaParser();
+  schema_parser.populateSchema(schema_adapter, schema);
+
+  // then
+  valijson::Validator validator;
+  ASSERT_TRUE(validator.validate(schema, prefab_adapter, nullptr));
+}
+
+TEST_F(JSONTest, SceneLightsAreProperlySerializedAndDeserialized) {
+  // given
+  resin::Scene scene1;
+  auto& dir_light = scene1.add_light<resin::DirectionalLight>(random_vec3(0.0F, 1.0F), random_float(0.0F, 1.0F));
+  dir_light.rename("dir");
+  auto& point_light = scene1.add_light<resin::PointLight>(
+      random_vec3(0.0F, 1.0F), random_vec3(0.0F, 1.0F),
+      resin::PointLight::Attenuation(random_float(0.0F, 1.0F), random_float(0.0F, 1.0F), random_float(0.0F, 1.0F)));
+  point_light.rename("point");
+
+  // when
+  resin::Scene scene2;
+  auto scene_json_str = resin::json::serialize_scene(scene1);
+  resin::json::deserialize_scene(scene2, scene_json_str);
+
+  // then
+  ASSERT_EQ(scene1.lights().size(), scene2.lights().size());
+  for (auto& it : scene2.lights()) {
+    if (it.second->name() == "dir") {
+      ASSERT_GLM_MAT_NEAR(it.second->light_base().transform.local_to_world_matrix(),
+                          dir_light.light_base().transform.local_to_world_matrix(), 1e-4F);
+      ASSERT_GLM_VEC_NEAR(it.second->light_base().color, dir_light.light_base().color, 1e-4F);
+
+      auto* dir = reinterpret_cast<resin::DirectionalLight*>(&it.second->light_base());
+      ASSERT_NEAR(dir->ambient_impact, dir_light.light().ambient_impact, 1e-4F);
+    } else if (it.second->name() == "point") {
+      ASSERT_GLM_MAT_NEAR(it.second->light_base().transform.local_to_world_matrix(),
+                          point_light.light_base().transform.local_to_world_matrix(), 1e-4F);
+      ASSERT_GLM_VEC_NEAR(it.second->light_base().color, point_light.light_base().color, 1e-4F);
+
+      auto* point = reinterpret_cast<resin::PointLight*>(&it.second->light_base());
+      ASSERT_NEAR(point->attenuation.linear, point_light.light().attenuation.linear, 1e-4F);
+      ASSERT_NEAR(point->attenuation.constant, point_light.light().attenuation.constant, 1e-4F);
+      ASSERT_NEAR(point->attenuation.quadratic, point_light.light().attenuation.quadratic, 1e-4F);
+    }
+  }
 }
