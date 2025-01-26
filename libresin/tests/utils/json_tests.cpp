@@ -230,14 +230,14 @@ TEST_F(JSONTest, SceneLightsAreProperlySerializedAndDeserialized) {
   // then
   ASSERT_EQ(scene1.lights().size(), scene2.lights().size());
   for (auto& it : scene2.lights()) {
-    if (it.second->name() == "dir") {
+    if (it.second->name() == dir_light.name()) {
       ASSERT_GLM_MAT_NEAR(it.second->light_base().transform.local_to_world_matrix(),
                           dir_light.light_base().transform.local_to_world_matrix(), 1e-4F);
       ASSERT_GLM_VEC_NEAR(it.second->light_base().color, dir_light.light_base().color, 1e-4F);
 
       auto* dir = reinterpret_cast<resin::DirectionalLight*>(&it.second->light_base());
       ASSERT_NEAR(dir->ambient_impact, dir_light.light().ambient_impact, 1e-4F);
-    } else if (it.second->name() == "point") {
+    } else if (it.second->name() == point_light.name()) {
       ASSERT_GLM_MAT_NEAR(it.second->light_base().transform.local_to_world_matrix(),
                           point_light.light_base().transform.local_to_world_matrix(), 1e-4F);
       ASSERT_GLM_VEC_NEAR(it.second->light_base().color, point_light.light_base().color, 1e-4F);
@@ -246,6 +246,8 @@ TEST_F(JSONTest, SceneLightsAreProperlySerializedAndDeserialized) {
       ASSERT_NEAR(point->attenuation.linear, point_light.light().attenuation.linear, 1e-4F);
       ASSERT_NEAR(point->attenuation.constant, point_light.light().attenuation.constant, 1e-4F);
       ASSERT_NEAR(point->attenuation.quadratic, point_light.light().attenuation.quadratic, 1e-4F);
+    } else {
+      FAIL() << "Unexpected light name";
     }
   }
 }
