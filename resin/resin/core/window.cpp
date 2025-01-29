@@ -366,6 +366,7 @@ void Window::imgui_set_style() {
       ImVec4(0.9803921580314636f, 0.6627451181411743f, 0.07450980693101883f, 0.3921568691730499f);
   style.Colors[ImGuiCol_TableRowBg]    = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
   style.Colors[ImGuiCol_TableRowBgAlt] = ImVec4(1.0f, 1.0f, 1.0f, 0.03433477878570557f);
+  style.Colors[ImGuiCol_TableHeaderBg] = ImVec4(0.1882352977991104f, 0.1882352977991104f, 0.2000000029802322f, 1.0f);
 }
 
 }  // namespace resin
