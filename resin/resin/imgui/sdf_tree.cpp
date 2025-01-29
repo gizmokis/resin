@@ -16,6 +16,7 @@
 #include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/json.hpp>
 #include <libresin/utils/logger.hpp>
+#include <libresin/utils/path.hpp>
 #include <memory>
 #include <optional>
 #include <ranges>
@@ -24,8 +25,6 @@
 #include <resin/imgui/sdf_tree.hpp>
 #include <resin/resources/resource_managers.hpp>
 #include <utility>
-
-#include "libresin/utils/path.hpp"
 
 namespace ImGui {  // NOLINT
 
