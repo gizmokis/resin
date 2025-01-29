@@ -7,6 +7,7 @@
 #include <glm/glm.hpp>
 #include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/logger.hpp>
+#include <libresin/utils/path.hpp>
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <print>
@@ -15,7 +16,7 @@
 
 int main() {
   const size_t max_logs_backups = 4;
-  auto logs_dir                 = std::filesystem::current_path();
+  auto logs_dir                 = resin::get_executable_dir();
   logs_dir.append("logs");
   std::filesystem::create_directory(logs_dir);
 

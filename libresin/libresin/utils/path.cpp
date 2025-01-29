@@ -1,10 +1,22 @@
-#include <libresin/utils/path_utf.hpp>
+#include <libresin/utils/path.hpp>
 
 #ifdef _WIN32
 #include <windows.h>
 #endif
 
 namespace resin {
+
+std::filesystem::path get_executable_path() {
+#if defined(_WIN32)
+  wchar_t buffer[MAX_PATH];
+  GetModuleFileNameW(nullptr, buffer, MAX_PATH);
+  return std::filesystem::path(buffer);
+#else
+  return std::filesystem::read_symlink("/proc/self/exe");
+#endif
+}
+
+std::filesystem::path get_executable_dir() { return get_executable_path().parent_path(); }
 
 std::string path_to_utf8str(const std::filesystem::path& path) {
 #ifdef _WIN32

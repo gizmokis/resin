@@ -16,6 +16,7 @@
 #include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/json.hpp>
 #include <libresin/utils/logger.hpp>
+#include <libresin/utils/path.hpp>
 #include <memory>
 #include <optional>
 #include <ranges>
@@ -30,7 +31,7 @@ namespace ImGui {  // NOLINT
 namespace resin {
 
 static const std::array<::resin::FileDialog::FilterItem, 1> kPrefabFiltersArray = {
-    ::resin::FileDialog::FilterItem("Resin prefab", "json")};
+    ::resin::FileDialog::FilterItem("Resin prefab", "amber")};
 
 static const std::array<::resin::FileDialog::FilterItem, 2> kMeshFiltersArray = {
     ::resin::FileDialog::FilterItem("Wavefront obj", "obj"), ::resin::FileDialog::FilterItem("GLTF2", "gltf")};
@@ -117,7 +118,7 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
   ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.F, 4.F));
 
   if (!is_node_selected) {
-    ImGui::PushStyleColor(ImGuiCol_Header, ImGui::GetColorU32(ImGuiCol_MenuBarBg));
+    ImGui::PushStyleColor(ImGuiCol_Header, ImGui::GetColorU32(ImGuiCol_TableHeaderBg));
   }
   bool tree_node_opened = ImGui::TreeNodeEx(node.name().data(), tree_flags);
   if (!is_node_selected) {
@@ -129,7 +130,6 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
   if (is_node_dragged) {
     ImGui::EndDisabled();
   }
-
   if (ImGui::IsItemClicked()) {
     is_node_selected     = true;
     selected_            = node.node_id();
@@ -152,7 +152,7 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
 
     ImGui::Separator();
 
-    if (ImGui::Selectable("Save as prefab")) {
+    if (ImGui::Selectable("Save as prefab...")) {
       auto curr_id   = node.node_id();
       auto name      = node.name();
       auto& sdf_tree = sdf_tree_;
@@ -161,15 +161,18 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
           [curr_id, &sdf_tree](const std::filesystem::path& path) {
             std::ofstream file(path);
             if (!file.is_open()) {
-              ::resin::Logger::warn("Could not save to path {}", path.string());
-              ::resin::log_throw(::resin::FileStreamNotAvailableException(path.string()));
+              ::resin::Logger::err("Could not save to path {}", path.string());
               return;
             }
 
-            file << ::resin::json::serialize_prefab(sdf_tree, curr_id);
-            ::resin::Logger::info("Saved prefab to {}", path.string());
+            try {
+              file << ::resin::json::serialize_prefab(sdf_tree, curr_id);
+              ::resin::Logger::info("Saved prefab to {}", path.string());
+            } catch (...) {
+              ::resin::Logger::info("Could not save prefab to {}", path.string());
+            }
           },
-          std::span<const ::resin::FileDialog::FilterItem>(kPrefabFiltersArray), std::string(name) += ".json");
+          std::span<const ::resin::FileDialog::FilterItem>(kPrefabFiltersArray), std::string(name) += ".amber");
     }
     if (node.primitives().size() > 0) {
       if (ImGui::BeginMenu("Export mesh as...")) {
@@ -188,7 +191,7 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
               [curr_id, &sdf_tree, resolution](const std::filesystem::path& path) {
                 auto& resource_manager = ::resin::ResourceManagers::shader_manager();
                 ::resin::ShaderResource shader_resource =
-                    *resource_manager.get_res(std::filesystem::current_path() / "assets/marching_cubes.comp");
+                    *resource_manager.get_res(::resin::get_executable_dir() / "assets/marching_cubes.comp");
                 ::resin::MeshExporter exporter(shader_resource, resolution);
                 glm::vec3 pos = sdf_tree.group(curr_id).transform().pos();  // TODO(SDF-130) calculate bounding box
                 exporter.setup_scene(pos - glm::vec3(5.0F), pos + glm::vec3(5.0F), sdf_tree, curr_id);
@@ -202,7 +205,7 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
               [curr_id, &sdf_tree, resolution](const std::filesystem::path& path) {
                 auto& resource_manager = ::resin::ResourceManagers::shader_manager();
                 ::resin::ShaderResource shader_resource =
-                    *resource_manager.get_res(std::filesystem::current_path() / "assets/marching_cubes.comp");
+                    *resource_manager.get_res(::resin::get_executable_dir() / "assets/marching_cubes.comp");
                 ::resin::MeshExporter exporter(shader_resource, resolution);
                 glm::vec3 pos = sdf_tree.group(curr_id).transform().pos();  // TODO(SDF-130) calculate bounding box
                 exporter.setup_scene(pos - glm::vec3(5.0F), pos + glm::vec3(5.0F), sdf_tree, curr_id);
@@ -518,8 +521,7 @@ void SDFTreeView(::resin::SDFTree& tree, std::optional<::resin::IdView<::resin::
             std::string json_content;
             std::ifstream file(path);
             if (!file.is_open()) {
-              ::resin::Logger::warn("Could not open a file with path {}", path.string());
-              ::resin::log_throw(::resin::FileStreamNotAvailableException(path.string()));
+              ::resin::Logger::err("Could not open a file with path {}", path.string());
               return;
             }
 
@@ -527,17 +529,21 @@ void SDFTreeView(::resin::SDFTree& tree, std::optional<::resin::IdView<::resin::
             ss << file.rdbuf();
             json_content = ss.str();
 
-            auto group = ::resin::json::deserialize_prefab(sdf_tree, json_content);
-            if (selected.has_value()) {
-              if (sdf_tree.is_group(*selected)) {
-                sdf_tree.group(*selected).push_back_child(std::move(group));
+            try {
+              auto group = ::resin::json::deserialize_prefab(sdf_tree, json_content);
+              if (selected.has_value()) {
+                if (sdf_tree.is_group(*selected)) {
+                  sdf_tree.group(*selected).push_back_child(std::move(group));
+                } else {
+                  sdf_tree.node(*selected).parent().push_back_child(std::move(group));
+                }
               } else {
-                sdf_tree.node(*selected).parent().push_back_child(std::move(group));
+                sdf_tree.root().push_back_child(std::move(group));
               }
-            } else {
-              sdf_tree.root().push_back_child(std::move(group));
+              ::resin::Logger::info("Loaded prefab from {}", path.string());
+            } catch (...) {
+              ::resin::Logger::err("Could not load scene from {}", path.string());
             }
-            ::resin::Logger::info("Loaded prefab from {}", path.string());
           },
           std::span<const ::resin::FileDialog::FilterItem>(kPrefabFiltersArray));
     }

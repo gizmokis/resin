@@ -90,6 +90,9 @@ class SDFTree {
   inline size_t max_node_count() const { return sdf_tree_registry_.nodes_registry.get_max_objs(); }
   inline size_t max_material_count() const { return sdf_tree_registry_.materials_registry.get_max_objs(); }
 
+  void set_root(std::unique_ptr<GroupNode> root);
+  void clear();
+
  private:
   static size_t curr_id_;
 

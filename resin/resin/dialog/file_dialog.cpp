@@ -2,7 +2,7 @@
 
 #include <filesystem>
 #include <libresin/utils/exceptions.hpp>
-#include <libresin/utils/path_utf.hpp>
+#include <libresin/utils/path.hpp>
 #include <nfd/nfd.hpp>
 #include <optional>
 #include <resin/dialog/file_dialog.hpp>

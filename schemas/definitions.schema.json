@@ -58,6 +58,11 @@
     "transform": {
       "type": "object",
       "additionalProperties": false,
+      "required": [
+        "position",
+        "rotation",
+        "scale"
+      ],
       "properties": {
         "position": {
           "type": "object",
@@ -107,6 +112,100 @@
           "type": "number"
         }
       }
+    },
+    "attenuation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "constant",
+        "linear",
+        "quadratic"
+      ],
+      "properties": {
+        "constant": {
+          "type": "number",
+          "minimum": 0.0
+        },
+        "linear": {
+          "type": "number",
+          "minimum": 0.0
+        },
+        "quadratic": {
+          "type": "number",
+          "minimum": 0.0
+        }
+      }
+    },
+    "lightCommon": {
+      "type": "object",
+      "required": [
+        "color",
+        "transform",
+        "name"
+      ],
+      "properties": {
+        "color": {
+          "$ref": "#/$defs/color"
+        },
+        "transform": {
+          "$ref": "#/$defs/transform"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "directionalLight": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/lightCommon"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "ambient_impact"
+          ],
+          "properties": {
+            "ambientImpact": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1.0
+            }
+          }
+        }
+      ]
+    },
+    "pointLight": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/lightCommon"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "attenuation"
+          ],
+          "properties": {
+            "attenuation": {
+              "$ref": "#/$defs/attenuation"
+            }
+          }
+        }
+      ]
+    },
+    "light": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/pointLight"
+        },
+        {
+          "$ref": "#/$defs/directionalLight"
+        }
+      ]
     },
     "sphere": {
       "type": "object",
@@ -605,7 +704,6 @@
     },
     "tree": {
       "type": "object",
-      "additionalProperties": false,
       "required": [
         "rootGroup"
       ],
@@ -618,6 +716,23 @@
         },
         "rootGroup": {
           "$ref": "#/$defs/groupNode"
+        }
+      }
+    },
+    "scene": {
+      "type": "object",
+      "required": [
+        "tree"
+      ],
+      "properties": {
+        "tree": {
+          "$ref": "#/$defs/tree"
+        },
+        "lights": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/light"
+          }
         }
       }
     }

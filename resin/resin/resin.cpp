@@ -21,6 +21,7 @@
 #include <glm/trigonometric.hpp>
 #include <libresin/core/camera.hpp>
 #include <libresin/core/framebuffer.hpp>
+#include <libresin/core/light.hpp>
 #include <libresin/core/material.hpp>
 #include <libresin/core/raycaster.hpp>
 #include <libresin/core/resources/shader_resource.hpp>
@@ -32,6 +33,7 @@
 #include <libresin/core/uniform_buffer.hpp>
 #include <libresin/utils/enum_mapper.hpp>
 #include <libresin/utils/logger.hpp>
+#include <libresin/utils/path.hpp>
 #include <memory>
 #include <nfd/nfd.hpp>
 #include <optional>
@@ -45,6 +47,7 @@
 #include <resin/event/mouse_events.hpp>
 #include <resin/event/window_events.hpp>
 #include <resin/imgui/gizmo.hpp>
+#include <resin/imgui/main_menu_bar.hpp>
 #include <resin/imgui/material.hpp>
 #include <resin/imgui/node_edit.hpp>
 #include <resin/imgui/sdf_tree.hpp>
@@ -84,42 +87,32 @@ Resin::Resin()
       kMaterialNodeImageSize, kMaterialMainImageSize, kMaterialImageSize);
 
   // Main resource path
-  const std::filesystem::path assets_path = std::filesystem::current_path() / "assets";
+  const std::filesystem::path assets_path = resin::get_executable_dir() / "assets";
 
-  // Setup example tree
-  auto& m1 = sdf_tree_.add_material(Material(glm::vec3(0.25F, 0.25F, 0.96F)));
-  auto& m2 = sdf_tree_.add_material(Material(glm::vec3(0.96F, 0.25F, 0.25F)));
-  sdf_tree_.add_material(Material(glm::vec3(1.0F, 1.0F, 0.0F)));
-  sdf_tree_.add_material(Material(glm::vec3(0.0F, 1.0F, 0.0F)));
-  sdf_tree_.add_material(Material(glm::vec3(1.0F, 0.0F, 1.0F)));
-
-  sdf_tree_.root().push_back_child<SphereNode>(SDFBinaryOperation::SmoothUnion).set_material(m1.material_id());
-  auto& group = sdf_tree_.root().push_back_child<GroupNode>(SDFBinaryOperation::SmoothUnion);
-  group.push_back_child<CubeNode>(SDFBinaryOperation::SmoothUnion).transform().set_local_pos(glm::vec3(1, 1, 0));
-  group.push_back_child<CubeNode>(SDFBinaryOperation::SmoothUnion).transform().set_local_pos(glm::vec3(-1, -1, 0));
-  group.set_material(m2.material_id());
+  // Setup scene
+  scene_.set_default();
 
   // Setup shaders
-  primitive_ubo_ = std::make_unique<PrimitiveUniformBuffer>(sdf_tree_.max_node_count());
+  primitive_ubo_ = std::make_unique<PrimitiveUniformBuffer>(scene_.tree().max_node_count());
   primitive_ubo_->bind();
-  primitive_ubo_->set(sdf_tree_);
+  primitive_ubo_->set(scene_.tree());
   primitive_ubo_->unbind();
 
-  node_attributes_ubo_ = std::make_unique<NodeAttributesUniformBuffer>(sdf_tree_.max_node_count());
+  node_attributes_ubo_ = std::make_unique<NodeAttributesUniformBuffer>(scene_.tree().max_node_count());
   node_attributes_ubo_->bind();
-  node_attributes_ubo_->set(sdf_tree_);
+  node_attributes_ubo_->set(scene_.tree());
   node_attributes_ubo_->unbind();
 
-  material_ubo_ = std::make_unique<MaterialUniformBuffer>(sdf_tree_.max_material_count());
+  material_ubo_ = std::make_unique<MaterialUniformBuffer>(scene_.tree().max_material_count());
   material_ubo_->bind();
-  material_ubo_->set(sdf_tree_);
+  material_ubo_->set(scene_.tree());
   material_ubo_->unbind();
 
   ShaderResource grid_frag_shader = *shader_resource_manager_.get_res(assets_path / "grid.frag");
   ShaderResource main_frag_shader = *shader_resource_manager_.get_res(assets_path / "main.frag");
-  main_frag_shader.set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
-  main_frag_shader.set_ext_defi("MAX_UBO_NODE_COUNT", std::to_string(sdf_tree_.max_node_count()));
-  main_frag_shader.set_ext_defi("MAX_UBO_MATERIAL_COUNT", std::to_string(sdf_tree_.max_material_count()));
+  main_frag_shader.set_ext_defi("SDF_CODE", scene_.tree().gen_shader_code());
+  main_frag_shader.set_ext_defi("MAX_UBO_NODE_COUNT", std::to_string(scene_.tree().max_node_count()));
+  main_frag_shader.set_ext_defi("MAX_UBO_MATERIAL_COUNT", std::to_string(scene_.tree().max_material_count()));
 
   grid_shader_ = std::make_unique<RenderingShaderProgram>(
       "grid", *shader_resource_manager_.get_res(assets_path / "main.vert"), std::move(grid_frag_shader));
@@ -239,25 +232,25 @@ void Resin::update(duration_t delta) {
 
   directional_light_->transform.rotate(glm::angleAxis(std::chrono::duration<float>(delta).count(), glm::vec3(0, 1, 0)));
 
-  if (sdf_tree_.is_dirty()) {
-    shader_->fragment_shader().set_ext_defi("SDF_CODE", sdf_tree_.gen_shader_code());
-    Logger::debug("{}", sdf_tree_.gen_shader_code());
+  if (scene_.tree().is_dirty()) {
+    shader_->fragment_shader().set_ext_defi("SDF_CODE", scene_.tree().gen_shader_code());
+    Logger::debug("{}", scene_.tree().gen_shader_code());
     shader_->recompile();
     setup_shader_uniforms();
     Logger::info("Refreshed the SDF Tree");
-    sdf_tree_.mark_clean();
+    scene_.tree().mark_clean();
   }
 
   primitive_ubo_->bind();
-  primitive_ubo_->update_dirty(sdf_tree_);
+  primitive_ubo_->update_dirty(scene_.tree());
   primitive_ubo_->unbind();
 
   node_attributes_ubo_->bind();
-  node_attributes_ubo_->update_dirty(sdf_tree_);
+  node_attributes_ubo_->update_dirty(scene_.tree());
   node_attributes_ubo_->unbind();
 
   material_ubo_->bind();
-  material_ubo_->update_dirty(sdf_tree_);
+  material_ubo_->update_dirty(scene_.tree());
   material_ubo_->unbind();
 
   shader_->set_uniform("u_dirLight", *directional_light_);
@@ -267,9 +260,9 @@ void Resin::update(duration_t delta) {
   update_camera_distance();
   interpolate(seconds_dt);
 
-  sdf_tree_.mark_materials_clean();
-  sdf_tree_.mark_primitives_clean();
-  sdf_tree_.mark_node_attributes_clean();
+  scene_.tree().mark_materials_clean();
+  scene_.tree().mark_primitives_clean();
+  scene_.tree().mark_node_attributes_clean();
 }
 
 void Resin::render_viewport() {
@@ -311,7 +304,7 @@ void Resin::render_material_image(ImageFramebuffer& fb) {
 void Resin::render_material_images() {
   for (auto& mat : material_images_->material_preview_fbs_map) {
     if (mat.second->is_dirty && !mat.first.expired()) {
-      material_img_shader_->set_uniform("u_material", sdf_tree_.material(mat.first).material);
+      material_img_shader_->set_uniform("u_material", scene_.tree().material(mat.first).material);
       render_material_image(mat.second->fb);
     }
     mat.second->mark_clean();
@@ -319,7 +312,8 @@ void Resin::render_material_images() {
 
   if (material_images_->main_material_fb.is_dirty) {
     if (material_images_->main_material_id && !material_images_->main_material_id->expired()) {
-      material_img_shader_->set_uniform("u_material", sdf_tree_.material(*material_images_->main_material_id).material);
+      material_img_shader_->set_uniform("u_material",
+                                        scene_.tree().material(*material_images_->main_material_id).material);
       render_material_image(material_images_->main_material_fb.fb);
     }
     material_images_->main_material_fb.mark_clean();
@@ -328,7 +322,7 @@ void Resin::render_material_images() {
   if (material_images_->node_material_preview_fb.is_dirty) {
     if (material_images_->node_material_preview_id && !material_images_->node_material_preview_id->expired()) {
       material_img_shader_->set_uniform("u_material",
-                                        sdf_tree_.material(*material_images_->node_material_preview_id).material);
+                                        scene_.tree().material(*material_images_->node_material_preview_id).material);
       render_material_image(material_images_->node_material_preview_fb.fb);
     }
     material_images_->node_material_preview_fb.mark_clean();
@@ -342,6 +336,8 @@ void Resin::gui(duration_t delta) {
   ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
 
   bool resized = false;
+
+  ImGui::resin::MainMenuBar(*material_images_, scene_);
 
   if (ImGui::resin::Viewport(*framebuffer_, resized)) {
     // These click checks allow for instant camera manipulation when viewport is not focused
@@ -416,11 +412,11 @@ void Resin::gui(duration_t delta) {
 
   ImGui::SetNextWindowSizeConstraints(ImVec2(280.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
   if (ImGui::Begin("SDF Tree")) {
-    ImGui::resin::SDFTreeView(sdf_tree_, selected_node_);
+    ImGui::resin::SDFTreeView(scene_.tree(), selected_node_);
   }
   ImGui::End();
 
-  if (ImGui::Begin("[TEMP] Tools")) {
+  if (ImGui::Begin("Tools")) {
     float fov = camera_->fov();
     if (ImGui::DragFloat("Camera FOV", &fov, 0.5F, 10.0F, 140.0F, "%.2f")) {
       camera_->set_fov(fov);
@@ -439,19 +435,19 @@ void Resin::gui(duration_t delta) {
   ImGui::End();
 
   if (ImGui::Begin("Materials")) {
-    ImGui::resin::MaterialsListEdit(selected_material_, *material_images_, sdf_tree_);
+    ImGui::resin::MaterialsListEdit(selected_material_, *material_images_, scene_.tree());
   }
   ImGui::End();
 
   if (ImGui::Begin("Edit Material")) {
     if (selected_material_ && !selected_material_->expired()) {
-      ImGui::resin::MaterialEdit(selected_material_, *material_images_, sdf_tree_);
+      ImGui::resin::MaterialEdit(selected_material_, *material_images_, scene_.tree());
     }
   }
   ImGui::End();
 
   ImGui::SetNextWindowSizeConstraints(ImVec2(350.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
-  ImGui::Begin("[TEMP] Lights");
+  ImGui::Begin("Lights");
   if (ImGui::BeginTabBar("LightsTabBar", ImGuiTabBarFlags_None)) {
     // TODO(SDF-88): i don't want to design GUI please save me guys 🤲🙏
     if (ImGui::BeginTabItem("DirLight")) {
@@ -479,7 +475,7 @@ void Resin::gui(duration_t delta) {
   ImGui::SetNextWindowSizeConstraints(ImVec2(350.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
   ImGui::Begin("Selection");
   if (selected_node_.has_value() && !selected_node_->expired()) {
-    ImGui::resin::NodeEdit(sdf_tree_.node(*selected_node_), *material_images_, selected_material_, sdf_tree_);
+    ImGui::resin::NodeEdit(scene_.tree().node(*selected_node_), *material_images_, selected_material_, scene_.tree());
   }
   ImGui::End();
 
@@ -590,7 +586,7 @@ bool Resin::draw_transform_gizmo() {
                     current_viewport_state_ != ViewportState::CameraInterpolation &&
                     current_viewport_state_ != ViewportState::GizmoTransform;
 
-    auto& node = sdf_tree_.node(*selected_node_);
+    auto& node = scene_.tree().node(*selected_node_);
     if (ImGui::resin::gizmo::Transform(
             node.transform(), *camera_,
             use_local_gizmos_ ? ImGui::resin::gizmo::Mode::Local : ImGui::resin::gizmo::Mode::World, gizmo_operation_,
@@ -794,7 +790,7 @@ bool Resin::select_node(glm::vec2 relative_pos) {
     int id = framebuffer_->sample_mouse_pick(static_cast<size_t>(relative_pos.x), static_cast<size_t>(relative_pos.y));
     framebuffer_->unbind();
 
-    selected_node_ = id == -1 ? std::nullopt : sdf_tree_.get_view_from_raw_id(static_cast<size_t>(id));
+    selected_node_ = id == -1 ? std::nullopt : scene_.tree().get_view_from_raw_id(static_cast<size_t>(id));
     return true;
   }
 

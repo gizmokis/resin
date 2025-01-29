@@ -1,10 +1,14 @@
-#ifndef RESIN_PATH_UTF_HPP
-#define RESIN_PATH_UTF_HPP
+#ifndef RESIN_PATH_HPP
+#define RESIN_PATH_HPP
 
 #include <filesystem>
 #include <string>
 
 namespace resin {
+
+std::filesystem::path get_executable_path();
+
+std::filesystem::path get_executable_dir();
 
 std::string path_to_utf8str(const std::filesystem::path& path);
 
