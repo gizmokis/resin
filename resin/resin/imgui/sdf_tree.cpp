@@ -119,7 +119,7 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
   ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.F, 4.F));
 
   if (!is_node_selected) {
-    ImGui::PushStyleColor(ImGuiCol_Header, ImGui::GetColorU32(ImGuiCol_MenuBarBg));
+    ImGui::PushStyleColor(ImGuiCol_Header, ImGui::GetColorU32(ImGuiCol_TableHeaderBg));
   }
   bool tree_node_opened = ImGui::TreeNodeEx(node.name().data(), tree_flags);
   if (!is_node_selected) {
@@ -131,7 +131,6 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
   if (is_node_dragged) {
     ImGui::EndDisabled();
   }
-
   if (ImGui::IsItemClicked()) {
     is_node_selected     = true;
     selected_            = node.node_id();

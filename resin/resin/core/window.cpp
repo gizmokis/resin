@@ -298,8 +298,11 @@ void Window::imgui_set_style() {
       ImVec4(0.9803921580314636f, 0.6627451181411743f, 0.07450980693101883f, 0.7450980544090271f);
   constexpr ImVec4 gui_background = ImVec4(0.09803921729326248f, 0.09803921729326248f, 0.09803921729326248f, 1.0f);
   constexpr ImVec4 gui_light_background = ImVec4(0.2588235437870026f, 0.2588235437870026f, 0.2588235437870026f, 1.0f);
+  constexpr ImVec4 selected             = ImVec4(0.909f, 0.848f, 0.661f, 1.000f);
+  constexpr ImVec4 dimmed               = ImVec4(0.580f, 0.448f, 0.344f, 1.000f);
   constexpr ImVec4 grey                 = ImVec4(0.1568627506494522f, 0.1568627506494522f, 0.1568627506494522f, 1.0f);
   constexpr ImVec4 white                = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+  constexpr ImVec4 tab_header           = ImVec4(0.139f, 0.139f, 0.182f, 1.000f);
 
   style.Colors[ImGuiCol_Text] = white;
 
@@ -338,6 +341,13 @@ void Window::imgui_set_style() {
   style.Colors[ImGuiCol_TitleBgCollapsed] = gui_light_background;
   style.Colors[ImGuiCol_PopupBg]          = gui_light_background;
 
+  style.Colors[ImGuiCol_TabSelectedOverline] = selected;
+  style.Colors[ImGuiCol_DragDropTarget]      = selected;
+
+  style.Colors[ImGuiCol_TableHeaderBg] = tab_header;
+
+  style.Colors[ImGuiCol_TabDimmedSelectedOverline] = dimmed;
+
   // Misc
   style.Colors[ImGuiCol_TextDisabled] = ImVec4(1.0f, 1.0f, 1.0f, 0.3605149984359741f);
   style.Colors[ImGuiCol_FrameBgHovered] =
@@ -352,12 +362,10 @@ void Window::imgui_set_style() {
   style.Colors[ImGuiCol_TabUnfocused] = ImVec4(0.0f, 0.4509803950786591f, 1.0f, 0.0f);
   style.Colors[ImGuiCol_TabUnfocusedActive] =
       ImVec4(0.1333333402872086f, 0.2588235437870026f, 0.4235294163227081f, 0.0f);
-  style.Colors[ImGuiCol_TableHeaderBg] = ImVec4(0.1882352977991104f, 0.1882352977991104f, 0.2000000029802322f, 1.0f);
   style.Colors[ImGuiCol_TableBorderLight] =
       ImVec4(0.9803921580314636f, 0.6627451181411743f, 0.07450980693101883f, 0.3921568691730499f);
-  style.Colors[ImGuiCol_TableRowBg]     = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
-  style.Colors[ImGuiCol_TableRowBgAlt]  = ImVec4(1.0f, 1.0f, 1.0f, 0.03433477878570557f);
-  style.Colors[ImGuiCol_DragDropTarget] = ImVec4(1.0f, 1.0f, 0.0f, 0.8999999761581421f);
+  style.Colors[ImGuiCol_TableRowBg]    = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+  style.Colors[ImGuiCol_TableRowBgAlt] = ImVec4(1.0f, 1.0f, 1.0f, 0.03433477878570557f);
 }
 
 }  // namespace resin

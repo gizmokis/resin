@@ -416,7 +416,7 @@ void Resin::gui(duration_t delta) {
   }
   ImGui::End();
 
-  if (ImGui::Begin("[TEMP] Tools")) {
+  if (ImGui::Begin("Tools")) {
     float fov = camera_->fov();
     if (ImGui::DragFloat("Camera FOV", &fov, 0.5F, 10.0F, 140.0F, "%.2f")) {
       camera_->set_fov(fov);
@@ -447,7 +447,7 @@ void Resin::gui(duration_t delta) {
   ImGui::End();
 
   ImGui::SetNextWindowSizeConstraints(ImVec2(350.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
-  ImGui::Begin("[TEMP] Lights");
+  ImGui::Begin("Lights");
   if (ImGui::BeginTabBar("LightsTabBar", ImGuiTabBarFlags_None)) {
     // TODO(SDF-88): i don't want to design GUI please save me guys 🤲🙏
     if (ImGui::BeginTabItem("DirLight")) {
