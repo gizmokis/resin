@@ -4,8 +4,6 @@ Resin is a 3D model editor based on signed distance functions (SDFs). The applic
 Resin also supports exporting models to a triangle meshes, allowing further processing
 in popular 3D modeling software. 🔗 [See the latest releases](https://github.com/gizmokis/resin/releases).  
 
-
-
 <img src="docs/media/app_overview.png">
 
 ## Gallery
@@ -13,7 +11,6 @@ in popular 3D modeling software. 🔗 [See the latest releases](https://github.c
 |                                  |                                  |                                  |
 | --------------------------------------------- | ----------------------------------------------- | --------------------------------------------- |
 | <img src="docs/media/fish.jpeg" width=350> | <img src="docs/media/bulb.png" width=350> | <img src="docs/media/daot.png" width=350> |
-
 
 ## Development 
 
