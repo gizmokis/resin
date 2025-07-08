@@ -1,0 +1,9 @@
+#name Sphere
+float sdf(   vec3 
+  
+  pos,  float radius, int x, float y)
+
+
+{
+    return length(pos) - radius;
+}

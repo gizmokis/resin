@@ -183,6 +183,20 @@ class ShaderAbsentVersionException : public ResinException {
   std::string sh_path_;
 };
 
+class ShaderAbsentNameException : public ResinException {
+ public:
+  EXCEPTION_NAME(ShaderAbsentNameException)
+
+  explicit ShaderAbsentNameException(std::string&& sh_path)
+      : ResinException(std::format(R"(Could not find name macro for a shader with path "{}".)", sh_path)),
+        sh_path_(std::move(sh_path)) {}
+
+  inline const std::string& get_sh_path() const { return sh_path_; }
+
+ private:
+  std::string sh_path_;
+};
+
 class ShaderTypeMismatchException : public ResinException {
  public:
   EXCEPTION_NAME(ShaderTypeMismatchException)
@@ -201,6 +215,37 @@ class ShaderTypeMismatchException : public ResinException {
   std::string shader_type_;
   std::string shader_name_;
   std::string actual_;
+};
+
+class SDFShaderInvalidFunctionSignature : public ResinException {
+ public:
+  EXCEPTION_NAME(SDFShaderInvalidFunctionSignature)
+
+  explicit SDFShaderInvalidFunctionSignature(std::string&& sh_name)
+      : ResinException(std::format(
+            R"(The SDF Shader at path "{}" must define exactly one correct SDF function. The function must be named 'sdf', return a 'float', and take a 'vec3' as its first argument. It may also accept up to three additional 'float' arguments. Helper functions are not supported yet.)",
+            sh_name)),
+        sh_name_(std::move(sh_name)) {}
+
+  inline const std::string& get_sh_path() const { return sh_name_; }
+
+ private:
+  std::string sh_name_;
+};
+
+class SDFShaderNoFunctionBodyFound : public ResinException {
+ public:
+  EXCEPTION_NAME(SDFShaderNoFunctionBodyFound)
+
+  explicit SDFShaderNoFunctionBodyFound(std::string&& sh_name)
+      : ResinException(std::format(
+            R"(The SDF Shader at path "{}" must define exactly one correct SDF function with body.)", sh_name)),
+        sh_name_(std::move(sh_name)) {}
+
+  inline const std::string& get_sh_path() const { return sh_name_; }
+
+ private:
+  std::string sh_name_;
 };
 
 class ShaderProgramLinkingException : public ResinException {
@@ -254,6 +299,19 @@ class ShaderCreationException : public ResinException {
  private:
   std::string shader_type_;
   std::string shader_name_;
+  std::string reason_;
+};
+
+class UnsupportedShaderTypeProvided : public ResinException {
+ public:
+  EXCEPTION_NAME(UnsupportedShaderTypeProvided)
+
+  explicit UnsupportedShaderTypeProvided(std::string&& reason)
+      : ResinException(std::format(R"(Unsupported shader type provided "{}".)", reason)), reason_(std::move(reason)) {}
+
+  inline const std::string& get_reason() const { return reason_; }
+
+ private:
   std::string reason_;
 };
 

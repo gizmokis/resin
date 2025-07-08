@@ -11,10 +11,14 @@
 #include <unordered_set>
 
 namespace resin {
-ShaderResource::ShaderResource(std::string&& content, ShaderType type, std::unordered_set<std::string>&& ext_defi_names,
-                               std::optional<std::string>&& version)
+
+int ShaderResourceManager::shader_name_id_ = 1;
+
+ShaderResource::ShaderResource(std::string&& content, std::string&& name, ShaderType type,
+                               std::unordered_set<std::string>&& ext_defi_names, std::optional<std::string>&& version)
     : ext_defi_names_(std::move(ext_defi_names)),
       version_(std::move(version)),
+      name_(std::move(name)),
       raw_content_(std::move(content)),
       type_(type),
       is_dirty_(true) {}
@@ -185,10 +189,28 @@ std::optional<std::string> ShaderResourceManager::process_version_macro(const st
           sh_path.string(), std::string(shader_macros::kVersionMacro), 2, 3, curr_line));
     }
 
-    return std::format("#version {} {}", arg1, arg2);
+    return std::format("{} {} {}", shader_macros::kVersionMacro, arg1, arg2);
   }
 
-  return std::format("#version {}", arg1);
+  return std::format("{} {}", shader_macros::kVersionMacro, arg1);
+}
+
+std::optional<std::string> ShaderResourceManager::process_name_macro(const std::filesystem::path& sh_path,
+                                                                     ShaderType sh_type, WordsStringViewIterator& it,
+                                                                     const WordsStringViewIterator& end,
+                                                                     size_t curr_line) {
+  if (sh_type != ShaderType::SDF) {
+    resin::Logger::warn("Ignoring name macro in non .sdf shader.");
+    return std::nullopt;
+  }
+
+  if (it == end) {
+    clear_log_throw(ShaderMacroInvalidArgumentsCountException(
+        sh_path.string(), std::string(shader_macros::kVersionMacro), 0, 1, curr_line));
+  }
+
+  auto arg1 = std::string_view{*it};
+  return std::format("{}", arg1);
 }
 
 ShaderResource ShaderResourceManager::load_res(const std::filesystem::path& path) {
@@ -200,6 +222,7 @@ ShaderResource ShaderResourceManager::load_res(const std::filesystem::path& path
   std::unordered_set<std::string> defi_names;
   std::string preprocessed_content;
   std::optional<std::string> version;
+  std::string name;
 
   for (auto const [l, line_str] : lines) {
     auto line  = static_cast<size_t>(l);
@@ -231,16 +254,29 @@ ShaderResource ShaderResourceManager::load_res(const std::filesystem::path& path
         continue;
       }
       version = process_version_macro(path, sh_type, it, end, line);
+    } else if (macro == shader_macros::kNameMacro) {
+      if (auto name_opt = process_name_macro(path, sh_type, it, end, line)) {
+        name = *name_opt;
+      }
     } else {
       process_ext_defi_macro(path, it, end, line, defi_names);
     }
   }
 
-  if (sh_type != ShaderType::Library && !version.has_value()) {
+  if (sh_type != ShaderType::Library && sh_type != ShaderType::SDF && !version.has_value()) {
     clear_log_throw(ShaderAbsentVersionException(path.string()));
   }
 
-  return ShaderResource(std::move(preprocessed_content), sh_type, std::move(defi_names), std::move(version));
+  if (sh_type == ShaderType::SDF && name.empty()) {
+    clear_log_throw(ShaderAbsentNameException(path.string()));
+  }
+
+  if (name.empty()) {
+    name = std::format("UnnamedShader{}", shader_name_id_++);
+  }
+
+  return ShaderResource(std::move(preprocessed_content), std::move(name), sh_type, std::move(defi_names),
+                        std::move(version));
 }
 
 }  // namespace resin

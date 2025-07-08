@@ -7,8 +7,8 @@
 #include <print>
 #include <string>
 
-::testing::AssertionResult IsFileContentEqual(const char* expected_expr, const char* actual_expr,
-                                              const std::filesystem::path& path, const std::string& content) {
+inline ::testing::AssertionResult IsFileContentEqual(const char* expected_expr, const char* actual_expr,
+                                                     const std::filesystem::path& path, const std::string& content) {
   namespace fs = std::filesystem;
 
   if (!fs::exists(path)) {
