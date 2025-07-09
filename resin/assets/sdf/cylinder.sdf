@@ -1,0 +1,7 @@
+#name Cylinder
+
+float sdf(vec3 pos, float height, float radius)
+{
+    vec2 d = abs(vec2(pos.y,length(pos.xz))) - vec2(height/2, radius);
+    return min(max(d.y,d.x),0.0) + length(max(d,0.0));
+}

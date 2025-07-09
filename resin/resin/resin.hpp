@@ -11,6 +11,7 @@
 #include <libresin/core/resources/shader_resource.hpp>
 #include <libresin/core/scene.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
+#include <libresin/core/sdf_tree/sdf_primitive_type_manager.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/core/shader.hpp>
@@ -55,6 +56,8 @@ class Resin {
 
   void setup_shader_uniforms();
   void setup_material_framebuffers();
+
+  void load_shaders();
 
   void run();
   void init_gl();
@@ -146,6 +149,8 @@ class Resin {
 
   OrbitingCameraOperator orbiting_camera_operator_;
   FirstPersonCameraOperator first_person_camera_operator_;
+
+  SDFPrimitiveTypeManager sdf_prim_type_manager_;
 
   Scene scene_;
 

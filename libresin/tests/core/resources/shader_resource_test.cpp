@@ -16,17 +16,17 @@ TEST_F(ShaderResourceTest, ShaderFilesAreValidated) {
   resin::ShaderResourceManager sh_resman;
 
   EXPECT_THROW(
-      { auto res = sh_resman.get_res(resources_path_ / "non_existing" / "path.vert"); },
+      { auto res = sh_resman.get_res_ptr(resources_path_ / "non_existing" / "path.vert"); },
       resin::FileDoesNotExistException);
 
   EXPECT_THROW(
-      { auto res = sh_resman.get_res(resources_path_ / "invalid_ext.frg"); },
+      { auto res = sh_resman.get_res_ptr(resources_path_ / "invalid_ext.frg"); },
       resin::FileExtensionNotSupportedException);
 }
 
 TEST_F(ShaderResourceTest, ShaderWithDepsIsCorrectlyGenerated) {
   resin::ShaderResourceManager sh_resman;
-  auto res = sh_resman.get_res(resources_path_ / "regular_load" / "main.frag");
+  auto res = sh_resman.get_res_ptr(resources_path_ / "regular_load" / "main.frag");
 
   resin::ShaderResource cpy(*res);
   cpy.set_ext_defi("EXTERNAL_MAIN", "int func() { return 5; }");
@@ -45,6 +45,6 @@ TEST_F(ShaderResourceTest, ShaderDepsCycleIsDetected) {
   resin::ShaderResourceManager sh_resman;
 
   EXPECT_THROW(
-      { auto res = sh_resman.get_res(resources_path_ / "deps_cycle" / "main.vert"); },
+      { auto res = sh_resman.get_res_ptr(resources_path_ / "deps_cycle" / "main.vert"); },
       resin::ShaderIncludeMacroDependencyCycleException);
 }

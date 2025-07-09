@@ -87,7 +87,7 @@ Resin::Resin()
       kMaterialNodeImageSize, kMaterialMainImageSize, kMaterialImageSize);
 
   // Main resource path
-  const std::filesystem::path assets_path = resin::get_executable_dir() / "assets";
+  load_shaders();
 
   // Setup scene
   scene_.set_default();
@@ -108,19 +108,6 @@ Resin::Resin()
   material_ubo_->set(scene_.tree());
   material_ubo_->unbind();
 
-  ShaderResource grid_frag_shader = *shader_resource_manager_.get_res(assets_path / "grid.frag");
-  ShaderResource main_frag_shader = *shader_resource_manager_.get_res(assets_path / "main.frag");
-  main_frag_shader.set_ext_defi("SDF_CODE", scene_.tree().gen_shader_code());
-  main_frag_shader.set_ext_defi("MAX_UBO_NODE_COUNT", std::to_string(scene_.tree().max_node_count()));
-  main_frag_shader.set_ext_defi("MAX_UBO_MATERIAL_COUNT", std::to_string(scene_.tree().max_material_count()));
-
-  grid_shader_ = std::make_unique<RenderingShaderProgram>(
-      "grid", *shader_resource_manager_.get_res(assets_path / "main.vert"), std::move(grid_frag_shader));
-  material_img_shader_ = std::make_unique<RenderingShaderProgram>(
-      "material_view", *shader_resource_manager_.get_res(assets_path / "main.vert"),
-      *shader_resource_manager_.get_res(assets_path / "material_view.frag"));
-  shader_ = std::make_unique<RenderingShaderProgram>(
-      "main", *shader_resource_manager_.get_res(assets_path / "main.vert"), std::move(main_frag_shader));
   shader_->bind_uniform_buffer("PrimitiveNodeData", *primitive_ubo_);
   shader_->bind_uniform_buffer("NodeAttributesData", *node_attributes_ubo_);
   shader_->bind_uniform_buffer("MaterialData", *material_ubo_);
@@ -136,6 +123,36 @@ Resin::Resin()
   directional_light_->transform.set_local_rot(glm::quatLookAt(-glm::normalize(glm::vec3(0, 2, 3)), glm::vec3(0, 1, 0)));
 
   setup_shader_uniforms();
+}
+
+void Resin::load_shaders() {
+  const auto assets_path = resin::get_executable_dir() / "assets";
+
+  const auto sdf_path = assets_path / "sdf";
+  for (auto const& dir_entry : std::filesystem::directory_iterator{sdf_path}) {
+    try {
+      const auto& res = shader_resource_manager_.get_res(dir_entry.path());
+      sdf_prim_type_manager_.add_type_from_shader_res(res);
+      Logger::info("Loaded SDF with name {} from {}", res.get_name(), dir_entry.path().string());
+    } catch (const std::exception& e) {
+      Logger::err("Failed to load sdf with path {}. Reason: ", dir_entry.path().string(), e.what());
+    }
+  }
+
+  ShaderResource grid_frag_shader = shader_resource_manager_.get_res(assets_path / "grid.frag");
+  ShaderResource main_frag_shader = shader_resource_manager_.get_res(assets_path / "main.frag");
+  main_frag_shader.set_ext_defi("SDF_CODE", scene_.tree().gen_shader_code());
+  main_frag_shader.set_ext_defi("SDFS_IMPLEMENTATION", sdf_prim_type_manager_.generate_sdfs_glsl_content());
+  main_frag_shader.set_ext_defi("MAX_UBO_NODE_COUNT", std::to_string(scene_.tree().max_node_count()));
+  main_frag_shader.set_ext_defi("MAX_UBO_MATERIAL_COUNT", std::to_string(scene_.tree().max_material_count()));
+
+  grid_shader_ = std::make_unique<RenderingShaderProgram>(
+      "grid", shader_resource_manager_.get_res(assets_path / "main.vert"), std::move(grid_frag_shader));
+  material_img_shader_ = std::make_unique<RenderingShaderProgram>(
+      "material_view", shader_resource_manager_.get_res(assets_path / "main.vert"),
+      shader_resource_manager_.get_res(assets_path / "material_view.frag"));
+  shader_ = std::make_unique<RenderingShaderProgram>(
+      "main", shader_resource_manager_.get_res(assets_path / "main.vert"), std::move(main_frag_shader));
 }
 
 void Resin::setup_shader_uniforms() {

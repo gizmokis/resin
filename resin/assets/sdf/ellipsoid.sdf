@@ -1,0 +1,8 @@
+#name Ellipsoid
+
+float sdf(vec3 pos, float x, float y, float z)
+{
+    vec3 size = vec3(x,y,z);
+    vec2 d = vec2(length(pos/size), length(pos/(size*size)));
+    return d.x*(d.x-1.0)/d.y;
+}

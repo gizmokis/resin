@@ -16,7 +16,7 @@ class SDFShaderResourceParserTest : public testing::Test {
 TEST_F(SDFShaderResourceParserTest, SphereShaderIsProperlyParsed) {
   // given
   resin::ShaderResourceManager sh_resman;
-  resin::ShaderResource test = *sh_resman.get_res(resources_path_ / "sdf_func" / "sphere.sdf");
+  resin::ShaderResource test = *sh_resman.get_res_ptr(resources_path_ / "sdf_func" / "sphere.sdf");
 
   // when
   auto result = resin::SDFShaderResourceParser::parse(test);
@@ -36,8 +36,8 @@ TEST_F(SDFShaderResourceParserTest, SphereShaderIsProperlyParsed) {
 TEST_F(SDFShaderResourceParserTest, ParserThrowsWhenNoSDFIsDefined) {
   // given
   resin::ShaderResourceManager sh_resman;
-  resin::ShaderResource test1 = *sh_resman.get_res(resources_path_ / "sdf_func" / "sphere_signature_only.sdf");
-  resin::ShaderResource test2 = *sh_resman.get_res(resources_path_ / "sdf_func" / "no_func.sdf");
+  resin::ShaderResource test1 = *sh_resman.get_res_ptr(resources_path_ / "sdf_func" / "sphere_signature_only.sdf");
+  resin::ShaderResource test2 = *sh_resman.get_res_ptr(resources_path_ / "sdf_func" / "no_func.sdf");
 
   // when/then
   EXPECT_THROW(resin::SDFShaderResourceParser::parse(test1), resin::SDFShaderNoFunctionBodyFound);
@@ -47,7 +47,7 @@ TEST_F(SDFShaderResourceParserTest, ParserThrowsWhenNoSDFIsDefined) {
 TEST_F(SDFShaderResourceParserTest, ParserThrowsWhenMoreThanSDFIsDefined) {
   // given
   resin::ShaderResourceManager sh_resman;
-  resin::ShaderResource test = *sh_resman.get_res(resources_path_ / "sdf_func" / "two_funcs.sdf");
+  resin::ShaderResource test = *sh_resman.get_res_ptr(resources_path_ / "sdf_func" / "two_funcs.sdf");
 
   // when/then
   EXPECT_THROW(resin::SDFShaderResourceParser::parse(test), resin::SDFShaderInvalidFunctionSignature);
@@ -56,7 +56,7 @@ TEST_F(SDFShaderResourceParserTest, ParserThrowsWhenMoreThanSDFIsDefined) {
 TEST_F(SDFShaderResourceParserTest, ParserThrowsWhenUnsupportedParamTypeIsUsed) {
   // given
   resin::ShaderResourceManager sh_resman;
-  resin::ShaderResource test = *sh_resman.get_res(resources_path_ / "sdf_func" / "invalid_param_type.sdf");
+  resin::ShaderResource test = *sh_resman.get_res_ptr(resources_path_ / "sdf_func" / "invalid_param_type.sdf");
 
   // when/then
   EXPECT_THROW(resin::SDFShaderResourceParser::parse(test), resin::SDFShaderInvalidFunctionSignature);
@@ -65,7 +65,7 @@ TEST_F(SDFShaderResourceParserTest, ParserThrowsWhenUnsupportedParamTypeIsUsed) 
 TEST_F(SDFShaderResourceParserTest, ParserThrowsWhenTooManyParamsAreProvided) {
   // given
   resin::ShaderResourceManager sh_resman;
-  resin::ShaderResource test = *sh_resman.get_res(resources_path_ / "sdf_func" / "invalid_param_type.sdf");
+  resin::ShaderResource test = *sh_resman.get_res_ptr(resources_path_ / "sdf_func" / "invalid_param_type.sdf");
 
   // when/then
   EXPECT_THROW(resin::SDFShaderResourceParser::parse(test), resin::SDFShaderInvalidFunctionSignature);

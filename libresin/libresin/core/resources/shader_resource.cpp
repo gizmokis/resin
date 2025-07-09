@@ -134,7 +134,7 @@ void ShaderResourceManager::process_include_macro(const std::filesystem::path& s
   }
 
   visited_paths_.push_back(abs_path);
-  auto res = get_res(abs_path);
+  auto res = get_res_ptr(abs_path);
   visited_paths_.pop_back();
 
   content.append(res->get_raw());

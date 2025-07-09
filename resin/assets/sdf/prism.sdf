@@ -1,0 +1,8 @@
+#name Prism 
+
+float sdf(vec3 pos, float height, float base_height)
+{
+    vec3 d = abs(pos);
+
+    return max(d.y-height*0.5, max(d.x*0.866025+pos.z*0.5,-pos.z)-base_height*0.5);
+}

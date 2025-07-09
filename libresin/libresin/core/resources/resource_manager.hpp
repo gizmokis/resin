@@ -15,20 +15,20 @@ class ResourceManager {
  public:
   virtual ~ResourceManager() = default;
 
-  std::shared_ptr<const Resource> get_res(const std::filesystem::path& path) {
+  const Resource& get_res(const std::filesystem::path& path) { return *get_res_ptr(path); }
+
+  const std::shared_ptr<const Resource>& get_res_ptr(const std::filesystem::path& path) {
     auto elem = cache_.find(path);
     if (elem != cache_.end()) {
       Logger::info("Cache hit for path \"{}\".", path.string());
       return elem->second;
     }
 
-    auto res_ptr = std::make_shared<const Resource>(std::move(load_res(path)));
-
-    cache_[path] = res_ptr;
+    cache_[path] = std::make_shared<const Resource>(std::move(load_res(path)));
 
     Logger::info("Loaded and cached resource with path \"{}\".", path.string());
 
-    return res_ptr;
+    return cache_[path];
   }
 
  protected:

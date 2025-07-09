@@ -495,6 +495,32 @@ class StringViewIsNotNullTerminatedException : public ResinException {
       : ResinException(std::format(R"(The provided string_view is not null-terminated.)")) {}
 };
 
+class OutOfRangeException : public ResinException {
+ public:
+  EXCEPTION_NAME(OutOfRangeException)
+
+  explicit OutOfRangeException(std::string&& reason)
+      : ResinException(std::format(R"(Out of range: {})", reason)), reason_(std::move(reason)) {}
+
+  inline const std::string& get_reason() const { return reason_; }
+
+ private:
+  std::string reason_;
+};
+
+class ParserFailureException : public ResinException {
+ public:
+  EXCEPTION_NAME(ParserFailureException)
+
+  explicit ParserFailureException(std::string&& reason)
+      : ResinException(std::format(R"(Failed to parse the text: {})", reason)), reason_(std::move(reason)) {}
+
+  inline const std::string& get_reason() const { return reason_; }
+
+ private:
+  std::string reason_;
+};
+
 }  // namespace resin
 
 #endif  // RESIN_EXCEPTIONS_HPP

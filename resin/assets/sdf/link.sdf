@@ -1,0 +1,7 @@
+#name Link
+
+float sdf(vec3 pos, float link_length, float radius_minor, float radius_major)
+{
+    vec3 d = vec3(pos.x, max(abs(pos.y) - 0.5*link_length, 0.0), pos.z);
+    return length(vec2(length(d.xy)-radius_minor,d.z)) - radius_major;
+}

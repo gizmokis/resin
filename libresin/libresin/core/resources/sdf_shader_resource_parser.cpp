@@ -1,7 +1,9 @@
+#include <algorithm>
 #include <libresin/core/resources/sdf_shader_resource_parser.hpp>
 #include <libresin/core/resources/shader_resource.hpp>
 #include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/logger.hpp>
+#include <libresin/utils/static_vector.hpp>
 #include <regex>
 
 namespace resin {
@@ -43,11 +45,11 @@ SDFShaderResourceParser::Result SDFShaderResourceParser::parse(const ShaderResou
                               sh_content.begin() + sdf_signature_match.position() + sdf_signature_match.length(),
                               sdf_argument_pattern);
 
-  auto sdf_args       = std::array<std::optional<std::string>, kMaxSDFArguments>();
   auto sdf_args_count = 0U;
+
+  StaticVector<std::string, sdf_shader_consts::kSDFMaxParamCount> sdf_args;
   for (; iter != end; ++iter, ++sdf_args_count) {
-    sdf_args[sdf_args_count] = iter->str(1);
-    Logger::debug("{}", iter->str(1));
+    sdf_args.emplace(iter->str(1));
   }
 
   iter = std::sregex_iterator(sh_content.begin() + sdf_signature_match.position(),
@@ -86,13 +88,15 @@ SDFShaderResourceParser::Result SDFShaderResourceParser::parse(const ShaderResou
   }})",
                                     glsl_primitive_function_name, glsl_sdf_name, args);
 
-  return {
-      .glsl_primitive_function_name = glsl_primitive_function_name,
-      .glsl_sdf_name                = glsl_sdf_name,
-      .content                      = sdf_func + primitive_func,
-      .sdf_args                     = sdf_args,
-      .sdf_args_count               = sdf_args_count,
-  };
+  auto sdf_content = sdf_func + primitive_func;
+
+  auto r = std::ranges::remove_if(sdf_content, [](auto&& c) { return c == '\n' or c == '\r'; });
+  sdf_content.erase(r.begin(), r.end());
+
+  return Result{.glsl_primitive_function_name = glsl_primitive_function_name,
+                .glsl_sdf_name                = glsl_sdf_name,
+                .content                      = std::move(sdf_content),
+                .args                         = std::move(sdf_args)};
 }
 
 }  // namespace resin

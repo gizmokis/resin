@@ -191,7 +191,7 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
               [curr_id, &sdf_tree, resolution](const std::filesystem::path& path) {
                 auto& resource_manager = ::resin::ResourceManagers::shader_manager();
                 ::resin::ShaderResource shader_resource =
-                    *resource_manager.get_res(::resin::get_executable_dir() / "assets/marching_cubes.comp");
+                    resource_manager.get_res(::resin::get_executable_dir() / "assets/marching_cubes.comp");
                 ::resin::MeshExporter exporter(shader_resource, resolution);
                 glm::vec3 pos = sdf_tree.group(curr_id).transform().pos();  // TODO(SDF-130) calculate bounding box
                 exporter.setup_scene(pos - glm::vec3(5.0F), pos + glm::vec3(5.0F), sdf_tree, curr_id);
@@ -205,7 +205,7 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
               [curr_id, &sdf_tree, resolution](const std::filesystem::path& path) {
                 auto& resource_manager = ::resin::ResourceManagers::shader_manager();
                 ::resin::ShaderResource shader_resource =
-                    *resource_manager.get_res(::resin::get_executable_dir() / "assets/marching_cubes.comp");
+                    resource_manager.get_res(::resin::get_executable_dir() / "assets/marching_cubes.comp");
                 ::resin::MeshExporter exporter(shader_resource, resolution);
                 glm::vec3 pos = sdf_tree.group(curr_id).transform().pos();  // TODO(SDF-130) calculate bounding box
                 exporter.setup_scene(pos - glm::vec3(5.0F), pos + glm::vec3(5.0F), sdf_tree, curr_id);

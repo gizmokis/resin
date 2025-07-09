@@ -7,6 +7,7 @@ namespace resin {
 
 namespace sdf_shader_consts {
 
+static constexpr size_t kSDFMaxParamCount = 3;
 enum class SDFShaderBinOp : uint8_t {
   Union       = 0,
   SmoothUnion = 1,
@@ -42,15 +43,15 @@ enum class SDFShaderPrim : uint8_t {
   _Count          = 9,  // NOLINT
 };
 constexpr StringEnumMapper<SDFShaderPrim> kSDFShaderPrimFunctionNames({
-    {SDFShaderPrim::Sphere, "sdSphere"},         //
-    {SDFShaderPrim::Cube, "sdCube"},             //
-    {SDFShaderPrim::Torus, "sdTorus"},           //
-    {SDFShaderPrim::Capsule, "sdCapsule"},       //
-    {SDFShaderPrim::Link, "sdLink"},             //
-    {SDFShaderPrim::Ellipsoid, "sdEllipsoid"},   //
-    {SDFShaderPrim::Pyramid, "sdPyramid"},       //
-    {SDFShaderPrim::Cylinder, "sdCylinder"},     //
-    {SDFShaderPrim::TriangularPrism, "sdPrism"}  //
+    {SDFShaderPrim::Sphere, "Sphere_Primitive"},         //
+    {SDFShaderPrim::Cube, "Cube_Primitive"},             //
+    {SDFShaderPrim::Torus, "Torus_Primitive"},           //
+    {SDFShaderPrim::Capsule, "Capsule_Primitive"},       //
+    {SDFShaderPrim::Link, "Link_Primitive"},             //
+    {SDFShaderPrim::Ellipsoid, "Ellipsoid_Primitive"},   //
+    {SDFShaderPrim::Pyramid, "Pyramid_Primitive"},       //
+    {SDFShaderPrim::Cylinder, "Cylinder_Primitive"},     //
+    {SDFShaderPrim::TriangularPrism, "Prism_Primitive"}  //
 
 });
 
