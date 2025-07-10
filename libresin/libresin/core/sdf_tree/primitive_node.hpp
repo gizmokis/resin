@@ -29,9 +29,25 @@ class PrimitiveNode final : public SDFTreeNode {
   PrimitiveNode& operator=(const PrimitiveNode&) = delete;
   PrimitiveNode& operator=(PrimitiveNode&&)      = delete;
 
+  /**
+   * @brief Construct a new Primitive Node.
+   *
+   * @throw TooManySDFPrimitiveParameters Thrown when more than 3 SDF parameters are provided.
+   *
+   * @param tree
+   * @param desc
+   */
   PrimitiveNode(SDFTreeRegistry& tree, const SDFPrimitiveTypeDescription& desc);
-  PrimitiveNode(SDFTreeRegistry& tree, std::string&& primitive_type_name, std::string&& primitive_func_name,
-                Params&& params);
+
+  /**
+   * @brief Construct a new Primitive Node.
+   *
+   * @throw TooManySDFPrimitiveParameters Thrown when more than 3 SDF parameters are provided.
+   *
+   * @param tree
+   * @param desc
+   */
+  PrimitiveNode(SDFTreeRegistry& tree, std::string&& primitive_type_name, Params&& params);
 
   ~PrimitiveNode() override = default;
 
@@ -91,9 +107,11 @@ class PrimitiveNode final : public SDFTreeNode {
 
   void fix_material_ancestors() final;
 
+  void update_glsl_args(size_t args_count, size_t prim_id);
+
  private:
   std::string primitive_type_name_;
-  std::string primitive_func_name_;
+  std::string glsl_args_;
   Params params_;
 
   PrimitiveNodeId prim_id_;

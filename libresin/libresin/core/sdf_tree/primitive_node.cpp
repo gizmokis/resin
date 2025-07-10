@@ -1,33 +1,56 @@
+#include <libresin/core/sdf_shader_consts.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
+#include <libresin/utils/exceptions.hpp>
 
 namespace resin {
 
 PrimitiveNode::PrimitiveNode(SDFTreeRegistry& tree, const SDFPrimitiveTypeDescription& desc)
-    : SDFTreeNode(tree, desc.name),
-      primitive_type_name_(desc.name),
-      primitive_func_name_(desc.primitive_func_name),
-      prim_id_(tree.primitives_registry) {
+    : SDFTreeNode(tree, desc.name), primitive_type_name_(desc.name), prim_id_(tree.primitives_registry) {
   mark_primitives_dirty();
   mark_dirty();
   for (const auto& param : desc.params) {
     params_.emplace(PrimitiveNodeParam{.name = param, .value = 1.F});
   }
+  update_glsl_args(params_.size(), prim_id_.raw());
 }
-PrimitiveNode::PrimitiveNode(SDFTreeRegistry& tree, std::string&& primitive_type_name,
-                             std::string&& primitive_func_name, Params&& params)
+
+PrimitiveNode::PrimitiveNode(SDFTreeRegistry& tree, std::string&& primitive_type_name, Params&& params)
     : SDFTreeNode(tree, primitive_type_name),
       primitive_type_name_(std::move(primitive_type_name)),
-      primitive_func_name_(std::move(primitive_func_name)),
       params_(std::move(params)),
       prim_id_(tree.primitives_registry) {
   mark_primitives_dirty();
   mark_dirty();
+  update_glsl_args(params_.size(), prim_id_.raw());
+}
+
+void PrimitiveNode::update_glsl_args(size_t args_count, size_t prim_id) {
+  if (args_count > 3) {
+    throw TooManySDFPrimitiveParameters();
+  }
+
+  if (args_count == 1) {
+    glsl_args_ = std::format(
+        "({2}[{1}].transform*vec4({0}, 1)).xyz,{2}[{1}].size.x",
+        sdf_shader_consts::kSDFShaderVariableNames[sdf_shader_consts::SDFShaderVariable::Position], prim_id,
+        sdf_shader_consts::kSDFShaderCoreComponentArrayNames[sdf_shader_consts::SDFShaderCoreComponents::Primitives]);
+  } else if (args_count == 2) {
+    glsl_args_ = std::format(
+        "({2}[{1}].transform*vec4({0}, 1)).xyz,{2}[{1}].size.x,{2}[{1}].size.y",
+        sdf_shader_consts::kSDFShaderVariableNames[sdf_shader_consts::SDFShaderVariable::Position], prim_id,
+        sdf_shader_consts::kSDFShaderCoreComponentArrayNames[sdf_shader_consts::SDFShaderCoreComponents::Primitives]);
+  } else {
+    glsl_args_ = std::format(
+        "({2}[{1}].transform*vec4({0}, "
+        "1)).xyz,{2}[{1}].size.x,{2}[{1}].size.y,{2}[{1}].size.z",
+        sdf_shader_consts::kSDFShaderVariableNames[sdf_shader_consts::SDFShaderVariable::Position], prim_id,
+        sdf_shader_consts::kSDFShaderCoreComponentArrayNames[sdf_shader_consts::SDFShaderCoreComponents::Primitives]);
+  }
 }
 
 std::unique_ptr<SDFTreeNode> PrimitiveNode::copy() {
-  auto result = std::make_unique<PrimitiveNode>(tree_registry_, std::string(primitive_type_name_),
-                                                std::string(primitive_func_name_), Params(params_));
+  auto result = std::make_unique<PrimitiveNode>(tree_registry_, std::string(primitive_type_name_), Params(params_));
   copy_common(*result, *this);
   return result;
 }
@@ -44,13 +67,12 @@ void PrimitiveNode::fix_material_ancestors() {
 std::string PrimitiveNode::gen_shader_code(GenShaderMode mode) const {
   switch (mode) {
     case resin::GenShaderMode::SinglePrimitiveArray:
-      return std::format("{}({},{},{})", primitive_func_name_,
-                         sdf_shader_consts::kSDFShaderVariableNames[sdf_shader_consts::SDFShaderVariable::Position],  //
-                         node_id_.raw(),                                                                              //
-                         prim_id_.raw()                                                                               //
+      // example: createPrimitive(pos, Sphere_SDF(u_sdf_primitives[primitive_id].size.x), 1, 1)
+      return std::format("{}({}_SDF({}),{},{})", sdf_shader_consts::kCreatePrimitiveFuncName, primitive_type_name_,
+                         glsl_args_,
+                         node_id_.raw(),  //
+                         prim_id_.raw()   //
       );
-    case resin::GenShaderMode::ArrayPerPrimitiveType:
-      break;
   }
 
   throw NonExhaustiveEnumException();

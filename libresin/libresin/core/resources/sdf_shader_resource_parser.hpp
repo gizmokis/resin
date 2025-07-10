@@ -9,15 +9,18 @@ namespace resin {
 class SDFShaderResourceParser {
  public:
   struct Result {
-    std::string glsl_primitive_function_name;
     std::string glsl_sdf_name;
 
     /**
-     * @brief Content without newlines.
+     * @brief SDF signature with it's body without any newlines.
      *
      */
     std::string content;
 
+    /**
+     * @brief Parsed float argument names.
+     *
+     */
     StaticVector<std::string, sdf_shader_consts::kSDFMaxParamCount> args;
   };
 

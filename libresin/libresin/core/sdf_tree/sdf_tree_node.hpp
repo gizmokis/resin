@@ -24,10 +24,7 @@ using MaterialId = Id<Material>;
 class SDFTreeNode;
 using SDFTreeNodeId = Id<SDFTreeNode>;
 
-enum class GenShaderMode : uint8_t {
-  SinglePrimitiveArray,
-  ArrayPerPrimitiveType,
-};
+enum class GenShaderMode : uint8_t { SinglePrimitiveArray };
 
 class SDFTreeNode {
  public:

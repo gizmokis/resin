@@ -42,19 +42,6 @@ sdf_result opScale(sdf_result res, int node_id) {
     return res;
 }
 
-void prepare(inout sdf_result res, inout vec3 pos, int node_id, int primitive_id) {
-    pos = (u_sdf_primitives[primitive_id].transform * vec4(pos,1)).xyz;
-    res.mat = u_sdf_materials[u_sdf_primitives[primitive_id].mat_id];
-    res.id = node_id;
-}
-
-sdf_result sdEmpty()
-{
-    sdf_result res;
-    res.dist = u_farPlane;
-    return res;
-}
-
 sdf_result opUnion(sdf_result d1, sdf_result d2) // FIXME(SDF-117)
 {
 	return (d1.dist<d2.dist) ? d1 : d2;
@@ -124,6 +111,23 @@ sdf_result opSmoothInter(sdf_result d1, sdf_result d2, int node_id)
 sdf_result opSmoothXor(sdf_result d1, sdf_result d2, int node_id)
 {
     return opDiff(opSmoothUnion(d1, d2, node_id), opSmoothInter(d1, d2, node_id)); // TODO(SDF-157): optimize math?
+}
+
+sdf_result createPrimitive(float dist, int node_id, int primitive_id) {
+    sdf_result res;
+
+    res.id = node_id;
+    res.mat = u_sdf_materials[u_sdf_primitives[primitive_id].mat_id];
+    res.dist = dist;
+
+    return opScale(res, node_id);
+}
+
+sdf_result createEmptyPrimitive()
+{
+    sdf_result res;
+    res.dist = u_farPlane;
+    return res;
 }
 
 SDFS_IMPLEMENTATION

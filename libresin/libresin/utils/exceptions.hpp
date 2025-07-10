@@ -521,6 +521,13 @@ class ParserFailureException : public ResinException {
   std::string reason_;
 };
 
+class TooManySDFPrimitiveParameters : public ResinException {
+ public:
+  EXCEPTION_NAME(TooManySDFPrimitiveParameters)
+
+  explicit TooManySDFPrimitiveParameters() : ResinException(std::format(R"(Too many SDF Primitive Parameters)")) {}
+};
+
 }  // namespace resin
 
 #endif  // RESIN_EXCEPTIONS_HPP

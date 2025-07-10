@@ -35,11 +35,13 @@ constexpr std::string_view kSDFScaleFunctionName = "opScale";
 enum class SDFShaderCoreComponents : uint8_t {
   Transforms = 0,
   Materials  = 1,
-  _Count     = 2,  // NOLINT
+  Primitives = 2,
+  _Count     = 3,  // NOLINT
 };
 constexpr StringEnumMapper<SDFShaderCoreComponents> kSDFShaderCoreComponentArrayNames({
-    {SDFShaderCoreComponents::Transforms, "u_transforms"},  //
-    {SDFShaderCoreComponents::Materials, "u_materials"}     //
+    {SDFShaderCoreComponents::Transforms, "u_transforms"},      //
+    {SDFShaderCoreComponents::Materials, "u_materials"},        //
+    {SDFShaderCoreComponents::Primitives, "u_sdf_primitives"},  //
 });
 
 enum class SDFShaderVariable : uint8_t {
@@ -50,6 +52,9 @@ constexpr StringEnumMapper<SDFShaderVariable> kSDFShaderVariableNames({
     {SDFShaderVariable::Position, "pos"},  //
 });
 
+static constexpr std::string_view kCreateEmptyPrimitiveFuncName = "createEmptyPrimitive";
+static constexpr std::string_view kCreateEmptyPrimitiveFuncCall = "createEmptyPrimitive()";
+static constexpr std::string_view kCreatePrimitiveFuncName      = "createPrimitive";
 }  // namespace sdf_shader_consts
 
 }  // namespace resin
