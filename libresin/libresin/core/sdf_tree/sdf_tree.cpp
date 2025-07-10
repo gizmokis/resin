@@ -160,7 +160,8 @@ void SDFTree::set_root(std::unique_ptr<GroupNode> root) { root_ = std::move(root
 void SDFTree::clear() {
   material_active_ids_.clear();
   std::ranges::fill(materials_.begin(), materials_.end(), std::nullopt);
-  root_ = create_detached_node<GroupNode>();
+  root_                   = create_detached_node<GroupNode>();
+  primitive_type_manager_ = default_type_manager_;
 }
 
 }  // namespace resin

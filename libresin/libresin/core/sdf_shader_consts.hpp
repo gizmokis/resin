@@ -1,5 +1,6 @@
 #ifndef RESIN_GLSL_NAMES_HPP
 #define RESIN_GLSL_NAMES_HPP
+
 #include <cstdint>
 #include <libresin/utils/enum_mapper.hpp>
 

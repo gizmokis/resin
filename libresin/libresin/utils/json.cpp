@@ -99,6 +99,15 @@ void JSONSerializerSDFTreeNodeVisitor::visit_group(GroupNode& node) {
   json_["group"]["children"] = children;
 }
 
+void JSONSerializerSDFTreeNodeVisitor::visit_primitive(PrimitiveNode& node) {
+  auto params = json::array();
+  for (auto param : node.params()) {
+    params.push_back(param.value);
+  }
+  json_["primitive"]["params"]  = params;
+  json_["primitive"]["type_id"] = node.type_id();
+}
+
 void serialize_sdf_tree(json& target_json, SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id,
                         bool ignore_unused_materials) {
   auto materials = json::array();
@@ -125,6 +134,8 @@ void serialize_sdf_tree(json& target_json, SDFTree& tree, IdView<SDFTreeNodeId> 
   serialize_node_common(target_json["tree"]["rootGroup"], root_group);
   auto visitor = JSONSerializerSDFTreeNodeVisitor(target_json["tree"]["rootGroup"]);
   root_group.accept_visitor(visitor);
+
+  serialize_primitive_types(target_json, tree.primitive_type_manager());
 }
 
 void serialize_sdf_tree(json& target_json, SDFTree& tree, bool ignore_unused_materials) {
@@ -138,7 +149,7 @@ std::string serialize_prefab(SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_i
     prefab_json["version"] = kNewestResinPrefabJSONSchemaVersion;
     serialize_sdf_tree(prefab_json, tree, subtree_root_id, true);
 
-    Logger::info("JSON prefab serialization succceeded");
+    Logger::info("JSON prefab serialization succeeded");
     return prefab_json.dump(2);
   } catch (const ResinException& e) {
     throw e;
@@ -159,6 +170,17 @@ void serialize_light_common(json& target_json, const BaseLightSceneComponent& li
   target_json["color"]["g"] = light.light_base().color.g;
   target_json["color"]["b"] = light.light_base().color.b;
   target_json["name"]       = light.name();
+}
+
+void serialize_primitive_types(json& target_json, const SDFPrimitiveTypeManager& manager) {
+  target_json["primitive_types"] = json::array();
+
+  for (const auto& prim : manager) {
+    json primitive_json;
+    primitive_json["type_id"]          = prim.id;
+    primitive_json["sdf_code_content"] = prim.shader_content;
+    target_json["primitive_types"].push_back(primitive_json);
+  }
 }
 
 JSONSerializerLightSceneComponentVisitor::JSONSerializerLightSceneComponentVisitor(json& light_json)
@@ -191,7 +213,7 @@ std::string serialize_scene(Scene& scene) {
     }
     scene_json["lights"] = lights_json;
 
-    Logger::info("JSON resin project serialization succceeded");
+    Logger::info("JSON resin project serialization succeeded");
     return scene_json.dump(2);
   } catch (const ResinException& e) {
     throw e;

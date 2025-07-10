@@ -4,6 +4,7 @@
 #include <functional>
 #include <libresin/core/id_registry.hpp>
 #include <libresin/core/material.hpp>
+#include <libresin/core/sdf_tree/sdf_primitive_type_manager.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node_visitor.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_registry.hpp>
@@ -46,7 +47,13 @@ class SDFTree {
   GroupNode& group(IdView<SDFTreeNodeId> node_id);
   const GroupNode& group(IdView<SDFTreeNodeId> node_id) const;
 
-  // WARNING: This function must not be called while children of the the provided node's parent are iterated.
+  /**
+   * @brief Deletes node.
+   *
+   * @warning This function must not be called while children of the the provided node's parent are iterated.
+   *
+   * @param node_id
+   */
   void delete_node(IdView<SDFTreeNodeId> node_id);
 
   std::string gen_shader_code(GenShaderMode mode = GenShaderMode::SinglePrimitiveArray) const;
@@ -69,17 +76,29 @@ class SDFTree {
   const MaterialSDFTreeComponent& material(IdView<MaterialId> mat_id) const;
   MaterialSDFTreeComponent& add_material(Material mat);
 
-  // Cost: O(nm), where n is a number of nodes and m is a number of materials.
-  // Note: Throws if the `mat_id` is the default material id.
+  /**
+   * @brief Deletes non-default material. Cost: O(nm), where n is a number of nodes and m is a number of materials.
+   *
+   * @throw DefaultMaterialDeletionAttempted Thrown when the `mat_id` is the default material id.
+   *
+   * @param mat_id
+   */
   void delete_material(IdView<MaterialId> mat_id);
 
-  // Note: The vector does not contain the default material.
+  /**
+   * @brief The vector does not contain the default material.
+   *
+   * @return const std::vector<IdView<MaterialId>>&
+   */
   const std::vector<IdView<MaterialId>>& materials() const { return material_active_ids_; }
 
   MaterialSDFTreeComponent& default_material() { return sdf_tree_registry_.default_material; }
   const MaterialSDFTreeComponent& default_material() const { return sdf_tree_registry_.default_material; }
 
-  // Visits all materials including the default material.
+  /**
+   * @brief Visits all materials including the default material.
+   *
+   */
   void visit_all_materials(const std::function<void(MaterialSDFTreeComponent&)>& mat_visitor);
 
   void visit_dirty_materials(const std::function<void(MaterialSDFTreeComponent&)>& mat_visitor);
@@ -89,10 +108,20 @@ class SDFTree {
   size_t max_material_count() const { return sdf_tree_registry_.materials_registry.get_max_objs(); }
 
   void set_root(std::unique_ptr<GroupNode> root);
+
+  void set_default_primitive_type_manager(SDFPrimitiveTypeManager&& default_manager) {
+    default_type_manager_ = std::move(default_manager);
+  }
+  const SDFPrimitiveTypeManager& primitive_type_manager() const { return primitive_type_manager_; }
+  SDFPrimitiveTypeManager& primitive_type_manager() { return primitive_type_manager_; }
+
   void clear();
 
  private:
   static size_t curr_id_;
+
+  SDFPrimitiveTypeManager primitive_type_manager_;
+  SDFPrimitiveTypeManager default_type_manager_;
 
   SDFTreeRegistry sdf_tree_registry_;
   std::unique_ptr<GroupNode> root_;

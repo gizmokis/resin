@@ -24,7 +24,7 @@ void SDFPrimitiveTypeManager::add_type_from_shader_res(const ShaderResource& sh_
   }
 }
 
-std::string SDFPrimitiveTypeManager::generate_sdfs_glsl_content() const noexcept {
+std::string SDFPrimitiveTypeManager::gen_sdfs_glsl_content() const noexcept {
   auto result = std::string();
   for (const auto& d : descs_) {
     result += d.shader_content;

@@ -27,6 +27,7 @@
 #include <libresin/core/resources/shader_resource.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
+#include <libresin/core/sdf_tree/sdf_primitive_type_manager.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/core/shader.hpp>
 #include <libresin/core/transform.hpp>
@@ -86,11 +87,7 @@ Resin::Resin()
   material_images_ = std::make_unique<ImGui::resin::LazyMaterialImageFramebuffers>(
       kMaterialNodeImageSize, kMaterialMainImageSize, kMaterialImageSize);
 
-  // Main resource path
   load_shaders();
-
-  // Setup scene
-  scene_.set_default();
 
   // Setup shaders
   primitive_ubo_ = std::make_unique<PrimitiveUniformBuffer>(scene_.tree().max_node_count());
@@ -122,17 +119,21 @@ Resin::Resin()
   directional_light_ = std::make_unique<DirectionalLight>(glm::vec3(0.5F, 0.5F, 0.5F), 1.0F);
   directional_light_->transform.set_local_rot(glm::quatLookAt(-glm::normalize(glm::vec3(0, 2, 3)), glm::vec3(0, 1, 0)));
 
+  // Setup scene
+  scene_.set_default();
+
   setup_shader_uniforms();
 }
 
 void Resin::load_shaders() {
   const auto assets_path = resin::get_executable_dir() / "assets";
+  SDFPrimitiveTypeManager default_primitive_type_manager;
 
   const auto sdf_path = assets_path / "sdf";
   for (auto const& dir_entry : std::filesystem::directory_iterator{sdf_path}) {
     try {
       const auto& res = shader_resource_manager_.get_res(dir_entry.path());
-      sdf_prim_type_manager_.add_type_from_shader_res(res);
+      default_primitive_type_manager.add_type_from_shader_res(res);
       Logger::info("Loaded SDF with name {} from {}", res.get_name(), dir_entry.path().string());
     } catch (const std::exception& e) {
       Logger::err("Failed to load sdf with path {}. Reason: ", dir_entry.path().string(), e.what());
@@ -142,7 +143,7 @@ void Resin::load_shaders() {
   ShaderResource grid_frag_shader = shader_resource_manager_.get_res(assets_path / "grid.frag");
   ShaderResource main_frag_shader = shader_resource_manager_.get_res(assets_path / "main.frag");
   main_frag_shader.set_ext_defi("SDF_CODE", scene_.tree().gen_shader_code());
-  main_frag_shader.set_ext_defi("SDFS_IMPLEMENTATION", sdf_prim_type_manager_.generate_sdfs_glsl_content());
+  main_frag_shader.set_ext_defi("SDFS_IMPLEMENTATION", default_primitive_type_manager.gen_sdfs_glsl_content());
   main_frag_shader.set_ext_defi("MAX_UBO_NODE_COUNT", std::to_string(scene_.tree().max_node_count()));
   main_frag_shader.set_ext_defi("MAX_UBO_MATERIAL_COUNT", std::to_string(scene_.tree().max_material_count()));
 
@@ -153,6 +154,8 @@ void Resin::load_shaders() {
       shader_resource_manager_.get_res(assets_path / "material_view.frag"));
   shader_ = std::make_unique<RenderingShaderProgram>(
       "main", shader_resource_manager_.get_res(assets_path / "main.vert"), std::move(main_frag_shader));
+
+  scene_.tree().set_default_primitive_type_manager(std::move(default_primitive_type_manager));
 }
 
 void Resin::setup_shader_uniforms() {
@@ -429,7 +432,7 @@ void Resin::gui(duration_t delta) {
 
   ImGui::SetNextWindowSizeConstraints(ImVec2(280.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
   if (ImGui::Begin("SDF Tree")) {
-    ImGui::resin::SDFTreeView(scene_.tree(), sdf_prim_type_manager_, selected_node_);
+    ImGui::resin::SDFTreeView(scene_.tree(), selected_node_);
   }
   ImGui::End();
 

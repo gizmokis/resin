@@ -4,6 +4,7 @@
 #include <libresin/core/light.hpp>
 #include <libresin/core/scene.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
+#include <libresin/core/sdf_tree/sdf_primitive_type_manager.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node_visitor.hpp>
 #include <nlohmann/json_fwd.hpp>
@@ -42,6 +43,7 @@ class JSONSerializerSDFTreeNodeVisitor : public ISDFTreeNodeVisitor {
   explicit JSONSerializerSDFTreeNodeVisitor(json& node_json);
 
   void visit_group(GroupNode& node) override;
+  void visit_primitive(PrimitiveNode& node) override;
 
  private:
   json& json_;  // NOLINT
@@ -75,6 +77,8 @@ void serialize_sdf_tree(json& target_json, SDFTree& tree, bool ignore_unused_mat
 
 void serialize_light_common(json& target_json, const BaseLightSceneComponent& light);
 void serialize_attenuation(json& target_json, const PointLight::Attenuation& attenuation);
+
+void serialize_primitive_types(json& target_json, const SDFPrimitiveTypeManager& manager);
 
 [[nodiscard]] std::string serialize_prefab(SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id);
 [[nodiscard]] std::string serialize_scene(Scene& scene);

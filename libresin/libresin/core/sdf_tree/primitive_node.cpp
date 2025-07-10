@@ -6,7 +6,7 @@
 namespace resin {
 
 PrimitiveNode::PrimitiveNode(SDFTreeRegistry& tree, const SDFPrimitiveTypeDescription& desc)
-    : SDFTreeNode(tree, desc.name), primitive_type_name_(desc.name), prim_id_(tree.primitives_registry) {
+    : SDFTreeNode(tree, desc.name), type_id_(desc.id), type_name_(desc.name), prim_id_(tree.primitives_registry) {
   mark_primitives_dirty();
   mark_dirty();
   for (const auto& param : desc.params) {
@@ -15,9 +15,11 @@ PrimitiveNode::PrimitiveNode(SDFTreeRegistry& tree, const SDFPrimitiveTypeDescri
   update_glsl_args(params_.size(), prim_id_.raw());
 }
 
-PrimitiveNode::PrimitiveNode(SDFTreeRegistry& tree, std::string&& primitive_type_name, Params&& params)
+PrimitiveNode::PrimitiveNode(SDFTreeRegistry& tree, size_t primitive_type_id, std::string&& primitive_type_name,
+                             Params&& params)
     : SDFTreeNode(tree, primitive_type_name),
-      primitive_type_name_(std::move(primitive_type_name)),
+      type_id_(primitive_type_id),
+      type_name_(std::move(primitive_type_name)),
       params_(std::move(params)),
       prim_id_(tree.primitives_registry) {
   mark_primitives_dirty();
@@ -50,7 +52,7 @@ void PrimitiveNode::update_glsl_args(size_t args_count, size_t prim_id) {
 }
 
 std::unique_ptr<SDFTreeNode> PrimitiveNode::copy() {
-  auto result = std::make_unique<PrimitiveNode>(tree_registry_, std::string(primitive_type_name_), Params(params_));
+  auto result = std::make_unique<PrimitiveNode>(tree_registry_, type_id_, std::string(type_name_), Params(params_));
   copy_common(*result, *this);
   return result;
 }
@@ -68,8 +70,7 @@ std::string PrimitiveNode::gen_shader_code(GenShaderMode mode) const {
   switch (mode) {
     case resin::GenShaderMode::SinglePrimitiveArray:
       // example: createPrimitive(pos, Sphere_SDF(u_sdf_primitives[primitive_id].size.x), 1, 1)
-      return std::format("{}({}_SDF({}),{},{})", sdf_shader_consts::kCreatePrimitiveFuncName, primitive_type_name_,
-                         glsl_args_,
+      return std::format("{}({}_SDF({}),{},{})", sdf_shader_consts::kCreatePrimitiveFuncName, type_name_, glsl_args_,
                          node_id_.raw(),  //
                          prim_id_.raw()   //
       );

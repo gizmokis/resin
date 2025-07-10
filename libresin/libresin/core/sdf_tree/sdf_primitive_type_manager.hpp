@@ -34,7 +34,7 @@ class SDFPrimitiveTypeManager {
    *
    * @return std::string
    */
-  std::string generate_sdfs_glsl_content() const noexcept;
+  std::string gen_sdfs_glsl_content() const noexcept;
 
   /**
    * @brief Returns the SDF Primitive Type by id.
@@ -56,6 +56,8 @@ class SDFPrimitiveTypeManager {
 
   auto begin() const { return descs_.begin(); }
   auto end() const { return descs_.end(); }
+
+  void clear() { descs_.clear(); }
 
  private:
   void add_type(std::string&& name, SDFParams&& params, std::string&& shader_content) noexcept;

@@ -450,8 +450,7 @@ void SDFTreeComponentVisitor::apply_delete_operation() {
   sdf_tree_.delete_node(*delete_target_);
 }
 
-void SDFTreeView(::resin::SDFTree& tree, const ::resin::SDFPrimitiveTypeManager& sdf_prim_type_manager,
-                 std::optional<::resin::IdView<::resin::SDFTreeNodeId>>& old_selected) {
+void SDFTreeView(::resin::SDFTree& tree, std::optional<::resin::IdView<::resin::SDFTreeNodeId>>& old_selected) {
   static std::string_view delete_label    = "Delete";
   static std::string_view add_prim_label  = "Add Primitive";
   static std::string_view add_group_label = "Add Group";
@@ -558,7 +557,7 @@ void SDFTreeView(::resin::SDFTree& tree, const ::resin::SDFPrimitiveTypeManager&
   }
 
   if (ImGui::BeginPopup("AddPrimitivePopUp")) {
-    for (const auto& type : sdf_prim_type_manager) {
+    for (const auto& type : tree.primitive_type_manager()) {
       if (ImGui::Selectable(type.name.data())) {
         if (selected.has_value()) {
           if (tree.is_group(*selected)) {

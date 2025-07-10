@@ -47,11 +47,12 @@ class PrimitiveNode final : public SDFTreeNode {
    * @param tree
    * @param desc
    */
-  PrimitiveNode(SDFTreeRegistry& tree, std::string&& primitive_type_name, Params&& params);
+  PrimitiveNode(SDFTreeRegistry& tree, size_t primitive_type_id, std::string&& primitive_type_name, Params&& params);
 
   ~PrimitiveNode() override = default;
 
-  std::string_view type_name() const { return primitive_type_name_; }
+  std::string_view type_name() const { return type_name_; }
+  size_t type_id() const { return type_id_; }
 
   IdView<MaterialId> default_material_id() const { return tree_registry_.default_material.material_id(); }
   IdView<MaterialId> active_material_id_or_default() const {
@@ -110,7 +111,8 @@ class PrimitiveNode final : public SDFTreeNode {
   void update_glsl_args(size_t args_count, size_t prim_id);
 
  private:
-  std::string primitive_type_name_;
+  size_t type_id_;
+  std::string type_name_;
   std::string glsl_args_;
   Params params_;
 

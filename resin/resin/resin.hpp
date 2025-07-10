@@ -150,8 +150,6 @@ class Resin {
   OrbitingCameraOperator orbiting_camera_operator_;
   FirstPersonCameraOperator first_person_camera_operator_;
 
-  SDFPrimitiveTypeManager sdf_prim_type_manager_;
-
   Scene scene_;
 
   bool running_   = true;
