@@ -30,43 +30,6 @@ constexpr StringEnumMapper<SDFShaderBinOp> kSDFShaderBinOpFunctionNames({
     {SDFShaderBinOp::SmoothXor, "opSmoothXor"},      //
 });
 
-enum class SDFShaderPrim : uint8_t {
-  Sphere          = 0,
-  Cube            = 1,
-  Torus           = 2,
-  Capsule         = 3,
-  Link            = 4,
-  Ellipsoid       = 5,
-  Pyramid         = 6,
-  Cylinder        = 7,
-  TriangularPrism = 8,
-  _Count          = 9,  // NOLINT
-};
-constexpr StringEnumMapper<SDFShaderPrim> kSDFShaderPrimFunctionNames({
-    {SDFShaderPrim::Sphere, "Sphere_Primitive"},         //
-    {SDFShaderPrim::Cube, "Cube_Primitive"},             //
-    {SDFShaderPrim::Torus, "Torus_Primitive"},           //
-    {SDFShaderPrim::Capsule, "Capsule_Primitive"},       //
-    {SDFShaderPrim::Link, "Link_Primitive"},             //
-    {SDFShaderPrim::Ellipsoid, "Ellipsoid_Primitive"},   //
-    {SDFShaderPrim::Pyramid, "Pyramid_Primitive"},       //
-    {SDFShaderPrim::Cylinder, "Cylinder_Primitive"},     //
-    {SDFShaderPrim::TriangularPrism, "Prism_Primitive"}  //
-
-});
-
-constexpr StringEnumMapper<SDFShaderPrim> kSDFShaderPrimComponentArrayNames({
-    {SDFShaderPrim::Sphere, "u_spheres"},         //
-    {SDFShaderPrim::Cube, "u_cubes"},             //
-    {SDFShaderPrim::Torus, "u_tori"},             //
-    {SDFShaderPrim::Capsule, "u_capsules"},       //
-    {SDFShaderPrim::Link, "u_links"},             //
-    {SDFShaderPrim::Ellipsoid, "u_ellipsoids"},   //
-    {SDFShaderPrim::Pyramid, "u_pyramids"},       //
-    {SDFShaderPrim::Cylinder, "u_cylinders"},     //
-    {SDFShaderPrim::TriangularPrism, "u_prisms"}  //
-});
-
 constexpr std::string_view kSDFScaleFunctionName = "opScale";
 
 enum class SDFShaderCoreComponents : uint8_t {

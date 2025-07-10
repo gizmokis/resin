@@ -28,7 +28,7 @@ class ShaderProgram {
   void recompile();
 
   template <typename T>
-  inline void set_uniform(std::string_view name, const T& value) const {
+  void set_uniform(std::string_view name, const T& value) const {
     GLint location = get_uniform_location(name);
     if constexpr (std::is_same_v<T, bool>) {
       glProgramUniform1i(program_id_, location, value ? 1 : 0);
@@ -54,7 +54,7 @@ class ShaderProgram {
   }
 
   template <typename T>
-  inline void set_uniform_array(std::string_view name, std::span<T> values) const {
+  void set_uniform_array(std::string_view name, std::span<T> values) const {
     GLint location = get_uniform_location(name);
     if constexpr (std::is_same_v<T, int>) {
       glProgramUniform1iv(program_id_, location, static_cast<GLsizei>(values.size()), values.data());

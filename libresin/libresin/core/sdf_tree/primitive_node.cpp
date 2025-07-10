@@ -1,37 +1,59 @@
-
+#include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
-#include <libresin/core/sdf_tree/sdf_tree.hpp>
 
 namespace resin {
 
-SphereNode::SphereNode(SDFTreeRegistry& tree, float _radius)
-    : PrimitiveNode<SDFTreePrimitiveType::Sphere>(tree), radius(_radius) {}
+PrimitiveNode::PrimitiveNode(SDFTreeRegistry& tree, const SDFPrimitiveTypeDescription& desc)
+    : SDFTreeNode(tree, desc.name),
+      primitive_type_name_(desc.name),
+      primitive_func_name_(desc.primitive_func_name),
+      prim_id_(tree.primitives_registry) {
+  mark_primitives_dirty();
+  mark_dirty();
+  for (const auto& param : desc.params) {
+    params_.emplace(PrimitiveNodeParam{.name = param, .value = 1.F});
+  }
+}
+PrimitiveNode::PrimitiveNode(SDFTreeRegistry& tree, std::string&& primitive_type_name,
+                             std::string&& primitive_func_name, Params&& params)
+    : SDFTreeNode(tree, primitive_type_name),
+      primitive_type_name_(std::move(primitive_type_name)),
+      primitive_func_name_(std::move(primitive_func_name)),
+      params_(std::move(params)),
+      prim_id_(tree.primitives_registry) {
+  mark_primitives_dirty();
+  mark_dirty();
+}
 
-CubeNode::CubeNode(SDFTreeRegistry& tree, glm::vec3 _size)
-    : PrimitiveNode<SDFTreePrimitiveType::Cube>(tree), size(_size) {}
+std::unique_ptr<SDFTreeNode> PrimitiveNode::copy() {
+  auto result = std::make_unique<PrimitiveNode>(tree_registry_, std::string(primitive_type_name_),
+                                                std::string(primitive_func_name_), Params(params_));
+  copy_common(*result, *this);
+  return result;
+}
 
-TorusNode::TorusNode(SDFTreeRegistry& tree, float _major_radius, float _minor_radius)
-    : PrimitiveNode<SDFTreePrimitiveType::Torus>(tree), major_radius(_major_radius), minor_radius(_minor_radius) {}
+void PrimitiveNode::fix_material_ancestors() {
+  tree_registry_.is_tree_dirty = true;
+  if (!parent_.has_value()) {
+    ancestor_mat_id_ = std::nullopt;
+  } else {
+    ancestor_mat_id_ = parent_->get().active_material_id();
+  }
+}
 
-CapsuleNode::CapsuleNode(SDFTreeRegistry& tree, float _height, float _radius)
-    : PrimitiveNode<SDFTreePrimitiveType::Capsule>(tree), height(_height), radius(_radius) {}
+std::string PrimitiveNode::gen_shader_code(GenShaderMode mode) const {
+  switch (mode) {
+    case resin::GenShaderMode::SinglePrimitiveArray:
+      return std::format("{}({},{},{})", primitive_func_name_,
+                         sdf_shader_consts::kSDFShaderVariableNames[sdf_shader_consts::SDFShaderVariable::Position],  //
+                         node_id_.raw(),                                                                              //
+                         prim_id_.raw()                                                                               //
+      );
+    case resin::GenShaderMode::ArrayPerPrimitiveType:
+      break;
+  }
 
-LinkNode::LinkNode(SDFTreeRegistry& tree, float _length, float _major_radius, float _minor_radius)
-    : PrimitiveNode<SDFTreePrimitiveType::Link>(tree),
-      length(_length),
-      major_radius(_major_radius),
-      minor_radius(_minor_radius) {}
-
-EllipsoidNode::EllipsoidNode(SDFTreeRegistry& tree, glm::vec3 _radii)
-    : PrimitiveNode<SDFTreePrimitiveType::Ellipsoid>(tree), radii(_radii) {}
-
-PyramidNode::PyramidNode(SDFTreeRegistry& tree, float _height)
-    : PrimitiveNode<SDFTreePrimitiveType::Pyramid>(tree), height(_height) {}
-
-CylinderNode::CylinderNode(SDFTreeRegistry& tree, float _height, float _radius)
-    : PrimitiveNode<SDFTreePrimitiveType::Cylinder>(tree), height(_height), radius(_radius) {}
-
-TriangularPrismNode::TriangularPrismNode(SDFTreeRegistry& tree, float _prismHeight, float _baseHeight)
-    : PrimitiveNode<SDFTreePrimitiveType::TriangularPrism>(tree), prismHeight(_prismHeight), baseHeight(_baseHeight) {}
+  throw NonExhaustiveEnumException();
+}
 
 }  // namespace resin

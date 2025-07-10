@@ -1,6 +1,5 @@
 #include <libresin/core/sdf_shader_consts.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
-#include <libresin/core/sdf_tree/primitive_base_node.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
@@ -18,33 +17,6 @@ GroupNode::GroupNode(SDFTreeRegistry& tree) : SDFTreeNode(tree, "Group") {
   mark_dirty();
 }
 GroupNode::~GroupNode() { tree_registry_.all_group_nodes[node_id_.raw()] = std::nullopt; }
-
-SDFTreeNode& GroupNode::push_back_primitive(SDFTreePrimitiveType type, SDFBinaryOperation bin_op) {
-  switch (type) {
-    case SDFTreePrimitiveType::Sphere:
-      return push_back_child<SphereNode>(bin_op);
-    case SDFTreePrimitiveType::Cube:
-      return push_back_child<CubeNode>(bin_op);
-    case SDFTreePrimitiveType::Torus:
-      return push_back_child<TorusNode>(bin_op);
-    case SDFTreePrimitiveType::Capsule:
-      return push_back_child<CapsuleNode>(bin_op);
-    case SDFTreePrimitiveType::Link:
-      return push_back_child<LinkNode>(bin_op);
-    case SDFTreePrimitiveType::Ellipsoid:
-      return push_back_child<EllipsoidNode>(bin_op);
-    case SDFTreePrimitiveType::Pyramid:
-      return push_back_child<PyramidNode>(bin_op);
-    case SDFTreePrimitiveType::Cylinder:
-      return push_back_child<CylinderNode>(bin_op);
-    case SDFTreePrimitiveType::TriangularPrism:
-      return push_back_child<TriangularPrismNode>(bin_op);
-    case resin::SDFTreePrimitiveType::_Count:
-      throw NonExhaustiveEnumException();
-  }
-
-  throw NonExhaustiveEnumException();
-}
 
 bool GroupNode::is_node_shallow(IdView<SDFTreeNodeId> id) const {
   return tree_registry_.all_group_nodes[id.raw()].has_value() &&

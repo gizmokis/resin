@@ -23,7 +23,7 @@ void UniformBuffer::unbind() const { glBindBuffer(GL_UNIFORM_BUFFER, 0); }  // N
 // Primitive UBO
 
 PrimitiveUniformBuffer::PrimitiveUniformBuffer(size_t max_count)
-    : UniformBuffer(0, max_count, sizeof(PrimitiveNode), 0), max_count_(max_count) {}
+    : UniformBuffer(0, max_count, sizeof(PrimitiveNodeUBOElement), 0), max_count_(max_count) {}
 
 void PrimitiveUniformBuffer::set(SDFTree& tree) {  // NOLINT
   PrimitiveNodeVisitor visitor;
@@ -35,67 +35,15 @@ void PrimitiveUniformBuffer::update_dirty(SDFTree& tree) {  // NOLINT
   tree.visit_dirty_primitives(visitor);
 }
 
-void PrimitiveUniformBuffer::PrimitiveNodeVisitor::visit_sphere(SphereNode& node) {
-  PrimitiveNode ubo_node(node, glm::vec3(node.radius));
+void PrimitiveUniformBuffer::PrimitiveNodeVisitor::visit_primitive(PrimitiveNode& node) {
+  auto vec = glm::vec3(0.F);
+  for (auto i = 0UZ; i < std::min(3UZ, node.params().size()); ++i) {
+    vec[static_cast<int>(i)] = node.params()[i].value;
+  }
 
-  glBufferSubData(GL_UNIFORM_BUFFER, static_cast<GLintptr>(node.primitive_id().raw() * sizeof(PrimitiveNode)),
-                  sizeof(PrimitiveNode), &ubo_node);
-}
-
-void PrimitiveUniformBuffer::PrimitiveNodeVisitor::visit_cube(CubeNode& node) {
-  PrimitiveNode ubo_node(node, glm::vec3(node.size));
-
-  glBufferSubData(GL_UNIFORM_BUFFER, static_cast<GLintptr>(node.primitive_id().raw() * sizeof(PrimitiveNode)),
-                  sizeof(PrimitiveNode), &ubo_node);
-}
-
-void PrimitiveUniformBuffer::PrimitiveNodeVisitor::visit_torus(TorusNode& node) {
-  PrimitiveNode ubo_node(node, glm::vec3(node.major_radius, node.minor_radius, 0));
-
-  glBufferSubData(GL_UNIFORM_BUFFER, static_cast<GLintptr>(node.primitive_id().raw() * sizeof(PrimitiveNode)),
-                  sizeof(PrimitiveNode), &ubo_node);
-}
-
-void PrimitiveUniformBuffer::PrimitiveNodeVisitor::visit_capsule(CapsuleNode& node) {
-  PrimitiveNode ubo_node(node, glm::vec3(node.height, node.radius, 0));
-
-  glBufferSubData(GL_UNIFORM_BUFFER, static_cast<GLintptr>(node.primitive_id().raw() * sizeof(PrimitiveNode)),
-                  sizeof(PrimitiveNode), &ubo_node);
-}
-
-void PrimitiveUniformBuffer::PrimitiveNodeVisitor::visit_link(LinkNode& node) {
-  PrimitiveNode ubo_node(node, glm::vec3(node.length, node.major_radius, node.minor_radius));
-
-  glBufferSubData(GL_UNIFORM_BUFFER, static_cast<GLintptr>(node.primitive_id().raw() * sizeof(PrimitiveNode)),
-                  sizeof(PrimitiveNode), &ubo_node);
-}
-
-void PrimitiveUniformBuffer::PrimitiveNodeVisitor::visit_ellipsoid(EllipsoidNode& node) {
-  PrimitiveNode ubo_node(node, node.radii);
-
-  glBufferSubData(GL_UNIFORM_BUFFER, static_cast<GLintptr>(node.primitive_id().raw() * sizeof(PrimitiveNode)),
-                  sizeof(PrimitiveNode), &ubo_node);
-}
-
-void PrimitiveUniformBuffer::PrimitiveNodeVisitor::visit_pyramid(PyramidNode& node) {
-  PrimitiveNode ubo_node(node, glm::vec3(node.height, 0, 0));
-
-  glBufferSubData(GL_UNIFORM_BUFFER, static_cast<GLintptr>(node.primitive_id().raw() * sizeof(PrimitiveNode)),
-                  sizeof(PrimitiveNode), &ubo_node);
-}
-
-void PrimitiveUniformBuffer::PrimitiveNodeVisitor::visit_cylinder(CylinderNode& node) {
-  PrimitiveNode ubo_node(node, glm::vec3(node.height, node.radius, 0));
-
-  glBufferSubData(GL_UNIFORM_BUFFER, static_cast<GLintptr>(node.primitive_id().raw() * sizeof(PrimitiveNode)),
-                  sizeof(PrimitiveNode), &ubo_node);
-}
-
-void PrimitiveUniformBuffer::PrimitiveNodeVisitor::visit_prism(TriangularPrismNode& node) {
-  PrimitiveNode ubo_node(node, glm::vec3(node.prismHeight, node.baseHeight, 0));
-
-  glBufferSubData(GL_UNIFORM_BUFFER, static_cast<GLintptr>(node.primitive_id().raw() * sizeof(PrimitiveNode)),
-                  sizeof(PrimitiveNode), &ubo_node);
+  PrimitiveNodeUBOElement ubo_node(node, vec);
+  glBufferSubData(GL_UNIFORM_BUFFER, static_cast<GLintptr>(node.primitive_id().raw() * sizeof(PrimitiveNodeUBOElement)),
+                  sizeof(PrimitiveNodeUBOElement), &ubo_node);
 }
 
 // Node Attribute UBO

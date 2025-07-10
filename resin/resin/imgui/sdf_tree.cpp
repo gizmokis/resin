@@ -10,16 +10,16 @@
 #include <libresin/core/mesh_exporter.hpp>
 #include <libresin/core/resources/shader_resource.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
-#include <libresin/core/sdf_tree/primitive_base_node.hpp>
+#include <libresin/core/sdf_tree/primitive_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
+#include <libresin/core/sdf_tree/sdf_tree_node_visitor.hpp>
 #include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/json.hpp>
 #include <libresin/utils/logger.hpp>
 #include <libresin/utils/path.hpp>
 #include <memory>
 #include <optional>
-#include <ranges>
 #include <resin/dialog/file_dialog.hpp>
 #include <resin/imgui/modals.hpp>
 #include <resin/imgui/sdf_tree.hpp>
@@ -251,6 +251,7 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
   for (auto child_it = node.begin(); child_it != node.end(); ++child_it) {
     is_parent_selected_ = is_node_selected;
     is_parent_dragged_  = is_node_dragged;
+
     node.get_child(*child_it).accept_visitor(*this);
     is_first_ = false;
   }
@@ -260,7 +261,7 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
   ImGui::PopID();
 }
 
-void SDFTreeComponentVisitor::visit_primitive(::resin::BasePrimitiveNode& node) {
+void SDFTreeComponentVisitor::visit_primitive(::resin::PrimitiveNode& node) {
   static std::string node_name;
   auto source_id = get_curr_payload();
 
@@ -449,7 +450,8 @@ void SDFTreeComponentVisitor::apply_delete_operation() {
   sdf_tree_.delete_node(*delete_target_);
 }
 
-void SDFTreeView(::resin::SDFTree& tree, std::optional<::resin::IdView<::resin::SDFTreeNodeId>>& old_selected) {
+void SDFTreeView(::resin::SDFTree& tree, const ::resin::SDFPrimitiveTypeManager& sdf_prim_type_manager,
+                 std::optional<::resin::IdView<::resin::SDFTreeNodeId>>& old_selected) {
   static std::string_view delete_label    = "Delete";
   static std::string_view add_prim_label  = "Add Primitive";
   static std::string_view add_group_label = "Add Group";
@@ -556,19 +558,22 @@ void SDFTreeView(::resin::SDFTree& tree, std::optional<::resin::IdView<::resin::
   }
 
   if (ImGui::BeginPopup("AddPrimitivePopUp")) {
-    for (const auto [prim, name] : ::resin::BasePrimitiveNode::available_primitive_names()) {
-      if (ImGui::Selectable(name.data())) {
+    for (const auto& type : sdf_prim_type_manager) {
+      if (ImGui::Selectable(type.name.data())) {
         if (selected.has_value()) {
           if (tree.is_group(*selected)) {
-            tree.group(*selected).push_back_primitive(prim, ::resin::SDFBinaryOperation::SmoothUnion);
+            tree.group(*selected).push_back_child<::resin::PrimitiveNode>(::resin::SDFBinaryOperation::SmoothUnion,
+                                                                          type);
           } else {
-            tree.node(*selected).parent().push_back_primitive(prim, ::resin::SDFBinaryOperation::SmoothUnion);
+            tree.node(*selected).parent().push_back_child<::resin::PrimitiveNode>(
+                ::resin::SDFBinaryOperation::SmoothUnion, type);
           }
         } else {
-          tree.root().push_back_primitive(prim, ::resin::SDFBinaryOperation::SmoothUnion);
+          tree.root().push_back_child<::resin::PrimitiveNode>(::resin::SDFBinaryOperation::SmoothUnion, type);
         }
       }
     }
+
     ImGui::EndPopup();
   }
 

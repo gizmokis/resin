@@ -12,6 +12,7 @@ using SDFParams = StaticVector<std::string, sdf_shader_consts::kSDFMaxParamCount
 struct SDFPrimitiveTypeDescription {
   uint32_t id;
   std::string name;
+  std::string primitive_func_name;
   SDFParams params;
   std::string shader_content;
 };
@@ -51,8 +52,14 @@ class SDFPrimitiveTypeManager {
     return descs_[id];
   }
 
+  auto begin() { return descs_.begin(); }
+  auto end() { return descs_.end(); }
+
+  auto begin() const { return descs_.begin(); }
+  auto end() const { return descs_.end(); }
+
  private:
-  void add_type(std::string&& name, SDFParams&& params, std::string&& shader_content) noexcept;
+  void add_type(std::string&& name, std::string&& func_name, SDFParams&& params, std::string&& shader_content) noexcept;
 
  private:
   std::vector<SDFPrimitiveTypeDescription> descs_;

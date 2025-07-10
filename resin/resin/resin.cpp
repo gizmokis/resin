@@ -429,7 +429,7 @@ void Resin::gui(duration_t delta) {
 
   ImGui::SetNextWindowSizeConstraints(ImVec2(280.F, 200.F), ImVec2(FLT_MAX, FLT_MAX));
   if (ImGui::Begin("SDF Tree")) {
-    ImGui::resin::SDFTreeView(scene_.tree(), selected_node_);
+    ImGui::resin::SDFTreeView(scene_.tree(), sdf_prim_type_manager_, selected_node_);
   }
   ImGui::End();
 

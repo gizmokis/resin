@@ -43,7 +43,7 @@ class SDFTreeNode {
 
   virtual ~SDFTreeNode();
 
-  inline virtual void accept_visitor(ISDFTreeNodeVisitor& visitor) { visitor.visit_node(*this); }
+  virtual void accept_visitor(ISDFTreeNodeVisitor& visitor) { visitor.visit_node(*this); }
 
   virtual std::string gen_shader_code(GenShaderMode mode) const = 0;
   [[nodiscard]] virtual std::unique_ptr<SDFTreeNode> copy()     = 0;
