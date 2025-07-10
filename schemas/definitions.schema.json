@@ -207,191 +207,6 @@
         }
       ]
     },
-    "sphere": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "radius"
-      ],
-      "properties": {
-        "radius": {
-          "type": "number",
-          "minimum": 0
-        }
-      }
-    },
-    "cube": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "size"
-      ],
-      "properties": {
-        "size": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "x",
-            "y",
-            "z"
-          ],
-          "properties": {
-            "x": {
-              "type": "number",
-              "minimum": 0
-            },
-            "y": {
-              "type": "number",
-              "minimum": 0
-            },
-            "z": {
-              "type": "number",
-              "minimum": 0
-            }
-          }
-        }
-      }
-    },
-    "torus": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "majorRadius",
-        "minorRadius"
-      ],
-      "properties": {
-        "majorRadius": {
-          "type": "number",
-          "minimum": 0
-        },
-        "minorRadius": {
-          "type": "number",
-          "minimum": 0
-        }
-      }
-    },
-    "capsule": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "height",
-        "radius"
-      ],
-      "properties": {
-        "height": {
-          "type": "number",
-          "minimum": 0
-        },
-        "radius": {
-          "type": "number",
-          "minimum": 0
-        }
-      }
-    },
-    "link": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "length",
-        "majorRadius",
-        "minorRadius"
-      ],
-      "properties": {
-        "length": {
-          "type": "number",
-          "minimum": 0
-        },
-        "majorRadius": {
-          "type": "number",
-          "minimum": 0
-        },
-        "minorRadius": {
-          "type": "number",
-          "minimum": 0
-        }
-      }
-    },
-    "ellipsoid": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "radii"
-      ],
-      "properties": {
-        "radii": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "x",
-            "y",
-            "z"
-          ],
-          "properties": {
-            "x": {
-              "type": "number",
-              "minimum": 0
-            },
-            "y": {
-              "type": "number",
-              "minimum": 0
-            },
-            "z": {
-              "type": "number",
-              "minimum": 0
-            }
-          }
-        }
-      }
-    },
-    "pyramid": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "height"
-      ],
-      "properties": {
-        "height": {
-          "type": "number",
-          "minimum": 0
-        }
-      }
-    },
-    "cylinder": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "height",
-        "radius"
-      ],
-      "properties": {
-        "height": {
-          "type": "number",
-          "minimum": 0
-        },
-        "radius": {
-          "type": "number",
-          "minimum": 0
-        }
-      }
-    },
-    "triangularPrism": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "prismHeight",
-        "baseHeight"
-      ],
-      "properties": {
-        "prismHeight": {
-          "type": "number",
-          "minimum": 0
-        },
-        "baseHeight": {
-          "type": "number",
-          "minimum": 0
-        }
-      }
-    },
     "nodeCommon": {
       "type": "object",
       "required": [
@@ -418,7 +233,24 @@
         }
       }
     },
-    "sphereNode": {
+    "primitive": {
+      "type": "object",
+      "required": [
+        "type_id"
+      ],
+      "properties": {
+        "type_id": {
+          "type": "number"
+        },
+        "params": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "primitiveNode": {
       "type": "object",
       "allOf": [
         {
@@ -427,163 +259,11 @@
         {
           "type": "object",
           "required": [
-            "sphere"
+            "primitive"
           ],
           "properties": {
             "sphere": {
-              "$ref": "#/$defs/sphere"
-            }
-          }
-        }
-      ]
-    },
-    "cubeNode": {
-      "type": "object",
-      "allOf": [
-        {
-          "$ref": "#/$defs/nodeCommon"
-        },
-        {
-          "type": "object",
-          "required": [
-            "cube"
-          ],
-          "properties": {
-            "cube": {
-              "$ref": "#/$defs/cube"
-            }
-          }
-        }
-      ]
-    },
-    "torusNode": {
-      "type": "object",
-      "allOf": [
-        {
-          "$ref": "#/$defs/nodeCommon"
-        },
-        {
-          "type": "object",
-          "required": [
-            "torus"
-          ],
-          "properties": {
-            "torus": {
-              "$ref": "#/$defs/torus"
-            }
-          }
-        }
-      ]
-    },
-    "capsuleNode": {
-      "type": "object",
-      "allOf": [
-        {
-          "$ref": "#/$defs/nodeCommon"
-        },
-        {
-          "type": "object",
-          "required": [
-            "capsule"
-          ],
-          "properties": {
-            "capsule": {
-              "$ref": "#/$defs/capsule"
-            }
-          }
-        }
-      ]
-    },
-    "linkNode": {
-      "type": "object",
-      "allOf": [
-        {
-          "$ref": "#/$defs/nodeCommon"
-        },
-        {
-          "type": "object",
-          "required": [
-            "link"
-          ],
-          "properties": {
-            "link": {
-              "$ref": "#/$defs/link"
-            }
-          }
-        }
-      ]
-    },
-    "ellipsoidNode": {
-      "type": "object",
-      "allOf": [
-        {
-          "$ref": "#/$defs/nodeCommon"
-        },
-        {
-          "type": "object",
-          "required": [
-            "ellipsoid"
-          ],
-          "properties": {
-            "ellipsoid": {
-              "$ref": "#/$defs/ellipsoid"
-            }
-          }
-        }
-      ]
-    },
-    "pyramidNode": {
-      "type": "object",
-      "allOf": [
-        {
-          "$ref": "#/$defs/nodeCommon"
-        },
-        {
-          "type": "object",
-          "required": [
-            "pyramid"
-          ],
-          "properties": {
-            "pyramid": {
-              "$ref": "#/$defs/pyramid"
-            }
-          }
-        }
-      ]
-    },
-    "cylinderNode": {
-      "type": "object",
-      "allOf": [
-        {
-          "$ref": "#/$defs/nodeCommon"
-        },
-        {
-          "type": "object",
-          "required": [
-            "cylinder"
-          ],
-          "properties": {
-            "cylinder": {
-              "$ref": "#/$defs/cylinder"
-            }
-          }
-        }
-      ]
-    },
-    "triangularPrismNode": {
-      "type": "object",
-      "allOf": [
-        {
-          "$ref": "#/$defs/nodeCommon"
-        },
-        {
-          "type": "object",
-          "required": [
-            "triangularPrism"
-          ],
-          "properties": {
-            "triangularPrism": {
-              "$ref": "#/$defs/triangularPrism"
+              "$ref": "#/$defs/primitive"
             }
           }
         }
@@ -626,31 +306,7 @@
           "$ref": "#/$defs/groupNode"
         },
         {
-          "$ref": "#/$defs/sphereNode"
-        },
-        {
-          "$ref": "#/$defs/cubeNode"
-        },
-        {
-          "$ref": "#/$defs/torusNode"
-        },
-        {
-          "$ref": "#/$defs/capsuleNode"
-        },
-        {
-          "$ref": "#/$defs/linkNode"
-        },
-        {
-          "$ref": "#/$defs/ellipsoidNode"
-        },
-        {
-          "$ref": "#/$defs/pyramidNode"
-        },
-        {
-          "$ref": "#/$defs/cylinderNode"
-        },
-        {
-          "$ref": "#/$defs/triangularPrismNode"
+          "$ref": "#/$defs/primitiveNode"
         }
       ]
     },
@@ -702,6 +358,27 @@
         }
       }
     },
+    "primitive_type": {
+      "type": "object",
+      "required": [
+        "type_id",
+        "sdf_code_content"
+      ],
+      "properties": {
+        "type_id": {
+          "type": "number"
+        },
+        "sdf_code_content": {
+          "type": "string"
+        }
+      }
+    },
+    "primitive_types": {
+      "type": "array",
+      "items": {
+        "type": "#/$defs/primitive_type"
+      }
+    },
     "tree": {
       "type": "object",
       "required": [
@@ -716,6 +393,9 @@
         },
         "rootGroup": {
           "$ref": "#/$defs/groupNode"
+        },
+        "primitive_types": {
+          "$ref": "#/$defs/primitive_types"
         }
       }
     },
