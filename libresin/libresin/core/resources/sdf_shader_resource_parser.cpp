@@ -13,7 +13,11 @@ SDFShaderResourceParser::Result SDFShaderResourceParser::parse(const ShaderResou
     log_throw(UnsupportedShaderTypeProvided("SDFShaderResourceParser expects shader of SDF type"));
   }
 
-  const auto& sh_content = shader.get_glsl();
+  auto sh_content_opt = shader.glsl();
+  if (!sh_content_opt) {
+    log_throw(ShaderNotReadyException());
+  }
+  auto sh_content = std::string(*sh_content_opt);
 
   static auto sdf_signature_pattern = std::regex(
       R"(float[\s\r\n]*sdf[\s\r\n]*\([\s\r\n]*vec3[\s\r\n]*\w+[\s\r\n]*(\)|(,[\s\r\n]*float[\s\r\n]*\w+[\s\r\n]*){1,3}\))+[\s\r\n]*)");

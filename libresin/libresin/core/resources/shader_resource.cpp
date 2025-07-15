@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cctype>
 #include <filesystem>
 #include <fstream>
@@ -14,13 +15,15 @@ namespace resin {
 
 int ShaderResourceManager::shader_name_id_ = 1;
 
-ShaderResource::ShaderResource(std::string&& content, std::string&& name, ShaderType type,
-                               std::unordered_set<std::string>&& ext_defi_names, std::optional<std::string>&& version)
+ShaderResource::ShaderResource(std::string&& raw_glsl, std::string&& intermediate_glsl, std::string&& name,
+                               ShaderType type, std::unordered_set<std::string>&& ext_defi_names,
+                               std::optional<std::string>&& version)
     : ext_defi_names_(std::move(ext_defi_names)),
       version_(std::move(version)),
       name_(std::move(name)),
-      raw_content_(std::move(content)),
       type_(type),
+      raw_glsl_(std::move(raw_glsl)),
+      intermediate_glsl_(std::move(intermediate_glsl)),
       is_dirty_(true) {}
 
 const std::unordered_set<std::string>& ShaderResource::get_ext_defi_names() const { return ext_defi_names_; }
@@ -38,9 +41,11 @@ void ShaderResource::set_ext_defi(std::string_view ext_defi_name, std::string&& 
 
 bool ShaderResource::is_glsl_ready() const { return ext_defi_contents_.size() == ext_defi_names_.size(); }
 
-const std::string& ShaderResource::get_raw() const { return raw_content_; }
+std::optional<std::string_view> ShaderResource::glsl() const {
+  if (!is_glsl_ready()) {
+    return std::nullopt;
+  }
 
-const std::string& ShaderResource::get_glsl() const {
   if (!is_dirty_) {
     return glsl_;
   }
@@ -53,7 +58,7 @@ const std::string& ShaderResource::get_glsl() const {
   for (const auto& ext_defi : ext_defi_contents_) {
     glsl_.append(std::format("#define {} {}\n", ext_defi.first, ext_defi.second));
   }
-  glsl_.append(raw_content_);
+  glsl_.append(intermediate_glsl_);
 
   is_dirty_ = false;
   return glsl_;
@@ -94,88 +99,101 @@ void ShaderResourceManager::process_include_macro(const std::filesystem::path& s
                                                   const WordsStringViewIterator& end, size_t curr_line,
                                                   std::string& content, std::unordered_set<std::string>& defi_names) {
   if (it == end) {
-    clear_log_throw(ShaderMacroInvalidArgumentsCountException(
-        sh_path.string(), std::string(shader_macros::kExtDefiMacro), 0, 1, curr_line));
+    clear_log_throw(
+        ShaderMacroInvalidArgumentsCountException(sh_path, std::string(shader_macros::kExtDefiMacro), 0, 1, curr_line));
   }
   auto arg = std::string_view{*it};
 
   ++it;
   if (it != end) {
-    clear_log_throw(ShaderMacroInvalidArgumentsCountException(
-        sh_path.string(), std::string(shader_macros::kVersionMacro), 1, 2, curr_line));
+    clear_log_throw(
+        ShaderMacroInvalidArgumentsCountException(sh_path, std::string(shader_macros::kVersionMacro), 1, 2, curr_line));
   }
 
   if (!arg.starts_with("\"") || !arg.ends_with("\"") || arg.size() < 2) {
     clear_log_throw(ShaderInvalidMacroArgumentException(
-        sh_path.string(), "The include macro argument should begin and end with `\"`.", curr_line));
+        sh_path, "The include macro argument should begin and end with `\"`.", curr_line));
   }
 
   auto arg_val  = std::string_view{arg.substr(1, arg.size() - 2)};
   auto rel_path = std::filesystem::path{arg_val};
   if (rel_path.empty()) {
-    clear_log_throw(ShaderInvalidMacroArgumentException(sh_path.string(), "The include macro argument cannot be empty.",
-                                                        curr_line));
+    clear_log_throw(
+        ShaderInvalidMacroArgumentException(sh_path, "The include macro argument cannot be empty.", curr_line));
   }
 
   if (rel_path.is_absolute()) {
     clear_log_throw(ShaderInvalidMacroArgumentException(
-        sh_path.string(), "The include macro argument cannot be an absolute path.", curr_line));
+        sh_path, "The include macro argument cannot be an absolute path.", curr_line));
   }
 
   auto dep_ext = resin::extension_to_shader_type(rel_path.extension().string());
   if (!dep_ext.has_value() || dep_ext.value() != ShaderType::Library) {
     clear_log_throw(ShaderInvalidMacroArgumentException(
-        sh_path.string(), "The include macro argument must be a library shader (.glsl extension).", curr_line));
+        sh_path, "The include macro argument must be a library shader (.glsl extension).", curr_line));
   }
 
-  auto abs_path = sh_path.parent_path() / rel_path;
+  auto abs_path = std::filesystem::is_directory(sh_path) ? sh_path / rel_path : sh_path.parent_path() / rel_path;
   if (abs_path == sh_path || std::ranges::find(visited_paths_, abs_path) != visited_paths_.end()) {
-    clear_log_throw(ShaderIncludeMacroDependencyCycleException(sh_path.string(), curr_line));
+    clear_log_throw(ShaderIncludeMacroDependencyCycleException(sh_path, curr_line));
   }
 
   visited_paths_.push_back(abs_path);
   auto res = get_res_ptr(abs_path);
   visited_paths_.pop_back();
 
-  content.append(res->get_raw());
+  content.append(res->intermediate_glsl());
   defi_names.insert(res->get_ext_defi_names().begin(), res->get_ext_defi_names().end());
 }
 
-void ShaderResourceManager::process_ext_defi_macro(const std::filesystem::path& sh_path, WordsStringViewIterator& it,
-                                                   const WordsStringViewIterator& end, size_t curr_line,
-                                                   std::unordered_set<std::string>& defi_names) {
+void ShaderResourceManager::process_ext_defi_macro(const std::optional<std::filesystem::path>& sh_path,
+                                                   WordsStringViewIterator& it, const WordsStringViewIterator& end,
+                                                   size_t curr_line, std::unordered_set<std::string>& defi_names) {
   if (it == end) {
-    clear_log_throw(ShaderMacroInvalidArgumentsCountException(
-        sh_path.string(), std::string(shader_macros::kExtDefiMacro), 0, 1, curr_line));
+    clear_log_throw(
+        ShaderMacroInvalidArgumentsCountException(sh_path, std::string(shader_macros::kExtDefiMacro), 0, 1, curr_line));
   }
   auto arg = std::string_view{*it};
 
   ++it;
   if (it != end) {
-    clear_log_throw(ShaderMacroInvalidArgumentsCountException(
-        sh_path.string(), std::string(shader_macros::kVersionMacro), 1, 2, curr_line));
+    clear_log_throw(
+        ShaderMacroInvalidArgumentsCountException(sh_path, std::string(shader_macros::kVersionMacro), 1, 2, curr_line));
   }
 
-  if (!std::all_of(arg.begin(), arg.end(), [](const char c) { return std::isalnum(c) != 0 || c == '_'; })) {
+  if (!std::ranges::all_of(arg, [](const char c) { return std::isalnum(c) != 0 || c == '_'; })) {
     clear_log_throw(ShaderInvalidMacroArgumentException(
-        sh_path.string(), "The external definition macro argument contains non-alphanumeric characters.", curr_line));
+        sh_path, "The external definition macro argument contains non-alphanumeric characters.", curr_line));
   }
 
   defi_names.emplace(arg);
 }
 
-std::optional<std::string> ShaderResourceManager::process_version_macro(const std::filesystem::path& sh_path,
-                                                                        ShaderType sh_type, WordsStringViewIterator& it,
-                                                                        const WordsStringViewIterator& end,
-                                                                        size_t curr_line) {
+const std::shared_ptr<const ShaderResource>& ShaderResourceManager::get_res_ptr(const std::filesystem::path& path) {
+  auto elem = cache_.find(path);
+  if (elem != cache_.end()) {
+    Logger::info("Cache hit for path \"{}\".", path.string());
+    return elem->second;
+  }
+
+  cache_[path] = std::make_shared<const ShaderResource>(parse_res(path));
+
+  Logger::info("Loaded and cached resource with path \"{}\".", path.string());
+
+  return cache_[path];
+}
+
+std::optional<std::string> ShaderResourceManager::process_version_macro(
+    const std::optional<std::filesystem::path>& sh_path, ShaderType sh_type, WordsStringViewIterator& it,
+    const WordsStringViewIterator& end, size_t curr_line) {
   if (sh_type == ShaderType::Library) {
     resin::Logger::warn("Ignoring version macro in .glsl shader.");
     return std::nullopt;
   }
 
   if (it == end) {
-    clear_log_throw(ShaderMacroInvalidArgumentsCountException(
-        sh_path.string(), std::string(shader_macros::kVersionMacro), 0, 1, curr_line));
+    clear_log_throw(
+        ShaderMacroInvalidArgumentsCountException(sh_path, std::string(shader_macros::kVersionMacro), 0, 1, curr_line));
   }
   auto arg1 = std::string_view{*it};
 
@@ -185,8 +203,8 @@ std::optional<std::string> ShaderResourceManager::process_version_macro(const st
 
     ++it;
     if (it != end) {
-      clear_log_throw(ShaderMacroInvalidArgumentsCountException(
-          sh_path.string(), std::string(shader_macros::kVersionMacro), 2, 3, curr_line));
+      clear_log_throw(ShaderMacroInvalidArgumentsCountException(sh_path, std::string(shader_macros::kVersionMacro), 2,
+                                                                3, curr_line));
     }
 
     return std::format("{} {} {}", shader_macros::kVersionMacro, arg1, arg2);
@@ -195,29 +213,33 @@ std::optional<std::string> ShaderResourceManager::process_version_macro(const st
   return std::format("{} {}", shader_macros::kVersionMacro, arg1);
 }
 
-std::optional<std::string> ShaderResourceManager::process_name_macro(const std::filesystem::path& sh_path,
-                                                                     ShaderType sh_type, WordsStringViewIterator& it,
-                                                                     const WordsStringViewIterator& end,
-                                                                     size_t curr_line) {
+std::optional<std::string> ShaderResourceManager::process_name_macro(
+    const std::optional<std::filesystem::path>& sh_path, ShaderType sh_type, WordsStringViewIterator& it,
+    const WordsStringViewIterator& end, size_t curr_line) {
   if (sh_type != ShaderType::SDF) {
     resin::Logger::warn("Ignoring name macro in non .sdf shader.");
     return std::nullopt;
   }
 
   if (it == end) {
-    clear_log_throw(ShaderMacroInvalidArgumentsCountException(
-        sh_path.string(), std::string(shader_macros::kVersionMacro), 0, 1, curr_line));
+    clear_log_throw(
+        ShaderMacroInvalidArgumentsCountException(sh_path, std::string(shader_macros::kVersionMacro), 0, 1, curr_line));
   }
 
   auto arg1 = std::string_view{*it};
   return std::format("{}", arg1);
 }
 
-ShaderResource ShaderResourceManager::load_res(const std::filesystem::path& path) {
+ShaderResource ShaderResourceManager::parse_res(const std::filesystem::path& path) {
   auto sh_type = get_sh_type(path);
   auto content = load_content(path);
 
-  auto lines = make_lines_view(content) | std::views::enumerate;
+  return parse_res(content, sh_type, path);
+}
+
+ShaderResource ShaderResourceManager::parse_res(std::string_view shader_content, ShaderType shader_type,
+                                                std::optional<std::filesystem::path> path) {
+  auto lines = make_lines_view(shader_content) | std::views::enumerate;
 
   std::unordered_set<std::string> defi_names;
   std::string preprocessed_content;
@@ -248,14 +270,18 @@ ShaderResource ShaderResourceManager::load_res(const std::filesystem::path& path
 
     ++it;
     if (macro == shader_macros::kIncludeMacro) {
-      process_include_macro(path, it, end, line, preprocessed_content, defi_names);
+      if (!path) {
+        log_throw(ShaderIncludeMacroWithNoDirectoryException());
+      }
+
+      process_include_macro(*path, it, end, line, preprocessed_content, defi_names);
     } else if (macro == shader_macros::kVersionMacro) {
       if (version != std::nullopt) {
         continue;
       }
-      version = process_version_macro(path, sh_type, it, end, line);
+      version = process_version_macro(path, shader_type, it, end, line);
     } else if (macro == shader_macros::kNameMacro) {
-      if (auto name_opt = process_name_macro(path, sh_type, it, end, line)) {
+      if (auto name_opt = process_name_macro(path, shader_type, it, end, line)) {
         name = *name_opt;
       }
     } else {
@@ -263,20 +289,20 @@ ShaderResource ShaderResourceManager::load_res(const std::filesystem::path& path
     }
   }
 
-  if (sh_type != ShaderType::Library && sh_type != ShaderType::SDF && !version.has_value()) {
-    clear_log_throw(ShaderAbsentVersionException(path.string()));
+  if (shader_type != ShaderType::Library && shader_type != ShaderType::SDF && !version.has_value()) {
+    clear_log_throw(ShaderAbsentVersionException(path));
   }
 
-  if (sh_type == ShaderType::SDF && name.empty()) {
-    clear_log_throw(ShaderAbsentNameException(path.string()));
+  if (shader_type == ShaderType::SDF && name.empty()) {
+    clear_log_throw(ShaderAbsentNameException(path));
   }
 
   if (name.empty()) {
     name = std::format("UnnamedShader{}", shader_name_id_++);
   }
 
-  return ShaderResource(std::move(preprocessed_content), std::move(name), sh_type, std::move(defi_names),
-                        std::move(version));
+  return ShaderResource(std::string(shader_content), std::move(preprocessed_content), std::move(name), shader_type,
+                        std::move(defi_names), std::move(version));
 }
 
 }  // namespace resin

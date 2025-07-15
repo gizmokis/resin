@@ -111,7 +111,11 @@ GLuint ShaderProgram::create_shader(const ShaderResource& resource, GLenum type)
     log_throw(ShaderCreationException(get_shader_type_name(type), shader_name_, "unable to create shader."));
   }
 
-  const GLchar* source = resource.get_glsl().c_str();
+  auto glsl = resource.glsl();
+  if (!glsl) {
+    log_throw(ShaderNotReadyException());
+  }
+  const GLchar* source = glsl->data();
   glShaderSource(shader, 1, &source, nullptr);
   glCompileShader(shader);
   auto compile_status = get_shader_status(shader, GL_COMPILE_STATUS);

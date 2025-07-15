@@ -1,5 +1,6 @@
 #ifndef RESIN_EXCEPTIONS_HPP
 #define RESIN_EXCEPTIONS_HPP
+#include <filesystem>
 #include <libresin/utils/logger.hpp>
 #include <source_location>
 #include <stdexcept>
@@ -16,7 +17,7 @@ concept ExceptionConcept = std::is_base_of_v<std::runtime_error, T> && requires 
 };
 
 template <ExceptionConcept Exception>
-[[noreturn]] void inline log_throw(Exception&& e, const std::source_location& loc = std::source_location::current()) {
+[[noreturn]] void log_throw(Exception&& e, const std::source_location& loc = std::source_location::current()) {
   resin::Logger::get_instance().log(LogLevel::Throw, false, loc, "{}: {}", Exception::name(), e.what());
   throw std::forward<Exception>(e);
 }
@@ -34,7 +35,7 @@ class FileDoesNotExistException : public std::runtime_error {
   explicit FileDoesNotExistException(std::string&& file_path)
       : std::runtime_error(std::format(R"(File "{}" does not exist.)", file_path)), file_path_(std::move(file_path)) {}
 
-  inline const std::string& get_file_path() const { return file_path_; }
+  const std::string& get_file_path() const { return file_path_; }
 
  private:
   std::string file_path_;
@@ -49,8 +50,8 @@ class InvalidFileTypeException : public ResinException {
         file_path_(std::move(file_path)),
         msg_(std::move(msg)) {}
 
-  inline const std::string& get_file_path() const { return file_path_; }
-  inline const std::string& get_msg() const { return msg_; }
+  const std::string& get_file_path() const { return file_path_; }
+  const std::string& get_msg() const { return msg_; }
 
  private:
   std::string file_path_;
@@ -65,7 +66,7 @@ class FileStreamNotAvailableException : public ResinException {
       : ResinException(std::format(R"(File stream is not available for "{}")", file_path)),
         file_path_(std::move(file_path)) {}
 
-  inline const std::string& get_file_path() const { return file_path_; }
+  const std::string& get_file_path() const { return file_path_; }
 
  private:
   std::string file_path_;
@@ -79,7 +80,7 @@ class DirectoryDoesNotExistException : public ResinException {
       : ResinException(std::format(R"(File stream is not available for "{}")", dir_path)),
         dir_path_(std::move(dir_path)) {}
 
-  inline const std::string& get_file_path() const { return dir_path_; }
+  const std::string& get_file_path() const { return dir_path_; }
 
  private:
   std::string dir_path_;
@@ -94,8 +95,8 @@ class FileExtensionNotSupportedException : public ResinException {
         file_path_(std::move(file_path)),
         extension_(std::move(extension)) {}
 
-  inline const std::string& get_file_path() const { return file_path_; }
-  inline const std::string& get_extension() const { return extension_; }
+  const std::string& get_file_path() const { return file_path_; }
+  const std::string& get_extension() const { return extension_; }
 
  private:
   std::string file_path_;
@@ -106,25 +107,27 @@ class ShaderMacroInvalidArgumentsCountException : public ResinException {
  public:
   EXCEPTION_NAME(ShaderMacroInvalidArgumentsCountException)
 
-  explicit ShaderMacroInvalidArgumentsCountException(std::string&& sh_path, std::string&& macro_name,
-                                                     size_t expected_args, size_t actual_args, size_t line)
+  explicit ShaderMacroInvalidArgumentsCountException(const std::optional<std::filesystem::path>& sh_path,
+                                                     std::string&& macro_name, size_t expected_args, size_t actual_args,
+                                                     size_t line)
       : ResinException(std::format(
             R"(Shader with path "{}" contains macro "{}" with invalid arguments count at line {}. Expected {}. Actual: {}.)",
-            sh_path, macro_name, line, expected_args, actual_args)),
+            (sh_path && std::filesystem::is_directory(*sh_path)) ? sh_path->string() : "unknown", macro_name, line,
+            expected_args, actual_args)),
         sh_path_(std::move(sh_path)),
         macro_name_(std::move(macro_name)),
         expected_args_(expected_args),
         actual_args_(actual_args),
         line_(line) {}
 
-  inline const std::string& get_sh_path() const { return sh_path_; }
-  inline const std::string& get_macro_name() const { return macro_name_; }
-  inline size_t expected_args() const { return expected_args_; }
-  inline size_t actual_args() const { return actual_args_; }
-  inline size_t line() const { return line_; }
+  const std::optional<std::filesystem::path>& get_sh_path() const { return sh_path_; }
+  const std::string& get_macro_name() const { return macro_name_; }
+  size_t expected_args() const { return expected_args_; }
+  size_t actual_args() const { return actual_args_; }
+  size_t line() const { return line_; }
 
  private:
-  std::string sh_path_;
+  std::optional<std::filesystem::path> sh_path_;
   std::string macro_name_;
   size_t expected_args_;
   size_t actual_args_;
@@ -135,21 +138,37 @@ class ShaderInvalidMacroArgumentException : public ResinException {
  public:
   EXCEPTION_NAME(ShaderInvalidMacroArgumentException)
 
-  explicit ShaderInvalidMacroArgumentException(std::string&& sh_path, std::string&& msg, size_t line)
+  explicit ShaderInvalidMacroArgumentException(const std::optional<std::filesystem::path>& sh_path, std::string&& msg,
+                                               size_t line)
       : ResinException(std::format(R"(Shader with path "{}" contains macro at line {} with invalid argument. {})",
-                                   sh_path, line, msg)),
+                                   (sh_path && std::filesystem::is_directory(*sh_path)) ? sh_path->string() : "uknown",
+                                   line, msg)),
         sh_path_(std::move(sh_path)),
         msg_(std::move(msg)),
         line_(line) {}
 
-  inline const std::string& get_sh_path() const { return sh_path_; }
-  inline const std::string& get_msg() const { return msg_; }
-  inline size_t get_line() const { return line_; }
+  const std::optional<std::filesystem::path>& get_sh_path() const { return sh_path_; }
+  const std::string& get_msg() const { return msg_; }
+  size_t get_line() const { return line_; }
 
  private:
-  std::string sh_path_;
+  std::optional<std::filesystem::path> sh_path_;
   std::string msg_;
   size_t line_;
+};
+
+class ShaderNotReadyException : public ResinException {
+ public:
+  EXCEPTION_NAME(ShaderNotReadyException)
+
+  explicit ShaderNotReadyException() : ResinException("GLSL is not ready.") {}
+
+  const std::string& get_shader_name() const { return shader_name_; }
+  const std::string& get_reason() const { return reason_; }
+
+ private:
+  std::string shader_name_;
+  std::string reason_;
 };
 
 class ShaderIncludeMacroDependencyCycleException : public ResinException {
@@ -161,8 +180,8 @@ class ShaderIncludeMacroDependencyCycleException : public ResinException {
         sh_path_(std::move(sh_path)),
         line_(line) {}
 
-  inline const std::string& get_sh_path() const { return sh_path_; }
-  inline size_t get_line() const { return line_; }
+  const std::string& get_sh_path() const { return sh_path_; }
+  size_t get_line() const { return line_; }
 
  private:
   std::string sh_path_;
@@ -173,28 +192,32 @@ class ShaderAbsentVersionException : public ResinException {
  public:
   EXCEPTION_NAME(ShaderAbsentVersionException)
 
-  explicit ShaderAbsentVersionException(std::string&& sh_path)
-      : ResinException(std::format(R"(Could not find version macro for a shader with path "{}".)", sh_path)),
+  explicit ShaderAbsentVersionException(const std::optional<std::filesystem::path>& sh_path)
+      : ResinException(
+            std::format(R"(Could not find version macro for a shader with path "{}".)",
+                        (sh_path && std::filesystem::is_directory(*sh_path)) ? sh_path->string() : "unknown")),
         sh_path_(std::move(sh_path)) {}
 
-  inline const std::string& get_sh_path() const { return sh_path_; }
+  const std::optional<std::filesystem::path>& get_sh_path() const { return sh_path_; }
 
  private:
-  std::string sh_path_;
+  std::optional<std::filesystem::path> sh_path_;
 };
 
 class ShaderAbsentNameException : public ResinException {
  public:
   EXCEPTION_NAME(ShaderAbsentNameException)
 
-  explicit ShaderAbsentNameException(std::string&& sh_path)
-      : ResinException(std::format(R"(Could not find name macro for a shader with path "{}".)", sh_path)),
+  explicit ShaderAbsentNameException(const std::optional<std::filesystem::path>& sh_path)
+      : ResinException(
+            std::format(R"(Could not find name macro for a shader with path "{}".)",
+                        (sh_path && std::filesystem::is_directory(*sh_path)) ? sh_path->string() : "unknown")),
         sh_path_(std::move(sh_path)) {}
 
-  inline const std::string& get_sh_path() const { return sh_path_; }
+  const std::optional<std::filesystem::path>& get_sh_path() const { return sh_path_; }
 
  private:
-  std::string sh_path_;
+  std::optional<std::filesystem::path> sh_path_;
 };
 
 class ShaderTypeMismatchException : public ResinException {
@@ -207,9 +230,9 @@ class ShaderTypeMismatchException : public ResinException {
         shader_name_(std::move(shader_name)),
         actual_(actual) {}
 
-  inline const std::string& get_shader_type() const { return shader_type_; }
-  inline const std::string& get_shader_name() const { return shader_name_; }
-  inline const std::string& get_actual() const { return actual_; }
+  const std::string& get_shader_type() const { return shader_type_; }
+  const std::string& get_shader_name() const { return shader_name_; }
+  const std::string& get_actual() const { return actual_; }
 
  private:
   std::string shader_type_;
@@ -227,10 +250,18 @@ class SDFShaderInvalidFunctionSignature : public ResinException {
             sh_name)),
         sh_name_(std::move(sh_name)) {}
 
-  inline const std::string& get_sh_path() const { return sh_name_; }
+  const std::string& get_sh_path() const { return sh_name_; }
 
  private:
   std::string sh_name_;
+};
+
+class ShaderIncludeMacroWithNoDirectoryException : public ResinException {
+ public:
+  EXCEPTION_NAME(ShaderIncludeMacroWithNoDirectoryException)
+
+  explicit ShaderIncludeMacroWithNoDirectoryException()
+      : ResinException(R"(Encountered #include macro, but no shader path has been provided.)") {}
 };
 
 class SDFShaderNoFunctionBodyFound : public ResinException {
@@ -242,7 +273,7 @@ class SDFShaderNoFunctionBodyFound : public ResinException {
             R"(The SDF Shader at path "{}" must define exactly one correct SDF function with body.)", sh_name)),
         sh_name_(std::move(sh_name)) {}
 
-  inline const std::string& get_sh_path() const { return sh_name_; }
+  const std::string& get_sh_path() const { return sh_name_; }
 
  private:
   std::string sh_name_;
@@ -257,8 +288,8 @@ class ShaderProgramLinkingException : public ResinException {
         shader_name_(std::move(shader_name)),
         reason_(std::move(reason)) {}
 
-  inline const std::string& get_shader_name() const { return shader_name_; }
-  inline const std::string& get_reason() const { return reason_; }
+  const std::string& get_shader_name() const { return shader_name_; }
+  const std::string& get_reason() const { return reason_; }
 
  private:
   std::string shader_name_;
@@ -274,8 +305,8 @@ class ShaderProgramValidationException : public ResinException {
         shader_name_(std::move(shader_name)),
         reason_(std::move(reason)) {}
 
-  inline const std::string& get_shader_name() const { return shader_name_; }
-  inline const std::string& get_reason() const { return reason_; }
+  const std::string& get_shader_name() const { return shader_name_; }
+  const std::string& get_reason() const { return reason_; }
 
  private:
   std::string shader_name_;
@@ -292,9 +323,9 @@ class ShaderCreationException : public ResinException {
         shader_name_(std::move(shader_name)),
         reason_(std::move(reason)) {}
 
-  inline const std::string& get_shader_type() const { return shader_type_; }
-  inline const std::string& get_shader_name() const { return shader_name_; }
-  inline const std::string& get_reason() const { return reason_; }
+  const std::string& get_shader_type() const { return shader_type_; }
+  const std::string& get_shader_name() const { return shader_name_; }
+  const std::string& get_reason() const { return reason_; }
 
  private:
   std::string shader_type_;
@@ -309,7 +340,7 @@ class UnsupportedShaderTypeProvided : public ResinException {
   explicit UnsupportedShaderTypeProvided(std::string&& reason)
       : ResinException(std::format(R"(Unsupported shader type provided "{}".)", reason)), reason_(std::move(reason)) {}
 
-  inline const std::string& get_reason() const { return reason_; }
+  const std::string& get_reason() const { return reason_; }
 
  private:
   std::string reason_;
@@ -322,7 +353,7 @@ class FramebufferCreationException : public ResinException {
   explicit FramebufferCreationException(std::string&& reason)
       : ResinException(std::format(R"(Framebuffer creation failed! Reason: {})", reason)), reason_(std::move(reason)) {}
 
-  inline const std::string& get_reason() const { return reason_; }
+  const std::string& get_reason() const { return reason_; }
 
  private:
   std::string reason_;
@@ -335,7 +366,7 @@ class SDFTreeNodeDoesNotExist : public ResinException {
   explicit SDFTreeNodeDoesNotExist(size_t id)
       : ResinException(std::format(R"(SDF Tree node with id {} does not exist)", id)), id_(id) {}
 
-  inline size_t get_id() const { return id_; }
+  size_t get_id() const { return id_; }
 
  private:
   size_t id_;
@@ -348,7 +379,7 @@ class MaterialSDFTreeComponentDoesNotExist : public ResinException {
   explicit MaterialSDFTreeComponentDoesNotExist(size_t id)
       : ResinException(std::format(R"(Material with id {} does not exist)", id)), id_(id) {}
 
-  inline size_t get_id() const { return id_; }
+  size_t get_id() const { return id_; }
 
  private:
   size_t id_;
@@ -377,7 +408,7 @@ class SDFTreeEmptyGroupException : public ResinException {
             R"(Cannot generate shader as there is a group node with id {} that does not have any children)", group_id)),
         group_id_(group_id) {}
 
-  inline size_t get_group_id() const { return group_id_; }
+  size_t get_group_id() const { return group_id_; }
 
  private:
   size_t group_id_;
@@ -399,8 +430,8 @@ class SDFTreeNodeIsNotAChild : public ResinException {
         id1_(id1),
         id2_(id2) {}
 
-  inline size_t get_id1() const { return id1_; }
-  inline size_t get_id2() const { return id2_; }
+  size_t get_id1() const { return id1_; }
+  size_t get_id2() const { return id2_; }
 
  private:
   size_t id1_;
@@ -502,7 +533,7 @@ class OutOfRangeException : public ResinException {
   explicit OutOfRangeException(std::string&& reason)
       : ResinException(std::format(R"(Out of range: {})", reason)), reason_(std::move(reason)) {}
 
-  inline const std::string& get_reason() const { return reason_; }
+  const std::string& get_reason() const { return reason_; }
 
  private:
   std::string reason_;
@@ -515,7 +546,7 @@ class ParserFailureException : public ResinException {
   explicit ParserFailureException(std::string&& reason)
       : ResinException(std::format(R"(Failed to parse the text: {})", reason)), reason_(std::move(reason)) {}
 
-  inline const std::string& get_reason() const { return reason_; }
+  const std::string& get_reason() const { return reason_; }
 
  private:
   std::string reason_;

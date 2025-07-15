@@ -35,7 +35,7 @@ TEST_F(ShaderResourceTest, ShaderWithDepsIsCorrectlyGenerated) {
 
   EXPECT_FILE_CONTENT_EQ(resources_path_ / "regular_load" / "expected_raw.frag", cpy.get_raw());
 
-  std::string_view glsl = cpy.get_glsl();
+  std::string_view glsl = cpy.glsl();
   EXPECT_FALSE(glsl.find("#define EXTERNAL_MAIN int func() { return 5; }") == std::string_view::npos);
   EXPECT_FALSE(glsl.find("#define EXTERNAL_A 100") == std::string_view::npos);
   EXPECT_FALSE(glsl.find("#define EXTERNAL_B 50") == std::string_view::npos);
