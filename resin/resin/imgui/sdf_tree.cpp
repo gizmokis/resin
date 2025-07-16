@@ -472,6 +472,9 @@ void SDFTreeView(::resin::SDFTree& tree, std::optional<::resin::IdView<::resin::
 
   comp_vs.render_tree();
   auto selected = comp_vs.selected();
+  if (selected.has_value() && selected->expired()) {
+    selected = std::nullopt;
+  }
 
   ImGui::EndChild();
 

@@ -164,10 +164,14 @@ void SDFTree::set_root(std::unique_ptr<GroupNode> root) { root_ = std::move(root
 void SDFTree::clear() {
   material_active_ids_.clear();
   std::ranges::fill(materials_.begin(), materials_.end(), std::nullopt);
-  root_                   = create_detached_node<GroupNode>();
-  primitive_type_manager_ = SDFPrimitiveTypeManager();
+  root_                            = create_detached_node<GroupNode>();
+  primitive_type_manager_          = SDFPrimitiveTypeManager();
+  sdf_tree_registry_.is_tree_dirty = true;
 }
 
-void SDFTree::set_default_types() { primitive_type_manager_ = default_type_manager_; }
+void SDFTree::set_default_types() {
+  primitive_type_manager_ = default_type_manager_;
+  primitive_type_manager_.mark_dirty();
+}
 
 }  // namespace resin

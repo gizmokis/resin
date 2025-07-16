@@ -57,6 +57,7 @@ class SDFPrimitiveTypeManager {
   }
 
   bool is_dirty() const { return is_shader_dirty_; }
+  void mark_dirty() { is_shader_dirty_ = true; }
 
   auto begin() { return descs_.begin(); }
   auto end() { return descs_.end(); }

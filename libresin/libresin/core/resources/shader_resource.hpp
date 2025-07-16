@@ -1,7 +1,6 @@
 #ifndef RESIN_SHADER_RESOURCE_HPP
 #define RESIN_SHADER_RESOURCE_HPP
 
-#include <array>
 #include <filesystem>
 #include <libresin/core/resources/shader_type.hpp>
 #include <libresin/utils/exceptions.hpp>
