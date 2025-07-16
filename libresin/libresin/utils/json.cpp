@@ -1,7 +1,12 @@
+#include <exception>
 #include <glm/fwd.hpp>
 #include <json_schemas/json_schemas.hpp>
 #include <libresin/core/light.hpp>
+#include <libresin/core/resources/shader_resource.hpp>
+#include <libresin/core/resources/shader_type.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
+#include <libresin/core/sdf_tree/primitive_node.hpp>
+#include <libresin/core/sdf_tree/sdf_primitive_type_manager.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/json.hpp>
@@ -104,8 +109,8 @@ void JSONSerializerSDFTreeNodeVisitor::visit_primitive(PrimitiveNode& node) {
   for (auto param : node.params()) {
     params.push_back(param.value);
   }
-  json_["primitive"]["params"]  = params;
-  json_["primitive"]["type_id"] = node.type_id();
+  json_["primitive"]["params"] = params;
+  json_["primitive"]["typeId"] = node.type_id();
 }
 
 void serialize_sdf_tree(json& target_json, SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id,
@@ -134,8 +139,7 @@ void serialize_sdf_tree(json& target_json, SDFTree& tree, IdView<SDFTreeNodeId> 
   serialize_node_common(target_json["tree"]["rootGroup"], root_group);
   auto visitor = JSONSerializerSDFTreeNodeVisitor(target_json["tree"]["rootGroup"]);
   root_group.accept_visitor(visitor);
-
-  serialize_primitive_types(target_json, tree.primitive_type_manager());
+  serialize_primitive_types(target_json["tree"], tree.primitive_type_manager());
 }
 
 void serialize_sdf_tree(json& target_json, SDFTree& tree, bool ignore_unused_materials) {
@@ -173,13 +177,13 @@ void serialize_light_common(json& target_json, const BaseLightSceneComponent& li
 }
 
 void serialize_primitive_types(json& target_json, const SDFPrimitiveTypeManager& manager) {
-  target_json["primitive_types"] = json::array();
+  target_json["primitiveTypes"] = json::array();
 
   for (const auto& prim : manager) {
     json primitive_json;
-    primitive_json["type_id"]          = prim.id;
-    primitive_json["sdf_code_content"] = prim.shader_content;
-    target_json["primitive_types"].push_back(primitive_json);
+    primitive_json["typeId"]         = prim.id;
+    primitive_json["sdfCodeContent"] = prim.shader_res->raw_glsl();
+    target_json["primitiveTypes"].push_back(primitive_json);
   }
 }
 
@@ -306,30 +310,54 @@ void deserialize_node_common(SDFTreeNode& node, const json& node_json,
   deserialize_node_factor(node, node_json);
 }
 
+std::unordered_map<uint32_t, uint32_t> deserialize_primitive_types(SDFPrimitiveTypeManager& manager,
+                                                                   const json& primitive_types_json) {
+  auto res_manager = ShaderResourceManager();
+  auto id_map      = std::unordered_map<uint32_t, uint32_t>();
+  try {
+    for (const auto& type_json : primitive_types_json) {
+      uint32_t id         = type_json.at("typeId");
+      std::string content = type_json.at("sdfCodeContent");
+
+      auto res   = std::make_shared<const ShaderResource>(res_manager.parse_res(content, SDFShaderType{}));
+      id_map[id] = manager.add_type_from_shader_res(std::move(res));
+    }
+  } catch (const std::exception& e) {
+    log_throw(JSONPrimitiveTypesDeserializationException(e.what()));
+  }
+
+  return id_map;
+}
+
 JSONDeserializerSDFTreeNodeVisitor::JSONDeserializerSDFTreeNodeVisitor(
-    const json& node_json, const std::unordered_map<size_t, IdView<MaterialId>>& material_ids_map)
-    : node_json_(node_json), material_ids_map_(material_ids_map) {}
+    const json& node_json, const std::unordered_map<size_t, IdView<MaterialId>>& material_ids_map,
+    const std::unordered_map<uint32_t, uint32_t>& primitive_types_ids_map, const SDFTree& tree)
+    : node_json_(node_json),
+      material_ids_map_(material_ids_map),
+      primitive_types_ids_map_(primitive_types_ids_map),
+      tree_(tree) {}
 
 void JSONDeserializerSDFTreeNodeVisitor::visit_group(GroupNode& node) {
   try {
     for (const auto& child_json : node_json_.at("group").at("children")) {
-      //   for (auto [prim_type, name] : kSDFTreePrimitiveNodesJSONNames) {
-      //     if (property_exists(child_json, name)) {
-      //       auto& child_prim = node.push_back_primitive(prim_type, SDFBinaryOperation::Union);
+      if (property_exists(child_json, "primitive")) {
+        uint32_t id                = child_json.at("primitive").at("typeId");
+        const auto& primitive_type = tree_.primitive_type_manager().type_by_id(primitive_types_ids_map_.at(id));
 
-      //       deserialize_node_common(child_prim, child_json, material_ids_map_);
-      //       auto visitor = JSONDeserializerSDFTreeNodeVisitor(child_json, material_ids_map_);
-      //       child_prim.accept_visitor(visitor);
+        auto& child_prim = node.push_back_child<PrimitiveNode>(SDFBinaryOperation::Union, primitive_type);
 
-      //       break;
-      //     }
-      //   }
+        deserialize_node_common(child_prim, child_json, material_ids_map_);
+        auto visitor =
+            JSONDeserializerSDFTreeNodeVisitor(child_json, material_ids_map_, primitive_types_ids_map_, tree_);
+        child_prim.accept_visitor(visitor);
+      }
 
       if (property_exists(child_json, "group")) {
         auto& child_group = node.push_back_child<GroupNode>(SDFBinaryOperation::Union);
 
         deserialize_node_common(child_group, child_json, material_ids_map_);
-        auto visitor = JSONDeserializerSDFTreeNodeVisitor(child_json, material_ids_map_);
+        auto visitor =
+            JSONDeserializerSDFTreeNodeVisitor(child_json, material_ids_map_, primitive_types_ids_map_, tree_);
         child_group.accept_visitor(visitor);
       }
     }
@@ -340,6 +368,17 @@ void JSONDeserializerSDFTreeNodeVisitor::visit_group(GroupNode& node) {
     Logger::warn("JSON prefab serialization failed");
     log_throw(JSONNodeDeserializationException(
         std::format("Group definition for node with name {} is invalid.", node.name())));
+  }
+}
+
+void JSONDeserializerSDFTreeNodeVisitor::visit_primitive(PrimitiveNode& node) {
+  auto* it = node.params().begin();
+  for (float param : node_json_.at("primitive").at("params")) {
+    if (it == node.params().end()) {
+      return;
+    }
+    it->value = param;
+    ++it;
   }
 }
 
@@ -408,9 +447,14 @@ std::unique_ptr<GroupNode> deserialize_sdf_tree(SDFTree& tree, const json& tree_
 
   Logger::info("Materials deserialization succeeded");
 
+  tree.primitive_type_manager().clear();
+  auto primitive_types_ids_map =
+      deserialize_primitive_types(tree.primitive_type_manager(), tree_json.at("primitiveTypes"));
+
   auto root = tree.create_detached_node<GroupNode>();
   deserialize_node_common(*root, tree_json.at("rootGroup"), material_ids_map);
-  auto visitor = JSONDeserializerSDFTreeNodeVisitor(tree_json.at("rootGroup"), material_ids_map);
+  auto visitor =
+      JSONDeserializerSDFTreeNodeVisitor(tree_json.at("rootGroup"), material_ids_map, primitive_types_ids_map, tree);
   root->accept_visitor(visitor);
 
   return root;

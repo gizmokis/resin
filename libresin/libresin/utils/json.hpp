@@ -9,6 +9,8 @@
 #include <libresin/core/sdf_tree/sdf_tree_node_visitor.hpp>
 #include <nlohmann/json_fwd.hpp>
 
+#include "libresin/core/sdf_tree/sdf_tree.hpp"
+
 namespace resin {
 
 struct Transform;
@@ -87,13 +89,18 @@ void serialize_primitive_types(json& target_json, const SDFPrimitiveTypeManager&
 class JSONDeserializerSDFTreeNodeVisitor : public ISDFTreeNodeVisitor {
  public:
   explicit JSONDeserializerSDFTreeNodeVisitor(const json& node_json,
-                                              const std::unordered_map<size_t, IdView<MaterialId>>& material_ids_map);
+                                              const std::unordered_map<size_t, IdView<MaterialId>>& material_ids_map,
+                                              const std::unordered_map<uint32_t, uint32_t>& primitive_types_ids_map,
+                                              const SDFTree& tree);
 
   void visit_group(GroupNode& node) override;
+  void visit_primitive(PrimitiveNode& node) override;
 
  private:
   const json& node_json_;                                                   // NOLINT
   const std::unordered_map<size_t, IdView<MaterialId>>& material_ids_map_;  // NOLINT
+  const std::unordered_map<uint32_t, uint32_t>& primitive_types_ids_map_;   // NOLINT
+  const SDFTree& tree_;                                                     // NOLINT
 };
 
 class JSONDeserializerLightSceneComponentVisitor : public ILightSceneComponentVisitor {
@@ -123,6 +130,8 @@ void deserialize_node_common(SDFTreeNode& node, const json& node_json,
 void deserialize_light_common(BaseLightSceneComponent& light, const json& light_json);
 void deserialize_attenuation(PointLight::Attenuation& attenuation, const json& attenuation_json);
 
+std::unordered_map<uint32_t, uint32_t> deserialize_primitive_types(SDFPrimitiveTypeManager& manager,
+                                                                   const json& primitive_types_json);
 std::unique_ptr<GroupNode> deserialize_sdf_tree(SDFTree& tree, const json& tree_json);
 
 [[nodiscard]] std::unique_ptr<GroupNode> deserialize_prefab(SDFTree& tree, std::string_view prefab_json_str);
