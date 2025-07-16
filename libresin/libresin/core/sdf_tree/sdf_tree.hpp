@@ -56,7 +56,8 @@ class SDFTree {
    */
   void delete_node(IdView<SDFTreeNodeId> node_id);
 
-  std::string gen_shader_code(GenShaderMode mode = GenShaderMode::SinglePrimitiveArray) const;
+  std::string tree_glsl(GenShaderMode mode = GenShaderMode::SinglePrimitiveArray) const;
+  const std::string& types_glsl();
 
   GroupNode& root() { return *root_; }
   const GroupNode& root() const { return *root_; }
@@ -69,7 +70,22 @@ class SDFTree {
 
   size_t tree_id() const { return tree_id_; }
 
+  /**
+   * @brief When the tree is dirty, the shader containing tree_glsl must be regenerated.
+   *
+   * @return true
+   * @return false
+   */
   bool is_dirty() const { return sdf_tree_registry_.is_tree_dirty; }
+
+  /**
+   * @brief When the types are dirty, the shader containing types_glsl must be regenerated.
+   *
+   * @return true
+   * @return false
+   */
+  bool are_types_dirty() const { return primitive_type_manager_.is_dirty(); }
+
   void mark_clean() { sdf_tree_registry_.is_tree_dirty = false; }
 
   MaterialSDFTreeComponent& material(IdView<MaterialId> mat_id);
@@ -116,6 +132,7 @@ class SDFTree {
   SDFPrimitiveTypeManager& primitive_type_manager() { return primitive_type_manager_; }
 
   void clear();
+  void set_default_types();
 
  private:
   static size_t curr_id_;

@@ -29,6 +29,8 @@ void Scene::clear() {
 void Scene::set_default() {
   clear();
 
+  tree().set_default_types();
+
   tree().add_material(Material(glm::vec3(0.25F, 0.25F, 0.96F)));
   tree().add_material(Material(glm::vec3(0.96F, 0.25F, 0.25F)));
   tree().add_material(Material(glm::vec3(1.0F, 1.0F, 0.0F)));

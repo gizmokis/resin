@@ -3,6 +3,7 @@
 #include <chrono>
 #include <format>
 #include <libresin/core/resources/shader_resource.hpp>
+#include <libresin/core/resources/shader_type.hpp>
 #include <libresin/core/shader.hpp>
 #include <libresin/core/uniform_buffer.hpp>
 #include <libresin/utils/exceptions.hpp>
@@ -120,6 +121,7 @@ GLuint ShaderProgram::create_shader(const ShaderResource& resource, GLenum type)
   glCompileShader(shader);
   auto compile_status = get_shader_status(shader, GL_COMPILE_STATUS);
   if (compile_status.has_value()) {
+    Logger::debug("{}", *glsl);
     log_throw(ShaderCreationException(get_shader_type_name(type), shader_name_, std::move(compile_status.value())));
   }
 
@@ -167,13 +169,13 @@ void ShaderProgram::bind_uniform_buffer(std::string_view name, size_t binding) c
 RenderingShaderProgram::RenderingShaderProgram(std::string_view name, ShaderResource vertex_resource,
                                                ShaderResource fragment_resource)
     : ShaderProgram(name), vertex_shader_(std::move(vertex_resource)), fragment_shader_(std::move(fragment_resource)) {
-  if (vertex_shader_.get_type() != ShaderType::Vertex) {
+  if (!vertex_shader_.has_type<VertexShaderType>()) {
     log_throw(ShaderTypeMismatchException(get_shader_type_name(GL_VERTEX_SHADER), shader_name_,
-                                          vertex_shader_.get_extension()));
+                                          vertex_shader_.type_extension()));
   }
-  if (fragment_shader_.get_type() != ShaderType::Fragment) {
+  if (!fragment_shader_.has_type<FragmentShaderType>()) {
     log_throw(ShaderTypeMismatchException(get_shader_type_name(GL_FRAGMENT_SHADER), shader_name_,
-                                          fragment_shader_.get_extension()));
+                                          fragment_shader_.type_extension()));
   }
   using clock = std::chrono::high_resolution_clock;
   auto start  = clock::now();
@@ -203,9 +205,9 @@ void RenderingShaderProgram::create_program() {
 
 ComputeShaderProgram::ComputeShaderProgram(std::string_view name, ShaderResource compute_shader)
     : ShaderProgram(name), compute_shader_(std::move(compute_shader)) {
-  if (compute_shader_.get_type() != ShaderType::Compute) {
+  if (!compute_shader_.has_type<ComputeShaderType>()) {
     log_throw(ShaderTypeMismatchException(get_shader_type_name(GL_COMPUTE_SHADER), shader_name_,
-                                          compute_shader_.get_extension()));
+                                          compute_shader_.type_extension()));
   }
 
   using clock = std::chrono::high_resolution_clock;

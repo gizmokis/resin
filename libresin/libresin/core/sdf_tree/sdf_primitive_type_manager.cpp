@@ -1,36 +1,49 @@
 
-#include <libresin/core/resources/sdf_shader_resource_parser.hpp>
+#include <cstdint>
+#include <libresin/core/resources/shader_type.hpp>
 #include <libresin/core/sdf_tree/sdf_primitive_type_manager.hpp>
 #include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/logger.hpp>
 
 namespace resin {
 
-void SDFPrimitiveTypeManager::add_type(std::string&& name, SDFParams&& params, std::string&& shader_content) noexcept {
-  auto desc = SDFPrimitiveTypeDescription{.id             = static_cast<uint32_t>(descs_.size()),
-                                          .name           = std::move(name),
-                                          .params         = std::move(params),
-                                          .shader_content = std::move(shader_content)};
+uint32_t SDFPrimitiveTypeManager::add_type_from_shader_res(std::shared_ptr<const ShaderResource> sh_res) {
+  if (!sh_res->has_type<SDFShaderType>()) {
+    log_throw(UnsupportedShaderTypeException(std::format(
+        "Expected SDF Shader, but received shader with name {} of type {}.", sh_res->name(), sh_res->type_name())));
+  }
+
+  const auto& sh_sdf_type = std::get<SDFShaderType>(sh_res->type());
+
+  auto id   = static_cast<uint32_t>(descs_.size());
+  auto desc = SDFPrimitiveTypeDescription{
+      .id         = id,
+      .name       = std::string(sh_res->name()),
+      .params     = sh_sdf_type.args,
+      .shader_res = std::move(sh_res)  //
+  };
+
   descs_.push_back(desc);
+
+  is_shader_dirty_ = true;
+
+  return id;
 }
 
-void SDFPrimitiveTypeManager::add_type_from_shader_res(const ShaderResource& sh_res) {
-  try {
-    auto result = SDFShaderResourceParser::parse(sh_res);
-    add_type(std::string(sh_res.get_name()), std::move(result.args), std::move(result.content));
-  } catch (const std::exception&) {
-    log_throw(ParserFailureException(std::format(
-        "The SDF Primitive Type Manager is unable to parse the shader resource with name {}.", sh_res.get_name())));
+const std::string& SDFPrimitiveTypeManager::sdfs_glsl() {
+  if (!is_shader_dirty_) {
+    return sdfs_glsl_;
   }
-}
+  is_shader_dirty_ = false;
 
-std::string SDFPrimitiveTypeManager::gen_sdfs_glsl_content() const noexcept {
-  auto result = std::string();
+  sdfs_glsl_ = std::string();
   for (const auto& d : descs_) {
-    result += d.shader_content;
+    if (auto content = d.shader_res->glsl()) {
+      sdfs_glsl_ += *content;
+    }
   }
 
-  return result;
+  return sdfs_glsl_;
 }
 
 }  // namespace resin

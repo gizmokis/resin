@@ -2,55 +2,17 @@
 #define RESIN_SHADER_RESOURCE_HPP
 
 #include <array>
-#include <cstdint>
 #include <filesystem>
+#include <libresin/core/resources/shader_type.hpp>
 #include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/string_views.hpp>
 #include <string_view>
 #include <unordered_map>
 #include <unordered_set>
+#include <variant>
 #include <vector>
 
 namespace resin {
-
-namespace shader_macros {
-
-static constexpr std::string_view kIncludeMacro = "#include";
-static constexpr std::string_view kExtDefiMacro = "#external_definition";
-static constexpr std::string_view kVersionMacro = "#version";
-static constexpr std::string_view kNameMacro    = "#name";
-
-static constexpr std::array<std::string_view, 4> kAllMacros = {
-    kIncludeMacro,  //
-    kExtDefiMacro,  //
-    kVersionMacro,  //
-    kNameMacro      //
-};
-
-inline bool is_macro(std::string_view word) { return std::ranges::find(kAllMacros, word) != kAllMacros.end(); }
-
-}  // namespace shader_macros
-
-enum class ShaderType : uint8_t {
-  Vertex   = 0,
-  Fragment = 1,
-  Compute  = 2,
-  Library  = 3,
-  SDF      = 4,
-  _Count   = 5,  // NOLINT
-};
-
-static constexpr std::array<std::string_view, static_cast<size_t>(ShaderType::_Count)> kShaderTypeToExtensionMap = {
-    ".vert", ".frag", ".comp", ".glsl", ".sdf"};
-
-inline std::optional<ShaderType> extension_to_shader_type(std::string_view extension) {
-  for (size_t i = 0; i < kShaderTypeToExtensionMap.size(); ++i) {
-    if (kShaderTypeToExtensionMap[i] == extension) {
-      return static_cast<ShaderType>(i);
-    }
-  }
-  return std::nullopt;
-}
 
 class ShaderResourceManager;
 
@@ -62,11 +24,21 @@ class ShaderResource {
  public:
   ShaderResource() = delete;
 
-  const std::unordered_set<std::string>& get_ext_defi_names() const;
-  void set_ext_defi(std::string_view ext_defi_name, std::string&& defi_content);
+  const std::unordered_set<std::string>& get_external_definition_names() const;
 
   /**
-   * @brief Checks whether all external definitions has been resolved.
+   * @brief If shader resource contains a line #external_definition <ext_defi_name>, the following function will
+   * replace it with #define <ext_defi_name> <defi_content>.
+   *
+   * @param ext_defi_name
+   * @param defi_content
+   * @return true if the external definition has been injected successfully
+   * @return false if there is no external definition with the provided name
+   */
+  bool inject_external_definition(std::string_view ext_defi_name, std::string&& defi_content);
+
+  /**
+   * @brief Checks whether all external definitions has been injected.
    *
    * @return true
    * @return false
@@ -78,7 +50,7 @@ class ShaderResource {
    *
    * @return const std::string&
    */
-  const std::string& raw_glsl() const;
+  const std::string& raw_glsl() const { return raw_glsl_; }
 
   /**
    * @brief Returns intermediate GLSL shader string. External definitions are not injected. The compilation process
@@ -95,16 +67,34 @@ class ShaderResource {
    */
   std::optional<std::string_view> glsl() const;
 
-  ShaderType get_type() const { return type_; }
-  std::string_view get_extension() const { return kShaderTypeToExtensionMap[static_cast<uint8_t>(type_)]; }
+  std::string_view name() const { return name_; }
 
-  std::string_view get_name() const { return name_; }
+  /**
+   * @brief Returns shader type specific info about the shader.
+   *
+   * @return const ShaderType&
+   */
+  const ShaderType& type() const { return type_; }
+
+  template <CShaderType TType>
+  bool has_type() const {
+    return std::holds_alternative<TType>(type_);
+  }
+
+  std::string_view type_extension() const {
+    return std::visit([](const auto& t) { return t.extension(); }, type_);
+  }
+
+  std::string_view type_name() const {
+    return std::visit([](const auto& t) { return t.name(); }, type_);
+  }
 
  protected:
   friend ShaderResourceManager;
 
-  explicit ShaderResource(std::string&& raw_glsl, std::string&& intermediate_glsl, std::string&& name, ShaderType type,
-                          std::unordered_set<std::string>&& ext_defi_names, std::optional<std::string>&& version);
+  explicit ShaderResource(std::string&& raw_glsl, std::string&& intermediate_glsl, std::string&& name,
+                          ShaderType&& type, std::unordered_set<std::string>&& ext_defi_names,
+                          std::optional<std::string>&& version);
 
  private:
   std::unordered_set<std::string> ext_defi_names_;
@@ -154,7 +144,7 @@ class ShaderResourceManager {
    * @param path The direct path to the shader or current working directory. It's required when #include macro is used.
    * @return ShaderResource
    */
-  ShaderResource parse_res(std::string_view shader_content, ShaderType shader_type,
+  ShaderResource parse_res(std::string_view shader_content, ShaderType&& shader_type,
                            std::optional<std::filesystem::path> path = std::nullopt);
 
  private:
@@ -171,11 +161,13 @@ class ShaderResourceManager {
                               const WordsStringViewIterator& end, size_t curr_line,
                               std::unordered_set<std::string>& defi_names);
   std::optional<std::string> process_version_macro(const std::optional<std::filesystem::path>& sh_path,
-                                                   ShaderType sh_type, WordsStringViewIterator& it,
+                                                   const ShaderType& sh_type, WordsStringViewIterator& it,
                                                    const WordsStringViewIterator& end, size_t curr_line);
-  std::optional<std::string> process_name_macro(const std::optional<std::filesystem::path>& sh_path, ShaderType sh_type,
-                                                WordsStringViewIterator& it, const WordsStringViewIterator& end,
-                                                size_t curr_line);
+  std::optional<std::string> process_name_macro(const std::optional<std::filesystem::path>& sh_path,
+                                                const ShaderType& sh_type, WordsStringViewIterator& it,
+                                                const WordsStringViewIterator& end, size_t curr_line);
+
+  static void process_sdf_shader(ShaderType& sh_type, std::string& preprocessed_content, const std::string& name);
 
  private:
   std::vector<std::filesystem::path> visited_paths_;

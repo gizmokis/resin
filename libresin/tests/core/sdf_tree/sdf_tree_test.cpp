@@ -29,7 +29,7 @@ TEST_F(SDFTreeTest, SDFShaderIsCorrectlyGenerated) {
   tree.group(group2).push_back_child<resin::CubeNode>(resin::SDFBinaryOperation::Diff);
 
   // when
-  auto sh_code_single_prim_arr = tree.gen_shader_code(resin::GenShaderMode::SinglePrimitiveArray);
+  auto sh_code_single_prim_arr = tree.tree_glsl(resin::GenShaderMode::SinglePrimitiveArray);
 
   // then
   ASSERT_EQ(
@@ -65,7 +65,7 @@ TEST_F(SDFTreeTest, SDFShaderGenerationOmitsShallowNodes) {
   group4.push_front_child<resin::GroupNode>(resin::SDFBinaryOperation::Union);
 
   // when
-  auto sh_code_single_prim_arr = tree.gen_shader_code(resin::GenShaderMode::SinglePrimitiveArray);
+  auto sh_code_single_prim_arr = tree.tree_glsl(resin::GenShaderMode::SinglePrimitiveArray);
 
   // then
   ASSERT_EQ(

@@ -47,7 +47,8 @@ class PrimitiveNode final : public SDFTreeNode {
    * @param tree
    * @param desc
    */
-  PrimitiveNode(SDFTreeRegistry& tree, size_t primitive_type_id, std::string&& primitive_type_name, Params&& params);
+  PrimitiveNode(SDFTreeRegistry& tree, size_t primitive_type_id, std::string&& glsl_sdf_name,
+                std::string&& primitive_type_name, Params&& params);
 
   ~PrimitiveNode() override = default;
 
@@ -113,6 +114,7 @@ class PrimitiveNode final : public SDFTreeNode {
  private:
   size_t type_id_;
   std::string type_name_;
+  std::string glsl_sdf_name_;
   std::string glsl_args_;
   Params params_;
 

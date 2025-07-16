@@ -57,6 +57,8 @@
 #include <resin/resin.hpp>
 #include <string_view>
 
+#include "libresin/core/scene.hpp"
+
 namespace resin {
 
 Resin::Resin()
@@ -132,9 +134,11 @@ void Resin::load_shaders() {
   const auto sdf_path = assets_path / "sdf";
   for (auto const& dir_entry : std::filesystem::directory_iterator{sdf_path}) {
     try {
-      const auto& res = shader_resource_manager_.get_res(dir_entry.path());
-      default_primitive_type_manager.add_type_from_shader_res(res);
-      Logger::info("Loaded SDF with name {} from {}", res.get_name(), dir_entry.path().string());
+      auto id = default_primitive_type_manager.add_type_from_shader_res(
+          shader_resource_manager_.get_res_ptr(dir_entry.path()));
+
+      const auto& desc = default_primitive_type_manager.type_by_id(id);
+      Logger::info("Loaded SDF with name {} from {}", desc.name, dir_entry.path().string());
     } catch (const std::exception& e) {
       Logger::err("Failed to load sdf with path {}. Reason: ", dir_entry.path().string(), e.what());
     }
@@ -142,10 +146,12 @@ void Resin::load_shaders() {
 
   ShaderResource grid_frag_shader = shader_resource_manager_.get_res(assets_path / "grid.frag");
   ShaderResource main_frag_shader = shader_resource_manager_.get_res(assets_path / "main.frag");
-  main_frag_shader.set_ext_defi("SDF_CODE", scene_.tree().gen_shader_code());
-  main_frag_shader.set_ext_defi("SDFS_IMPLEMENTATION", default_primitive_type_manager.gen_sdfs_glsl_content());
-  main_frag_shader.set_ext_defi("MAX_UBO_NODE_COUNT", std::to_string(scene_.tree().max_node_count()));
-  main_frag_shader.set_ext_defi("MAX_UBO_MATERIAL_COUNT", std::to_string(scene_.tree().max_material_count()));
+  main_frag_shader.inject_external_definition("SDF_CODE", scene_.tree().tree_glsl());
+  main_frag_shader.inject_external_definition("SDFS_IMPLEMENTATION",
+                                              std::string(default_primitive_type_manager.sdfs_glsl()));
+  main_frag_shader.inject_external_definition("MAX_UBO_NODE_COUNT", std::to_string(scene_.tree().max_node_count()));
+  main_frag_shader.inject_external_definition("MAX_UBO_MATERIAL_COUNT",
+                                              std::to_string(scene_.tree().max_material_count()));
 
   grid_shader_ = std::make_unique<RenderingShaderProgram>(
       "grid", shader_resource_manager_.get_res(assets_path / "main.vert"), std::move(grid_frag_shader));
@@ -252,13 +258,23 @@ void Resin::update(duration_t delta) {
 
   directional_light_->transform.rotate(glm::angleAxis(std::chrono::duration<float>(delta).count(), glm::vec3(0, 1, 0)));
 
+  auto recompile_shader = false;
   if (scene_.tree().is_dirty()) {
-    shader_->fragment_shader().set_ext_defi("SDF_CODE", scene_.tree().gen_shader_code());
-    Logger::debug("{}", scene_.tree().gen_shader_code());
-    shader_->recompile();
-    setup_shader_uniforms();
+    shader_->fragment_shader().inject_external_definition("SDF_CODE", scene_.tree().tree_glsl());
     Logger::info("Refreshed the SDF Tree");
+    recompile_shader = true;
+  }
+  if (scene_.tree().are_types_dirty()) {
+    shader_->fragment_shader().inject_external_definition("SDFS_IMPLEMENTATION",
+                                                          std::string(scene_.tree().types_glsl()));
+    Logger::info("Refreshed the SDF Primitive Types");
+    recompile_shader = true;
+  }
+
+  if (recompile_shader) {
+    shader_->recompile();
     scene_.tree().mark_clean();
+    setup_shader_uniforms();
   }
 
   primitive_ubo_->bind();

@@ -3,40 +3,55 @@
 #include <filesystem>
 #include <fstream>
 #include <libresin/core/resources/shader_resource.hpp>
+#include <libresin/core/resources/shader_type.hpp>
 #include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/logger.hpp>
 #include <libresin/utils/string_views.hpp>
 #include <optional>
 #include <ranges>
+#include <regex>
 #include <string_view>
 #include <unordered_set>
+#include <variant>
 
 namespace resin {
 
 int ShaderResourceManager::shader_name_id_ = 1;
 
 ShaderResource::ShaderResource(std::string&& raw_glsl, std::string&& intermediate_glsl, std::string&& name,
-                               ShaderType type, std::unordered_set<std::string>&& ext_defi_names,
+                               ShaderType&& type, std::unordered_set<std::string>&& ext_defi_names,
                                std::optional<std::string>&& version)
     : ext_defi_names_(std::move(ext_defi_names)),
       version_(std::move(version)),
       name_(std::move(name)),
-      type_(type),
+      type_(std::move(type)),
       raw_glsl_(std::move(raw_glsl)),
       intermediate_glsl_(std::move(intermediate_glsl)),
       is_dirty_(true) {}
 
-const std::unordered_set<std::string>& ShaderResource::get_ext_defi_names() const { return ext_defi_names_; }
+const std::unordered_set<std::string>& ShaderResource::get_external_definition_names() const { return ext_defi_names_; }
 
-void ShaderResource::set_ext_defi(std::string_view ext_defi_name, std::string&& defi_content) {
+bool ShaderResource::inject_external_definition(std::string_view ext_defi_name, std::string&& defi_content) {
+  static const auto kSingleLineCommentRegExp = std::regex(std::string(shader_macros::kSingleLineCommentRegExpStr));
+
   auto it = std::ranges::find(ext_defi_names_, ext_defi_name);
   if (it == ext_defi_names_.end()) {
     resin::Logger::warn("Shader resource could not find external definition named \"{}\"", ext_defi_name);
-    return;
+    return false;
   }
+
+  // External definitions rely on #define macro, single-line comments are problematic
+  std::regex_replace(defi_content, kSingleLineCommentRegExp, " ");
+
+  // Older GLSL compilers may not support line continuation characters in #define macros, so for maximum compatibility
+  // they should be avoided
+  // (https://stackoverflow.com/questions/16426105/does-opengl-and-opengl-es-support-preprocessor-line-continuation-characters)
+  // For that reason the newline symbols are replaced with space characters
+  std::ranges::replace_if(defi_content, [](auto&& c) { return c == '\n' or c == '\r'; }, ' ');
 
   ext_defi_contents_[*it] = std::move(defi_content);
   is_dirty_               = true;
+  return true;
 }
 
 bool ShaderResource::is_glsl_ready() const { return ext_defi_contents_.size() == ext_defi_names_.size(); }
@@ -128,7 +143,7 @@ void ShaderResourceManager::process_include_macro(const std::filesystem::path& s
   }
 
   auto dep_ext = resin::extension_to_shader_type(rel_path.extension().string());
-  if (!dep_ext.has_value() || dep_ext.value() != ShaderType::Library) {
+  if (!dep_ext.has_value() || !std::holds_alternative<LibraryShaderType>(*dep_ext)) {
     clear_log_throw(ShaderInvalidMacroArgumentException(
         sh_path, "The include macro argument must be a library shader (.glsl extension).", curr_line));
   }
@@ -143,7 +158,7 @@ void ShaderResourceManager::process_include_macro(const std::filesystem::path& s
   visited_paths_.pop_back();
 
   content.append(res->intermediate_glsl());
-  defi_names.insert(res->get_ext_defi_names().begin(), res->get_ext_defi_names().end());
+  defi_names.insert(res->get_external_definition_names().begin(), res->get_external_definition_names().end());
 }
 
 void ShaderResourceManager::process_ext_defi_macro(const std::optional<std::filesystem::path>& sh_path,
@@ -184,9 +199,9 @@ const std::shared_ptr<const ShaderResource>& ShaderResourceManager::get_res_ptr(
 }
 
 std::optional<std::string> ShaderResourceManager::process_version_macro(
-    const std::optional<std::filesystem::path>& sh_path, ShaderType sh_type, WordsStringViewIterator& it,
+    const std::optional<std::filesystem::path>& sh_path, const ShaderType& sh_type, WordsStringViewIterator& it,
     const WordsStringViewIterator& end, size_t curr_line) {
-  if (sh_type == ShaderType::Library) {
+  if (std::holds_alternative<LibraryShaderType>(sh_type)) {
     resin::Logger::warn("Ignoring version macro in .glsl shader.");
     return std::nullopt;
   }
@@ -214,9 +229,9 @@ std::optional<std::string> ShaderResourceManager::process_version_macro(
 }
 
 std::optional<std::string> ShaderResourceManager::process_name_macro(
-    const std::optional<std::filesystem::path>& sh_path, ShaderType sh_type, WordsStringViewIterator& it,
+    const std::optional<std::filesystem::path>& sh_path, const ShaderType& sh_type, WordsStringViewIterator& it,
     const WordsStringViewIterator& end, size_t curr_line) {
-  if (sh_type != ShaderType::SDF) {
+  if (!std::holds_alternative<SDFShaderType>(sh_type)) {
     resin::Logger::warn("Ignoring name macro in non .sdf shader.");
     return std::nullopt;
   }
@@ -230,14 +245,89 @@ std::optional<std::string> ShaderResourceManager::process_name_macro(
   return std::format("{}", arg1);
 }
 
+void ShaderResourceManager::process_sdf_shader(ShaderType& sh_type, std::string& preprocessed_content,
+                                               const std::string& name) {
+  if (!std::holds_alternative<SDFShaderType>(sh_type)) {
+    return;
+  }
+
+  auto sh_content = preprocessed_content;
+
+  static auto sdf_signature_pattern = std::regex(
+      R"(float[\s\r\n]*sdf[\s\r\n]*\([\s\r\n]*vec3[\s\r\n]*\w+[\s\r\n]*(\)|(,[\s\r\n]*float[\s\r\n]*\w+[\s\r\n]*){1,3}\))+[\s\r\n]*)");
+  static auto sdf_signature_with_body_pattern = std::regex(
+      R"(float[\s\r\n]*sdf[\s\r\n]*\([\s\r\n]*vec3[\s\r\n]*\w+[\s\r\n]*(\)|(,[\s\r\n]*float[\s\r\n]*\w+[\s\r\n]*){1,3}\))+[\s\r\n]*\{([\s\r\n]|.)*\})");
+  static auto sdf_argument_pattern = std::regex(R"(,[\s\r\n]*float[\s\r\n]*(\w+))");
+  static auto sdf_name_pattern     = std::regex(R"(float[\s\r\n]*(sdf)[\s\r\n]*\()");
+  static auto single_line_comment  = std::regex(std::string(shader_macros::kSingleLineCommentRegExpStr));
+
+  // Single-line comments are problematic when injecting them as external definitions.
+  std::regex_replace(sh_content, single_line_comment, " ");
+
+  auto iter      = std::sregex_iterator(sh_content.begin(), sh_content.end(), sdf_signature_pattern);
+  const auto end = std::sregex_iterator();
+
+  if (iter == end) {
+    log_throw(SDFShaderInvalidFunctionSignature(std::string(name)));
+  }
+  auto sdf_signature_match = *iter;
+  if (++iter != end) {
+    log_throw(SDFShaderInvalidFunctionSignature(std::string(name)));
+  }
+
+  iter = std::sregex_iterator(sh_content.begin() + sdf_signature_match.position(), sh_content.end(),
+                              sdf_signature_with_body_pattern);
+  if (iter == end) {
+    log_throw(SDFShaderNoFunctionBodyFound(std::string(name)));
+  }
+
+  auto sdf_with_body = *iter;
+
+  iter = std::sregex_iterator(sh_content.begin() + sdf_signature_match.position(),
+                              sh_content.begin() + sdf_signature_match.position() + sdf_signature_match.length(),
+                              sdf_argument_pattern);
+
+  auto sdf_args_count = 0U;
+
+  StaticVector<std::string, sdf_shader_consts::kSDFMaxParamCount> sdf_args;
+  for (; iter != end; ++iter, ++sdf_args_count) {
+    sdf_args.emplace(iter->str(1));
+  }
+
+  iter = std::sregex_iterator(sh_content.begin() + sdf_signature_match.position(),
+                              sh_content.begin() + sdf_signature_match.position() + sdf_signature_match.length(),
+                              sdf_name_pattern);
+  if (iter == end) {
+    log_throw(SDFShaderNoFunctionBodyFound(std::string(name)));
+  }
+  auto sdf_name = *iter;
+
+  auto glsl_sdf_name = std::format("{}_Id{}_SDF", name, shader_name_id_++);
+
+  auto sdf_with_body_start = static_cast<size_t>(sdf_name.position() + sdf_name.length());
+  auto sdf_with_body_end   = static_cast<size_t>(sdf_name.position() + sdf_name.length() + sdf_with_body.length());
+  auto sdf_func =
+      std::format("float {}({}", glsl_sdf_name, sdf_with_body.str().substr(sdf_with_body_start, sdf_with_body_end));
+
+  auto r = std::ranges::remove_if(sdf_func, [](auto&& c) { return c == '\n' or c == '\r'; });
+  sdf_func.erase(r.begin(), r.end());
+
+  // Set the shader type properties
+  sh_type = SDFShaderType{
+      .glsl_sdf_name = std::move(glsl_sdf_name),
+      .args          = std::move(sdf_args)  //
+  };
+  preprocessed_content = sdf_func;
+}
+
 ShaderResource ShaderResourceManager::parse_res(const std::filesystem::path& path) {
   auto sh_type = get_sh_type(path);
   auto content = load_content(path);
 
-  return parse_res(content, sh_type, path);
+  return parse_res(content, std::move(sh_type), path);
 }
 
-ShaderResource ShaderResourceManager::parse_res(std::string_view shader_content, ShaderType shader_type,
+ShaderResource ShaderResourceManager::parse_res(std::string_view shader_content, ShaderType&& shader_type,
                                                 std::optional<std::filesystem::path> path) {
   auto lines = make_lines_view(shader_content) | std::views::enumerate;
 
@@ -268,10 +358,14 @@ ShaderResource ShaderResourceManager::parse_res(std::string_view shader_content,
       continue;
     }
 
+    if (!std::visit([macro](const auto& t) { return t.is_macro_supported(macro); }, shader_type)) {
+      clear_log_throw(UnsupportedShaderMacroException(shader_type, macro));
+    }
+
     ++it;
     if (macro == shader_macros::kIncludeMacro) {
       if (!path) {
-        log_throw(ShaderIncludeMacroWithNoDirectoryException());
+        clear_log_throw(ShaderIncludeMacroWithNoDirectoryException());
       }
 
       process_include_macro(*path, it, end, line, preprocessed_content, defi_names);
@@ -289,20 +383,25 @@ ShaderResource ShaderResourceManager::parse_res(std::string_view shader_content,
     }
   }
 
-  if (shader_type != ShaderType::Library && shader_type != ShaderType::SDF && !version.has_value()) {
+  if (!std::holds_alternative<LibraryShaderType>(shader_type) && !std::holds_alternative<SDFShaderType>(shader_type) &&
+      !version.has_value()) {
     clear_log_throw(ShaderAbsentVersionException(path));
   }
 
-  if (shader_type == ShaderType::SDF && name.empty()) {
+  if (std::holds_alternative<SDFShaderType>(shader_type) && name.empty()) {
     clear_log_throw(ShaderAbsentNameException(path));
+  }
+
+  if (std::holds_alternative<SDFShaderType>(shader_type)) {
+    process_sdf_shader(shader_type, preprocessed_content, name);
   }
 
   if (name.empty()) {
     name = std::format("UnnamedShader{}", shader_name_id_++);
   }
 
-  return ShaderResource(std::string(shader_content), std::move(preprocessed_content), std::move(name), shader_type,
-                        std::move(defi_names), std::move(version));
+  return ShaderResource(std::string(shader_content), std::move(preprocessed_content), std::move(name),
+                        std::move(shader_type), std::move(defi_names), std::move(version));
 }
 
 }  // namespace resin

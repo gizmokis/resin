@@ -10,6 +10,8 @@
 #include <optional>
 #include <utility>
 
+#include "libresin/core/sdf_tree/sdf_primitive_type_manager.hpp"
+
 namespace resin {
 size_t SDFTree::curr_id_ = 0;
 
@@ -97,10 +99,12 @@ void SDFTree::delete_node(IdView<SDFTreeNodeId> node_id) {
   sdf_tree_registry_.all_nodes[node_id.raw()]->get().parent().delete_child(node_id);
 }
 
-std::string SDFTree::gen_shader_code(GenShaderMode mode) const {
+std::string SDFTree::tree_glsl(GenShaderMode mode) const {
   std::string root_code = root_->gen_shader_code(mode);
   return root_code.empty() ? std::string(sdf_shader_consts::kCreateEmptyPrimitiveFuncCall) : root_code;
 }
+
+const std::string& SDFTree::types_glsl() { return primitive_type_manager_.sdfs_glsl(); }
 
 const MaterialSDFTreeComponent& SDFTree::material(IdView<MaterialId> mat_id) const {
   if (mat_id == sdf_tree_registry_.default_material.material_id()) {
@@ -161,7 +165,9 @@ void SDFTree::clear() {
   material_active_ids_.clear();
   std::ranges::fill(materials_.begin(), materials_.end(), std::nullopt);
   root_                   = create_detached_node<GroupNode>();
-  primitive_type_manager_ = default_type_manager_;
+  primitive_type_manager_ = SDFPrimitiveTypeManager();
 }
+
+void SDFTree::set_default_types() { primitive_type_manager_ = default_type_manager_; }
 
 }  // namespace resin

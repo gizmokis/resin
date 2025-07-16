@@ -1,6 +1,7 @@
 #ifndef RESIN_EXCEPTIONS_HPP
 #define RESIN_EXCEPTIONS_HPP
 #include <filesystem>
+#include <libresin/core/resources/shader_type.hpp>
 #include <libresin/utils/logger.hpp>
 #include <source_location>
 #include <stdexcept>
@@ -264,6 +265,15 @@ class ShaderIncludeMacroWithNoDirectoryException : public ResinException {
       : ResinException(R"(Encountered #include macro, but no shader path has been provided.)") {}
 };
 
+class UnsupportedShaderMacroException : public ResinException {
+ public:
+  EXCEPTION_NAME(UnsupportedShaderMacroException)
+
+  explicit UnsupportedShaderMacroException(const ShaderType& type, std::string_view macro)
+      : ResinException(std::format(R"(Shader of type '{}' does not support '{}' macro.)",
+                                   std::visit([](const auto& t) { return t.name(); }, type), macro)) {}
+};
+
 class SDFShaderNoFunctionBodyFound : public ResinException {
  public:
   EXCEPTION_NAME(SDFShaderNoFunctionBodyFound)
@@ -333,11 +343,11 @@ class ShaderCreationException : public ResinException {
   std::string reason_;
 };
 
-class UnsupportedShaderTypeProvided : public ResinException {
+class UnsupportedShaderTypeException : public ResinException {
  public:
-  EXCEPTION_NAME(UnsupportedShaderTypeProvided)
+  EXCEPTION_NAME(UnsupportedShaderTypeException)
 
-  explicit UnsupportedShaderTypeProvided(std::string&& reason)
+  explicit UnsupportedShaderTypeException(std::string&& reason)
       : ResinException(std::format(R"(Unsupported shader type provided "{}".)", reason)), reason_(std::move(reason)) {}
 
   const std::string& get_reason() const { return reason_; }
@@ -495,6 +505,18 @@ class JSONLightDeserializationException : public JSONDeserializationException {
 
   explicit JSONLightDeserializationException()
       : JSONDeserializationException("Expected a valid material definition.") {}
+};
+
+class JSONPrimitiveTypesDeserializationException : public JSONDeserializationException {
+ public:
+  explicit JSONPrimitiveTypesDeserializationException(std::string&& reason)
+      : JSONDeserializationException(std::format(R"(Expected valid primitive type: {})", reason)),
+        reason_(std::move(reason)) {}
+
+  const std::string& get_reason() const { return reason_; }
+
+ private:
+  std::string reason_;
 };
 
 class InvalidJSONException : public ResinException {
