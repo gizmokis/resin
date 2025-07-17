@@ -13,6 +13,7 @@
 #include <libresin/utils/logger.hpp>
 #include <memory>
 #include <nlohmann/json.hpp>
+#include <optional>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -110,7 +111,11 @@ void JSONSerializerSDFTreeNodeVisitor::visit_primitive(PrimitiveNode& node) {
     params.push_back(param.value);
   }
   json_["primitive"]["params"] = params;
-  json_["primitive"]["typeId"] = node.type_id();
+  if (auto res = node.type_id()) {
+    json_["primitive"]["typeId"] = *res;
+  } else {
+    json_["primitive"]["typeId"];
+  }
 }
 
 void serialize_sdf_tree(json& target_json, SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id,
@@ -341,10 +346,11 @@ void JSONDeserializerSDFTreeNodeVisitor::visit_group(GroupNode& node) {
   try {
     for (const auto& child_json : node_json_.at("group").at("children")) {
       if (property_exists(child_json, "primitive")) {
-        uint32_t id                = child_json.at("primitive").at("typeId");
-        const auto& primitive_type = tree_.primitive_type_manager().type_by_id(primitive_types_ids_map_.at(id));
-
-        auto& child_prim = node.push_back_child<PrimitiveNode>(SDFBinaryOperation::Union, primitive_type);
+        std::optional<uint32_t> id = child_json.at("primitive").at("typeId").is_null()
+                                         ? std::nullopt
+                                         : std::optional<uint32_t>(child_json.at("primitive").at("typeId"));
+        auto& child_prim =
+            node.push_back_child<PrimitiveNode>(SDFBinaryOperation::Union, primitive_types_ids_map_.at(*id));
 
         deserialize_node_common(child_prim, child_json, material_ids_map_);
         auto visitor =

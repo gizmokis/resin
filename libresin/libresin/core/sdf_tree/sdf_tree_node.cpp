@@ -13,6 +13,17 @@ SDFTreeNode::SDFTreeNode(SDFTreeRegistry& tree, std::string_view name)
   tree_registry_.all_nodes[node_id_.raw()] = *this;
 }
 
+SDFTreeNode::SDFTreeNode(SDFTreeRegistry& tree)
+    : node_id_(tree.nodes_registry),
+      transform_id_(tree.transform_component_registry),
+      bin_op_(SDFBinaryOperation::Union),
+      factor_(0.5F),
+      tree_registry_(tree) {
+  tree_registry_.all_nodes[node_id_.raw()] = *this;
+}
+
+void SDFTreeNode::init_name(std::string_view name) { name_ = std::format("{} {}", name, tree_registry_.node_index++); }
+
 SDFTreeNode::~SDFTreeNode() {
   tree_registry_.all_nodes[node_id_.raw()] = std::nullopt;
   Logger::debug("Destructed node with id={}.", node_id_.raw());

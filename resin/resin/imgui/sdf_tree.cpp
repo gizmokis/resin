@@ -282,7 +282,9 @@ void SDFTreeComponentVisitor::visit_primitive(::resin::PrimitiveNode& node) {
 
   // TODO(SDF-100): Use primitive icons
   ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.F, 2.F));
-  ImGui::TreeNodeEx(node.name().data(), flags);
+  auto node_type        = node.type();
+  std::string_view type = node_type ? std::string_view(node_type->name) : "Empty";
+  ImGui::TreeNodeEx(node.name().data(), flags, "%s [%s]", node.name().data(), type.data());
   ImGui::PopStyleVar();
 
   if (ImGui::IsItemClicked()) {
@@ -565,13 +567,13 @@ void SDFTreeView(::resin::SDFTree& tree, std::optional<::resin::IdView<::resin::
         if (selected.has_value()) {
           if (tree.is_group(*selected)) {
             tree.group(*selected).push_back_child<::resin::PrimitiveNode>(::resin::SDFBinaryOperation::SmoothUnion,
-                                                                          type);
+                                                                          type.id);
           } else {
             tree.node(*selected).parent().push_back_child<::resin::PrimitiveNode>(
-                ::resin::SDFBinaryOperation::SmoothUnion, type);
+                ::resin::SDFBinaryOperation::SmoothUnion, type.id);
           }
         } else {
-          tree.root().push_back_child<::resin::PrimitiveNode>(::resin::SDFBinaryOperation::SmoothUnion, type);
+          tree.root().push_back_child<::resin::PrimitiveNode>(::resin::SDFBinaryOperation::SmoothUnion, type.id);
         }
       }
     }

@@ -240,7 +240,10 @@
       ],
       "properties": {
         "typeId": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "params": {
           "type": "array",

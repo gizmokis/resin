@@ -23,7 +23,7 @@ namespace resin {
 
 void SDFNodeEditVisitor::visit_primitive(::resin::PrimitiveNode& node) {
   for (auto& p : node.params()) {
-    NODE_DIRTY(ImGui::DragFloat(p.name.c_str(), &p.value, 0.01F, 0.0F, 2.0F, "%.2f"));
+    NODE_DIRTY(ImGui::DragFloat(p.name.data(), &p.value, 0.01F, 0.0F, 2.0F, "%.2f"));
   }
 }
 

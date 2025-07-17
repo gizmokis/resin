@@ -8,7 +8,6 @@
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/core/transform.hpp>
 #include <optional>
-#include <print>
 #include <tests/glm_helper.hpp>
 
 class SDFTreeTest : public testing::Test {};

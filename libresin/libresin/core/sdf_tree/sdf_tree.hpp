@@ -4,7 +4,6 @@
 #include <functional>
 #include <libresin/core/id_registry.hpp>
 #include <libresin/core/material.hpp>
-#include <libresin/core/sdf_tree/sdf_primitive_type_manager.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node_visitor.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_registry.hpp>
@@ -84,7 +83,7 @@ class SDFTree {
    * @return true
    * @return false
    */
-  bool are_types_dirty() const { return primitive_type_manager_.is_dirty(); }
+  bool are_types_dirty() const { return sdf_tree_registry_.primitive_type_manager_.is_dirty(); }
 
   void mark_clean() { sdf_tree_registry_.is_tree_dirty = false; }
 
@@ -128,8 +127,8 @@ class SDFTree {
   void set_default_primitive_type_manager(SDFPrimitiveTypeManager&& default_manager) {
     default_type_manager_ = std::move(default_manager);
   }
-  const SDFPrimitiveTypeManager& primitive_type_manager() const { return primitive_type_manager_; }
-  SDFPrimitiveTypeManager& primitive_type_manager() { return primitive_type_manager_; }
+  const SDFPrimitiveTypeManager& primitive_type_manager() const { return sdf_tree_registry_.primitive_type_manager_; }
+  SDFPrimitiveTypeManager& primitive_type_manager() { return sdf_tree_registry_.primitive_type_manager_; }
 
   void clear();
   void set_default_types();
@@ -137,7 +136,6 @@ class SDFTree {
  private:
   static size_t curr_id_;
 
-  SDFPrimitiveTypeManager primitive_type_manager_;
   SDFPrimitiveTypeManager default_type_manager_;
 
   SDFTreeRegistry sdf_tree_registry_;

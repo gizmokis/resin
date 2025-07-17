@@ -32,6 +32,7 @@ class SDFTreeNode {
 
   // It is the programmer's responsibility to assert that SDFTreeNode class will not outlive the provided registry!
   explicit SDFTreeNode(SDFTreeRegistry& tree, std::string_view name);
+  explicit SDFTreeNode(SDFTreeRegistry& tree);
 
   SDFTreeNode(const SDFTreeNode&)            = delete;
   SDFTreeNode(SDFTreeNode&&)                 = delete;
@@ -87,6 +88,8 @@ class SDFTreeNode {
 
   void set_parent(GroupNode& parent) { parent_ = parent; }
   void remove_parent() { parent_.reset(); }
+
+  void init_name(std::string_view name);
 
   virtual void insert_leaves_to(
       std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& leaves) = 0;

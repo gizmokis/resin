@@ -343,6 +343,19 @@ class ShaderCreationException : public ResinException {
   std::string reason_;
 };
 
+class InvalidTypeDescriptionException : public ResinException {
+ public:
+  EXCEPTION_NAME(InvalidTypeDescriptionException)
+
+  explicit InvalidTypeDescriptionException(std::string&& reason)
+      : ResinException(std::format(R"(Invalid type description "{}".)", reason)), reason_(std::move(reason)) {}
+
+  const std::string& get_reason() const { return reason_; }
+
+ private:
+  std::string reason_;
+};
+
 class UnsupportedShaderTypeException : public ResinException {
  public:
   EXCEPTION_NAME(UnsupportedShaderTypeException)

@@ -4,6 +4,7 @@
 #include <libresin/core/id_registry.hpp>
 #include <libresin/core/material.hpp>
 #include <libresin/core/sdf_shader_consts.hpp>
+#include <libresin/core/sdf_tree/sdf_primitive_type_manager.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/core/transform.hpp>
 #include <optional>
@@ -41,6 +42,10 @@ struct SDFTreeRegistry {
 
   // Required for shader generation
   MaterialSDFTreeComponent default_material;
+
+  // Note: if the type manager gets cleared, all of the tree nodes become invalid as they point to
+  // non-existing types.
+  SDFPrimitiveTypeManager primitive_type_manager_{};
 
   size_t node_index{};
   size_t material_index{};

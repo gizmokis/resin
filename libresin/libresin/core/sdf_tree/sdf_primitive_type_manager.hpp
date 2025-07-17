@@ -56,6 +56,8 @@ class SDFPrimitiveTypeManager {
     return descs_[id];
   }
 
+  bool is_id_valid(uint32_t id) { return id < descs_.size(); }
+
   bool is_dirty() const { return is_shader_dirty_; }
   void mark_dirty() { is_shader_dirty_ = true; }
 
