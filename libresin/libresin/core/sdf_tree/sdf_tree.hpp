@@ -46,6 +46,10 @@ class SDFTree {
   GroupNode& group(IdView<SDFTreeNodeId> node_id);
   const GroupNode& group(IdView<SDFTreeNodeId> node_id) const;
 
+  // Cost O(1)
+  PrimitiveNode& primitive(IdView<SDFTreeNodeId> node_id);
+  const PrimitiveNode& primitive(IdView<SDFTreeNodeId> node_id) const;
+
   /**
    * @brief Deletes node.
    *

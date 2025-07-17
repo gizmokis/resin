@@ -43,7 +43,7 @@ class PrimitiveNode final : public SDFTreeNode {
   explicit PrimitiveNode(SDFTreeRegistry& tree, std::optional<uint32_t> primitive_type_id = std::nullopt);
 
   explicit PrimitiveNode(SDFTreeRegistry& tree);
-  ~PrimitiveNode() override = default;
+  ~PrimitiveNode() override;
 
   std::optional<uint32_t> type_id() const;
   void set_type_id(std::optional<uint32_t> new_type_id);

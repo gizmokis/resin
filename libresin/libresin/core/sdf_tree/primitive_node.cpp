@@ -19,7 +19,10 @@ PrimitiveNode::PrimitiveNode(SDFTreeRegistry& tree, std::optional<uint32_t> prim
   mark_primitives_dirty();
   mark_dirty();
   update_glsl_args(params_.size(), prim_id_.raw());
+  tree_registry_.all_primitive_nodes[node_id_.raw()] = *this;
 }
+
+PrimitiveNode::~PrimitiveNode() { tree_registry_.all_primitive_nodes[node_id_.raw()] = std::nullopt; }
 
 void PrimitiveNode::update_id() const {
   if (type_id_ && !tree_registry_.primitive_type_manager_.is_id_valid(*type_id_)) {

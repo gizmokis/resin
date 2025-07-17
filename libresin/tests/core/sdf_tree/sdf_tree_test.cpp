@@ -180,11 +180,11 @@ TEST_F(SDFTreeTest, LeavesAreCorrectlyUpdated) {
   //     4
   //   2   2
   //  * * * *
-  ASSERT_EQ(tree.root().primitives().size(), 4);
-  ASSERT_TRUE(tree.root().primitives().contains(g1p1));
-  ASSERT_TRUE(tree.root().primitives().contains(g1p2));
-  ASSERT_TRUE(tree.root().primitives().contains(g2p1));
-  ASSERT_TRUE(tree.root().primitives().contains(g2p2));
+  ASSERT_EQ(tree.root().primitive_ids().size(), 4);
+  ASSERT_TRUE(tree.root().primitive_ids().contains(g1p1));
+  ASSERT_TRUE(tree.root().primitive_ids().contains(g1p2));
+  ASSERT_TRUE(tree.root().primitive_ids().contains(g2p1));
+  ASSERT_TRUE(tree.root().primitive_ids().contains(g2p2));
 
   ASSERT_EQ(group1.primitives().size(), 2);
   ASSERT_TRUE(group1.primitives().contains(g1p1));
@@ -204,12 +204,12 @@ TEST_F(SDFTreeTest, LeavesAreCorrectlyUpdated) {
   //        5
   //   *    3    *
   //      * * *
-  ASSERT_EQ(tree.root().primitives().size(), 5);
-  ASSERT_TRUE(tree.root().primitives().contains(rp1));
-  ASSERT_TRUE(tree.root().primitives().contains(rp2));
-  ASSERT_TRUE(tree.root().primitives().contains(g1p1));
-  ASSERT_TRUE(tree.root().primitives().contains(g1p2));
-  ASSERT_TRUE(tree.root().primitives().contains(g1p3));
+  ASSERT_EQ(tree.root().primitive_ids().size(), 5);
+  ASSERT_TRUE(tree.root().primitive_ids().contains(rp1));
+  ASSERT_TRUE(tree.root().primitive_ids().contains(rp2));
+  ASSERT_TRUE(tree.root().primitive_ids().contains(g1p1));
+  ASSERT_TRUE(tree.root().primitive_ids().contains(g1p2));
+  ASSERT_TRUE(tree.root().primitive_ids().contains(g1p3));
 
   ASSERT_EQ(group1.primitives().size(), 3);
   ASSERT_TRUE(group1.primitives().contains(g1p1));
@@ -232,10 +232,10 @@ TEST_F(SDFTreeTest, LeavesAreCorrectlyUpdated) {
   //         4  *   *  *
   //        3 *
   //      * * *
-  ASSERT_EQ(tree.root().primitives().size(), 10);
+  ASSERT_EQ(tree.root().primitive_ids().size(), 10);
   ASSERT_EQ(group1.primitives().size(), 7);
-  ASSERT_EQ(tree.group(group3).primitives().size(), 4);
-  ASSERT_EQ(tree.group(group4).primitives().size(), 3);
+  ASSERT_EQ(tree.group(group3).primitive_ids().size(), 4);
+  ASSERT_EQ(tree.group(group4).primitive_ids().size(), 3);
 }
 
 TEST_F(SDFTreeTest, DirtyPrimitivesAreCorrectlyAdded) {

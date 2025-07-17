@@ -25,13 +25,14 @@ struct SDFPrimitiveTypeDescription {
 class SDFPrimitiveTypeManager {
  public:
   /**
-   * @brief Parses the shader resource of type SDF (.sdf) and adds new primitive type based on that resource.
+   * @brief Adds a new primitive type based on the provided SDF (.sdf) shader resource. If there is a type with the same
+   * code (without spaces, newlines and carriage returns), the the new type is created.
    *
    * @throws UnsupportedShaderTypeException Thrown when the shader is not of SDF type.
    *
    * @param sh_res
    */
-  uint32_t add_type_from_shader_res(std::shared_ptr<const ShaderResource> sh_res);
+  uint32_t add_type_from_shader_res(std::shared_ptr<const ShaderResource> sdf_shader_resource);
 
   /**
    * @brief Concatenates the SDFs shader contents of the primitive types in the manager and returns it. Useful
@@ -56,7 +57,7 @@ class SDFPrimitiveTypeManager {
     return descs_[id];
   }
 
-  bool is_id_valid(uint32_t id) { return id < descs_.size(); }
+  bool is_id_valid(uint32_t id) const { return id < descs_.size(); }
 
   bool is_dirty() const { return is_shader_dirty_; }
   void mark_dirty() { is_shader_dirty_ = true; }
@@ -72,6 +73,7 @@ class SDFPrimitiveTypeManager {
  private:
   std::vector<SDFPrimitiveTypeDescription> descs_;
   bool is_shader_dirty_ = true;
+  uint32_t unique_id_   = 0;
   std::string sdfs_glsl_;
 };
 

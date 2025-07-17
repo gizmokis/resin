@@ -174,7 +174,7 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
           },
           std::span<const ::resin::FileDialog::FilterItem>(kPrefabFiltersArray), std::string(name) += ".amber");
     }
-    if (node.primitives().size() > 0) {
+    if (node.primitive_ids().size() > 0) {
       if (ImGui::BeginMenu("Export mesh as...")) {
         static int resolution_index      = 2;  // default to 32
         const unsigned int resolutions[] = {8, 16, 32, 64, 128, 256};

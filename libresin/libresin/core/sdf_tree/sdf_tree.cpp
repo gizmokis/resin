@@ -57,6 +57,14 @@ GroupNode& SDFTree::group(IdView<SDFTreeNodeId> node_id) {
   return const_cast<GroupNode&>(std::as_const(*this).group(node_id));  // NOLINT
 }
 
+PrimitiveNode& SDFTree::primitive(IdView<SDFTreeNodeId> node_id) {
+  return sdf_tree_registry_.all_primitive_nodes[node_id.raw()].value();
+}
+
+const PrimitiveNode& SDFTree::primitive(IdView<SDFTreeNodeId> node_id) const {
+  return const_cast<PrimitiveNode&>(std::as_const(*this).primitive(node_id));  // NOLINT
+}
+
 void SDFTree::visit_dirty_primitives(ISDFTreeNodeVisitor& visitor) {
   for (auto prim : sdf_tree_registry_.dirty_primitives) {
     if (sdf_tree_registry_.all_nodes[prim.raw()].has_value()) {
@@ -82,7 +90,7 @@ void SDFTree::visit_all_nodes(ISDFTreeNodeVisitor& visitor) {
 }
 
 void SDFTree::visit_all_primitives(ISDFTreeNodeVisitor& visitor) {
-  for (auto prim : root_->primitives()) {
+  for (auto prim : root_->primitive_ids()) {
     sdf_tree_registry_.all_nodes[prim.raw()]->get().accept_visitor(visitor);
   }
 }

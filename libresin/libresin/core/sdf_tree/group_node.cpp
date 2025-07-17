@@ -20,7 +20,7 @@ GroupNode::~GroupNode() { tree_registry_.all_group_nodes[node_id_.raw()] = std::
 
 bool GroupNode::is_node_shallow(IdView<SDFTreeNodeId> id) const {
   return tree_registry_.all_group_nodes[id.raw()].has_value() &&
-         tree_registry_.all_group_nodes[id.raw()].value().get().primitives().size() == 0;
+         tree_registry_.all_group_nodes[id.raw()].value().get().primitive_ids().size() == 0;
 }
 
 std::string GroupNode::gen_shader_code(GenShaderMode mode) const {

@@ -18,12 +18,13 @@ struct SDFTreeRegistry {
   // TODO(SDF-98): allow specifying the sizes
   SDFTreeRegistry()
       : transform_component_registry(IdRegistry<Transform>(100)),
-        primitives_registry(IdRegistry<PrimitiveNode>(1000)),
+        primitives_registry(IdRegistry<PrimitiveNode>(100)),
         nodes_registry(IdRegistry<SDFTreeNode>(100)),
         materials_registry(IdRegistry<Material>(100)),
         default_material(*this) {
     all_nodes.resize(nodes_registry.get_max_objs());
     all_group_nodes.resize(nodes_registry.get_max_objs());
+    all_primitive_nodes.resize(nodes_registry.get_max_objs());
   }
 
   IdRegistry<Transform> transform_component_registry;
@@ -33,6 +34,7 @@ struct SDFTreeRegistry {
   IdRegistry<SDFTreeNode> nodes_registry;
   std::vector<std::optional<std::reference_wrapper<SDFTreeNode>>> all_nodes;
   std::vector<std::optional<std::reference_wrapper<GroupNode>>> all_group_nodes;
+  std::vector<std::optional<std::reference_wrapper<PrimitiveNode>>> all_primitive_nodes;
 
   NodesSet dirty_primitives;
   NodesSet dirty_node_attributes;
@@ -43,7 +45,7 @@ struct SDFTreeRegistry {
   // Required for shader generation
   MaterialSDFTreeComponent default_material;
 
-  // Note: if the type manager gets cleared, all of the tree nodes become invalid as they point to
+  // Note: If the type manager gets cleared, all of the tree nodes falls into empty state as they point to
   // non-existing types.
   SDFPrimitiveTypeManager primitive_type_manager_{};
 

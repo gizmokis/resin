@@ -106,8 +106,19 @@ class GroupNode final : public SDFTreeNode {
            tree_registry_.all_nodes[node_id.raw()]->get().parent().node_id() == this->node_id();
   }
 
-  const std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& primitives() {
+  const std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& primitive_ids() {
     return leaves_;
+  }
+
+  auto primitives() {
+    return leaves_ | std::views::transform([this](const auto& id) -> PrimitiveNode& {
+             return this->tree_registry_.all_primitive_nodes[id.raw()].value().get();
+           });
+  }
+  auto primitives() const {
+    return leaves_ | std::views::transform([this](const auto& id) -> const PrimitiveNode& {
+             return this->tree_registry_.all_primitive_nodes[id.raw()].value().get();
+           });
   }
 
   auto begin() { return nodes_order_.begin(); }

@@ -4,28 +4,46 @@
 #include <libresin/core/sdf_tree/sdf_primitive_type_manager.hpp>
 #include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/logger.hpp>
+#include <ranges>
 
 namespace resin {
 
-uint32_t SDFPrimitiveTypeManager::add_type_from_shader_res(std::shared_ptr<const ShaderResource> sh_res) {
-  if (!sh_res->has_type<SDFShaderType>()) {
-    log_throw(UnsupportedShaderTypeException(std::format(
-        "Expected SDF Shader, but received shader with name {} of type {}.", sh_res->name(), sh_res->type_name())));
+uint32_t SDFPrimitiveTypeManager::add_type_from_shader_res(std::shared_ptr<const ShaderResource> sdf_shader_resource) {
+  if (!sdf_shader_resource->has_type<SDFShaderType>()) {
+    log_throw(
+        UnsupportedShaderTypeException(std::format("Expected SDF Shader, but received shader with name {} of type {}.",
+                                                   sdf_shader_resource->name(), sdf_shader_resource->type_name())));
   }
 
-  const auto& sh_sdf_type = std::get<SDFShaderType>(sh_res->type());
+  std::string name = std::string(sdf_shader_resource->name());
+  for (auto& d : descs_) {
+    if (d.name == sdf_shader_resource->name()) {
+      auto blank_filter = std::views::filter([](auto&& c) { return c != '\n' && c != '\r' && c != ' '; });
+      if (std::ranges::equal(d.shader_res->raw_glsl() | blank_filter,  //
+                             sdf_shader_resource->raw_glsl() | blank_filter)) {
+        // the type already exists
+        return d.id;
+      }
+
+      // the type has the name but different glsl code
+      name += std::format("#{}", unique_id_++);
+    }
+  }
+
+  const auto& sh_sdf_type = std::get<SDFShaderType>(sdf_shader_resource->type());
 
   auto id   = static_cast<uint32_t>(descs_.size());
   auto desc = SDFPrimitiveTypeDescription{
       .id         = id,
-      .name       = std::string(sh_res->name()),
+      .name       = std::move(name),
       .params     = sh_sdf_type.args,
-      .shader_res = std::move(sh_res)  //
+      .shader_res = std::move(sdf_shader_resource)  //
   };
 
   descs_.push_back(desc);
-
   is_shader_dirty_ = true;
+
+  Logger::info("Primitive type with name {} created", desc.name);
 
   return id;
 }

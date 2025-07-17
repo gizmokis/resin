@@ -1,5 +1,6 @@
 #ifndef RESIN_JSON_HPP
 #define RESIN_JSON_HPP
+#include <cstdint>
 #include <libresin/core/id_registry.hpp>
 #include <libresin/core/light.hpp>
 #include <libresin/core/scene.hpp>
@@ -74,13 +75,15 @@ void serialize_node_factor(json& target_json, const SDFTreeNode& node);
 void serialize_node_common(json& target_json, const SDFTreeNode& node);
 
 void serialize_sdf_tree(json& target_json, SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id,
-                        bool ignore_unused_materials = true);
-void serialize_sdf_tree(json& target_json, SDFTree& tree, bool ignore_unused_materials = true);
+                        bool ignore_unused_primitive_types, bool ignore_unused_materials);
+void serialize_sdf_tree(json& target_json, SDFTree& tree, bool ignore_unused_primitive_types,
+                        bool ignore_unused_materials);
 
 void serialize_light_common(json& target_json, const BaseLightSceneComponent& light);
 void serialize_attenuation(json& target_json, const PointLight::Attenuation& attenuation);
 
-void serialize_primitive_types(json& target_json, const SDFPrimitiveTypeManager& manager);
+void serialize_primitive_types(json& target_json, const SDFPrimitiveTypeManager& manager,
+                               std::optional<std::span<uint32_t>> filter = std::nullopt);
 
 [[nodiscard]] std::string serialize_prefab(SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id);
 [[nodiscard]] std::string serialize_scene(Scene& scene);

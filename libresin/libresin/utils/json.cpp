@@ -119,7 +119,7 @@ void JSONSerializerSDFTreeNodeVisitor::visit_primitive(PrimitiveNode& node) {
 }
 
 void serialize_sdf_tree(json& target_json, SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id,
-                        bool ignore_unused_materials) {
+                        bool ignore_unused_primitive_types, bool ignore_unused_materials) {
   auto materials = json::array();
   if (ignore_unused_materials) {
     Logger::info("Ignoring unused materials");
@@ -144,11 +144,25 @@ void serialize_sdf_tree(json& target_json, SDFTree& tree, IdView<SDFTreeNodeId> 
   serialize_node_common(target_json["tree"]["rootGroup"], root_group);
   auto visitor = JSONSerializerSDFTreeNodeVisitor(target_json["tree"]["rootGroup"]);
   root_group.accept_visitor(visitor);
-  serialize_primitive_types(target_json["tree"], tree.primitive_type_manager());
+
+  if (!ignore_unused_primitive_types) {
+    serialize_primitive_types(target_json["tree"], tree.primitive_type_manager());
+  } else {
+    auto& root    = tree.group(subtree_root_id);
+    auto type_ids = std::vector<uint32_t>();
+    for (const auto& prim : root.primitives()) {
+      auto type_id = prim.type_id();
+      if (type_id && std::ranges::find(type_ids, *type_id) == type_ids.end()) {
+        type_ids.push_back(*type_id);
+      }
+    }
+    serialize_primitive_types(target_json["tree"], tree.primitive_type_manager(), std::span{type_ids});
+  }
 }
 
-void serialize_sdf_tree(json& target_json, SDFTree& tree, bool ignore_unused_materials) {
-  serialize_sdf_tree(target_json, tree, tree.root().node_id(), ignore_unused_materials);
+void serialize_sdf_tree(json& target_json, SDFTree& tree, bool ignore_unused_primitive_types,
+                        bool ignore_unused_materials) {
+  serialize_sdf_tree(target_json, tree, tree.root().node_id(), ignore_unused_primitive_types, ignore_unused_materials);
 }
 
 std::string serialize_prefab(SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id) {
@@ -156,7 +170,7 @@ std::string serialize_prefab(SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_i
   try {
     json prefab_json;
     prefab_json["version"] = kNewestResinPrefabJSONSchemaVersion;
-    serialize_sdf_tree(prefab_json, tree, subtree_root_id, true);
+    serialize_sdf_tree(prefab_json, tree, subtree_root_id, true, true);
 
     Logger::info("JSON prefab serialization succeeded");
     return prefab_json.dump(2);
@@ -181,14 +195,28 @@ void serialize_light_common(json& target_json, const BaseLightSceneComponent& li
   target_json["name"]       = light.name();
 }
 
-void serialize_primitive_types(json& target_json, const SDFPrimitiveTypeManager& manager) {
+void serialize_primitive_types(json& target_json, const SDFPrimitiveTypeManager& manager,
+                               std::optional<std::span<uint32_t>> filter) {
   target_json["primitiveTypes"] = json::array();
 
-  for (const auto& prim : manager) {
-    json primitive_json;
-    primitive_json["typeId"]         = prim.id;
-    primitive_json["sdfCodeContent"] = prim.shader_res->raw_glsl();
-    target_json["primitiveTypes"].push_back(primitive_json);
+  if (filter) {
+    for (auto id : *filter) {
+      if (!manager.is_id_valid(id)) {
+        continue;
+      }
+
+      json primitive_json;
+      primitive_json["typeId"]         = id;
+      primitive_json["sdfCodeContent"] = manager.type_by_id(id).shader_res->raw_glsl();
+      target_json["primitiveTypes"].push_back(primitive_json);
+    }
+  } else {
+    for (const auto& prim : manager) {
+      json primitive_json;
+      primitive_json["typeId"]         = prim.id;
+      primitive_json["sdfCodeContent"] = prim.shader_res->raw_glsl();
+      target_json["primitiveTypes"].push_back(primitive_json);
+    }
   }
 }
 
@@ -211,7 +239,7 @@ std::string serialize_scene(Scene& scene) {
   try {
     json scene_json;
     scene_json["version"] = kNewestResinPrefabJSONSchemaVersion;
-    serialize_sdf_tree(scene_json, scene.tree(), scene.tree().root().node_id(), false);
+    serialize_sdf_tree(scene_json, scene.tree(), scene.tree().root().node_id(), true, false);
 
     json lights_json = json::array();
     for (const auto& light : scene.lights()) {
@@ -453,7 +481,6 @@ std::unique_ptr<GroupNode> deserialize_sdf_tree(SDFTree& tree, const json& tree_
 
   Logger::info("Materials deserialization succeeded");
 
-  tree.primitive_type_manager().clear();
   auto primitive_types_ids_map =
       deserialize_primitive_types(tree.primitive_type_manager(), tree_json.at("primitiveTypes"));
 
