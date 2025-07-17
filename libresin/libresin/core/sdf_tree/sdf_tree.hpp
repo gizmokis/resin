@@ -43,6 +43,11 @@ class SDFTree {
   }
 
   // Cost O(1)
+  bool is_primitive(IdView<SDFTreeNodeId> node_id) const {
+    return sdf_tree_registry_.all_primitive_nodes[node_id.raw()].has_value();
+  }
+
+  // Cost O(1)
   GroupNode& group(IdView<SDFTreeNodeId> node_id);
   const GroupNode& group(IdView<SDFTreeNodeId> node_id) const;
 

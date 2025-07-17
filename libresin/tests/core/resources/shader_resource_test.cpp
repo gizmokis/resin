@@ -29,13 +29,13 @@ TEST_F(ShaderResourceTest, ShaderWithDepsIsCorrectlyGenerated) {
   auto res = sh_resman.get_res_ptr(resources_path_ / "regular_load" / "main.frag");
 
   resin::ShaderResource cpy(*res);
-  cpy.inject_external_defi("EXTERNAL_MAIN", "int func() { return 5; }");
-  cpy.inject_external_defi("EXTERNAL_A", "100");
-  cpy.inject_external_defi("EXTERNAL_B", "50");
+  cpy.inject_external_definition("EXTERNAL_MAIN", "int func() { return 5; }");
+  cpy.inject_external_definition("EXTERNAL_A", "100");
+  cpy.inject_external_definition("EXTERNAL_B", "50");
 
-  EXPECT_FILE_CONTENT_EQ(resources_path_ / "regular_load" / "expected_raw.frag", cpy.get_raw());
+  EXPECT_FILE_CONTENT_EQ(resources_path_ / "regular_load" / "expected_raw.frag", cpy.intermediate_glsl());
 
-  std::string_view glsl = cpy.glsl();
+  std::string_view glsl = *cpy.glsl();
   EXPECT_FALSE(glsl.find("#define EXTERNAL_MAIN int func() { return 5; }") == std::string_view::npos);
   EXPECT_FALSE(glsl.find("#define EXTERNAL_A 100") == std::string_view::npos);
   EXPECT_FALSE(glsl.find("#define EXTERNAL_B 50") == std::string_view::npos);

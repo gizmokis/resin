@@ -57,11 +57,15 @@ GroupNode& SDFTree::group(IdView<SDFTreeNodeId> node_id) {
   return const_cast<GroupNode&>(std::as_const(*this).group(node_id));  // NOLINT
 }
 
-PrimitiveNode& SDFTree::primitive(IdView<SDFTreeNodeId> node_id) {
+const PrimitiveNode& SDFTree::primitive(IdView<SDFTreeNodeId> node_id) const {
+  if (!is_primitive(node_id)) {
+    log_throw(SDFTreeNodeDoesNotExist(node_id.raw()));
+  }
+
   return sdf_tree_registry_.all_primitive_nodes[node_id.raw()].value();
 }
 
-const PrimitiveNode& SDFTree::primitive(IdView<SDFTreeNodeId> node_id) const {
+PrimitiveNode& SDFTree::primitive(IdView<SDFTreeNodeId> node_id) {
   return const_cast<PrimitiveNode&>(std::as_const(*this).primitive(node_id));  // NOLINT
 }
 

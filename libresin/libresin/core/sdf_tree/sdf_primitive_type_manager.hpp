@@ -33,6 +33,7 @@ class SDFPrimitiveTypeManager {
    * @param sh_res
    */
   uint32_t add_type_from_shader_res(std::shared_ptr<const ShaderResource> sdf_shader_resource);
+  uint32_t add_type_from_shader_res(ShaderResource&& sdf_shader_resource);
 
   /**
    * @brief Concatenates the SDFs shader contents of the primitive types in the manager and returns it. Useful

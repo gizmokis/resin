@@ -379,7 +379,7 @@
     "primitiveTypes": {
       "type": "array",
       "items": {
-        "type": "#/$defs/primitiveType"
+        "$ref": "#/$defs/primitiveType"
       }
     },
     "tree": {

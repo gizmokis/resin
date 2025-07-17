@@ -6,6 +6,8 @@
 #include <libresin/utils/logger.hpp>
 #include <ranges>
 
+#include "libresin/core/resources/shader_resource.hpp"
+
 namespace resin {
 
 uint32_t SDFPrimitiveTypeManager::add_type_from_shader_res(std::shared_ptr<const ShaderResource> sdf_shader_resource) {
@@ -46,6 +48,10 @@ uint32_t SDFPrimitiveTypeManager::add_type_from_shader_res(std::shared_ptr<const
   Logger::info("Primitive type with name {} created", desc.name);
 
   return id;
+}
+
+uint32_t SDFPrimitiveTypeManager::add_type_from_shader_res(ShaderResource&& sdf_shader_resource) {
+  return add_type_from_shader_res(std::make_shared<const ShaderResource>(std::move(sdf_shader_resource)));
 }
 
 const std::string& SDFPrimitiveTypeManager::sdfs_glsl() {
