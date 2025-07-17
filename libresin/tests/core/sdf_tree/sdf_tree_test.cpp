@@ -261,7 +261,7 @@ TEST_F(SDFTreeTest, LeavesAreCorrectlyUpdated) {
   ASSERT_EQ(tree.group(group4).primitive_ids().size(), 3);
 }
 
-TEST_F(SDFTreeTest, DirtyPrimitive_idsAreCorrectlyAdded) {
+TEST_F(SDFTreeTest, DirtyPrimitivesAreCorrectlyAdded) {
   // given
   //       o
   //    o     o

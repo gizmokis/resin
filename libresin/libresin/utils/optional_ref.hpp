@@ -36,6 +36,9 @@ class optional_ref {
     return ptr ? *ptr : static_cast<T&>(fallback);
   }
 
+  bool operator==(std::nullopt_t) const noexcept { return !has_value(); }
+  bool operator!=(std::nullopt_t) const noexcept { return has_value(); }
+
   void reset() noexcept { ptr = nullptr; }
 
   void swap(optional_ref& other) noexcept { std::swap(ptr, other.ptr); }
