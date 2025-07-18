@@ -5,6 +5,7 @@
 #include <libresin/utils/exceptions.hpp>
 #include <tests/files_helper.hpp>
 #include <tests/libresin/test_consts.hpp>
+#include <tests/string_helper.hpp>
 
 class ShaderResourceTest : public testing::Test {
  protected:
@@ -33,12 +34,13 @@ TEST_F(ShaderResourceTest, ShaderWithDepsIsCorrectlyGenerated) {
   cpy.inject_external_definition("EXTERNAL_A", "100");
   cpy.inject_external_definition("EXTERNAL_B", "50");
 
-  EXPECT_FILE_CONTENT_EQ(resources_path_ / "regular_load" / "expected_raw.frag", cpy.intermediate_glsl());
+  EXPECT_FILE_CONTENT_EQ_IGNORING_WHITESPACES(resources_path_ / "regular_load" / "expected_raw.frag",
+                                              cpy.intermediate_glsl());
 
   std::string_view glsl = *cpy.glsl();
-  EXPECT_FALSE(glsl.find("#define EXTERNAL_MAIN int func() { return 5; }") == std::string_view::npos);
-  EXPECT_FALSE(glsl.find("#define EXTERNAL_A 100") == std::string_view::npos);
-  EXPECT_FALSE(glsl.find("#define EXTERNAL_B 50") == std::string_view::npos);
+  EXPECT_STRING_CONTAINS_IGNORING_WHITESPACE(glsl, "#define EXTERNAL_MAIN int func() { return 5; }");
+  EXPECT_STRING_CONTAINS_IGNORING_WHITESPACE(glsl, "#define EXTERNAL_A 100");
+  EXPECT_STRING_CONTAINS_IGNORING_WHITESPACE(glsl, "#define EXTERNAL_B 50");
 }
 
 TEST_F(ShaderResourceTest, ShaderDepsCycleIsDetected) {

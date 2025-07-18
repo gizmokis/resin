@@ -11,6 +11,7 @@
 #include <optional>
 #include <tests/glm_helper.hpp>
 #include <tests/libresin/test_consts.hpp>
+#include <tests/string_helper.hpp>
 
 class SDFTreeTest : public testing::Test {
  protected:
@@ -22,8 +23,6 @@ class SDFTreeTest : public testing::Test {
     resin::ShaderResource res = *sh_resman.get_res_ptr(resources_path_ / "sdf_func" / "sphere.sdf");
     return tree.primitive_type_manager().add_type_from_shader_res(std::move(res));
   }
-
-  static constexpr auto kBlankFilter = std::views::filter([](auto&& c) { return c != '\n' && c != '\r' && c != ' '; });
 };
 
 TEST_F(SDFTreeTest, SDFShaderIsCorrectlyGenerated) {
@@ -50,7 +49,7 @@ TEST_F(SDFTreeTest, SDFShaderIsCorrectlyGenerated) {
     opScale(opDiff(createPrimitive(Sphere_Id1_SDF((u_sdf_primitives[0].transform*vec4(pos, 1)).xyz,u_sdf_primitives[0].size.x),1,0),opScale(opDiff(opInter(createPrimitive(Sphere_Id1_SDF((u_sdf_primitives[1].transform*vec4(pos, 1)).xyz,u_sdf_primitives[1].size.x),3,1),opScale(opDiff(createPrimitive(Sphere_Id1_SDF((u_sdf_primitives[3].transform*vec4(pos, 1)).xyz,u_sdf_primitives[3].size.x),6,3),createPrimitive(Sphere_Id1_SDF((u_sdf_primitives[4].transform*vec4(pos, 1)).xyz,u_sdf_primitives[4].size.x),7,4)),4)),createPrimitive(Sphere_Id1_SDF((u_sdf_primitives[2].transform*vec4(pos, 1)).xyz,u_sdf_primitives[2].size.x),5,2)),2)),0)
   )";
 
-  ASSERT_TRUE(std::ranges::equal(kExpectedShaderCode | kBlankFilter, sh_code_single_prim_arr | kBlankFilter));
+  EXPECT_STRINGS_EQ_IGNORING_WHITESPACE(kExpectedShaderCode, sh_code_single_prim_arr);
 }
 
 TEST_F(SDFTreeTest, SDFShaderGenerationOmitsShallowNodes) {
@@ -88,7 +87,7 @@ TEST_F(SDFTreeTest, SDFShaderGenerationOmitsShallowNodes) {
     opScale(opDiff(createPrimitive(Sphere_Id1_SDF((u_sdf_primitives[0].transform*vec4(pos, 1)).xyz,u_sdf_primitives[0].size.x),1,0),opScale(opDiff(opInter(createPrimitive(Sphere_Id1_SDF((u_sdf_primitives[1].transform*vec4(pos, 1)).xyz,u_sdf_primitives[1].size.x),3,1),opScale(opDiff(createPrimitive(Sphere_Id1_SDF((u_sdf_primitives[3].transform*vec4(pos, 1)).xyz,u_sdf_primitives[3].size.x),6,3),createPrimitive(Sphere_Id1_SDF((u_sdf_primitives[4].transform*vec4(pos, 1)).xyz,u_sdf_primitives[4].size.x),13,4)),4)),createPrimitive(Sphere_Id1_SDF((u_sdf_primitives[2].transform*vec4(pos, 1)).xyz,u_sdf_primitives[2].size.x),5,2)),2)),0)
   )";
 
-  ASSERT_TRUE(std::ranges::equal(kExpectedShaderCode | kBlankFilter, sh_code_single_prim_arr | kBlankFilter));
+  EXPECT_STRINGS_EQ_IGNORING_WHITESPACE(kExpectedShaderCode, sh_code_single_prim_arr);
 }
 
 TEST_F(SDFTreeTest, NodesAreCorrectlyMoved) {

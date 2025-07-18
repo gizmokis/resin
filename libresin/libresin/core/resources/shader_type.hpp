@@ -38,41 +38,31 @@ concept CShaderType = requires(std::string_view macro) {
 struct VertexShaderType {
   [[nodiscard]] static constexpr std::string_view extension() { return ".vert"; }
   [[nodiscard]] static constexpr std::string_view name() { return "Vertex Shader"; }
-  [[nodiscard]] static constexpr bool is_macro_supported(std::string_view macro) {
-    return shader_macros::is_macro(macro);
-  }
+  [[nodiscard]] static bool is_macro_supported(std::string_view macro) { return shader_macros::is_macro(macro); }
 };
 
 struct FragmentShaderType {
   [[nodiscard]] static constexpr std::string_view extension() { return ".frag"; }
   [[nodiscard]] static constexpr std::string_view name() { return "Fragment Shader"; }
-  [[nodiscard]] static constexpr bool is_macro_supported(std::string_view macro) {
-    return shader_macros::is_macro(macro);
-  }
+  [[nodiscard]] static bool is_macro_supported(std::string_view macro) { return shader_macros::is_macro(macro); }
 };
 
 struct ComputeShaderType {
   [[nodiscard]] static constexpr std::string_view extension() { return ".comp"; }
   [[nodiscard]] static constexpr std::string_view name() { return "Compute Shader"; }
-  [[nodiscard]] static constexpr bool is_macro_supported(std::string_view macro) {
-    return shader_macros::is_macro(macro);
-  }
+  [[nodiscard]] static bool is_macro_supported(std::string_view macro) { return shader_macros::is_macro(macro); }
 };
 
 struct LibraryShaderType {
   [[nodiscard]] static constexpr std::string_view extension() { return ".glsl"; }
   [[nodiscard]] static constexpr std::string_view name() { return "Library Shader"; }
-  [[nodiscard]] static constexpr bool is_macro_supported(std::string_view macro) {
-    return shader_macros::is_macro(macro);
-  }
+  [[nodiscard]] static bool is_macro_supported(std::string_view macro) { return shader_macros::is_macro(macro); }
 };
 
 struct SDFShaderType {
   [[nodiscard]] static constexpr std::string_view extension() { return ".sdf"; }
   [[nodiscard]] static constexpr std::string_view name() { return "SDF Shader"; }
-  [[nodiscard]] static constexpr bool is_macro_supported(std::string_view macro) {
-    return macro == shader_macros::kNameMacro;
-  }
+  [[nodiscard]] static bool is_macro_supported(std::string_view macro) { return macro == shader_macros::kNameMacro; }
 
   /**
    * @brief The generated SDF function name.

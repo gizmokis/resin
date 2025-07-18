@@ -8,6 +8,7 @@
 #include <libresin/utils/logger.hpp>
 #include <libresin/utils/string_views.hpp>
 #include <optional>
+#include <ostream>
 #include <ranges>
 #include <regex>
 #include <string_view>
@@ -255,8 +256,6 @@ void ShaderResourceManager::process_sdf_shader(ShaderType& sh_type, std::string&
 
   static auto sdf_signature_pattern = std::regex(
       R"(float[\s\r\n]*sdf[\s\r\n]*\([\s\r\n]*vec3[\s\r\n]*\w+[\s\r\n]*(\)|(,[\s\r\n]*float[\s\r\n]*\w+[\s\r\n]*){1,3}\))+[\s\r\n]*)");
-  static auto sdf_signature_with_body_pattern = std::regex(
-      R"(float[\s\r\n]*sdf[\s\r\n]*\([\s\r\n]*vec3[\s\r\n]*\w+[\s\r\n]*(\)|(,[\s\r\n]*float[\s\r\n]*\w+[\s\r\n]*){1,3}\))+[\s\r\n]*\{([\s\r\n]|.)*\})");
   static auto sdf_argument_pattern = std::regex(R"(,[\s\r\n]*float[\s\r\n]*(\w+))");
   static auto sdf_name_pattern     = std::regex(R"(float[\s\r\n]*(sdf)[\s\r\n]*\()");
   static auto single_line_comment  = std::regex(std::string(shader_macros::kSingleLineCommentRegExpStr));
@@ -264,6 +263,7 @@ void ShaderResourceManager::process_sdf_shader(ShaderType& sh_type, std::string&
   // Single-line comments are problematic when injecting them as external definitions.
   std::regex_replace(sh_content, single_line_comment, " ");
 
+  // Find the expected SDF signature
   auto iter      = std::sregex_iterator(sh_content.begin(), sh_content.end(), sdf_signature_pattern);
   const auto end = std::sregex_iterator();
 
@@ -275,14 +275,39 @@ void ShaderResourceManager::process_sdf_shader(ShaderType& sh_type, std::string&
     log_throw(SDFShaderInvalidFunctionSignature(std::string(name)));
   }
 
-  iter = std::sregex_iterator(sh_content.begin() + sdf_signature_match.position(), sh_content.end(),
-                              sdf_signature_with_body_pattern);
-  if (iter == end) {
+  auto func_body_it = sh_content.begin() + sdf_signature_match.position() + sdf_signature_match.length();
+
+  // Find the opening bracket
+  while (func_body_it != sh_content.end() && *func_body_it != '{') {
+    ++func_body_it;
+  }
+  auto open_bracket_it = func_body_it;
+
+  if (func_body_it == sh_content.end()) {
     log_throw(SDFShaderNoFunctionBodyFound(std::string(name)));
   }
 
-  auto sdf_with_body = *iter;
+  // Find the closing bracket
+  auto counter = 1;
+  while (func_body_it != sh_content.end()) {
+    if (*func_body_it == '{') {
+      ++counter;
+    }
+    if (*func_body_it == '}') {
+      --counter;
+    }
+    if (counter < 0) {
+      // Closing bracket before opening bracket
+      log_throw(SDFShaderNoFunctionBodyFound(std::string(name)));
+    }
+    if (counter == 0) {
+      break;
+    }
+    ++func_body_it;
+  }
+  auto close_bracket_it = func_body_it;
 
+  // Parse the SDF arguments
   iter = std::sregex_iterator(sh_content.begin() + sdf_signature_match.position(),
                               sh_content.begin() + sdf_signature_match.position() + sdf_signature_match.length(),
                               sdf_argument_pattern);
@@ -294,21 +319,21 @@ void ShaderResourceManager::process_sdf_shader(ShaderType& sh_type, std::string&
     sdf_args.emplace(iter->str(1));
   }
 
+  // Find the arguments start
   iter = std::sregex_iterator(sh_content.begin() + sdf_signature_match.position(),
                               sh_content.begin() + sdf_signature_match.position() + sdf_signature_match.length(),
                               sdf_name_pattern);
   if (iter == end) {
     log_throw(SDFShaderNoFunctionBodyFound(std::string(name)));
   }
-  auto sdf_name = *iter;
+  auto args_start = static_cast<size_t>(sdf_signature_match.position() + iter->position() + iter->length());
 
+  // Create the final sdf function
   auto glsl_sdf_name = std::format("{}_Id{}_SDF", name, shader_name_id_++);
+  auto body_end      = static_cast<size_t>(std::distance(sh_content.begin(), close_bracket_it));
+  auto sdf_func      = std::format("float {}({}", glsl_sdf_name, sh_content.substr(args_start, body_end));
 
-  auto sdf_with_body_start = static_cast<size_t>(sdf_name.position() + sdf_name.length());
-  auto sdf_with_body_end   = static_cast<size_t>(sdf_name.position() + sdf_name.length() + sdf_with_body.length());
-  auto sdf_func =
-      std::format("float {}({}", glsl_sdf_name, sdf_with_body.str().substr(sdf_with_body_start, sdf_with_body_end));
-
+  // Remove newlines
   auto r = std::ranges::remove_if(sdf_func, [](auto&& c) { return c == '\n' or c == '\r'; });
   sdf_func.erase(r.begin(), r.end());
 

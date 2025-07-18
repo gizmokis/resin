@@ -12,6 +12,13 @@
 
 namespace resin {
 
+namespace internal {
+static std::string file_path_string(const std::optional<std::filesystem::path>& path) {
+  return (path && (std::filesystem::is_regular_file(*path) || std::filesystem::is_symlink(*path))) ? path->string()
+                                                                                                   : "unknown";
+}
+}  // namespace internal
+
 template <typename T>
 concept ExceptionConcept = std::is_base_of_v<std::runtime_error, T> && requires {
   { T::name() } -> std::convertible_to<std::string_view>;
@@ -113,8 +120,7 @@ class ShaderMacroInvalidArgumentsCountException : public ResinException {
                                                      size_t line)
       : ResinException(std::format(
             R"(Shader with path "{}" contains macro "{}" with invalid arguments count at line {}. Expected {}. Actual: {}.)",
-            (sh_path && std::filesystem::is_directory(*sh_path)) ? sh_path->string() : "unknown", macro_name, line,
-            expected_args, actual_args)),
+            internal::file_path_string(sh_path), macro_name, line, expected_args, actual_args)),
         sh_path_(std::move(sh_path)),
         macro_name_(std::move(macro_name)),
         expected_args_(expected_args),
@@ -142,8 +148,7 @@ class ShaderInvalidMacroArgumentException : public ResinException {
   explicit ShaderInvalidMacroArgumentException(const std::optional<std::filesystem::path>& sh_path, std::string&& msg,
                                                size_t line)
       : ResinException(std::format(R"(Shader with path "{}" contains macro at line {} with invalid argument. {})",
-                                   (sh_path && std::filesystem::is_directory(*sh_path)) ? sh_path->string() : "uknown",
-                                   line, msg)),
+                                   internal::file_path_string(sh_path), line, msg)),
         sh_path_(std::move(sh_path)),
         msg_(std::move(msg)),
         line_(line) {}
@@ -176,16 +181,17 @@ class ShaderIncludeMacroDependencyCycleException : public ResinException {
  public:
   EXCEPTION_NAME(ShaderIncludeMacroDependencyCycleException)
 
-  explicit ShaderIncludeMacroDependencyCycleException(std::string&& sh_path, size_t line)
-      : ResinException(std::format(R"(Detected dependency cycle in shader with path "{}" at line {}.)", sh_path, line)),
+  explicit ShaderIncludeMacroDependencyCycleException(const std::optional<std::filesystem::path>& sh_path, size_t line)
+      : ResinException(std::format(R"(Detected dependency cycle in shader with path "{}" at line {}.)",
+                                   internal::file_path_string(sh_path), line)),
         sh_path_(std::move(sh_path)),
         line_(line) {}
 
-  const std::string& get_sh_path() const { return sh_path_; }
+  const std::optional<std::filesystem::path>& get_sh_path() const { return sh_path_; }
   size_t get_line() const { return line_; }
 
  private:
-  std::string sh_path_;
+  std::optional<std::filesystem::path> sh_path_;
   size_t line_;
 };
 
@@ -194,9 +200,8 @@ class ShaderAbsentVersionException : public ResinException {
   EXCEPTION_NAME(ShaderAbsentVersionException)
 
   explicit ShaderAbsentVersionException(const std::optional<std::filesystem::path>& sh_path)
-      : ResinException(
-            std::format(R"(Could not find version macro for a shader with path "{}".)",
-                        (sh_path && std::filesystem::is_directory(*sh_path)) ? sh_path->string() : "unknown")),
+      : ResinException(std::format(R"(Could not find version macro for a shader with path "{}".)",
+                                   internal::file_path_string(sh_path))),
         sh_path_(std::move(sh_path)) {}
 
   const std::optional<std::filesystem::path>& get_sh_path() const { return sh_path_; }

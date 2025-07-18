@@ -239,7 +239,7 @@ std::string serialize_scene(Scene& scene) {
   try {
     json scene_json;
     scene_json["version"] = kNewestResinPrefabJSONSchemaVersion;
-    serialize_sdf_tree(scene_json, scene.tree(), scene.tree().root().node_id(), true, false);
+    serialize_sdf_tree(scene_json, scene.tree(), scene.tree().root().node_id(), false, false);
 
     json lights_json = json::array();
     for (const auto& light : scene.lights()) {
@@ -406,7 +406,7 @@ void JSONDeserializerSDFTreeNodeVisitor::visit_group(GroupNode& node) {
 }
 
 void JSONDeserializerSDFTreeNodeVisitor::visit_primitive(PrimitiveNode& node) {
-  auto* it = node.params().begin();
+  auto it = node.params().begin();
   for (float param : node_json_.at("primitive").at("params")) {
     if (it == node.params().end()) {
       return;
