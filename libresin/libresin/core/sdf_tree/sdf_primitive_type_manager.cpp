@@ -7,7 +7,6 @@
 #include <libresin/utils/logger.hpp>
 #include <ranges>
 
-
 namespace resin {
 
 uint32_t SDFPrimitiveTypeManager::add_type_from_shader_res(std::shared_ptr<const ShaderResource> sdf_shader_resource) {

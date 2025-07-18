@@ -11,7 +11,6 @@
 #include <optional>
 #include <utility>
 
-
 namespace resin {
 size_t SDFTree::curr_id_ = 0;
 

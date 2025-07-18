@@ -9,7 +9,6 @@
 #include <libresin/utils/static_vector.hpp>
 #include <optional>
 
-
 namespace resin {
 struct SDFPrimitiveTypeDescription;
 class GroupNode;
