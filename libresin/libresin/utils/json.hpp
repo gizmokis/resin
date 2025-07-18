@@ -1,12 +1,14 @@
 #ifndef RESIN_JSON_HPP
 #define RESIN_JSON_HPP
+#include <cstdint>
 #include <libresin/core/id_registry.hpp>
 #include <libresin/core/light.hpp>
 #include <libresin/core/scene.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
+#include <libresin/core/sdf_tree/sdf_primitive_type_manager.hpp>
+#include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node_visitor.hpp>
-#include <memory>
 #include <nlohmann/json_fwd.hpp>
 
 namespace resin {
@@ -20,18 +22,6 @@ namespace json {
 using json = nlohmann::json;
 
 constexpr int kNewestResinPrefabJSONSchemaVersion = 1;
-
-constexpr StringEnumMapper<SDFTreePrimitiveType> kSDFTreePrimitiveNodesJSONNames({
-    {SDFTreePrimitiveType::Sphere, "sphere"},                   //
-    {SDFTreePrimitiveType::Cube, "cube"},                       //
-    {SDFTreePrimitiveType::Torus, "torus"},                     //
-    {SDFTreePrimitiveType::Capsule, "capsule"},                 //
-    {SDFTreePrimitiveType::Link, "link"},                       //
-    {SDFTreePrimitiveType::Ellipsoid, "ellipsoid"},             //
-    {SDFTreePrimitiveType::Pyramid, "pyramid"},                 //
-    {SDFTreePrimitiveType::Cylinder, "cylinder"},               //
-    {SDFTreePrimitiveType::TriangularPrism, "triangularPrism"}  //
-});
 
 constexpr StringEnumMapper<SDFBinaryOperation> kSDFBinaryOperationsJSONNames({
     {SDFBinaryOperation::Union, "union"},              //
@@ -55,15 +45,7 @@ class JSONSerializerSDFTreeNodeVisitor : public ISDFTreeNodeVisitor {
   explicit JSONSerializerSDFTreeNodeVisitor(json& node_json);
 
   void visit_group(GroupNode& node) override;
-  void visit_sphere(SphereNode& node) override;
-  void visit_cube(CubeNode& node) override;
-  void visit_torus(TorusNode&) override;
-  void visit_capsule(CapsuleNode&) override;
-  void visit_link(LinkNode&) override;
-  void visit_ellipsoid(EllipsoidNode&) override;
-  void visit_pyramid(PyramidNode&) override;
-  void visit_cylinder(CylinderNode&) override;
-  void visit_prism(TriangularPrismNode&) override;
+  void visit_primitive(PrimitiveNode& node) override;
 
  private:
   json& json_;  // NOLINT
@@ -92,11 +74,15 @@ void serialize_node_factor(json& target_json, const SDFTreeNode& node);
 void serialize_node_common(json& target_json, const SDFTreeNode& node);
 
 void serialize_sdf_tree(json& target_json, SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id,
-                        bool ignore_unused_materials = true);
-void serialize_sdf_tree(json& target_json, SDFTree& tree, bool ignore_unused_materials = true);
+                        bool ignore_unused_primitive_types, bool ignore_unused_materials);
+void serialize_sdf_tree(json& target_json, SDFTree& tree, bool ignore_unused_primitive_types,
+                        bool ignore_unused_materials);
 
 void serialize_light_common(json& target_json, const BaseLightSceneComponent& light);
 void serialize_attenuation(json& target_json, const PointLight::Attenuation& attenuation);
+
+void serialize_primitive_types(json& target_json, const SDFPrimitiveTypeManager& manager,
+                               std::optional<std::span<uint32_t>> filter = std::nullopt);
 
 [[nodiscard]] std::string serialize_prefab(SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id);
 [[nodiscard]] std::string serialize_scene(Scene& scene);
@@ -105,22 +91,18 @@ void serialize_attenuation(json& target_json, const PointLight::Attenuation& att
 class JSONDeserializerSDFTreeNodeVisitor : public ISDFTreeNodeVisitor {
  public:
   explicit JSONDeserializerSDFTreeNodeVisitor(const json& node_json,
-                                              const std::unordered_map<size_t, IdView<MaterialId>>& material_ids_map);
+                                              const std::unordered_map<size_t, IdView<MaterialId>>& material_ids_map,
+                                              const std::unordered_map<uint32_t, uint32_t>& primitive_types_ids_map,
+                                              const SDFTree& tree);
 
   void visit_group(GroupNode& node) override;
-  void visit_sphere(SphereNode& node) override;
-  void visit_cube(CubeNode& node) override;
-  void visit_torus(TorusNode&) override;
-  void visit_capsule(CapsuleNode&) override;
-  void visit_link(LinkNode&) override;
-  void visit_ellipsoid(EllipsoidNode&) override;
-  void visit_pyramid(PyramidNode&) override;
-  void visit_cylinder(CylinderNode&) override;
-  void visit_prism(TriangularPrismNode&) override;
+  void visit_primitive(PrimitiveNode& node) override;
 
  private:
   const json& node_json_;                                                   // NOLINT
   const std::unordered_map<size_t, IdView<MaterialId>>& material_ids_map_;  // NOLINT
+  const std::unordered_map<uint32_t, uint32_t>& primitive_types_ids_map_;   // NOLINT
+  const SDFTree& tree_;                                                     // NOLINT
 };
 
 class JSONDeserializerLightSceneComponentVisitor : public ILightSceneComponentVisitor {
@@ -150,6 +132,8 @@ void deserialize_node_common(SDFTreeNode& node, const json& node_json,
 void deserialize_light_common(BaseLightSceneComponent& light, const json& light_json);
 void deserialize_attenuation(PointLight::Attenuation& attenuation, const json& attenuation_json);
 
+std::unordered_map<uint32_t, uint32_t> deserialize_primitive_types(SDFPrimitiveTypeManager& manager,
+                                                                   const json& primitive_types_json);
 std::unique_ptr<GroupNode> deserialize_sdf_tree(SDFTree& tree, const json& tree_json);
 
 [[nodiscard]] std::unique_ptr<GroupNode> deserialize_prefab(SDFTree& tree, std::string_view prefab_json_str);

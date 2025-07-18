@@ -1,0 +1,7 @@
+#name Capsule
+
+float sdf(vec3 pos, float height, float radius)
+{
+    vec3 d = vec3(pos.x, pos.y - clamp(pos.y, -0.5*height, 0.5*height), pos.z);
+    return length(d) - radius;
+}

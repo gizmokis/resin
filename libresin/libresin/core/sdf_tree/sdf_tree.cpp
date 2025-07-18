@@ -2,7 +2,8 @@
 #include <libresin/core/material.hpp>
 #include <libresin/core/sdf_shader_consts.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
-#include <libresin/core/sdf_tree/primitive_base_node.hpp>
+#include <libresin/core/sdf_tree/primitive_node.hpp>
+#include <libresin/core/sdf_tree/sdf_primitive_type_manager.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/utils/exceptions.hpp>
@@ -55,6 +56,18 @@ GroupNode& SDFTree::group(IdView<SDFTreeNodeId> node_id) {
   return const_cast<GroupNode&>(std::as_const(*this).group(node_id));  // NOLINT
 }
 
+const PrimitiveNode& SDFTree::primitive(IdView<SDFTreeNodeId> node_id) const {
+  if (!is_primitive(node_id)) {
+    log_throw(SDFTreeNodeDoesNotExist(node_id.raw()));
+  }
+
+  return sdf_tree_registry_.all_primitive_nodes[node_id.raw()].value();
+}
+
+PrimitiveNode& SDFTree::primitive(IdView<SDFTreeNodeId> node_id) {
+  return const_cast<PrimitiveNode&>(std::as_const(*this).primitive(node_id));  // NOLINT
+}
+
 void SDFTree::visit_dirty_primitives(ISDFTreeNodeVisitor& visitor) {
   for (auto prim : sdf_tree_registry_.dirty_primitives) {
     if (sdf_tree_registry_.all_nodes[prim.raw()].has_value()) {
@@ -80,7 +93,7 @@ void SDFTree::visit_all_nodes(ISDFTreeNodeVisitor& visitor) {
 }
 
 void SDFTree::visit_all_primitives(ISDFTreeNodeVisitor& visitor) {
-  for (auto prim : root_->primitives()) {
+  for (auto prim : root_->primitive_ids()) {
     sdf_tree_registry_.all_nodes[prim.raw()]->get().accept_visitor(visitor);
   }
 }
@@ -97,10 +110,12 @@ void SDFTree::delete_node(IdView<SDFTreeNodeId> node_id) {
   sdf_tree_registry_.all_nodes[node_id.raw()]->get().parent().delete_child(node_id);
 }
 
-std::string SDFTree::gen_shader_code(GenShaderMode mode) const {
+std::string SDFTree::tree_glsl(GenShaderMode mode) const {
   std::string root_code = root_->gen_shader_code(mode);
-  return root_code.empty() ? "sdEmpty()" : root_code;
+  return root_code.empty() ? std::string(sdf_shader_consts::kCreateEmptyPrimitiveFuncCall) : root_code;
 }
+
+const std::string& SDFTree::types_glsl() { return sdf_tree_registry_.primitive_type_manager_.sdfs_glsl(); }
 
 const MaterialSDFTreeComponent& SDFTree::material(IdView<MaterialId> mat_id) const {
   if (mat_id == sdf_tree_registry_.default_material.material_id()) {
@@ -160,7 +175,14 @@ void SDFTree::set_root(std::unique_ptr<GroupNode> root) { root_ = std::move(root
 void SDFTree::clear() {
   material_active_ids_.clear();
   std::ranges::fill(materials_.begin(), materials_.end(), std::nullopt);
-  root_ = create_detached_node<GroupNode>();
+  root_                                      = create_detached_node<GroupNode>();
+  sdf_tree_registry_.primitive_type_manager_ = SDFPrimitiveTypeManager();
+  sdf_tree_registry_.is_tree_dirty           = true;
+}
+
+void SDFTree::set_default_types() {
+  sdf_tree_registry_.primitive_type_manager_ = default_type_manager_;
+  sdf_tree_registry_.primitive_type_manager_.mark_dirty();
 }
 
 }  // namespace resin

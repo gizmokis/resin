@@ -10,16 +10,16 @@
 #include <libresin/core/mesh_exporter.hpp>
 #include <libresin/core/resources/shader_resource.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
-#include <libresin/core/sdf_tree/primitive_base_node.hpp>
+#include <libresin/core/sdf_tree/primitive_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
+#include <libresin/core/sdf_tree/sdf_tree_node_visitor.hpp>
 #include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/json.hpp>
 #include <libresin/utils/logger.hpp>
 #include <libresin/utils/path.hpp>
 #include <memory>
 #include <optional>
-#include <ranges>
 #include <resin/dialog/file_dialog.hpp>
 #include <resin/imgui/modals.hpp>
 #include <resin/imgui/sdf_tree.hpp>
@@ -174,7 +174,7 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
           },
           std::span<const ::resin::FileDialog::FilterItem>(kPrefabFiltersArray), std::string(name) += ".amber");
     }
-    if (node.primitives().size() > 0) {
+    if (node.primitive_ids().size() > 0) {
       if (ImGui::BeginMenu("Export mesh as...")) {
         static int resolution_index      = 2;  // default to 32
         const unsigned int resolutions[] = {8, 16, 32, 64, 128, 256};
@@ -191,7 +191,7 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
               [curr_id, &sdf_tree, resolution](const std::filesystem::path& path) {
                 auto& resource_manager = ::resin::ResourceManagers::shader_manager();
                 ::resin::ShaderResource shader_resource =
-                    *resource_manager.get_res(::resin::get_executable_dir() / "assets/marching_cubes.comp");
+                    resource_manager.get_res(::resin::get_executable_dir() / "assets/marching_cubes.comp");
                 ::resin::MeshExporter exporter(shader_resource, resolution);
                 glm::vec3 pos = sdf_tree.group(curr_id).transform().pos();  // TODO(SDF-130) calculate bounding box
                 exporter.setup_scene(pos - glm::vec3(5.0F), pos + glm::vec3(5.0F), sdf_tree, curr_id);
@@ -205,7 +205,7 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
               [curr_id, &sdf_tree, resolution](const std::filesystem::path& path) {
                 auto& resource_manager = ::resin::ResourceManagers::shader_manager();
                 ::resin::ShaderResource shader_resource =
-                    *resource_manager.get_res(::resin::get_executable_dir() / "assets/marching_cubes.comp");
+                    resource_manager.get_res(::resin::get_executable_dir() / "assets/marching_cubes.comp");
                 ::resin::MeshExporter exporter(shader_resource, resolution);
                 glm::vec3 pos = sdf_tree.group(curr_id).transform().pos();  // TODO(SDF-130) calculate bounding box
                 exporter.setup_scene(pos - glm::vec3(5.0F), pos + glm::vec3(5.0F), sdf_tree, curr_id);
@@ -251,6 +251,7 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
   for (auto child_it = node.begin(); child_it != node.end(); ++child_it) {
     is_parent_selected_ = is_node_selected;
     is_parent_dragged_  = is_node_dragged;
+
     node.get_child(*child_it).accept_visitor(*this);
     is_first_ = false;
   }
@@ -260,7 +261,7 @@ void SDFTreeComponentVisitor::visit_group(::resin::GroupNode& node) {
   ImGui::PopID();
 }
 
-void SDFTreeComponentVisitor::visit_primitive(::resin::BasePrimitiveNode& node) {
+void SDFTreeComponentVisitor::visit_primitive(::resin::PrimitiveNode& node) {
   static std::string node_name;
   auto source_id = get_curr_payload();
 
@@ -281,7 +282,9 @@ void SDFTreeComponentVisitor::visit_primitive(::resin::BasePrimitiveNode& node) 
 
   // TODO(SDF-100): Use primitive icons
   ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.F, 2.F));
-  ImGui::TreeNodeEx(node.name().data(), flags);
+  auto node_type        = node.type();
+  std::string_view type = node_type ? std::string_view(node_type->name) : "Empty";
+  ImGui::TreeNodeEx(node.name().data(), flags, "%s [%s]", node.name().data(), type.data());
   ImGui::PopStyleVar();
 
   if (ImGui::IsItemClicked()) {
@@ -471,6 +474,9 @@ void SDFTreeView(::resin::SDFTree& tree, std::optional<::resin::IdView<::resin::
 
   comp_vs.render_tree();
   auto selected = comp_vs.selected();
+  if (selected.has_value() && selected->expired()) {
+    selected = std::nullopt;
+  }
 
   ImGui::EndChild();
 
@@ -556,19 +562,22 @@ void SDFTreeView(::resin::SDFTree& tree, std::optional<::resin::IdView<::resin::
   }
 
   if (ImGui::BeginPopup("AddPrimitivePopUp")) {
-    for (const auto [prim, name] : ::resin::BasePrimitiveNode::available_primitive_names()) {
-      if (ImGui::Selectable(name.data())) {
+    for (const auto& type : tree.primitive_type_manager()) {
+      if (ImGui::Selectable(type.name.data())) {
         if (selected.has_value()) {
           if (tree.is_group(*selected)) {
-            tree.group(*selected).push_back_primitive(prim, ::resin::SDFBinaryOperation::SmoothUnion);
+            tree.group(*selected).push_back_child<::resin::PrimitiveNode>(::resin::SDFBinaryOperation::SmoothUnion,
+                                                                          type.id);
           } else {
-            tree.node(*selected).parent().push_back_primitive(prim, ::resin::SDFBinaryOperation::SmoothUnion);
+            tree.node(*selected).parent().push_back_child<::resin::PrimitiveNode>(
+                ::resin::SDFBinaryOperation::SmoothUnion, type.id);
           }
         } else {
-          tree.root().push_back_primitive(prim, ::resin::SDFBinaryOperation::SmoothUnion);
+          tree.root().push_back_child<::resin::PrimitiveNode>(::resin::SDFBinaryOperation::SmoothUnion, type.id);
         }
       }
     }
+
     ImGui::EndPopup();
   }
 

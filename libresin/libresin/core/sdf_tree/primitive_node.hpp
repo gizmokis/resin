@@ -1,200 +1,119 @@
-#ifndef RESIN_PRIMITIVE_NODE_HPP
-#define RESIN_PRIMITIVE_NODE_HPP
-#include <libresin/core/sdf_tree/primitive_base_node.hpp>
+#ifndef RESIN_PRIMITIVE_BASE_NODE_HPP
+#define RESIN_PRIMITIVE_BASE_NODE_HPP
+
+#include <functional>
+#include <libresin/core/sdf_shader_consts.hpp>
+#include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
-#include <libresin/core/transform.hpp>
-#include <memory>
+#include <libresin/utils/optional_ref.hpp>
+#include <libresin/utils/static_vector.hpp>
+#include <optional>
 
 namespace resin {
+struct SDFPrimitiveTypeDescription;
+class GroupNode;
 
-class SphereNode final : public PrimitiveNode<SDFTreePrimitiveType::Sphere> {
- public:
-  inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override {
-    BasePrimitiveNode::accept_visitor(visitor);
-    visitor.visit_sphere(*this);
-  }
-
-  explicit SphereNode(SDFTreeRegistry& tree, float _radius = 1.F);
-
-  ~SphereNode() override = default;
-
-  [[nodiscard]] inline std::unique_ptr<SDFTreeNode> copy() override {
-    auto result = std::make_unique<SphereNode>(tree_registry_, radius);
-    copy_common(*result, *this);
-    return result;
-  }
-
- public:
-  float radius;
+struct PrimitiveNodeParam {
+  std::string_view name;
+  float value = 1.F;
 };
 
-class CubeNode final : public PrimitiveNode<SDFTreePrimitiveType::Cube> {
+class PrimitiveNode;
+using PrimitiveNodeId = Id<PrimitiveNode>;
+
+class PrimitiveNode final : public SDFTreeNode {
  public:
-  inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override {
-    BasePrimitiveNode::accept_visitor(visitor);
-    visitor.visit_cube(*this);
+  using Params = StaticVector<PrimitiveNodeParam, sdf_shader_consts::kSDFMaxParamCount>;
+
+  PrimitiveNode()                                = delete;
+  PrimitiveNode(const PrimitiveNode&)            = delete;
+  PrimitiveNode(PrimitiveNode&&)                 = delete;
+  PrimitiveNode& operator=(const PrimitiveNode&) = delete;
+  PrimitiveNode& operator=(PrimitiveNode&&)      = delete;
+
+  /**
+   * @brief Construct a new Primitive Node.
+   *
+   * @throw TooManySDFPrimitiveParameters Thrown when more than 3 SDF parameters are provided.
+   *
+   * @param tree
+   * @param desc
+   */
+  explicit PrimitiveNode(SDFTreeRegistry& tree, std::optional<uint32_t> primitive_type_id = std::nullopt);
+
+  explicit PrimitiveNode(SDFTreeRegistry& tree);
+  ~PrimitiveNode() override;
+
+  std::optional<uint32_t> type_id() const;
+  void set_type_id(std::optional<uint32_t> new_type_id);
+  optional_ref<const SDFPrimitiveTypeDescription> type() const;
+
+  IdView<MaterialId> default_material_id() const { return tree_registry_.default_material.material_id(); }
+  IdView<MaterialId> active_material_id_or_default() const {
+    auto mat = active_material_id();
+    return mat ? *mat : default_material_id();
   }
 
-  explicit CubeNode(SDFTreeRegistry& tree, glm::vec3 _size = glm::vec3(2.F));
-
-  ~CubeNode() override = default;
-
-  [[nodiscard]] inline std::unique_ptr<SDFTreeNode> copy() override {
-    auto result = std::make_unique<CubeNode>(tree_registry_, size);
-    copy_common(*result, *this);
-    return result;
+  void set_material(IdView<MaterialId> mat_id) final {
+    mark_primitives_dirty();
+    mat_id_ = mat_id;
   }
 
- public:
-  glm::vec3 size;
-};
-
-class TorusNode final : public PrimitiveNode<SDFTreePrimitiveType::Torus> {
- public:
-  inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override {
-    BasePrimitiveNode::accept_visitor(visitor);
-    visitor.visit_torus(*this);
+  void remove_material() final {
+    mark_primitives_dirty();
+    mat_id_ = std::nullopt;
   }
 
-  explicit TorusNode(SDFTreeRegistry& tree, float _major_radius = 1.F, float _minor_radius = 0.25F);
-
-  ~TorusNode() override = default;
-
-  [[nodiscard]] inline std::unique_ptr<SDFTreeNode> copy() override {
-    auto result = std::make_unique<TorusNode>(tree_registry_, major_radius, minor_radius);
-    copy_common(*result, *this);
-    return result;
+  void accept_visitor(ISDFTreeNodeVisitor& visitor) override {
+    SDFTreeNode::accept_visitor(visitor);
+    visitor.visit_primitive(*this);
   }
 
- public:
-  float major_radius, minor_radius;
-};
+  [[nodiscard]] std::unique_ptr<SDFTreeNode> copy() final;
 
-class CapsuleNode final : public PrimitiveNode<SDFTreePrimitiveType::Capsule> {
- public:
-  inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override {
-    BasePrimitiveNode::accept_visitor(visitor);
-    visitor.visit_capsule(*this);
+  bool is_leaf() final { return true; }
+  IdView<PrimitiveNodeId> primitive_id() const { return prim_id_; }
+
+  std::string gen_shader_code(GenShaderMode mode) const final;
+
+  const Params& params() const { return params_; }
+  Params& params() { return params_; }
+
+ private:
+  void update_id() const;
+
+  void insert_leaves_to(
+      std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& leaves) final {
+    leaves.emplace(node_id());
   }
 
-  explicit CapsuleNode(SDFTreeRegistry& tree, float _height = 1.F, float _radius = 0.25F);
-
-  ~CapsuleNode() override = default;
-
-  [[nodiscard]] inline std::unique_ptr<SDFTreeNode> copy() override {
-    auto result = std::make_unique<CapsuleNode>(tree_registry_, height, radius);
-    copy_common(*result, *this);
-    return result;
+  void remove_leaves_from(
+      std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& leaves) final {
+    leaves.erase(leaves.find(node_id()));
   }
 
- public:
-  float height, radius;
-};
-
-class LinkNode final : public PrimitiveNode<SDFTreePrimitiveType::Link> {
- public:
-  inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override {
-    BasePrimitiveNode::accept_visitor(visitor);
-    visitor.visit_link(*this);
+  void push_dirty_primitives() final { tree_registry_.dirty_primitives.emplace(node_id()); }
+  void set_ancestor_mat_id(IdView<MaterialId> mat_id) final { ancestor_mat_id_ = mat_id; }
+  void remove_ancestor_mat_id() final { ancestor_mat_id_ = std::nullopt; }
+  void delete_material_from_subtree(IdView<MaterialId> mat_id) final {
+    tree_registry_.is_tree_dirty = true;
+    if (mat_id == mat_id_) {
+      mat_id_ = std::nullopt;
+    }
   }
 
-  explicit LinkNode(SDFTreeRegistry& tree, float _length = 1.F, float _major_radius = 1.F, float _minor_radius = 0.25F);
+  void fix_material_ancestors() final;
 
-  ~LinkNode() override = default;
+  void update_glsl_args(size_t args_count, size_t prim_id);
 
-  [[nodiscard]] inline std::unique_ptr<SDFTreeNode> copy() override {
-    auto result = std::make_unique<LinkNode>(tree_registry_, length, major_radius, minor_radius);
-    copy_common(*result, *this);
-    return result;
-  }
+ private:
+  Params params_;
+  std::string glsl_args_;
 
- public:
-  float length, major_radius, minor_radius;
-};
+  PrimitiveNodeId prim_id_;
 
-class EllipsoidNode final : public PrimitiveNode<SDFTreePrimitiveType::Ellipsoid> {
- public:
-  inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override {
-    BasePrimitiveNode::accept_visitor(visitor);
-    visitor.visit_ellipsoid(*this);
-  }
-
-  explicit EllipsoidNode(SDFTreeRegistry& tree, glm::vec3 _radii = glm::vec3(1.F, 2.F, 3.F) / 3.F);
-
-  ~EllipsoidNode() override = default;
-
-  [[nodiscard]] inline std::unique_ptr<SDFTreeNode> copy() override {
-    auto result = std::make_unique<EllipsoidNode>(tree_registry_, radii);
-    copy_common(*result, *this);
-    return result;
-  }
-
- public:
-  glm::vec3 radii;
-};
-
-class PyramidNode final : public PrimitiveNode<SDFTreePrimitiveType::Pyramid> {
- public:
-  inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override {
-    BasePrimitiveNode::accept_visitor(visitor);
-    visitor.visit_pyramid(*this);
-  }
-
-  explicit PyramidNode(SDFTreeRegistry& tree, float _height = 1.F);
-
-  ~PyramidNode() override = default;
-
-  [[nodiscard]] inline std::unique_ptr<SDFTreeNode> copy() override {
-    auto result = std::make_unique<PyramidNode>(tree_registry_, height);
-    copy_common(*result, *this);
-    return result;
-  }
-
- public:
-  float height;
-};
-
-class CylinderNode final : public PrimitiveNode<SDFTreePrimitiveType::Cylinder> {
- public:
-  inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override {
-    BasePrimitiveNode::accept_visitor(visitor);
-    visitor.visit_cylinder(*this);
-  }
-
-  explicit CylinderNode(SDFTreeRegistry& tree, float _height = 1.F, float _radius = 0.25F);
-
-  ~CylinderNode() override = default;
-
-  [[nodiscard]] inline std::unique_ptr<SDFTreeNode> copy() override {
-    auto result = std::make_unique<CylinderNode>(tree_registry_, height, radius);
-    copy_common(*result, *this);
-    return result;
-  }
-
- public:
-  float height, radius;
-};
-
-class TriangularPrismNode final : public PrimitiveNode<SDFTreePrimitiveType::TriangularPrism> {
- public:
-  inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override {
-    BasePrimitiveNode::accept_visitor(visitor);
-    visitor.visit_prism(*this);
-  }
-
-  explicit TriangularPrismNode(SDFTreeRegistry& tree, float _prismHeight = 1.F, float _baseHeight = 0.25F);
-
-  ~TriangularPrismNode() override = default;
-
-  [[nodiscard]] inline std::unique_ptr<SDFTreeNode> copy() override {
-    auto result = std::make_unique<TriangularPrismNode>(tree_registry_, prismHeight, prismHeight);
-    copy_common(*result, *this);
-    return result;
-  }
-
- public:
-  float prismHeight, baseHeight;
-};
+  mutable std::optional<uint32_t> type_id_;
+};  // namespace resin
 
 }  // namespace resin
 

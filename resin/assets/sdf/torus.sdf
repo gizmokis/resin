@@ -1,0 +1,7 @@
+#name Torus 
+
+float sdf(vec3 pos, float major_radius, float minor_radius)
+{
+    vec2 d = vec2(length(pos.xz) - minor_radius, pos.y);
+    return length(d) - major_radius;
+}

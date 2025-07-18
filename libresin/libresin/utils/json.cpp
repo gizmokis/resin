@@ -1,13 +1,19 @@
+#include <exception>
 #include <glm/fwd.hpp>
 #include <json_schemas/json_schemas.hpp>
 #include <libresin/core/light.hpp>
+#include <libresin/core/resources/shader_resource.hpp>
+#include <libresin/core/resources/shader_type.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
+#include <libresin/core/sdf_tree/primitive_node.hpp>
+#include <libresin/core/sdf_tree/sdf_primitive_type_manager.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/json.hpp>
 #include <libresin/utils/logger.hpp>
 #include <memory>
 #include <nlohmann/json.hpp>
+#include <optional>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -99,50 +105,21 @@ void JSONSerializerSDFTreeNodeVisitor::visit_group(GroupNode& node) {
   json_["group"]["children"] = children;
 }
 
-void JSONSerializerSDFTreeNodeVisitor::visit_sphere(SphereNode& node) { json_["sphere"]["radius"] = node.radius; }
-
-void JSONSerializerSDFTreeNodeVisitor::visit_cube(CubeNode& node) {
-  json_["cube"]["size"]["x"] = node.size.x;
-  json_["cube"]["size"]["y"] = node.size.y;
-  json_["cube"]["size"]["z"] = node.size.z;
-}
-
-void JSONSerializerSDFTreeNodeVisitor::visit_torus(TorusNode& node) {
-  json_["torus"]["majorRadius"] = node.major_radius;
-  json_["torus"]["minorRadius"] = node.minor_radius;
-}
-
-void JSONSerializerSDFTreeNodeVisitor::visit_capsule(CapsuleNode& node) {
-  json_["capsule"]["height"] = node.height;
-  json_["capsule"]["radius"] = node.radius;
-}
-
-void JSONSerializerSDFTreeNodeVisitor::visit_link(LinkNode& node) {
-  json_["link"]["length"]      = node.length;
-  json_["link"]["majorRadius"] = node.major_radius;
-  json_["link"]["minorRadius"] = node.minor_radius;
-}
-
-void JSONSerializerSDFTreeNodeVisitor::visit_ellipsoid(EllipsoidNode& node) {
-  json_["ellipsoid"]["radii"]["x"] = node.radii.x;
-  json_["ellipsoid"]["radii"]["y"] = node.radii.y;
-  json_["ellipsoid"]["radii"]["z"] = node.radii.z;
-}
-
-void JSONSerializerSDFTreeNodeVisitor::visit_pyramid(PyramidNode& node) { json_["pyramid"]["height"] = node.height; }
-
-void JSONSerializerSDFTreeNodeVisitor::visit_cylinder(CylinderNode& node) {
-  json_["cylinder"]["height"] = node.height;
-  json_["cylinder"]["radius"] = node.radius;
-}
-
-void JSONSerializerSDFTreeNodeVisitor::visit_prism(TriangularPrismNode& node) {
-  json_["triangularPrism"]["prismHeight"] = node.prismHeight;
-  json_["triangularPrism"]["baseHeight"]  = node.baseHeight;
+void JSONSerializerSDFTreeNodeVisitor::visit_primitive(PrimitiveNode& node) {
+  auto params = json::array();
+  for (auto param : node.params()) {
+    params.push_back(param.value);
+  }
+  json_["primitive"]["params"] = params;
+  if (auto res = node.type_id()) {
+    json_["primitive"]["typeId"] = *res;
+  } else {
+    json_["primitive"]["typeId"];
+  }
 }
 
 void serialize_sdf_tree(json& target_json, SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id,
-                        bool ignore_unused_materials) {
+                        bool ignore_unused_primitive_types, bool ignore_unused_materials) {
   auto materials = json::array();
   if (ignore_unused_materials) {
     Logger::info("Ignoring unused materials");
@@ -167,10 +144,25 @@ void serialize_sdf_tree(json& target_json, SDFTree& tree, IdView<SDFTreeNodeId> 
   serialize_node_common(target_json["tree"]["rootGroup"], root_group);
   auto visitor = JSONSerializerSDFTreeNodeVisitor(target_json["tree"]["rootGroup"]);
   root_group.accept_visitor(visitor);
+
+  if (!ignore_unused_primitive_types) {
+    serialize_primitive_types(target_json["tree"], tree.primitive_type_manager());
+  } else {
+    auto& root    = tree.group(subtree_root_id);
+    auto type_ids = std::vector<uint32_t>();
+    for (const auto& prim : root.primitives()) {
+      auto type_id = prim.type_id();
+      if (type_id && std::ranges::find(type_ids, *type_id) == type_ids.end()) {
+        type_ids.push_back(*type_id);
+      }
+    }
+    serialize_primitive_types(target_json["tree"], tree.primitive_type_manager(), std::span{type_ids});
+  }
 }
 
-void serialize_sdf_tree(json& target_json, SDFTree& tree, bool ignore_unused_materials) {
-  serialize_sdf_tree(target_json, tree, tree.root().node_id(), ignore_unused_materials);
+void serialize_sdf_tree(json& target_json, SDFTree& tree, bool ignore_unused_primitive_types,
+                        bool ignore_unused_materials) {
+  serialize_sdf_tree(target_json, tree, tree.root().node_id(), ignore_unused_primitive_types, ignore_unused_materials);
 }
 
 std::string serialize_prefab(SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_id) {
@@ -178,9 +170,9 @@ std::string serialize_prefab(SDFTree& tree, IdView<SDFTreeNodeId> subtree_root_i
   try {
     json prefab_json;
     prefab_json["version"] = kNewestResinPrefabJSONSchemaVersion;
-    serialize_sdf_tree(prefab_json, tree, subtree_root_id, true);
+    serialize_sdf_tree(prefab_json, tree, subtree_root_id, true, true);
 
-    Logger::info("JSON prefab serialization succceeded");
+    Logger::info("JSON prefab serialization succeeded");
     return prefab_json.dump(2);
   } catch (const ResinException& e) {
     throw e;
@@ -203,6 +195,31 @@ void serialize_light_common(json& target_json, const BaseLightSceneComponent& li
   target_json["name"]       = light.name();
 }
 
+void serialize_primitive_types(json& target_json, const SDFPrimitiveTypeManager& manager,
+                               std::optional<std::span<uint32_t>> filter) {
+  target_json["primitiveTypes"] = json::array();
+
+  if (filter) {
+    for (auto id : *filter) {
+      if (!manager.is_id_valid(id)) {
+        continue;
+      }
+
+      json primitive_json;
+      primitive_json["typeId"]         = id;
+      primitive_json["sdfCodeContent"] = manager.type_by_id(id).shader_res->raw_glsl();
+      target_json["primitiveTypes"].push_back(primitive_json);
+    }
+  } else {
+    for (const auto& prim : manager) {
+      json primitive_json;
+      primitive_json["typeId"]         = prim.id;
+      primitive_json["sdfCodeContent"] = prim.shader_res->raw_glsl();
+      target_json["primitiveTypes"].push_back(primitive_json);
+    }
+  }
+}
+
 JSONSerializerLightSceneComponentVisitor::JSONSerializerLightSceneComponentVisitor(json& light_json)
     : json_(light_json) {}
 
@@ -222,7 +239,7 @@ std::string serialize_scene(Scene& scene) {
   try {
     json scene_json;
     scene_json["version"] = kNewestResinPrefabJSONSchemaVersion;
-    serialize_sdf_tree(scene_json, scene.tree(), scene.tree().root().node_id(), false);
+    serialize_sdf_tree(scene_json, scene.tree(), scene.tree().root().node_id(), false, false);
 
     json lights_json = json::array();
     for (const auto& light : scene.lights()) {
@@ -233,7 +250,7 @@ std::string serialize_scene(Scene& scene) {
     }
     scene_json["lights"] = lights_json;
 
-    Logger::info("JSON resin project serialization succceeded");
+    Logger::info("JSON resin project serialization succeeded");
     return scene_json.dump(2);
   } catch (const ResinException& e) {
     throw e;
@@ -326,30 +343,55 @@ void deserialize_node_common(SDFTreeNode& node, const json& node_json,
   deserialize_node_factor(node, node_json);
 }
 
+std::unordered_map<uint32_t, uint32_t> deserialize_primitive_types(SDFPrimitiveTypeManager& manager,
+                                                                   const json& primitive_types_json) {
+  auto res_manager = ShaderResourceManager();
+  auto id_map      = std::unordered_map<uint32_t, uint32_t>();
+  try {
+    for (const auto& type_json : primitive_types_json) {
+      uint32_t id         = type_json.at("typeId");
+      std::string content = type_json.at("sdfCodeContent");
+
+      auto res   = std::make_shared<const ShaderResource>(res_manager.parse_res(content, SDFShaderType{}));
+      id_map[id] = manager.add_type_from_shader_res(std::move(res));
+    }
+  } catch (const std::exception& e) {
+    log_throw(JSONPrimitiveTypesDeserializationException(e.what()));
+  }
+
+  return id_map;
+}
+
 JSONDeserializerSDFTreeNodeVisitor::JSONDeserializerSDFTreeNodeVisitor(
-    const json& node_json, const std::unordered_map<size_t, IdView<MaterialId>>& material_ids_map)
-    : node_json_(node_json), material_ids_map_(material_ids_map) {}
+    const json& node_json, const std::unordered_map<size_t, IdView<MaterialId>>& material_ids_map,
+    const std::unordered_map<uint32_t, uint32_t>& primitive_types_ids_map, const SDFTree& tree)
+    : node_json_(node_json),
+      material_ids_map_(material_ids_map),
+      primitive_types_ids_map_(primitive_types_ids_map),
+      tree_(tree) {}
 
 void JSONDeserializerSDFTreeNodeVisitor::visit_group(GroupNode& node) {
   try {
     for (const auto& child_json : node_json_.at("group").at("children")) {
-      for (auto [prim_type, name] : kSDFTreePrimitiveNodesJSONNames) {
-        if (property_exists(child_json, name)) {
-          auto& child_prim = node.push_back_primitive(prim_type, SDFBinaryOperation::Union);
+      if (property_exists(child_json, "primitive")) {
+        std::optional<uint32_t> id = child_json.at("primitive").at("typeId").is_null()
+                                         ? std::nullopt
+                                         : std::optional<uint32_t>(child_json.at("primitive").at("typeId"));
+        auto& child_prim =
+            node.push_back_child<PrimitiveNode>(SDFBinaryOperation::Union, primitive_types_ids_map_.at(*id));
 
-          deserialize_node_common(child_prim, child_json, material_ids_map_);
-          auto visitor = JSONDeserializerSDFTreeNodeVisitor(child_json, material_ids_map_);
-          child_prim.accept_visitor(visitor);
-
-          break;
-        }
+        deserialize_node_common(child_prim, child_json, material_ids_map_);
+        auto visitor =
+            JSONDeserializerSDFTreeNodeVisitor(child_json, material_ids_map_, primitive_types_ids_map_, tree_);
+        child_prim.accept_visitor(visitor);
       }
 
       if (property_exists(child_json, "group")) {
         auto& child_group = node.push_back_child<GroupNode>(SDFBinaryOperation::Union);
 
         deserialize_node_common(child_group, child_json, material_ids_map_);
-        auto visitor = JSONDeserializerSDFTreeNodeVisitor(child_json, material_ids_map_);
+        auto visitor =
+            JSONDeserializerSDFTreeNodeVisitor(child_json, material_ids_map_, primitive_types_ids_map_, tree_);
         child_group.accept_visitor(visitor);
       }
     }
@@ -363,94 +405,14 @@ void JSONDeserializerSDFTreeNodeVisitor::visit_group(GroupNode& node) {
   }
 }
 
-void JSONDeserializerSDFTreeNodeVisitor::visit_sphere(SphereNode& node) {
-  try {
-    node.radius = node_json_.at("sphere").at("radius");
-  } catch (...) {
-    log_throw(JSONNodeDeserializationException(
-        std::format("Sphere definition for node with name {} is invalid.", node.name())));
-  }
-}
-
-void JSONDeserializerSDFTreeNodeVisitor::visit_cube(CubeNode& node) {
-  try {
-    node.size.x = node_json_.at("cube").at("size").at("x");
-    node.size.y = node_json_.at("cube").at("size").at("y");
-    node.size.z = node_json_.at("cube").at("size").at("z");
-  } catch (...) {
-    log_throw(JSONNodeDeserializationException(
-        std::format("Cube definition for node with name {} is invalid.", node.name())));
-  }
-}
-
-void JSONDeserializerSDFTreeNodeVisitor::visit_torus(TorusNode& node) {
-  try {
-    node.major_radius = node_json_.at("torus").at("majorRadius");
-    node.minor_radius = node_json_.at("torus").at("minorRadius");
-  } catch (...) {
-    log_throw(JSONNodeDeserializationException(
-        std::format("Torus definition for node with name {} is invalid.", node.name())));
-  }
-}
-
-void JSONDeserializerSDFTreeNodeVisitor::visit_capsule(CapsuleNode& node) {
-  try {
-    node.height = node_json_.at("capsule").at("height");
-    node.radius = node_json_.at("capsule").at("radius");
-  } catch (...) {
-    log_throw(JSONNodeDeserializationException(
-        std::format("Capsule definition for node with name {} is invalid.", node.name())));
-  }
-}
-
-void JSONDeserializerSDFTreeNodeVisitor::visit_link(LinkNode& node) {
-  try {
-    node.length       = node_json_.at("link").at("length");
-    node.major_radius = node_json_.at("link").at("majorRadius");
-    node.minor_radius = node_json_.at("link").at("minorRadius");
-  } catch (...) {
-    log_throw(JSONNodeDeserializationException(
-        std::format("Link definition for node with name {} is invalid.", node.name())));
-  }
-}
-
-void JSONDeserializerSDFTreeNodeVisitor::visit_ellipsoid(EllipsoidNode& node) {
-  try {
-    node.radii.x = node_json_.at("ellipsoid").at("radii").at("x");
-    node.radii.y = node_json_.at("ellipsoid").at("radii").at("y");
-    node.radii.z = node_json_.at("ellipsoid").at("radii").at("z");
-  } catch (...) {
-    log_throw(JSONNodeDeserializationException(
-        std::format("Ellipsoid definition for node with name {} is invalid.", node.name())));
-  }
-}
-
-void JSONDeserializerSDFTreeNodeVisitor::visit_pyramid(PyramidNode& node) {
-  try {
-    node.height = node_json_.at("pyramid").at("height");
-  } catch (...) {
-    log_throw(JSONNodeDeserializationException(
-        std::format("Pyramid definition for node with name {} is invalid.", node.name())));
-  }
-}
-
-void JSONDeserializerSDFTreeNodeVisitor::visit_cylinder(CylinderNode& node) {
-  try {
-    node.height = node_json_.at("cylinder").at("height");
-    node.radius = node_json_.at("cylinder").at("radius");
-  } catch (...) {
-    log_throw(JSONNodeDeserializationException(
-        std::format("Cylinder definition for node with name {} is invalid.", node.name())));
-  }
-}
-
-void JSONDeserializerSDFTreeNodeVisitor::visit_prism(TriangularPrismNode& node) {
-  try {
-    node.prismHeight = node_json_.at("triangularPrism").at("prismHeight");
-    node.baseHeight  = node_json_.at("triangularPrism").at("baseHeight");
-  } catch (...) {
-    log_throw(JSONNodeDeserializationException(
-        std::format("Triangular prism definition for node with name {} is invalid.", node.name())));
+void JSONDeserializerSDFTreeNodeVisitor::visit_primitive(PrimitiveNode& node) {
+  auto it = node.params().begin();
+  for (float param : node_json_.at("primitive").at("params")) {
+    if (it == node.params().end()) {
+      return;
+    }
+    it->value = param;
+    ++it;
   }
 }
 
@@ -519,9 +481,13 @@ std::unique_ptr<GroupNode> deserialize_sdf_tree(SDFTree& tree, const json& tree_
 
   Logger::info("Materials deserialization succeeded");
 
+  auto primitive_types_ids_map =
+      deserialize_primitive_types(tree.primitive_type_manager(), tree_json.at("primitiveTypes"));
+
   auto root = tree.create_detached_node<GroupNode>();
   deserialize_node_common(*root, tree_json.at("rootGroup"), material_ids_map);
-  auto visitor = JSONDeserializerSDFTreeNodeVisitor(tree_json.at("rootGroup"), material_ids_map);
+  auto visitor =
+      JSONDeserializerSDFTreeNodeVisitor(tree_json.at("rootGroup"), material_ids_map, primitive_types_ids_map, tree);
   root->accept_visitor(visitor);
 
   return root;

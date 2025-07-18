@@ -6,6 +6,7 @@
 
 #include <libresin/core/id_registry.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
+#include <libresin/core/sdf_tree/sdf_primitive_type_manager.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node_visitor.hpp>
@@ -21,8 +22,10 @@ class SDFTreeComponentVisitor : public ::resin::ISDFTreeNodeVisitor {
   explicit SDFTreeComponentVisitor(::resin::SDFTree& tree,
                                    std::optional<::resin::IdView<::resin::SDFTreeNodeId>> selected)
       : selected_(selected), payload_type_(std::format("SDF_TREE_DND_PAYLOAD_{}", tree.tree_id())), sdf_tree_(tree) {}
+
+  void visit_node(::resin::SDFTreeNode& /*node*/) override {}
   void visit_group(::resin::GroupNode& node) override;
-  void visit_primitive(::resin::BasePrimitiveNode& node) override;
+  void visit_primitive(::resin::PrimitiveNode& node) override;
 
   void render_tree();
   void render_rename_popup_modal(const char* name);
@@ -30,7 +33,7 @@ class SDFTreeComponentVisitor : public ::resin::ISDFTreeNodeVisitor {
   void apply_duplicate_operation();
   void apply_delete_operation();
 
-  inline std::optional<::resin::IdView<::resin::SDFTreeNodeId>> selected() const { return selected_; }
+  std::optional<::resin::IdView<::resin::SDFTreeNodeId>> selected() const { return selected_; }
 
  private:
   void render_op(::resin::SDFTreeNode& node) const;

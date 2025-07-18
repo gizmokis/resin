@@ -37,12 +37,12 @@ class UniformBuffer {
 
 class PrimitiveUniformBuffer : public UniformBuffer {
  public:
-  struct PrimitiveNode {
+  struct PrimitiveNodeUBOElement {
     glm::mat4 transform;
     glm::vec3 size;
     int mat_id;
 
-    PrimitiveNode(const BasePrimitiveNode& _node, const glm::vec3& _size)
+    PrimitiveNodeUBOElement(const PrimitiveNode& _node, const glm::vec3& _size)
         : transform(_node.transform().world_to_local_matrix()),
           size(_size),
           mat_id(static_cast<int>(_node.active_material_id_or_default().raw())) {}
@@ -63,15 +63,7 @@ class PrimitiveUniformBuffer : public UniformBuffer {
 
  private:
   class PrimitiveNodeVisitor : public ISDFTreeNodeVisitor {
-    void visit_sphere(SphereNode& node) override;
-    void visit_cube(CubeNode& node) override;
-    void visit_torus(TorusNode& node) override;
-    void visit_capsule(CapsuleNode& node) override;
-    void visit_link(LinkNode& node) override;
-    void visit_ellipsoid(EllipsoidNode& node) override;
-    void visit_pyramid(PyramidNode& node) override;
-    void visit_cylinder(CylinderNode& node) override;
-    void visit_prism(TriangularPrismNode& node) override;
+    void visit_primitive(PrimitiveNode& node) override;
   };
 
   const size_t max_count_;

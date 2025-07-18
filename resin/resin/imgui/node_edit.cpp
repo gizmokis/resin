@@ -6,7 +6,6 @@
 #include <libresin/core/raycaster.hpp>
 #include <libresin/core/sdf_shader_consts.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
-#include <libresin/core/sdf_tree/primitive_base_node.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/core/shader.hpp>
@@ -22,48 +21,9 @@ namespace ImGui {
 
 namespace resin {
 
-void resin::SDFNodeEditVisitor::visit_sphere(::resin::SphereNode& node) {
-  NODE_DIRTY(ImGui::DragFloat("Radius", &node.radius, 0.01F, 0.0F, 2.0F, "%.2f"));
-}
-
-void resin::SDFNodeEditVisitor::visit_cube(::resin::CubeNode& node) {
-  NODE_DIRTY(ImGui::DragFloat3("Size", glm::value_ptr(node.size), 0.01F, 0.0F, 2.0F, "%.2f"));
-}
-
-void resin::SDFNodeEditVisitor::visit_torus(::resin::TorusNode& node) {
-  NODE_DIRTY(ImGui::DragFloat("Major radius", &node.major_radius, 0.01F, 0.0F, 2.0F, "%.2f"));
-  NODE_DIRTY(ImGui::DragFloat("Minor radius", &node.minor_radius, 0.01F, 0.0F, 2.0F, "%.2f"));
-}
-
-void resin::SDFNodeEditVisitor::visit_capsule(::resin::CapsuleNode& node) {
-  NODE_DIRTY(ImGui::DragFloat("Height", &node.height, 0.01F, 0.0F, 2.0F, "%.2f"));
-  NODE_DIRTY(ImGui::DragFloat("Radius", &node.radius, 0.01F, 0.0F, 2.0F, "%.2f"));
-}
-
-void resin::SDFNodeEditVisitor::visit_link(::resin::LinkNode& node) {
-  NODE_DIRTY(ImGui::DragFloat("Length", &node.length, 0.01F, 0.0F, 2.0F, "%.2f"));
-  NODE_DIRTY(ImGui::DragFloat("Major radius", &node.major_radius, 0.01F, 0.0F, 2.0F, "%.2f"));
-  NODE_DIRTY(ImGui::DragFloat("Minor radius", &node.minor_radius, 0.01F, 0.0F, 2.0F, "%.2f"));
-}
-
-void resin::SDFNodeEditVisitor::visit_ellipsoid(::resin::EllipsoidNode& node) {
-  NODE_DIRTY(ImGui::DragFloat3("Size", glm::value_ptr(node.radii), 0.01F, 0.0F, 2.0F, "%.2f"));
-}
-
-void resin::SDFNodeEditVisitor::visit_pyramid(::resin::PyramidNode& node) {
-  NODE_DIRTY(ImGui::DragFloat("Height", &node.height, 0.01F, 0.0F, 2.0F, "%.2f"));
-}
-
-void resin::SDFNodeEditVisitor::visit_cylinder(::resin::CylinderNode& node) {
-  NODE_DIRTY(ImGui::DragFloat("Height", &node.height, 0.01F, 0.0F, 2.0F, "%.2f"));
-  NODE_DIRTY(ImGui::DragFloat("Radius", &node.radius, 0.01F, 0.0F, 2.0F, "%.2f"));
-}
-
-void resin::SDFNodeEditVisitor::visit_prism(::resin::TriangularPrismNode& node) {
-  if (ImGui::BeginTabItem("Properties")) {
-    NODE_DIRTY(ImGui::DragFloat("Prism Height", &node.prismHeight, 0.01F, 0.0F, 2.0F, "%.2f"));
-    NODE_DIRTY(ImGui::DragFloat("Base Height", &node.baseHeight, 0.01F, 0.0F, 2.0F, "%.2f"));
-    ImGui::EndTabItem();
+void SDFNodeEditVisitor::visit_primitive(::resin::PrimitiveNode& node) {
+  for (auto& p : node.params()) {
+    NODE_DIRTY(ImGui::DragFloat(p.name.data(), &p.value, 0.01F, 0.0F, 2.0F, "%.2f"));
   }
 }
 

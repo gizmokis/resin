@@ -5,6 +5,7 @@
 #include <libresin/utils/exceptions.hpp>
 #include <tests/files_helper.hpp>
 #include <tests/libresin/test_consts.hpp>
+#include <tests/string_helper.hpp>
 
 class ShaderResourceTest : public testing::Test {
  protected:
@@ -16,35 +17,36 @@ TEST_F(ShaderResourceTest, ShaderFilesAreValidated) {
   resin::ShaderResourceManager sh_resman;
 
   EXPECT_THROW(
-      { auto res = sh_resman.get_res(resources_path_ / "non_existing" / "path.vert"); },
+      { auto res = sh_resman.get_res_ptr(resources_path_ / "non_existing" / "path.vert"); },
       resin::FileDoesNotExistException);
 
   EXPECT_THROW(
-      { auto res = sh_resman.get_res(resources_path_ / "invalid_ext.frg"); },
+      { auto res = sh_resman.get_res_ptr(resources_path_ / "invalid_ext.frg"); },
       resin::FileExtensionNotSupportedException);
 }
 
 TEST_F(ShaderResourceTest, ShaderWithDepsIsCorrectlyGenerated) {
   resin::ShaderResourceManager sh_resman;
-  auto res = sh_resman.get_res(resources_path_ / "regular_load" / "main.frag");
+  auto res = sh_resman.get_res_ptr(resources_path_ / "regular_load" / "main.frag");
 
   resin::ShaderResource cpy(*res);
-  cpy.set_ext_defi("EXTERNAL_MAIN", "int func() { return 5; }");
-  cpy.set_ext_defi("EXTERNAL_A", "100");
-  cpy.set_ext_defi("EXTERNAL_B", "50");
+  cpy.inject_external_definition("EXTERNAL_MAIN", "int func() { return 5; }");
+  cpy.inject_external_definition("EXTERNAL_A", "100");
+  cpy.inject_external_definition("EXTERNAL_B", "50");
 
-  EXPECT_FILE_CONTENT_EQ(resources_path_ / "regular_load" / "expected_raw.frag", cpy.get_raw());
+  EXPECT_FILE_CONTENT_EQ_IGNORING_WHITESPACES(resources_path_ / "regular_load" / "expected_raw.frag",
+                                              cpy.intermediate_glsl());
 
-  std::string_view glsl = cpy.get_glsl();
-  EXPECT_FALSE(glsl.find("#define EXTERNAL_MAIN int func() { return 5; }") == std::string_view::npos);
-  EXPECT_FALSE(glsl.find("#define EXTERNAL_A 100") == std::string_view::npos);
-  EXPECT_FALSE(glsl.find("#define EXTERNAL_B 50") == std::string_view::npos);
+  std::string_view glsl = *cpy.glsl();
+  EXPECT_STRING_CONTAINS_IGNORING_WHITESPACE(glsl, "#define EXTERNAL_MAIN int func() { return 5; }");
+  EXPECT_STRING_CONTAINS_IGNORING_WHITESPACE(glsl, "#define EXTERNAL_A 100");
+  EXPECT_STRING_CONTAINS_IGNORING_WHITESPACE(glsl, "#define EXTERNAL_B 50");
 }
 
 TEST_F(ShaderResourceTest, ShaderDepsCycleIsDetected) {
   resin::ShaderResourceManager sh_resman;
 
   EXPECT_THROW(
-      { auto res = sh_resman.get_res(resources_path_ / "deps_cycle" / "main.vert"); },
+      { auto res = sh_resman.get_res_ptr(resources_path_ / "deps_cycle" / "main.vert"); },
       resin::ShaderIncludeMacroDependencyCycleException);
 }

@@ -7,6 +7,7 @@
 #include <libresin/core/id_registry.hpp>
 #include <libresin/core/sdf_shader_consts.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
+#include <libresin/core/sdf_tree/sdf_primitive_type_manager.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/core/transform.hpp>
 #include <libresin/utils/exceptions.hpp>
@@ -20,7 +21,6 @@
 #include <utility>
 
 namespace resin {
-using SDFTreePrimitiveType = sdf_shader_consts::SDFShaderPrim;
 
 class GroupNode final : public SDFTreeNode {
  public:
@@ -30,21 +30,21 @@ class GroupNode final : public SDFTreeNode {
 
   std::string gen_shader_code(GenShaderMode mode) const override;
 
-  inline void accept_visitor(ISDFTreeNodeVisitor& visitor) override {
+  void accept_visitor(ISDFTreeNodeVisitor& visitor) override {
     SDFTreeNode::accept_visitor(visitor);
     visitor.visit_group(*this);
   }
   [[nodiscard]] std::unique_ptr<SDFTreeNode> copy() override;
-  inline bool is_leaf() override { return nodes_.size() == 0; }
+  bool is_leaf() override { return nodes_.size() == 0; }
   void set_material(IdView<MaterialId> mat_id) override;
   void remove_material() override;
 
-  inline size_t get_children_count() const { return nodes_.size(); }
+  size_t get_children_count() const { return nodes_.size(); }
 
   // Cost: O(h)
   template <SDFTreeNodeConcept Node, typename... Args>
     requires std::constructible_from<Node, SDFTreeRegistry&, Args...>
-  inline Node& push_back_child(SDFBinaryOperation op, Args&&... args) {
+  Node& push_back_child(SDFBinaryOperation op, Args&&... args) {
     auto node_ptr = std::make_unique<Node>(tree_registry_, std::forward<Args>(args)...);
     node_ptr->set_bin_op(op);
     Node& result = *node_ptr;
@@ -55,15 +55,13 @@ class GroupNode final : public SDFTreeNode {
   // Cost: O(h)
   template <SDFTreeNodeConcept Node, typename... Args>
     requires std::constructible_from<Node, SDFTreeRegistry&, Args...>
-  inline Node& push_front_child(SDFBinaryOperation op, Args&&... args) {
+  Node& push_front_child(SDFBinaryOperation op, Args&&... args) {
     auto node_ptr = std::make_unique<Node>(tree_registry_, std::forward<Args>(args)...);
     node_ptr->set_bin_op(op);
     Node& result = *node_ptr;
     push_front_child(std::move(node_ptr));
     return result;
   }
-
-  SDFTreeNode& push_back_primitive(SDFTreePrimitiveType type, SDFBinaryOperation bin_op);
 
   // Cost: O(h)
   void push_back_child(std::unique_ptr<SDFTreeNode> node_ptr);
@@ -103,13 +101,24 @@ class GroupNode final : public SDFTreeNode {
   SDFTreeNode& get_child(IdView<SDFTreeNodeId> node_id) const;
 
   // Cost: O(1)
-  inline bool is_child(IdView<SDFTreeNodeId> node_id) const {
+  bool is_child(IdView<SDFTreeNodeId> node_id) const {
     return tree_registry_.all_nodes[node_id.raw()]->get().has_parent() &&
            tree_registry_.all_nodes[node_id.raw()]->get().parent().node_id() == this->node_id();
   }
 
-  inline const std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& primitives() {
+  const std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& primitive_ids() {
     return leaves_;
+  }
+
+  auto primitives() {
+    return leaves_ | std::views::transform([this](const auto& id) -> PrimitiveNode& {
+             return this->tree_registry_.all_primitive_nodes[id.raw()].value().get();
+           });
+  }
+  auto primitives() const {
+    return leaves_ | std::views::transform([this](const auto& id) -> const PrimitiveNode& {
+             return this->tree_registry_.all_primitive_nodes[id.raw()].value().get();
+           });
   }
 
   auto begin() { return nodes_order_.begin(); }
@@ -118,12 +127,12 @@ class GroupNode final : public SDFTreeNode {
   auto end() const { return nodes_order_.end(); }
 
  protected:
-  inline void insert_leaves_to(
+  void insert_leaves_to(
       std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& leaves) override {
     leaves.insert(leaves_.begin(), leaves_.end());
   }
 
-  inline void remove_leaves_from(
+  void remove_leaves_from(
       std::unordered_set<IdView<SDFTreeNodeId>, IdViewHash<SDFTreeNodeId>, std::equal_to<>>& leaves) override {
     for (const auto& leaf : leaves_) {
       leaves.erase(leaf);

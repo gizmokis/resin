@@ -1,0 +1,23 @@
+#name Pyramid
+
+/* https://iquilezles.org/articles/distfunctions/ */ 
+float sdf(vec3 pos, float height)
+{
+    if (pos.y <= 0.0) /* https://www.shadertoy.com/view/Ws3SDl */ 
+    { 
+        return length(max(abs(pos)-vec3(0.5,0.0,0.5),0.0));
+    }
+
+    float h = height;
+    float m2 = h*h + 0.25;
+    pos.xz = abs(pos.xz);
+    pos.xz = (pos.z>pos.x) ? pos.zx : pos.xz;
+    pos.xz -= 0.5;
+    vec3 q = vec3(pos.z, h*pos.y - 0.5*pos.x, h*pos.x + 0.5*pos.y);
+    float s = max(-q.x,0.0);
+    float t = clamp((q.y-0.5*pos.z)/(m2+0.25), 0.0, 1.0);
+    float a = m2*(q.x+s)*(q.x+s) + q.y*q.y;
+    float b = m2*(q.x+0.5*t)*(q.x+0.5*t) + (q.y-m2*t)*(q.y-m2*t);
+    float d2 = min(q.y,-q.x*m2-q.y*0.5) > 0.0 ? 0.0 : min(a,b);
+    return sqrt( (d2+q.z*q.z)/m2 ) * sign(max(q.z,-pos.y));
+}

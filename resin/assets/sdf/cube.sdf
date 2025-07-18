@@ -1,0 +1,7 @@
+#name Cube
+
+float sdf(vec3 pos, float width, float height, float depth)
+{
+    vec3 d = abs(pos) - 0.5*vec3(width, height, depth);
+    return min(max(d.x,max(d.y,d.z)),0.0) + length(max(d,0.0));
+}

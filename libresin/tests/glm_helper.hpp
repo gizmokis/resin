@@ -53,6 +53,8 @@ template <typename T, glm::qualifier Q>
   return ::testing::AssertionSuccess();
 }
 
+// NOLINTBEGIN
+
 // Macro for glm vector comparison.
 #define EXPECT_GLM_VEC_NEAR(expected, actual, epsilon) EXPECT_PRED_FORMAT3(AreGLMVectorsNear, expected, actual, epsilon)
 #define ASSERT_GLM_VEC_NEAR(expected, actual, epsilon) ASSERT_PRED_FORMAT3(AreGLMVectorsNear, expected, actual, epsilon)
@@ -70,3 +72,5 @@ template <typename T, glm::qualifier Q>
   ASSERT_PRED_FORMAT3(AreGLMQuaternionRotationsNear, expected, actual, epsilon)
 
 #endif
+
+// NOLINTEND
