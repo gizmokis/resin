@@ -3,6 +3,7 @@
 #include <libresin/core/sdf_shader_consts.hpp>
 #include <libresin/core/sdf_tree/group_node.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
+#include <libresin/core/sdf_tree/sdf_primitive_type_manager.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/utils/exceptions.hpp>
@@ -10,7 +11,6 @@
 #include <optional>
 #include <utility>
 
-#include "libresin/core/sdf_tree/sdf_primitive_type_manager.hpp"
 
 namespace resin {
 size_t SDFTree::curr_id_ = 0;

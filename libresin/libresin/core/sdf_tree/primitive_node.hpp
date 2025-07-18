@@ -5,10 +5,10 @@
 #include <libresin/core/sdf_shader_consts.hpp>
 #include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
+#include <libresin/utils/optional_ref.hpp>
 #include <libresin/utils/static_vector.hpp>
 #include <optional>
 
-#include "libresin/utils/optional_ref.hpp"
 
 namespace resin {
 struct SDFPrimitiveTypeDescription;

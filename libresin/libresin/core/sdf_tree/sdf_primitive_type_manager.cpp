@@ -1,12 +1,12 @@
 
 #include <cstdint>
+#include <libresin/core/resources/shader_resource.hpp>
 #include <libresin/core/resources/shader_type.hpp>
 #include <libresin/core/sdf_tree/sdf_primitive_type_manager.hpp>
 #include <libresin/utils/exceptions.hpp>
 #include <libresin/utils/logger.hpp>
 #include <ranges>
 
-#include "libresin/core/resources/shader_resource.hpp"
 
 namespace resin {
 

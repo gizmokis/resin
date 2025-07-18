@@ -39,7 +39,6 @@ TEST_F(JSONTest, PrefabJSONSchemaIsValid) {
   auto schema         = valijson::Schema();
   auto schema_parser  = valijson::SchemaParser();
 
-  std::println("{}", RESIN_PREFAB_JSON_SCHEMA);
   ASSERT_NO_THROW(schema_parser.populateSchema(schema_adapter, schema));
 }
 

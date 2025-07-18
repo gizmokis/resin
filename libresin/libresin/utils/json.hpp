@@ -6,11 +6,10 @@
 #include <libresin/core/scene.hpp>
 #include <libresin/core/sdf_tree/primitive_node.hpp>
 #include <libresin/core/sdf_tree/sdf_primitive_type_manager.hpp>
+#include <libresin/core/sdf_tree/sdf_tree.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node.hpp>
 #include <libresin/core/sdf_tree/sdf_tree_node_visitor.hpp>
 #include <nlohmann/json_fwd.hpp>
-
-#include "libresin/core/sdf_tree/sdf_tree.hpp"
 
 namespace resin {
 
